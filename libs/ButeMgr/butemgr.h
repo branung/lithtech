@@ -22,8 +22,15 @@
 
 #	include <map>
 #	include <set>
-#	include <hash_set>
-#	include <hash_map>
+#	if _MSC_VER >= 1916
+// <hash_set>/<hash_map> were removed from the MSVC STL.  
+// The standard unordered containers replace them (see typedefs further down)
+#		include <unordered_set>
+#		include <unordered_map>
+#	else
+#		include <hash_set>
+#		include <hash_map>
+#	endif
 #endif
 
 #include <functional>
@@ -81,7 +88,8 @@ using ci_string = std::basic_string<char, ci_char_traits>;
 #endif // VC7
 
 
-#if _MSC_VER >= 1300 && !defined(__clang__)
+// ButeMgrHashCompare is outdated, so preventing it from being reached by modern MSVC
+#if _MSC_VER >= 1300 && _MSC_VER < 1916 && !defined(__clang__)
 
 class ButeMgrHashCompare
 {
@@ -401,7 +409,7 @@ private:
 
 	// Used to define map of strings to TableOfItems.
 	typedef std::hash_map< char const*, TableOfItems*, ButeMgrHashCompare > TableOfTags;
-#elif _MSC_VER > 1300   && !defined(__clang__)// NET 2003
+#elif _MSC_VER > 1300 && _MSC_VER < 1916  && !defined(__clang__)// NET 2003
 	// Used to define dictionary of strings.
 	// This must be case sensitive!
 	typedef stdext::hash_set< CString, ButeMgrHashCompare > StringHolder;
@@ -411,6 +419,14 @@ private:
 
 	// Used to define map of strings to TableOfItems.
 	typedef stdext::hash_map< char const*, TableOfItems*, ButeMgrHashCompare > TableOfTags;
+#elif _MSC_VER >= 1916 && !defined(__clang__)
+	// Modern MSVC: stdext::hash_* is gone.  
+	// Use the standard unordered containers with the same comparators Linux build uses.
+	typedef std::unordered_set< CString, std::hash< char const* >, equal_str > StringHolder;
+
+	typedef std::unordered_map< char const*, CSymTabItem*, hash_str_nocase, equal_str_nocase > TableOfItems;
+
+	typedef std::unordered_map< char const*, TableOfItems*, hash_str_nocase, equal_str_nocase > TableOfTags;
 #elif defined(__LINUX)
 	// Used to define dictionary of strings.
 	// This must be case sensitive!

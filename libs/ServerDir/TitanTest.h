@@ -4,16 +4,16 @@
 #ifndef __TITANTEST_H__
 #define __TITANTEST_H__
 
-#ifdef _FINAL
+#ifndef ENABLE_TITAN_TEST
 
 inline void TitanTest_Init() {}
 inline void TitanTest_Term() {}
 
-#else // _FINAL
+#else // ENABLE_TITAN_TEST
 
 void TitanTest_Init();
 void TitanTest_Term();
 
-#endif // _FINAL
+#endif // ENABLE_TITAN_TEST
 
 #endif //__TITANTEST_H__

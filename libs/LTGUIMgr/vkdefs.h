@@ -138,6 +138,19 @@
 #define VK_LMENU		164
 #define VK_RMENU		165
 
+#define VK_OEM_1		186
+#define VK_OEM_PLUS		187
+#define VK_OEM_COMMA	188
+#define VK_OEM_MINUS	189
+#define VK_OEM_PERIOD	190
+#define VK_OEM_2		191
+#define VK_OEM_3		192
+#define VK_OEM_4		219
+#define VK_OEM_5		220
+#define VK_OEM_6		221
+#define VK_OEM_7		222
+#define VK_OEM_8		223
+
 #define VK_PROCESSKEY	229
 
 #define VK_ATTN			246

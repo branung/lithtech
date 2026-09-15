@@ -63,15 +63,79 @@
 	#define MODULE_EXPORT
 	#define MODULE_IMPORT
 	#define _MAX_PATH 256
+	#ifndef MAX_PATH
+	#define MAX_PATH 260
+	#endif
 	#include <ctype.h>
 	inline int stricmp(const char* string1, const char* string2)
 	{ return strcasecmp(string1, string2); }
+	inline int _stricmp(const char* string1, const char* string2)
+	{ return strcasecmp(string1, string2); }
+	inline int _strcmpi(const char* string1, const char* string2)
+	{ return strcasecmp(string1, string2); }
 	inline int strnicmp(const char* string1, const char* string2, size_t len)
 	{ return strncasecmp(string1, string2, len); }
+	inline int _strnicmp(const char* string1, const char* string2, size_t len)
+	{ return strncasecmp(string1, string2, len); }
+	#define wsprintf sprintf
+	inline char* _strlwr(char* s)
+	{ char* p = s; while (*p) { *p = tolower(*p); ++p; } return s; }
+	inline char* strlwr(char* s)
+	{ return _strlwr(s); }
+	// Returns the original pointer as MSVC's does
 	inline char* strupr(char* s)
-	{ while (*s) { *s = toupper(*s); ++s; } return s; }
+	{ char* p = s; while (*p) { *p = toupper(*p); ++p; } return s; }
+	inline char* _itoa(int value, char* str, int base)
+	{ ASSERT(base == 10); snprintf(str, 12, "%d", value); return str; }
+	inline char* itoa(int value, char* str, int base)
+	{ return _itoa(value, str, base); }
+	inline int _vsnprintf(char* str, size_t size, const char* fmt, va_list ap)
+	{ return vsnprintf(str, size, fmt, ap); }
 	inline void notSupportedLinux ()
 	{  ASSERT( false && "Not supported on Linux" ); }
+	// MSVC's minwindef.h macros, needed at preprocessor-constant sites
+	#ifndef __min
+	#define __min(a,b) (((a) < (b)) ? (a) : (b))
+	#endif
+	#ifndef __max
+	#define __max(a,b) (((a) > (b)) ? (a) : (b))
+	#endif
+
+	inline unsigned char* _mbsinc(const unsigned char* p)
+	{ return (unsigned char*)(p + 1); }
+	inline unsigned char* _mbsdec(const unsigned char* base, const unsigned char* cur)
+	{ return (cur > base) ? (unsigned char*)(cur - 1) : nullptr; }
+	inline unsigned char* _mbsncpy(unsigned char* dest, const unsigned char* src, size_t n)
+	{ return (unsigned char*)strncpy((char*)dest, (const char*)src, n); }
+	inline unsigned char* _mbsspnp(const unsigned char* str, const unsigned char* charSet)
+	{ size_t n = strspn((const char*)str, (const char*)charSet); return (str[n] || n) ? (unsigned char*)(str + n) : nullptr; }
+	inline unsigned char* _mbsrchr(const unsigned char* str, unsigned int ch)
+	{ return (unsigned char*)strrchr((const char*)str, (int)ch); }
+	inline int _mbsnbcmp(const unsigned char* s1, const unsigned char* s2, size_t n)
+	{ return strncmp((const char*)s1, (const char*)s2, n); }
+	inline size_t _mbsnbcnt(const unsigned char* str, size_t n)
+	{ size_t len = strlen((const char*)str); return (n < len) ? n : len; }
+	inline unsigned char* _mbscpy(unsigned char* dest, const unsigned char* src)
+	{ return (unsigned char*)strcpy((char*)dest, (const char*)src); }
+	inline int _mbsicmp(const unsigned char* s1, const unsigned char* s2)
+	{
+		for (;; ++s1, ++s2)
+		{
+			unsigned char a = *s1, b = *s2;
+			if (a >= 'A' && a <= 'Z') a = (unsigned char)(a - 'A' + 'a');
+			if (b >= 'A' && b <= 'Z') b = (unsigned char)(b - 'A' + 'a');
+			if (a != b) return (a < b) ? -1 : 1;
+			if (!a) return 0;
+		}
+	}
+	inline size_t _mbstrlen(const char* str)
+	{ return strlen(str); }
+	inline int _mbscmp(const unsigned char* s1, const unsigned char* s2)
+	{ return strcmp((const char*)s1, (const char*)s2); }
+	inline int strcmpi(const char* s1, const char* s2)
+	{ return strcasecmp(s1, s2); }
+	inline char* ltoa(long value, char* str, int base)
+	{ ASSERT(base == 10); snprintf(str, 24, "%ld", value); return str; }
 
 #endif
 

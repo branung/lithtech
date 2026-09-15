@@ -6,6 +6,7 @@
 #include "mfcs_types.h"
 
 #include <stdarg.h> // for va_list
+#include <ctype.h>
 
 /* CString wrapper class
 
@@ -78,6 +79,30 @@ public:
 	void MakeLower();
 	// reverse string right-to-left
 	void MakeReverse();
+
+	// Strip leading/trailing whitespace
+	void TrimLeft()
+	{
+		if (!GetBuffer()) return;
+		uint32 nStart = 0;
+		while (nStart < GetLength() && isspace((unsigned char)GetBuffer()[nStart]))
+			nStart++;
+		if (nStart > 0)
+			CopyString(GetBuffer() + nStart);
+	}
+	void TrimRight()
+	{
+		if (!GetBuffer()) return;
+		int32 nEnd = (int32)GetLength() - 1;
+		while (nEnd >= 0 && isspace((unsigned char)GetBuffer()[nEnd]))
+			nEnd--;
+		if (nEnd < (int32)GetLength() - 1)
+		{
+			char *pBuf = GetBuffer(nEnd + 1);
+			pBuf[nEnd + 1] = '\0';
+			ReleaseBuffer(nEnd + 1);
+		}
+	}
 
 	// Operators
 	operator LPCTSTR () const { return m_pBuffer; }
