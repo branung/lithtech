@@ -24,31 +24,7 @@
 #define TRACE dprintf
 #endif
 
-#ifndef _WIN32
-const unsigned int _MAX_DRIVE = 3;
-const unsigned int _MAX_DIR = 256;
-const unsigned int _MAX_FNAME = 256;
-const unsigned int _MAX_EXT = 256;
-void _splitpath(const char* path, char* drive, char* dir, char* fname, char* ext)
-{
-  ASSERT(FALSE && "no splitpath implementation on Linux");
-}
-
-struct _finddata_t {
-	unsigned int attrib;
-	time_t time_create;
-	time_t time_access;
-	time_t time_write;
-	unsigned long size;
-	char name[260];
-};
-
-enum { _S_IFDIR, _A_SUBDIR };
-long _findfirst(char* filespec, _finddata_t* fileinfo) { return -1; }
-int _findnext(long handle, _finddata_t* fileinfo) { return -1; }
-int _findclose(long handle) { return -1; }
-
-#endif // !_WIN32
+#include "rezcompat.h"
 
 
 //***************************************************************************************************
@@ -103,7 +79,7 @@ struct FileDirEntryRezHeader {
 };
 
 struct FileDirEntryHeader {
-  DWORD Type;
+  UINT32 Type;
   union {
     FileDirEntryRezHeader Rez;
 	FileDirEntryDirHeader Dir;
@@ -1193,8 +1169,7 @@ CRezMgr::CRezMgr() {
  };
 
 //---------------------------------------------------------------------------------------------------
-CRezMgr::CRezMgr(const char* FileName, BOOL ReadOnly, BOOL CreateNew) {
-  CRezMgr();
+CRezMgr::CRezMgr(const char* FileName, BOOL ReadOnly, BOOL CreateNew) : CRezMgr() {
   Open(FileName,ReadOnly,CreateNew);
 };
 

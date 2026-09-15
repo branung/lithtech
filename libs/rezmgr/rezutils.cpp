@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #endif
+#include "rezcompat.h"
 
 #include <string.h>
 #include "assert.h"
@@ -64,10 +65,6 @@ BOOL CZMgrRezMgr::DiskError()
 
 BOOL ExtCheck (const char * sExtensions, const char * sExt )
 {
-#ifdef _LINUX
-	notSupportedLinux ();
-	return FALSE;
-#else
 	const unsigned ExtSize = 255;
 	char szExtensions[ExtSize + 1];
 	szExtensions[0] = '\0';
@@ -96,7 +93,6 @@ BOOL ExtCheck (const char * sExtensions, const char * sExt )
 
 	// couldn't find this extension
 	return FALSE;
-#endif
 
 }
 
@@ -105,10 +101,6 @@ BOOL ExtCheck (const char * sExtensions, const char * sExt )
 // Extracts a directory full of resources into files
 void ExtractDir(CRezDir* pDir, const char* sParamPath) {
 
-#ifdef _LINUX
-  notSupportedLinux ();
-  return;
-#else
   ASSERT(pDir != NULL);
   ASSERT(sParamPath != NULL);
 
@@ -121,7 +113,7 @@ void ExtractDir(CRezDir* pDir, const char* sParamPath) {
   // figure out the path to this dir with added backslash
   char sPath[kMaxStr];
   strcpy(sPath,sParamPath);
-  if (sPath[strlen(sPath)-1] != '\\') strcat(sPath,"\\");
+  if (sPath[strlen(sPath)-1] != REZ_PATH_SEPARATOR) strcat(sPath,REZ_PATH_SEPARATOR_STR);
 
   // create the directory (just in case it doesn't exist)
   _mkdir(sPath);
@@ -206,7 +198,7 @@ void ExtractDir(CRezDir* pDir, const char* sParamPath) {
     char sDir[kMaxStr];
     strcpy(sDir,sPath);
     strcat(sDir,pLoopDir->GetDirName());
-    strcat(sDir,"\\");
+    strcat(sDir,REZ_PATH_SEPARATOR_STR);
 
     // extract files into the directory
     ExtractDir(pLoopDir,sDir);
@@ -214,7 +206,6 @@ void ExtractDir(CRezDir* pDir, const char* sParamPath) {
     // get next dir
     pLoopDir = pDir->GetNextSubDir(pLoopDir);
   }
-#endif
 };
 
 //---------------------------------------------------------------------------------------------------
@@ -232,7 +223,7 @@ void ViewDir(CRezDir* pDir, const char* sParamPath) {
   // figure out the path to this dir with added backslash
   char sPath[kMaxStr];
   strcpy(sPath,sParamPath);
-  if (sPath[strlen(sPath)-1] != '\\') strcat(sPath,"\\");
+  if (sPath[strlen(sPath)-1] != REZ_PATH_SEPARATOR) strcat(sPath,REZ_PATH_SEPARATOR_STR);
 
   // search through all types in this dir
   CRezTyp* pTyp = pDir->GetFirstType();
@@ -268,7 +259,7 @@ void ViewDir(CRezDir* pDir, const char* sParamPath) {
     char sDir[kMaxStr];
     strcpy(sDir,sPath);
     strcat(sDir,pLoopDir->GetDirName());
-    strcat(sDir,"\\");
+    strcat(sDir,REZ_PATH_SEPARATOR_STR);
 
     // View files in the directory
     ViewDir(pLoopDir,sDir);
@@ -282,10 +273,6 @@ void ViewDir(CRezDir* pDir, const char* sParamPath) {
 // Transfers a directory full of files into the resource file
 void TransferDir(CRezDir* pDir, const char* sParamPath, const char * sExts ) {
 
-#ifdef _LINUX
-	notSupportedLinux ();
-	return;
-#else
 
   ASSERT(pDir != NULL);
   ASSERT(sParamPath != NULL);
@@ -301,7 +288,7 @@ void TransferDir(CRezDir* pDir, const char* sParamPath, const char * sExts ) {
   // figure out the path to this dir with added backslash
   char sPath[kMaxStr];
   strcpy(sPath,sParamPath);
-  if (sPath[strlen(sPath)-1] != '\\') strcat(sPath,"\\");
+  if (sPath[strlen(sPath)-1] != REZ_PATH_SEPARATOR) strcat(sPath,REZ_PATH_SEPARATOR_STR);
 
   // figure out the find search string by adding *.* to search for everything
   char sFindPath[kMaxStr];
@@ -339,7 +326,7 @@ void TransferDir(CRezDir* pDir, const char* sParamPath, const char * sExts ) {
         char sPathName[kMaxStr];
         strcpy(sPathName,sPath);
         strcat(sPathName,sBaseName);
-        strcat(sPathName,"\\");
+        strcat(sPathName,REZ_PATH_SEPARATOR_STR);
 
         // create new directory entry in resource file
         CRezDir* pNewDir = pDir->CreateDir(sBaseName);
@@ -513,17 +500,12 @@ void TransferDir(CRezDir* pDir, const char* sParamPath, const char * sExts ) {
     // close out the directory findfirst and findnext
     _findclose(nFindHandle);
   }
-#endif
 
 };
 
 //---------------------------------------------------------------------------------------------------
 // Freshen a directory full of files into the resource file
 void FreshenDir(CRezDir* pDir, const char* sParamPath) {
-#ifdef _LINUX
-	notSupportedLinux ();
-	return;
-#else
   ASSERT(pDir != NULL);
   ASSERT(sParamPath != NULL);
   _finddata_t fileinfo;
@@ -543,7 +525,7 @@ void FreshenDir(CRezDir* pDir, const char* sParamPath) {
   // figure out the path to this dir with added backslash
   char sPath[kMaxStr];
   strcpy(sPath,sParamPath);
-  if (sPath[strlen(sPath)-1] != '\\') strcat(sPath,"\\");
+  if (sPath[strlen(sPath)-1] != REZ_PATH_SEPARATOR) strcat(sPath,REZ_PATH_SEPARATOR_STR);
 
   // figure out the find search string by adding *.* to search for everything
   char sFindPath[kMaxStr];
@@ -581,7 +563,7 @@ void FreshenDir(CRezDir* pDir, const char* sParamPath) {
         char sPathName[kMaxStr];
         strcpy(sPathName,sPath);
         strcat(sPathName,sBaseName);
-        strcat(sPathName,"\\");
+        strcat(sPathName,REZ_PATH_SEPARATOR_STR);
 
 		CRezDir* pNewDir;
 
@@ -767,7 +749,6 @@ void FreshenDir(CRezDir* pDir, const char* sParamPath) {
     // close out the directory findfirst and findnext
     _findclose(nFindHandle);
   }
-#endif
 
 };
 
