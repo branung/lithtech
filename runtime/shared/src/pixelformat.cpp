@@ -234,10 +234,10 @@ public:
 		uint32 dest[4];
 
 		// Get the 8-bit color component for each plane.
-		dest[0] = (SRC_32 >> m_pSrcFormat->m_FirstBits[0]) & 0xFF;
-		dest[1] = (SRC_32 >> m_pSrcFormat->m_FirstBits[1]) & 0xFF;
-		dest[2] = (SRC_32 >> m_pSrcFormat->m_FirstBits[2]) & 0xFF;
-		dest[3] = (SRC_32 >> m_pSrcFormat->m_FirstBits[3]) & 0xFF;
+		dest[0] = (SRC_32 & m_pSrcFormat->m_Masks[0]) >> m_pSrcFormat->m_FirstBits[0];
+		dest[1] = (SRC_32 & m_pSrcFormat->m_Masks[1]) >> m_pSrcFormat->m_FirstBits[1];
+		dest[2] = (SRC_32 & m_pSrcFormat->m_Masks[2]) >> m_pSrcFormat->m_FirstBits[2];
+		dest[3] = (SRC_32 & m_pSrcFormat->m_Masks[3]) >> m_pSrcFormat->m_FirstBits[3];
 
 		return (dest[CP_ALPHA] << 24) | (dest[CP_RED] << 16) | (dest[CP_GREEN] << 8) | dest[CP_BLUE];
 	}
@@ -1145,6 +1145,11 @@ static void GetMaskBounds(uint32 mask, uint32 *pLeft, uint32 *pRight)
 		
 		testMask <<= 1;
 		(*pLeft)++;
+	}
+
+	if(*pRight >= 32)
+	{
+		*pLeft = *pRight = 0;
 	}
 }
 

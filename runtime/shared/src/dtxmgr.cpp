@@ -1,6 +1,7 @@
 
 #include "bdefs.h"
 #include "dtxmgr.h"
+#include "dtxmgr_lt1.h"
 #include "render.h"
 
 #ifdef __D3D
@@ -212,7 +213,13 @@ LTRESULT dtx_Create(ILTStream *pStream, TextureData **ppOut, uint32& nBaseWidth,
 
 	// Correct version and valid data?
 	if (hdr.m_Version != CURRENT_DTX_VERSION) 
+	{
+		// Expands an LT1 texture into the image this function expects
+		if (hdr.m_Version == LT1_DTX_VERSION)
+			return dtx_CreateFromLT1(pStream, ppOut, nBaseWidth, nBaseHeight);
+
 		RETURN_ERROR(1, dtx_Create, LT_INVALIDVERSION);
+	}
 
 	if (hdr.m_nMipmaps == 0 || hdr.m_nMipmaps > MAX_DTX_MIPMAPS) 
 		RETURN_ERROR(1, dtx_Create, LT_INVALIDDATA);
