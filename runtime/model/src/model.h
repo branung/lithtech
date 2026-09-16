@@ -45,6 +45,10 @@ class LAlloc;
 
 #define MAX_PIECES_PER_MODEL 64
 
+// LT1 game code hides individual skeleton nodes to make a severed limb
+// Nodes past this limit cannot be hidden
+#define MAX_HIDEABLE_MODEL_NODES 128
+
 #define MODEL_FILE_VERSION		25
 
 // the minimum supported file version.
@@ -1076,6 +1080,9 @@ public:
 										// overridden in the command string.
 	// Shadow stuff.
 	bool			m_bShadowEnable;
+
+	// Set when the model's 'NormalRef <node> <anim>' resolves both names
+	bool			m_bNormalRef;
 
 // Sockets.
 public:
