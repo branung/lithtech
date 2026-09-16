@@ -6,6 +6,7 @@
 #include "bdefs.h"
 #include "model.h"
 #include "model_ops.h"
+#include "model_abc.h"
 #include "iltstream.h"
 #include "conparse.h"
 #include "ltb.h"
@@ -771,7 +772,23 @@ LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 
 	Term();
 
-	ILTStream &file = *pRequest->m_pFile;
+	// An LT1 ABC model is expanded into the LTB image this function reads.
+	// The stream owns and frees the image
+	CModelABCStream abcStream;
+
+	if (pFilename && abc_IsABCFilename(pFilename) && pRequest->m_pFile)
+	{
+		uint8 *pImage = LTNULL;
+		uint32 nImageSize = 0;
+
+		if (abc_BuildLTBImage(pRequest->m_pFile, &pImage, &nImageSize) != LT_OK)
+		{
+			setLoadErrorMsg(" unable to read LithTech 1.0 .abc model.\n");
+			return LT_INVALIDFILE;
+		}
+		abcStream.Init(pImage, nImageSize);
+	}
+	ILTStream &file = abcStream.IsInited() ? abcStream : *pRequest->m_pFile;
 	dRet = LT_ERROR;
 
 	// get the ltb header
@@ -781,7 +798,7 @@ LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 		const char* pExt = strrchr(pFilename,'.');
 		if (pExt) {
 			// check that file name has "ltb" extention. 
-			if (stricmp(pExt,".ltb")==0 ) 
+			if (stricmp(pExt,".ltb")==0 || abcStream.IsInited()) 
 			{
 				file.Read(&LTBHeader,sizeof(LTBHeader));
 				

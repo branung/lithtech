@@ -567,6 +567,7 @@ Model::Model(LAlloc *pAlloc, LAlloc *pDefAlloc) :
 	m_VisRadius = DEFAULT_MODEL_VIS_RADIUS;
 
 	m_bShadowEnable = false;
+	m_bNormalRef = false;
 	m_CommandString = "";
 
 	m_pRootNode = &m_DefaultRootNode;
@@ -964,6 +965,14 @@ void Model::ParseCommandString()
 			{
 				m_bShadowEnable = true;
 			}
+		}
+		else if(parse.m_nArgs >= 3 && stricmp("NormalRef", parse.m_Args[0]) == 0)
+		{
+			// LT2's 'NormalRef <node> <anim>' keyword, 
+			// which sets the switch only when node and animation both resolve
+			uint32 iNode, iAnim;
+			m_bNormalRef = (FindNode(parse.m_Args[1], &iNode) != NULL) &&
+			               (FindAnim(parse.m_Args[2], &iAnim) != NULL);
 		}
 	}
 }

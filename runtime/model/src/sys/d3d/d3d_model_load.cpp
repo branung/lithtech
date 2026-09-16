@@ -24,6 +24,18 @@ CDIModelDrawable *ModelPiece::CreateModelRenderObject( uint32 type )
 			if (r_GetRenderStruct()->m_bLoaded)
 				return (CDIModelDrawable*)r_GetRenderStruct()->CreateRenderObject((enum CRenderObject::RENDER_OBJECT_TYPES)type);
 
+			// With the renderer shut down the dummy below skips this piece's
+			// geometry and ignores polygons, and g_ModelMgr caches the model that way
+			// for the session so it never draws.
+			{
+				static bool s_bWarned = false;
+				if (!s_bWarned)
+				{
+					s_bWarned = true;
+					dsi_ConsolePrint("LT ERROR: loading model geometry with the renderer shut down! "
+						"Something loaded a world between ShutdownRender and SetRenderMode.");
+				}
+			}
 		
 #endif
 		// default or server option
