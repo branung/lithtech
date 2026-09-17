@@ -186,3 +186,7 @@ add_subdirectory(tests/DynRes)
 add_subdirectory(tests/DynResDLL)
 add_subdirectory(tests/rndgen)
 endif(NOT WIN32)
+
+add_subdirectory(tests/DtxLT1)
+add_subdirectory(tests/ModelABC)
+add_subdirectory(tests/WorldV56)

@@ -238,7 +238,7 @@ struct ABCKey
 struct ABCNodeTrack
 {
 	LTVector *pPos;		// nKeyFrames entries
-	float    *pQuat		// nKeyFrames * 4 entries, x,y,z,w as stored
+	float    *pQuat;	// nKeyFrames * 4 entries, x,y,z,w as stored
 
 	// Vertex animation for a node that owns an MD vertex list
 	float    *pMDPos;
