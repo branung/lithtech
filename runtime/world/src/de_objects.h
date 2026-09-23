@@ -520,6 +520,27 @@ public:
 
     bool                IsPieceHidden(uint32 index) const       { ASSERT(index < MAX_PIECES_PER_MODEL); return !!(m_HiddenPieces[index / 32] & (1 << (index % 32))); }
 
+    // Hidden skeleton nodes
+    // The ABC loader emits one bone set per node
+    // The renderer skips a hidden node's set, which is how LT1 gibs limbs.
+    bool                IsNodeHidden(uint32 index) const         { return (index < MAX_HIDEABLE_MODEL_NODES) && !!(m_HiddenNodes[index / 32] & (1 << (index % 32))); }
+    void                SetNodeHidden(uint32 index, bool bHide)
+    {
+        if (index >= MAX_HIDEABLE_MODEL_NODES)
+            return;
+        if (bHide)
+            m_HiddenNodes[index / 32] |= (1 << (index % 32));
+        else
+            m_HiddenNodes[index / 32] &= ~(1 << (index % 32));
+    }
+    bool                HasHiddenNodes() const
+    {
+        for (uint32 i = 0; i < MAX_HIDEABLE_MODEL_NODES / 32; i++)
+            if (m_HiddenNodes[i])
+                return true;
+        return false;
+    }
+
     bool                SetRenderStyle(uint32 iIndex, CRenderStyle* pRenderStyle);
     bool                GetRenderStyle(uint32 iIndex, CRenderStyle** ppRenderStyle);
 
@@ -536,6 +557,7 @@ public:
     LTAnimTracker*      m_AnimTrackers;                         // The list of animations pit's playing - this is linked with their m_Link::m_pNext (null terminated).
 
     uint32              m_HiddenPieces[MAX_PIECES_PER_MODEL / 32]; // 1 bit for each hidden piece.
+    uint32              m_HiddenNodes[MAX_HIDEABLE_MODEL_NODES / 32]; // 1 bit for each hidden node.
 
     CRenderStyle*       m_pRenderStyles[MAX_MODEL_RENDERSTYLES];
 

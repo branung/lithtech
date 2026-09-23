@@ -17,6 +17,8 @@ set(libsources
 	../shared/src/transformlt_impl.cpp
 	src/world_server_bsp.cpp
 	../world/src/world_shared_bsp.cpp
+	../world/src/world_v56.cpp
+	../world/src/world_v56_stream.cpp
 	../shared/src/interface_linkage.cpp
 	../model/src/animtracker.cpp
 	../shared/src/bdefs.cpp
@@ -56,6 +58,7 @@ set(libsources
 	../../sdk/inc/ltquatbase.cpp
 	../shared/src/lttimer.cpp
 	../model/src/model.cpp
+	../model/src/model_abc.cpp
 	../model/src/model_load.cpp
 	../model/src/modelallocations.cpp
 	../shared/src/motion.cpp
@@ -159,11 +162,12 @@ if(NOT MSVC)	# FIXME: this is a hack for geomroutines.h:309
 	include_directories(../../tools/PreProcessor)
 endif(NOT MSVC)
 
+find_package(SDL2 REQUIRED)
 if(WIN32)
 	include_directories(../kernel/src/sys/win
-		../shared/src/sys/win)
+		../shared/src/sys/win
+		${SDL2_INCLUDE_DIRS})
 else(WIN32)
-	find_package(SDL2 REQUIRED)
 	include_directories(../kernel/src/sys/linux
 		../shared/src/sys/linux
 		${SDL2_INCLUDE_DIRS})
@@ -174,7 +178,7 @@ if(ENABLE_D3D)
 endif(ENABLE_D3D)
 
 if(ENABLE_DIRECTX)	# FIXME: set to find DirectX path
-	include_directories("C:\\Program Files (x86)\\Microsoft DirectX SDK (August 2007)\\Include")
+	include_directories("${DXSDK_DIR}/Include")
 endif(ENABLE_DIRECTX)
 
 add_library(${PROJECT_NAME} SHARED ${libsources})

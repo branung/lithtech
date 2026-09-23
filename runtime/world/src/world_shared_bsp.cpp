@@ -503,10 +503,14 @@ void CWorldSharedBSP::AddStaticLights(ILTStream *pStream) {
 
 			//light attenuation...
 			LTVector light_attcoefs(1.0f,0.0f,19.0f), light_exp(0.0f, -1.0f, -2.0f);
-			ELightAttenuationType light_attenuation;
+
+			// LT1 lights have no Attenuation property
+			// An unset type leaves the D3D light unfilled
+			ELightAttenuationType light_attenuation = eAttenuation_D3D;
 
             //the position of the light.
-            LTVector light_position;
+            // Zero initialised because TVector3's constructor leaves it undefined
+            LTVector light_position(0.0f, 0.0f, 0.0f);
 
             //read the number of properties for this object.
             uint32 num_properties;

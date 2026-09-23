@@ -14,6 +14,7 @@
 #include "bdefs.h"
 
 #include "clientshell.h"
+#include "world_v56.h"
 #include "de_world.h"
 #include "setupobject.h"
 #include "clientmgr.h"
@@ -696,6 +697,17 @@ void CClientShell::CloseWorlds()
     world_bsp_client->Term();
 }
 
+// Gives world_v56's texture lookup a way to open a game file
+static ILTStream *cs_OpenGameFile(const char *pszName)
+{
+	if (!client_file_mgr) return LTNULL;
+
+	FileRef ref;
+	ref.m_FileType = FILE_ANYFILE;
+	ref.m_pFilename = pszName;
+	return client_file_mgr->OpenFile(&ref);
+}
+
 LTRESULT CClientShell::DoLoadWorld(const CPacket_Read &cPacket, bool bLocal)
 {
 	CPacket_Read cLoadPacket(cPacket);
@@ -710,7 +722,7 @@ LTRESULT CClientShell::DoLoadWorld(const CPacket_Read &cPacket, bool bLocal)
     // Cleanup...
     cs_UnloadWorld(this);
 
-    
+
 	// Tell the client shell to stop rendering for a sec..
 	if (i_client_shell != NULL)
 		i_client_shell->OnLockRenderer();
@@ -755,6 +767,16 @@ LTRESULT CClientShell::DoLoadWorld(const CPacket_Read &cPacket, bool bLocal)
 
         RETURN_ERROR(1, CClientShell::DoLoadWorld, LT_MISSINGWORLDFILE);
     }
+
+	// LithTech 1.0 levels are converted in memory before anything reads them
+	{
+		ILTStream *pV56 = world_v56_WrapStream(pStream, cs_OpenGameFile);
+		if (pV56)
+		{
+			pStream->Release();
+			pStream = pV56;
+		}
+	}
 
 	//check if we have a local server.
     if (m_bLocal)

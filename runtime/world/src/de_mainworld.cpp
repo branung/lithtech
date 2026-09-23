@@ -415,9 +415,26 @@ ELoadWorldStatus WorldBsp::Load(ILTStream *pStream, bool bUsePlaneTypes)
     STREAM_READ(m_MaxBox);
     STREAM_READ(m_WorldTranslation);
 
-	//we should never have any user portals anymroe
-	if(nUserPortals > 0)
-		return LoadWorld_InvalidFile;
+	// We should have user portals from a converted LT1 world
+	// Jupiter has no portal array to hand them to so they are read then discarded
+	for (uint32 nPortal = 0; nPortal < nUserPortals; ++nPortal)
+	{
+		uint16 nNameLen;
+		STREAM_READ(nNameLen);
+		pStream->SeekTo(pStream->GetPos() + nNameLen); // Name
+
+		uint32 nUnused32;
+		uint16 nUnused16;
+		STREAM_READ(nUnused32);
+		STREAM_READ(nUnused16);
+
+		LTVector vCentre, vDims;
+		STREAM_READ(vCentre);
+		STREAM_READ(vDims);
+
+		if (pStream->ErrorStatus() != LT_OK)
+			return LoadWorld_InvalidFile;
+	}
 
     // Read the texture list.
 	uint32 nNamesLen;
@@ -529,6 +546,15 @@ ELoadWorldStatus WorldBsp::Load(ILTStream *pStream, bool bUsePlaneTypes)
             }
         }
     }
+
+	if (totalVisListSize > 0)
+	{
+		int32 nVisRoot;
+		uint32 nVisNodes;
+		STREAM_READ(nVisRoot);
+		STREAM_READ(nVisNodes);
+		pStream->SeekTo(pStream->GetPos() + nVisNodes * 16);
+	}
 
     // Read in the planes.
 	pStream->Read(m_Planes, sizeof(LTPlane) * nPlanes);

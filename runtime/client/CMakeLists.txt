@@ -4,9 +4,9 @@ add_definitions(-DDE_LOCAL_SERVERBIND -DDE_CLIENT_COMPILE -DDSNDMGR_NO_MFC -DDIR
 if(WIN32)
 	add_definitions(-DUSE_ID3DXEFFECT)
 	if(CMAKE_CL_64)
-		link_directories("C:\\Program Files (x86)\\Microsoft DirectX SDK (August 2007)\\Lib\\x64")
+		link_directories("${DXSDK_DIR}/Lib/x64")
 	else(CMAKE_CL_64)
-		link_directories("C:\\Program Files (x86)\\Microsoft DirectX SDK (August 2007)\\Lib\\x86")
+		link_directories("${DXSDK_DIR}/Lib/x86")
 	endif(CMAKE_CL_64)
 endif(WIN32)
 
@@ -44,6 +44,8 @@ set(exec_src
 	../world/src/world_particle_blocker_data.cpp
 	../server/src/world_server_bsp.cpp
 	../world/src/world_shared_bsp.cpp
+	../world/src/world_v56.cpp
+	../world/src/world_v56_stream.cpp
 	../model/src/animtracker.cpp
 	../shared/src/bdefs.cpp
 	../shared/src/classbind.cpp
@@ -110,6 +112,7 @@ set(exec_src
 	../shared/src/lttimer.cpp
 	src/memorywatch.cpp
 	../model/src/model.cpp
+	../model/src/model_abc.cpp
 	../model/src/model_load.cpp
 	../model/src/modelallocations.cpp
 	../shared/src/motion.cpp
@@ -319,9 +322,9 @@ endif (ENABLE_OPENAL)
 
 if(ENABLE_DIRECTX)	# FIXME: set to find DirectX path
 	include_directories(../../libs/dshow
-		"C:\\Program Files (x86)\\Microsoft DirectX SDK (August 2007)\\Include")
+		"${DXSDK_DIR}/Include")
 		#if(CMAKE_CL_64)
-		#	link_directories("C:\\Program Files (x86)\\Microsoft DirectX SDK (August 2007)\\Lib\\x64")
+		#	link_directories("${DXSDK_DIR}/Lib/x64")
 		#else(CMAKE_CL_64)
 
 			# FIXME: Why is this not working??
@@ -334,7 +337,7 @@ if(ENABLE_DIRECTX)	# FIXME: set to find DirectX path
 			d3d9
 			DxErr
 			dxguid
-			dplayx
+			# dplayx = DirectPlay - gone from the modern Windows SDK
 			dinput8
 			strmiids)
 endif(ENABLE_DIRECTX)
