@@ -84,6 +84,12 @@
 
 // Object <-> Object messages...
 
+// Shogo's addition to LT1's generic message ids. Sent from UltraPowerups.cpp to Destructable.cpp
+#define MID_ULTRAHEAL					1009
+
+// Like MID_ULTRAHEAL, used by UnlockKey.cpp
+#define MID_PICKUPKEY					1010
+
 #define MID_PLAYDIALOG					2000
 
 // Interface Change ids shared between client and server...
@@ -107,6 +113,16 @@
 #define	CLIENTUPDATE_3RDPERVAL		(1<<4)
 #define CLIENTUPDATE_ALLOWINPUT		(1<<5)
 #define CLIENTUPDATE_EXTERNALCAMERA	(1<<6)
+
+// Client command state, a bit per COMMAND_ID_*.
+// Jupiter has no IsCommandOn for the server to ask
+#define CLIENTUPDATE_COMMANDS		(1<<7)
+
+// Set when the player asks to skip a cutscene.
+// Sent from the client because a cutscene camera zeroes the server's command slots
+#define CLIENTUPDATE_SKIPCUTSCENE	(1<<8)
+
+#define PLAYER_COMMAND_BITS			128
 
 // Music commands
 enum MusicCommand { MUSICCMD_LEVEL, MUSICCMD_MOTIF, MUSICCMD_MOTIF_LOOP, MUSICCMD_MOTIF_STOP, MUSICCMD_BREAK };

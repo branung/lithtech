@@ -12,7 +12,7 @@
 #define __WEAPON_DEFS_H__
 
 #include "clientheaders.h"
-#include "RiotCommandIds.h"
+#include "RiotCommandIDs.h"
 #include "PlayerModeTypes.h"
 #include "WeaponFXTypes.h"
 #include "ProjectileFXTypes.h"
@@ -1485,38 +1485,45 @@ inline LTVector GetWeaponRecoil(RiotWeaponId nWeaponId)
 }
 
 
-inline uint32 GetExtraWeaponFlags(RiotWeaponId nWeaponId) 
+/*
+	Extra flags2 for each weapon's player view model
+
+	The chrome weapons carry LT1's FLAG_ENVIRONMENTMAP, 
+	drawing the level's EnvMap as a sphere map under the skin.
+	The bit is FLAG2_ENVMAP, since Jupiter uses LT1's bit 5 for other flags.
+*/
+inline uint32 GetExtraWeaponFlags2(RiotWeaponId nWeaponId) 
 { 
 	if (nWeaponId < GUN_FIRST_ID || nWeaponId >= GUN_MAX_NUMBER) return 0;
 
-	uint32 m_dwExtraModelFlags[GUN_MAX_NUMBER] =
+	uint32 m_dwExtraModelFlags2[GUN_MAX_NUMBER] =
 	{
 		/*GUN_PULSERIFLE_ID*/		0,
 		/*GUN_LASERCANNON_ID*/		0,				
-		/*GUN_SPIDER_ID*/			FLAG_ENVIRONMENTMAPONLY,
+		/*GUN_SPIDER_ID*/			FLAG2_ENVMAP,
 		/*GUN_BULLGUT_ID*/			0,
-		/*GUN_SNIPERRIFLE_ID*/		FLAG_ENVIRONMENTMAPONLY,
+		/*GUN_SNIPERRIFLE_ID*/		FLAG2_ENVMAP,
 		/*GUN_JUGGERNAUT_ID*/		0,	
 		/*GUN_SHREDDER_ID*/			0,
 		/*NOT USED1*/				0,
 		/*GUN_REDRIOT_ID*/			0,
 		/*GUN_ENERGYBATON_ID*/		0,
 		/*GUN_ENERGYBLADE_ID*/		0,
-		/*GUN_KATANA_ID*/			FLAG_ENVIRONMENTMAPONLY,
-		/*GUN_MONOKNIFE_ID*/		FLAG_ENVIRONMENTMAPONLY,
-		/*GUN_COLT45_ID*/			FLAG_ENVIRONMENTMAPONLY,
-		/*GUN_SHOTGUN_ID*/			FLAG_ENVIRONMENTMAPONLY,
+		/*GUN_KATANA_ID*/			FLAG2_ENVMAP,
+		/*GUN_MONOKNIFE_ID*/		FLAG2_ENVMAP,
+		/*GUN_COLT45_ID*/			FLAG2_ENVMAP,
+		/*GUN_SHOTGUN_ID*/			FLAG2_ENVMAP,
 		/*GUN_ASSAULTRIFLE_ID*/		0,
 		/*GUN_ENERGYGRENADE_ID*/	0,
 		/*GUN_KATOGRENADE_ID*/		0,
-		/*GUN_MAC10_ID*/			FLAG_ENVIRONMENTMAPONLY,
+		/*GUN_MAC10_ID*/			FLAG2_ENVMAP,
 		/*GUN_TOW_ID*/				0,
 		/*NOT USED2*/				0,
 		/*GUN_SQUEAKYTOY_ID*/		0,
-		/*GUN_TANTO_ID*/			FLAG_ENVIRONMENTMAPONLY
+		/*GUN_TANTO_ID*/			FLAG2_ENVMAP
 	};
 
-	return m_dwExtraModelFlags[nWeaponId]; 
+	return m_dwExtraModelFlags2[nWeaponId]; 
 }
 
 

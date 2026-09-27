@@ -42,7 +42,7 @@ char* GetModel(uint8 nId, ModelSize size=MS_NORMAL);
 //
 // ----------------------------------------------------------------------- //
 
-char* GetSkin(uint8 nId, CharacterClass cc, ModelSize size=MS_NORMAL, 
+const char* GetSkin(uint8 nId, CharacterClass cc, ModelSize size=MS_NORMAL,
 			  LTBOOL bMulti=LTFALSE);
 
 // ----------------------------------------------------------------------- //

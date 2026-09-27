@@ -26,7 +26,7 @@ float GetRandom(float min, float max);
 
 // Compress/decompress a rotation into a single byte.  This only accounts for 
 // rotation around the Y axis.
-uint8 CompressRotationByte(LTRotation *pRotation);
+uint8 CompressRotationByte(LTRotation const *pRotation);
 void UncompressRotationByte(uint8 rot, LTRotation *pRotation);
 
 

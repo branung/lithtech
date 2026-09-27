@@ -253,9 +253,9 @@ char* GetModel(uint8 nId, ModelSize size)
 //
 // ----------------------------------------------------------------------- //
 
-char* GetSkin(uint8 nId, CharacterClass cc, ModelSize size, LTBOOL bMulti)
+const char* GetSkin(uint8 nId, CharacterClass cc, ModelSize size, LTBOOL bMulti)
 {
-	char* pRet = NULL;
+	const char* pRet = NULL;
 
 	switch (nId)
 	{

@@ -11,6 +11,11 @@
 #ifndef __CONTAINER_CODES_H__
 #define __CONTAINER_CODES_H__
 
+// wingdi.h defines CC_NONE as 0 which breaks the enum below when windows.h comes first
+#ifdef CC_NONE
+#undef CC_NONE
+#endif
+
 enum ContainerCode {
 	CC_NONE=0,
 	CC_BLUE_WATER,

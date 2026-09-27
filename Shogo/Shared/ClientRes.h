@@ -190,6 +190,19 @@
 #define IDS_DISPLAY_SCREENFLASH         420
 #define IDS_DISPLAY_DETAIL              421
 #define IDS_DISPLAY_ADVANCED            422
+// Frame rate cap menu row, clear of the highest ID in use (3748)
+#define IDS_DISPLAY_FRAMERATE           3800
+#define IDS_DISPLAY_FRAMERATE_60        3801
+#define IDS_DISPLAY_FRAMERATE_100       3802
+#define IDS_DISPLAY_FRAMERATE_144       3803
+#define IDS_DISPLAY_FRAMERATE_200       3804
+#define IDS_DISPLAY_HUDSCALE            3805
+// The General options screen for newly added tweaks
+#define IDS_GENERAL                     3810
+#define IDS_TITLE_GENERAL               3811
+#define IDS_GENERAL_SKIPCUTSCENES       3812
+// The Mouse menu's wheel weapon change row (RS_CTRL_USEWHEEL)
+#define IDS_MOUSE_USEWHEEL              3813
 #define IDS_SOUND_TITLE                 423
 #define IDS_SOUND_MUSICENABLED          424
 #define IDS_SOUND_MUSICVOL              425
@@ -299,7 +312,7 @@
 #define IDS_INGAMEFONT                  702
 #define IDS_REPLACEMENTFONT             703
 #define IDS_ENABLETEXTHARDWRAP          704
-#define IDS_EXCLULTLineSTARTCHARS       705
+#define IDS_EXCLUDELINESTARTCHARS       705
 #define IDS_HEIGHTCFONT08               706
 #define IDS_HEIGHTCFONT12               707
 #define IDS_HEIGHTCFONT18               708
