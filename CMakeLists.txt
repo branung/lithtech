@@ -95,6 +95,7 @@ add_subdirectory(libs/stdlith)							# LIB_StdLith
 add_subdirectory(libs/ltmem)							# LIB_LTMem
 add_subdirectory(libs/rezmgr)							# LIB_RezMgr
 add_subdirectory(libs/RandomGen)                        # LIB_Random
+add_subdirectory(libs/DECompat)                         # LIB_DECompat, the LithTech 1.0 compatibility layer
 
 if(LINUX)
     set(JSON_BuildTests off)
@@ -173,6 +174,35 @@ if(BUILD_TRON)
     add_subdirectory(NOLF2/ObjectDLL/TRON)		# ObjectDLL
     add_subdirectory(NOLF2/ServerRes/TRON)		# ServerRes
 endif(BUILD_TRON)
+if(BUILD_SHOGO)
+    # Shogo only needs game code and the engine SDK
+    add_subdirectory(Shogo/ClientRes)           # CRes
+    add_subdirectory(Shogo/ClientShellDLL)      # CShell
+    add_subdirectory(Shogo/ServerRes)           # SRes
+
+    # ObjectDLL builds against libs/DECompat and is off by default
+    option(BUILD_SHOGO_OBJECTDLL "Build Shogo's server objects" OFF)
+    if(BUILD_SHOGO_OBJECTDLL)
+        add_subdirectory(Shogo/ObjectDLL)       # Object.lto
+    endif(BUILD_SHOGO_OBJECTDLL)
+endif(BUILD_SHOGO)
+
+if(WIN32)
+    function(lt_game_output subdir)
+        foreach(target ${ARGN})
+            if(TARGET ${target})
+                set_target_properties(${target} PROPERTIES
+                    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/OUT/$<CONFIG>/${subdir}")
+            endif()
+        endforeach()
+    endfunction()
+
+    lt_game_output(NOLF2      NOLF2_ClientShellDLL NOLF2_ClientRes NOLF2_ServerRes NOLF2_ObjectDLL)
+    lt_game_output(NOLF2/Game NOLF2_ClientFXDLL)
+
+    lt_game_output(Shogo      SHOGO_ClientShellDLL SHOGO_ClientRes SHOGO_ObjectDLL SHOGO_ServerRes)
+
+endif(WIN32)
 
 if(BUILD_TOOLS)
     add_subdirectory(tools/DtxView)			# TOOLS_DtxView

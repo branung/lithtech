@@ -1,16 +1,10 @@
-cmake_minimum_required (VERSION 2.8)
-project (ClientShellDLL)
+project(SHOGO_ClientShellDLL)
 
-add_subdirectory(../../Engine/libs/MFCStub ${CMAKE_CURRENT_BINARY_DIR}/MFCStub)
-add_subdirectory(../../Engine/libs/stdlith ${CMAKE_CURRENT_BINARY_DIR}/stdlith)
-add_subdirectory(../../Engine/libs/ButeMgr ${CMAKE_CURRENT_BINARY_DIR}/ButeMgr)
-add_subdirectory(../../Engine/libs/CryptMgr ${CMAKE_CURRENT_BINARY_DIR}/CryptMgr)
-add_subdirectory(../../Engine/libs/lith ${CMAKE_CURRENT_BINARY_DIR}/lith)
-add_subdirectory(../../Engine/libs/RegMgr ${CMAKE_CURRENT_BINARY_DIR}/RegMgr)
-#add_subdirectory(../Libs/LTGUIMgr ${CMAKE_CURRENT_BINARY_DIR}/LTGUIMgr)
-#add_subdirectory(../Libs/ServerDir ${CMAKE_CURRENT_BINARY_DIR}/ServerDir)
+# Shogo's client shell
 
-add_library (ClientShellDLL SHARED
+find_package(SDL2 REQUIRED)
+
+add_library(${PROJECT_NAME} SHARED
 	AnimeLineFX.cpp
 	BaseLineSystemFX.cpp
 	BaseMenu.cpp
@@ -54,7 +48,6 @@ add_library (ClientShellDLL SHARED
 	MissionObjectives.cpp
 	MouseMenu.cpp
 	Music.cpp
-	NetInfo.cpp
 	NetStart.cpp
 	NewGameMenu.cpp
 	OptionsMenu.cpp
@@ -63,9 +56,7 @@ add_library (ClientShellDLL SHARED
 	ParticleTrailFX.cpp
 	ParticleTrailSegmentFX.cpp
 	PickupItemFX.cpp
-	plasma1.cpp
-	plasma2.cpp
-	plasma3.cpp
+	# plasma1-4 define the same symbols
 	plasma4.cpp
 	PlayerCamera.cpp
 	PlayerFX.cpp
@@ -99,28 +90,53 @@ add_library (ClientShellDLL SHARED
 	WeaponModel.cpp
 	WeaponSoundFX.cpp
 	WinUtil.cpp
-	ClientShellDLL.rc
 	../Shared/DebrisTypes.cpp
 	../Shared/ModelFuncs.cpp
 	../Shared/RiotCommonUtilities.cpp
-	../Shared/WeaponDefs.cpp)
-set_target_properties(ClientShellDLL 
-	PROPERTIES OUTPUT_NAME CShell)
-add_definitions (-D_CRT_SECURE_NO_WARNINGS -DRIOT_BUILD)
-include_directories (ClientShellShared
+	../Shared/WeaponDefs.cpp
+	../../sdk/inc/ltmodule.cpp
+	../../sdk/inc/iltbaseclass.cpp
+	../../sdk/inc/ltobjref.cpp
+	../../sdk/inc/ltquatbase.cpp
+	../../sdk/inc/LTEulerAngles.cpp)
+
+if(WIN32)
+	# MSVC boilerplate that only includes windows.h and resource.h
+	target_sources(${PROJECT_NAME} PRIVATE ClientShellDLL.rc)
+
+	# NetInfo.cpp backs NetStart.cpp's multiplayer wizard which only exists on Windows
+	target_sources(${PROJECT_NAME} PRIVATE NetInfo.cpp)
+endif(WIN32)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME CShell)
+
+add_definitions(-D_CRT_SECURE_NO_WARNINGS -DRIOT_BUILD)
+
+include_directories(.
 	../Shared
-	../../Engine/sdk/inc
-	../../Engine/libs/MFCStub
-	../../Engine/libs/stdlith
-	../../Engine/libs/ButeMgr
-	../../Engine/libs/CryptMgr
-	../../Engine/libs/lith
-	../../Engine/libs/RegMgr
-	C:\\Program Files (x86)\\Microsoft DirectX SDK (August 2007)\\Include)
-target_link_libraries(ClientShellDLL
-	MFCStub
-	Lib_StdLith
-	ButeMgr
-	CryptMgr
-	Lib_Lith
-	RegMgr)
+	../ClientRes
+	../../sdk/inc
+	${SDL2_INCLUDE_DIRS})
+
+# Only the shared LT1 engine variable defaults since this shell is converted
+target_link_libraries(${PROJECT_NAME}
+	LIB_DECompatDefaults
+	${SDL2_LIBRARIES})
+
+if(WIN32)
+	target_link_libraries(${PROJECT_NAME} winmm)
+endif(WIN32)
+
+if(LINUX)
+	set_target_properties(${PROJECT_NAME} PROPERTIES
+		BUILD_WITH_INSTALL_RPATH TRUE
+		INSTALL_RPATH "$ORIGIN/")
+
+	# Same link rule as Shogo/ObjectDLL
+	target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-undefined)
+endif(LINUX)
+
+# Macro redefinitions are build errors here too
+if(MSVC)
+	target_compile_options(${PROJECT_NAME} PRIVATE /we4005)
+endif(MSVC)
