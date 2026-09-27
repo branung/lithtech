@@ -2126,6 +2126,12 @@ Enables the use of Model OBBs on IntersectSegment calls() for this object
 */
    FLAG2_USEMODELOBBS		=		(1<<10),
 
+/*!
+Environment-map (chrome) this model
+DECompat maps LT1's FLAG_ENVIRONMENTMAP onto this bit.
+*/
+   FLAG2_ENVMAP 			=		(1<<11),
+
 };
 
 /*!
