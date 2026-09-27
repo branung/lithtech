@@ -66,7 +66,7 @@ class CPlayerMode
 		DVector GetCameraOffset()	const { return m_vCameraOffset; }
 		DFLOAT  GetJumpSpeed()		const { return m_fJumpSpeed; }
 		char*	GetModelFilename()	const { return GetModel(m_nModelId); }
-		char*	GetSkinFilename()	const;
+		const char*	GetSkinFilename()	const;
 		DBYTE	GetMode()			const { return m_nMode; }
 		DBYTE	GetModelId()		const { return m_nModelId; }
 

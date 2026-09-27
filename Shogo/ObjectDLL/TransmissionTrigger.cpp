@@ -28,7 +28,7 @@ BEGIN_CLASS(TransmissionTrigger)
 	ADD_STRINGPROP(ImageFilename, "")
 	ADD_REALPROP(StringID, 0.0f)
 	ADD_REALPROP(SendDelay, 0.0f)
-END_CLASS_DEFAULT(TransmissionTrigger, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(TransmissionTrigger, DEBaseClass, NULL, NULL)
 
 // ----------------------------------------------------------------------- //
 //
@@ -38,7 +38,7 @@ END_CLASS_DEFAULT(TransmissionTrigger, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-TransmissionTrigger::TransmissionTrigger() : BaseClass ()
+TransmissionTrigger::TransmissionTrigger() : DEBaseClass ()
 {
 	AddAggregate(&m_activation);
 	
@@ -98,7 +98,9 @@ DDWORD TransmissionTrigger::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, H
 		{
 			DialogQueueTransmission *pDialogQueueTransmission;
 
-			pDialogQueueTransmission = ( DialogQueueTransmission * )g_pServerDE->ReadFromMessageDWord( hRead );
+			uintptr_t nLow  = (uintptr_t)g_pServerDE->ReadFromMessageDWord( hRead );
+			uintptr_t nHigh = (uintptr_t)g_pServerDE->ReadFromMessageDWord( hRead );
+			pDialogQueueTransmission = ( DialogQueueTransmission * )( nLow | ( (uint64)nHigh << 32 ) );
 			pPlayerObj = g_pRiotServerShellDE->GetFirstPlayer( );
 			if( pDialogQueueTransmission && pPlayerObj )
 			{
@@ -115,7 +117,7 @@ DDWORD TransmissionTrigger::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, H
 		break;
 	}
 
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
@@ -186,7 +188,7 @@ DDWORD TransmissionTrigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOA
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -200,7 +202,7 @@ DDWORD TransmissionTrigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOA
 
 DBOOL TransmissionTrigger::ReadProp(ObjectCreateStruct *pData)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pData) return DFALSE;
 
 	char buf[MAX_CS_FILENAME_LEN];
@@ -258,8 +260,8 @@ void TransmissionTrigger::ObjectTouch (HOBJECT hObj)
 	}
 	else if (m_hstrAIName) // See if only a specific AI can trigger it...
 	{
-		char* pAIName  = pServerDE->GetStringData(m_hstrAIName);
-		char* pObjName = pServerDE->GetObjectName(hObj);
+		const char* pAIName = pServerDE->GetStringData(m_hstrAIName);
+		const char* pObjName = pServerDE->GetObjectName(hObj);
 
 		if (pAIName && pObjName)
 		{
@@ -309,7 +311,7 @@ void TransmissionTrigger::Trigger()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 	CPlayerObj *pPlayerObj;
-	char *pString;
+	const char* pString;
 	
 	m_bTriggered = DTRUE;
 

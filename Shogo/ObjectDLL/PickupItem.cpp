@@ -10,7 +10,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "PickupItem.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "cpp_server_de.h"
 #include "RiotObjectUtilities.h"
 #include "ClientServerShared.h"
@@ -46,7 +46,7 @@ BEGIN_CLASS(PickupItem)
 	ADD_STRINGPROP_FLAG(Filename, "", PF_DIMS)
 	ADD_STRINGPROP(Skin, "")
 	ADD_LONGINTPROP(UserFlags, USRFLG_GLOW)
-END_CLASS_DEFAULT(PickupItem, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(PickupItem, DEBaseClass, NULL, NULL)
 
 // ----------------------------------------------------------------------- //
 //
@@ -56,7 +56,7 @@ END_CLASS_DEFAULT(PickupItem, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-PickupItem::PickupItem() : BaseClass (OT_MODEL)
+PickupItem::PickupItem() : DEBaseClass (OT_MODEL)
 {
 	m_fRespawnDelay = 10.0f;
 	m_bRotate		= DFALSE;
@@ -74,6 +74,7 @@ PickupItem::PickupItem() : BaseClass (OT_MODEL)
 	m_hstrRespawnSoundFile		= DNULL;
 
 	m_dwFlags		= 0;
+	m_dwFlags2		= 0;
 
 	// Don't need to load/save these...
 
@@ -202,7 +203,7 @@ DDWORD PickupItem::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 // ----------------------------------------------------------------------- //
@@ -229,7 +230,7 @@ DDWORD PickupItem::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGERE
 		}
 	}
 
-	return BaseClass::ObjectMessageFn (hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn (hSender, messageID, hRead);
 }
 
 // ----------------------------------------------------------------------- //
@@ -384,6 +385,16 @@ DBOOL PickupItem::InitialUpdate(DVector* pMovement)
 
 	DDWORD dwFlags = g_pServerDE->GetObjectFlags(m_hObject);
 	g_pServerDE->SetObjectFlags(m_hObject, dwFlags | m_dwFlags);
+
+	// Jupiter's second set of object flags, which LT1 didn't have
+	// Only ShogoSecret sets it
+	if (m_dwFlags2 && g_pServerDE->Common())
+	{
+		uint32 dwFlags2 = 0;
+		g_pServerDE->Common()->GetObjectFlags(m_hObject, OFT_Flags2, dwFlags2);
+		g_pServerDE->Common()->SetObjectFlags(m_hObject, OFT_Flags2,
+			dwFlags2 | (uint32)m_dwFlags2, FLAGMASK_ALL);
+	}
 
 	return DTRUE;
 }
@@ -602,7 +613,7 @@ void PickupItem::CacheFiles()
 
 	if (m_hstrSoundFile)
 	{
-		char* pFile = pServerDE->GetStringData(m_hstrSoundFile);
+		const char* pFile = pServerDE->GetStringData(m_hstrSoundFile);
 		if (pFile && pFile[0])
 		{
 			pServerDE->CacheFile(FT_SOUND, pFile);
@@ -611,7 +622,7 @@ void PickupItem::CacheFiles()
 
 	if (m_hstrRespawnSoundFile)
 	{
-		char* pFile = pServerDE->GetStringData(m_hstrRespawnSoundFile);
+		const char* pFile = pServerDE->GetStringData(m_hstrRespawnSoundFile);
 		if (pFile && pFile[0])
 		{
 			pServerDE->CacheFile(FT_SOUND, pFile);

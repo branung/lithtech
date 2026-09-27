@@ -18,7 +18,7 @@
 
 struct CLIENTDEBRIS
 {
-	CLIENTDEBRIS::CLIENTDEBRIS();
+	CLIENTDEBRIS();
 
 	DRotation	rRot;
 	DVector		vPos;

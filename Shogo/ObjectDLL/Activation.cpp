@@ -39,7 +39,7 @@ CActivation::~CActivation()
 {
 	if (m_hstrActivateCondition)
 	{
-		CServerDE* pServerDE = BaseClass::GetServerDE();
+		CServerDE* pServerDE = DEBaseClass::GetServerDE();
 		if (!pServerDE) return;
 
 		pServerDE->FreeString(m_hstrActivateCondition);
@@ -55,7 +55,7 @@ CActivation::~CActivation()
 //
 // ----------------------------------------------------------------------- //
 
-DDWORD CActivation::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData)
+DDWORD CActivation::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData)
 {
 	switch(messageID)
 	{
@@ -101,9 +101,9 @@ DDWORD CActivation::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void 
 //
 // ----------------------------------------------------------------------- //
 
-void CActivation::ReadProp(LPBASECLASS pObject, ObjectCreateStruct* pStruct)
+void CActivation::ReadProp(DEBaseClass* pObject, ObjectCreateStruct* pStruct)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	char buf[MAX_CS_FILENAME_LEN];
@@ -126,9 +126,9 @@ void CActivation::ReadProp(LPBASECLASS pObject, ObjectCreateStruct* pStruct)
 //
 // ----------------------------------------------------------------------- //
 	
-void CActivation::InitialUpdate(LPBASECLASS pObject, DFLOAT fInfo)
+void CActivation::InitialUpdate(DEBaseClass* pObject, DFLOAT fInfo)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pObject) return;
 
 	if (fInfo == INITIALUPDATE_SAVEGAME) return;
@@ -138,7 +138,7 @@ void CActivation::InitialUpdate(LPBASECLASS pObject, DFLOAT fInfo)
 
 	if (!m_hstrActivateCondition) return;
 
-	char* pString = pServerDE->GetStringData(m_hstrActivateCondition);
+	const char* pString = pServerDE->GetStringData(m_hstrActivateCondition);
 	if (!pString) return;
 
 	char buf[300];  // Temp buffer, so we don't modify real data...
@@ -156,7 +156,7 @@ void CActivation::InitialUpdate(LPBASECLASS pObject, DFLOAT fInfo)
 
 	if (hVar)
 	{
-		char* pExpectedValue = pServerDE->GetVarValueString(hVar);
+		const char* pExpectedValue = pServerDE->GetVarValueString(hVar);
 
 		if (pExpectedValue && pActualValue)
 		{
@@ -184,9 +184,9 @@ void CActivation::InitialUpdate(LPBASECLASS pObject, DFLOAT fInfo)
 //
 // ----------------------------------------------------------------------- //
 
-void CActivation::Save(LPBASECLASS pObject, HMESSAGEWRITE hWrite)
+void CActivation::Save(DEBaseClass* pObject, HMESSAGEWRITE hWrite)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageHString(hWrite, m_hstrActivateCondition);
@@ -201,9 +201,9 @@ void CActivation::Save(LPBASECLASS pObject, HMESSAGEWRITE hWrite)
 //
 // ----------------------------------------------------------------------- //
 
-void CActivation::Load(LPBASECLASS pObject, HMESSAGEREAD hRead)
+void CActivation::Load(DEBaseClass* pObject, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	m_hstrActivateCondition	= pServerDE->ReadFromMessageHString(hRead);

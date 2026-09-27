@@ -11,7 +11,7 @@
 #ifndef __LIFT_H__
 #define __LIFT_H__
 
-#include "door.h"
+#include "Door.h"
 
 class Lift : public Door
 {

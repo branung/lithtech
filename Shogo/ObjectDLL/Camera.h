@@ -13,11 +13,22 @@
 
 #include "cpp_engineobjects_de.h"
 
-class Camera : public BaseClass
+class Camera : public DEBaseClass
 {
 	public :
 
 		Camera();
+
+		// Cutscene skipping
+		DBOOL	IsLive() const;
+		// True when the camera turns itself off after m_fActiveTime.
+		// Otherwise a trigger message switches it off
+		DBOOL	IsSelfTerminating() const	{ return m_fActiveTime > 0.0f; }
+
+		// How long this camera stays on, or 0 if it never stops by itself.
+		// A fast forward uses it to tell a cutscene beat from a level timer
+		DFLOAT	GetActiveTime() const		{ return m_fActiveTime; }
+		void	Expire();
 
 	protected :
 

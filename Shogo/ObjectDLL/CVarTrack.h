@@ -59,9 +59,9 @@
 				return defVal;
 		}
 
-		char*		GetStr(char *pDefault="")
+		const char*	GetStr(const char *pDefault="")
 		{
-			char *pRet;
+			const char* pRet;
 
 			if(m_pServerDE && m_hVar)
 			{

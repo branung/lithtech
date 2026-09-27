@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include "Destructable.h"
 #include "cpp_server_de.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "Projectile.h"
 #include "RiotObjectUtilities.h"
 #include "BaseCharacter.h"
@@ -97,7 +97,7 @@ CDestructable::CDestructable() : Aggregate()
 
 CDestructable::~CDestructable()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hstrDamageTriggerTarget)
@@ -141,7 +141,7 @@ CDestructable::~CDestructable()
 //
 // ----------------------------------------------------------------------- //
 		
-DDWORD CDestructable::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData)
+DDWORD CDestructable::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData)
 {
 	switch(messageID)
 	{
@@ -207,7 +207,7 @@ DDWORD CDestructable::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, voi
 //
 // ----------------------------------------------------------------------- //
 
-DDWORD CDestructable::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
+DDWORD CDestructable::ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
 {
 	switch(messageID)
 	{
@@ -259,9 +259,9 @@ DDWORD CDestructable::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWO
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL CDestructable::ReadProp(BaseClass *pObject, ObjectCreateStruct *pStruct)
+DBOOL CDestructable::ReadProp(DEBaseClass *pObject, ObjectCreateStruct *pStruct)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pStruct || !pServerDE) return DFALSE;
 
 	GenericProp genProp;
@@ -370,7 +370,7 @@ DBOOL CDestructable::Init(HOBJECT hObject)
 //
 // ----------------------------------------------------------------------- //
 
-void CDestructable::InitialUpdate(LPBASECLASS pObject)
+void CDestructable::InitialUpdate(DEBaseClass* pObject)
 {
 	if (!pObject || !pObject->m_hObject) return;
 	if (!m_hObject) m_hObject = pObject->m_hObject;
@@ -380,7 +380,7 @@ void CDestructable::InitialUpdate(LPBASECLASS pObject)
 
 	// determine if we are a player object or not
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	// Init this (if it hasn't been initted already).
@@ -434,7 +434,7 @@ void CDestructable::SetMass(DFLOAT fMass)
 
 	// Set the friction based on the mass of the object...
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
 	pServerDE->SetObjectMass(m_hObject, m_fMass);
@@ -454,7 +454,7 @@ void CDestructable::SetMass(DFLOAT fMass)
 
 void CDestructable::SetBlockingPriority()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
 	DBYTE nPriority = (DBYTE)(m_fMass * MAXIMUM_BLOCK_PRIORITY / INFINITE_MASS);
@@ -482,7 +482,7 @@ DFLOAT CDestructable::GetMaxHitPoints() const
 	DFLOAT fAdjustedMax = m_fMaxHitPoints;
 	if (m_bPlayer)
 	{
-		CServerDE* pServerDE = BaseClass::GetServerDE();
+		CServerDE* pServerDE = DEBaseClass::GetServerDE();
 		if (pServerDE)
 		{
 			CPlayerObj* pPlayer = (CPlayerObj*) pServerDE->HandleToObject (m_hObject);
@@ -527,7 +527,7 @@ DFLOAT CDestructable::GetMaxArmorPoints() const
 
 	if (m_bPlayer)
 	{
-		CServerDE* pServerDE = BaseClass::GetServerDE();
+		CServerDE* pServerDE = DEBaseClass::GetServerDE();
 		if (pServerDE)
 		{
 			CPlayerObj* pPlayer = (CPlayerObj*) pServerDE->HandleToObject (m_hObject);
@@ -566,9 +566,9 @@ DFLOAT CDestructable::GetMaxArmorPoints() const
 // 
 // ----------------------------------------------------------------------- //
 
-void CDestructable::HandleDamage(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREAD hRead)
+void CDestructable::HandleDamage(DEBaseClass* pObject, HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 
@@ -746,6 +746,16 @@ void CDestructable::HandleDamage(LPBASECLASS pObject, HOBJECT hSender, HMESSAGER
 
 	if (m_hstrDamageTriggerTarget && m_hstrDamageTriggerMessage && m_nDamageTriggerNumSends != 0)
 	{
+		// Logs the damage trigger with the damage type, so a crush can be told from a weapon hit
+		{
+			pServerDE->CPrint("[D:TRIG] t=%.2f DAMAGE-TRIGGER victim '%s' dmg=%.1f type=%d hp=%.1f damager '%s' -> '%s'",
+				(double)pServerDE->GetTime(),
+				pServerDE->GetObjectName(m_hObject) ? pServerDE->GetObjectName(m_hObject) : "<unnamed>",
+				(double)fDamage, (int)eType, (double)m_fHitPoints,
+				hHeHitMe ? (pServerDE->GetObjectName(hHeHitMe) ? pServerDE->GetObjectName(hHeHitMe) : "<unnamed>") : "<none>",
+				pServerDE->GetStringData(m_hstrDamageTriggerTarget));
+		}
+
 		SendTriggerMsgToObjects(pObject, m_hstrDamageTriggerTarget, m_hstrDamageTriggerMessage);
 		m_nDamageTriggerNumSends--;
 	}
@@ -769,9 +779,9 @@ void CDestructable::HandleDamage(LPBASECLASS pObject, HOBJECT hSender, HMESSAGER
 // 
 // ----------------------------------------------------------------------- //
 
-DFLOAT CDestructable::ProcessPowerups (LPBASECLASS pObject, DFLOAT fDamage, DamageType eDamageType, HOBJECT hHeHitMe, DVector* pvDir)
+DFLOAT CDestructable::ProcessPowerups (DEBaseClass* pObject, DFLOAT fDamage, DamageType eDamageType, HOBJECT hHeHitMe, DVector* pvDir)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return 0.0f;
 	
 	// hold on to original damage 
@@ -920,7 +930,7 @@ DFLOAT CDestructable::ProcessPowerups (LPBASECLASS pObject, DFLOAT fDamage, Dama
 
 void CDestructable::HandleRegen()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 	
 	// does this player have the regeneration upgrade or enhancement(s)?
@@ -971,13 +981,22 @@ void CDestructable::HandleRegen()
 
 void CDestructable::HandleDestruction( HOBJECT hDamager )
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_bDead		 = DTRUE;
 	m_fHitPoints = 0.0;
 
-	LPBASECLASS pD = pServerDE->HandleToObject(m_hObject);
+	DEBaseClass* pD = pServerDE->HandleToObject(m_hObject);
+
+	// Logs every destruction, whether or not it has a DeathTrigger
+	{
+		pServerDE->CPrint("[D:TRIG] t=%.2f DESTROYED '%s' by '%s' deathtrigger '%s'",
+			(double)pServerDE->GetTime(),
+			pServerDE->GetObjectName(m_hObject) ? pServerDE->GetObjectName(m_hObject) : "<unnamed>",
+			hDamager ? (pServerDE->GetObjectName(hDamager) ? pServerDE->GetObjectName(hDamager) : "<unnamed>") : "<none>",
+			m_hstrDeathTriggerTarget ? pServerDE->GetStringData(m_hstrDeathTriggerTarget) : "<none>");
+	}
 
 	if (m_hstrDeathTriggerTarget && m_hstrDeathTriggerMessage)
 	{
@@ -1000,9 +1019,9 @@ void CDestructable::HandleDestruction( HOBJECT hDamager )
 // 
 // ----------------------------------------------------------------------- //
 
-void CDestructable::HandleHeal(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREAD hRead)
+void CDestructable::HandleHeal(DEBaseClass* pObject, HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || m_bDead) return;
 
 	DFLOAT fAmount = pServerDE->ReadFromMessageFloat(hRead) * g_HealScale.GetFloat(1.0f);
@@ -1026,9 +1045,9 @@ void CDestructable::HandleHeal(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREA
 // 
 // ----------------------------------------------------------------------- //
 
-void CDestructable::HandleUltraHeal(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREAD hRead)
+void CDestructable::HandleUltraHeal(DEBaseClass* pObject, HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || m_bDead) return;
 
 	DFLOAT fAmount = pServerDE->ReadFromMessageFloat(hRead);
@@ -1128,9 +1147,9 @@ void CDestructable::DoActualHealing (DFLOAT fAmount)
 //
 // ----------------------------------------------------------------------- //
 
-void CDestructable::HandleRepair(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREAD hRead)
+void CDestructable::HandleRepair(DEBaseClass* pObject, HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DFLOAT fAmount = pServerDE->ReadFromMessageFloat(hRead);
@@ -1177,7 +1196,7 @@ DBOOL CDestructable::Repair(DFLOAT fAmount)
 
 void CDestructable::Reset(DFLOAT fHitPts, DFLOAT fArmorPts)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DFLOAT fMaxHitPoints = GetMaxHitPoints();
@@ -1199,9 +1218,9 @@ void CDestructable::Reset(DFLOAT fHitPts, DFLOAT fArmorPts)
 // 
 // ----------------------------------------------------------------------- //
 
-void CDestructable::HandleTrigger(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREAD hRead)
+void CDestructable::HandleTrigger(DEBaseClass* pObject, HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || m_bDead) return;
 
 	HSTRING hMsg = pServerDE->ReadFromMessageHString(hRead);
@@ -1286,11 +1305,11 @@ void CDestructable::HandleTrigger(LPBASECLASS pObject, HOBJECT hSender, HMESSAGE
 // 
 // ----------------------------------------------------------------------- //
 
-void CDestructable::HandleCrush(LPBASECLASS pObject, HOBJECT hSender)
+void CDestructable::HandleCrush(DEBaseClass* pObject, HOBJECT hSender)
 {
 	if (!pObject || !hSender || m_bDead) return;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DFLOAT fMyMass, fHisMass;
@@ -1323,20 +1342,22 @@ void CDestructable::HandleCrush(LPBASECLASS pObject, HOBJECT hSender)
 // 
 // ----------------------------------------------------------------------- //
 
-void CDestructable::HandleTouch(LPBASECLASS pObject, HOBJECT hSender, DFLOAT fForce)
+void CDestructable::HandleTouch(DEBaseClass* pObject, HOBJECT hSender, DFLOAT fForce)
 {
 	if (!pObject || !hSender || m_bDead || fForce < 0.0f) return;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
-	HOBJECT hWorld = pServerDE->GetWorldObject();
+	// Jupiter has no world HOBJECT to compare against, so the object is asked.
+	// IsWorldObject answers LT_YES, not LT_OK
+	DBOOL bSenderIsWorld = (pServerDE->IsWorldObject(hSender) == LT_YES);
 
 	DFLOAT fMyMass, fHisMass;
 	fMyMass  = pServerDE->GetObjectMass(pObject->m_hObject);
 	fHisMass = pServerDE->GetObjectMass(hSender);
 
-	if (hSender == hWorld)
+	if (bSenderIsWorld)
 	{
 		fHisMass = INFINITE_MASS;
 	}
@@ -1350,7 +1371,7 @@ void CDestructable::HandleTouch(LPBASECLASS pObject, HOBJECT hSender, DFLOAT fFo
 
 	// Not enough force to do anything...
 
-	DFLOAT fVal = (hSender == hWorld) ? fMyMass * 15.0f : fMyMass * 10.0f;
+	DFLOAT fVal = (bSenderIsWorld) ? fMyMass * 15.0f : fMyMass * 10.0f;
 	if (fForce < fVal) return;
 
 
@@ -1358,7 +1379,7 @@ void CDestructable::HandleTouch(LPBASECLASS pObject, HOBJECT hSender, DFLOAT fFo
 	// that shouldn't cause anything to happen.  It is only when he runs into
 	// me that I can take damage...(well, unless it is the world...
 
-	if (hSender != hWorld)
+	if (!bSenderIsWorld)
 	{
 		DVector vVel;
 		pServerDE->GetVelocity(hSender, &vVel);
@@ -1369,7 +1390,19 @@ void CDestructable::HandleTouch(LPBASECLASS pObject, HOBJECT hSender, DFLOAT fFo
 	// Calculate damage...
 
 	DFLOAT fDamage = (fForce / fMyMass);
-	fDamage *= (hSender == hWorld) ? 5.0f : 10.0f;
+	fDamage *= (bSenderIsWorld) ? 5.0f : 10.0f;
+
+	// Logs why a touch became damage.
+	// The masses can disagree since CDestructable's initial mass only reaches the engine above 1.0
+	{
+		pServerDE->CPrint("[D:TRIG] t=%.2f IMPACT victim '%s' force=%.1f myMass=%.1f "
+			"hisMass=%.1f world=%d threshold=%.1f -> dmg=%.1f hp=%.1f sender '%s'",
+			(double)pServerDE->GetTime(),
+			pServerDE->GetObjectName(pObject->m_hObject) ? pServerDE->GetObjectName(pObject->m_hObject) : "<unnamed>",
+			(double)fForce, (double)fMyMass, (double)fHisMass, (int)bSenderIsWorld,
+			(double)fVal, (double)fDamage, (double)m_fHitPoints,
+			pServerDE->GetObjectName(hSender) ? pServerDE->GetObjectName(hSender) : "<unnamed>");
+	}
 
 	//pServerDE->BPrint("%.2f, %.2f, %.2f, %.2f", 
 	//				  fHisMass, fMyMass, fForce, fDamage);
@@ -1377,7 +1410,7 @@ void CDestructable::HandleTouch(LPBASECLASS pObject, HOBJECT hSender, DFLOAT fFo
 	DVector vDir;
 	VEC_INIT(vDir);
 
-	if (hSender == hWorld)
+	if (bSenderIsWorld)
 	{
 		pServerDE->GetVelocity(pObject->m_hObject, &vDir);
 		VEC_NEGATE(vDir, vDir);
@@ -1412,7 +1445,7 @@ void CDestructable::HandleTouch(LPBASECLASS pObject, HOBJECT hSender, DFLOAT fFo
 
 void CDestructable::HandleCriticalHit(HOBJECT hHeHitMe, DFLOAT & fDamage)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hHeHitMe || m_bDead || !m_bCanDamage) return;
 
 	if (GetRandom(0.0f, 1.0f) <= CRITICAL_HIT_CHANCE)
@@ -1428,7 +1461,7 @@ void CDestructable::HandleCriticalHit(HOBJECT hHeHitMe, DFLOAT & fDamage)
 			if (IsBaseCharacter (hHeHitMe))
 			{
 				CBaseCharacter* pChar = (CBaseCharacter*)pServerDE->HandleToObject(hHeHitMe);
-				LPBASECLASS pObject = pServerDE->HandleToObject(m_hObject);
+				DEBaseClass* pObject = pServerDE->HandleToObject(m_hObject);
 
 				if (pChar && pObject)
 				{
@@ -1490,13 +1523,13 @@ void CDestructable::HandleCriticalHit(HOBJECT hHeHitMe, DFLOAT & fDamage)
 
 DBOOL CDestructable::DebugDamageOn()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	DBOOL bRet = DFALSE;
 
 	HCONVAR	hVar  = pServerDE->GetGameConVar("SetDamage");
-	char* pVal = pServerDE->GetVarValueString(hVar);
+	const char* pVal = pServerDE->GetVarValueString(hVar);
 
 	if (!pVal) return DFALSE;
 
@@ -1514,7 +1547,7 @@ DBOOL CDestructable::DebugDamageOn()
 
 void CDestructable::Save(HMESSAGEWRITE hWrite, DBYTE nType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToLoadSaveMessageObject(hWrite, m_hObject);
@@ -1558,7 +1591,7 @@ void CDestructable::Save(HMESSAGEWRITE hWrite, DBYTE nType)
 
 void CDestructable::Load(HMESSAGEREAD hRead, DBYTE nType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromLoadSaveMessageObject(hRead, &m_hObject);

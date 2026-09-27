@@ -3,7 +3,7 @@
 
 #include "cpp_engineobjects_de.h"
 
-class AdvSound : public BaseClass
+class AdvSound : public DEBaseClass
 {
 	public :
 

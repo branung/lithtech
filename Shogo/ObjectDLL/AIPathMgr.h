@@ -13,7 +13,7 @@
 
 #include "AIKeyData.h"
 #include "AIPathList.h"
-#include "DLink.h"
+#include "dlink.h"
 
 class CAIPathMgr
 {

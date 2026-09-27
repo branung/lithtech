@@ -57,7 +57,7 @@
 #include "DebrisTypes.h"
 #include "Activation.h"
 
-class Prop : public BaseClass
+class Prop : public DEBaseClass
 {
 	public :
 

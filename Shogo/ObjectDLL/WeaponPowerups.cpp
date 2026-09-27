@@ -9,7 +9,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "WeaponPowerups.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "cpp_server_de.h"
 #include "WeaponDefs.h"
 #include "BaseCharacter.h"

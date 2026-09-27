@@ -494,7 +494,7 @@ void Cothineal::CreateControlBeam()
 	theStruct.m_Flags = FLAG_VISIBLE | FLAG_GOTHRUWORLD | FLAG_NOLIGHT;
 
 	HCLASS hClass = pServerDE->GetClass("BaseClass");
-	LPBASECLASS pModel = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pModel = pServerDE->CreateObject(hClass, &theStruct);
 
 	if (pModel) 
 	{

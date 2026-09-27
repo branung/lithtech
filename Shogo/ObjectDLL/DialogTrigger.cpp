@@ -27,7 +27,64 @@ BEGIN_CLASS(DialogTrigger)
 	ADD_STRINGPROP(Target3, "")
 	ADD_STRINGPROP(Message3, "")
 	ADD_REALPROP(SendDelay, 0.0f)
-END_CLASS_DEFAULT(DialogTrigger, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(DialogTrigger, DEBaseClass, NULL, NULL)
+
+/*
+	Live DialogTriggers, looked up by the ID sent to the client
+	
+	ID 0 is never issued and means no dialog.
+	IDs are never reused, so a stale one resolves to NULL.
+*/
+static const uint32              kMaxLiveDialogTriggers = 256;
+static DialogTrigger*            s_pLiveDialogTriggers[kMaxLiveDialogTriggers] = { DNULL };
+static uint32                    s_nLiveDialogIDs[kMaxLiveDialogTriggers] = { 0 };
+static uint32                    s_nNextDialogID = 1;
+
+DialogTrigger* DialogTrigger::FromDialogID (uint32 nID)
+{
+	if (!nID) return DNULL;
+
+	for (uint32 i = 0; i < kMaxLiveDialogTriggers; i++)
+	{
+		if (s_nLiveDialogIDs[i] == nID) return s_pLiveDialogTriggers[i];
+	}
+
+	return DNULL;
+}
+
+static void RegisterDialogTrigger (DialogTrigger* pTrigger, uint32& nID)
+{
+	nID = 0;
+
+	for (uint32 i = 0; i < kMaxLiveDialogTriggers; i++)
+	{
+		if (s_pLiveDialogTriggers[i]) continue;
+
+		// Skip 0 on wrap, since 0 means no dialog
+		if (!s_nNextDialogID) s_nNextDialogID = 1;
+
+		nID = s_nNextDialogID++;
+		s_pLiveDialogTriggers[i] = pTrigger;
+		s_nLiveDialogIDs[i] = nID;
+		return;
+	}
+
+	// Past kMaxLiveDialogTriggers the trigger still works, it just can't host a dialog
+	CServerDE* pServerDE = GetServerDE();
+	if (pServerDE) pServerDE->CPrint("DialogTrigger: more than %u live triggers, no dialog ID issued",
+	                                 (unsigned)kMaxLiveDialogTriggers);
+}
+
+static void UnregisterDialogTrigger (DialogTrigger* pTrigger)
+{
+	for (uint32 i = 0; i < kMaxLiveDialogTriggers; i++)
+	{
+		if (s_pLiveDialogTriggers[i] != pTrigger) continue;
+		s_pLiveDialogTriggers[i] = DNULL;
+		s_nLiveDialogIDs[i] = 0;
+		return;
+	}
+}
 
 // ----------------------------------------------------------------------- //
 //
@@ -37,7 +94,7 @@ END_CLASS_DEFAULT(DialogTrigger, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-DialogTrigger::DialogTrigger() : BaseClass ()
+DialogTrigger::DialogTrigger() : DEBaseClass ()
 {
 	AddAggregate(&m_activation);
 	
@@ -52,6 +109,8 @@ DialogTrigger::DialogTrigger() : BaseClass ()
 	
 	m_fSendDelay = 0.0f;
 	m_bFirstUpdate = DTRUE;
+
+	RegisterDialogTrigger(this, m_nDialogID);
 }
 
 // ----------------------------------------------------------------------- //
@@ -64,6 +123,9 @@ DialogTrigger::DialogTrigger() : BaseClass ()
 
 DialogTrigger::~DialogTrigger()
 {
+	// Unregistered before the early return so that the ID can't reach a dead trigger
+	UnregisterDialogTrigger(this);
+
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
@@ -94,7 +156,7 @@ DDWORD DialogTrigger::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAG
 		break;
 	}
 
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 // ----------------------------------------------------------------------- //
@@ -182,7 +244,7 @@ DDWORD DialogTrigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDat
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -196,7 +258,7 @@ DDWORD DialogTrigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDat
 
 DBOOL DialogTrigger::ReadProp(ObjectCreateStruct *pData)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pData) return DFALSE;
 
 	DFLOAT fRealVal;
@@ -341,11 +403,12 @@ void DialogTrigger::ShowDialog()
 
 	HCLIENT hClient = pPlayer->GetClient();
 	HMESSAGEWRITE hMessage = pServerDE->StartMessage(hClient, MID_COMMAND_SHOWDLG);
-	DDWORD nObjectHandle = (DDWORD) m_hObject;
-	pServerDE->WriteToMessageByte (hMessage, (DBYTE)nObjectHandle);
-	pServerDE->WriteToMessageByte (hMessage, (DBYTE)(nObjectHandle >> 8));
-	pServerDE->WriteToMessageByte (hMessage, (DBYTE)(nObjectHandle >> 16));
-	pServerDE->WriteToMessageByte (hMessage, (DBYTE)(nObjectHandle >> 24));
+	// A registry ID, since a 64-bit HOBJECT doesn't fit the four bytes sent below
+	DDWORD nDialogID = (DDWORD)m_nDialogID;
+	pServerDE->WriteToMessageByte (hMessage, (DBYTE)nDialogID);
+	pServerDE->WriteToMessageByte (hMessage, (DBYTE)(nDialogID >> 8));
+	pServerDE->WriteToMessageByte (hMessage, (DBYTE)(nDialogID >> 16));
+	pServerDE->WriteToMessageByte (hMessage, (DBYTE)(nDialogID >> 24));
 	pServerDE->WriteToMessageFloat (hMessage, (float) nItems);
 
 	for (int i = 0; i < MAX_MESSAGES_NUM; i++)
@@ -391,7 +454,7 @@ void DialogTrigger::Trigger (int nSelection)
 
 	// Find the target object...
 
-	char* pData = pServerDE->GetStringData(m_hTarget[nCurrentItem]);
+	const char* pData = pServerDE->GetStringData(m_hTarget[nCurrentItem]);
 	if (!pData) return;
 
 	HOBJECT hObj = DNULL;

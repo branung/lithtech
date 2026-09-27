@@ -13,7 +13,7 @@
 	class SSFXReg;
 
 
-	class SAutoSpecialFX : public BaseClass
+	class SAutoSpecialFX : public DEBaseClass
 	{
 	public:
 		virtual	~SAutoSpecialFX() {}

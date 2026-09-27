@@ -11,7 +11,7 @@
 #ifndef __AI_PATH_LIST_H__
 #define __AI_PATH_LIST_H__
 
-#include "dynarray.h"
+#include "DynArray.h"
 #include "AIKeyData.h"
 #include "cpp_engineobjects_de.h"
 
@@ -168,7 +168,7 @@ class CAIPathList
 
 inline void CAIPathList::Save(HMESSAGEWRITE hWrite)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageFloat(hWrite, (DFLOAT)m_nNumItems);
@@ -188,7 +188,7 @@ inline void CAIPathList::Save(HMESSAGEWRITE hWrite)
 
 inline void CAIPathList::Load(HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	int nNumItems		= (int) pServerDE->ReadFromMessageFloat(hRead);

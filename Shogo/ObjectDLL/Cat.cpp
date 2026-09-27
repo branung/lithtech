@@ -164,7 +164,7 @@ DDWORD Cat::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRea
 			{
 				if (m_hstrSqueakedAtSound)
 				{
-					char* pSound = pServerDE->GetStringData(m_hstrSqueakedAtSound);
+					const char* pSound = pServerDE->GetStringData(m_hstrSqueakedAtSound);
 					if (pSound) PlaySoundFromObject(m_hObject, pSound, m_fSoundRadius, SOUNDPRIORITY_MISC_MEDIUM );
 				}
 
@@ -181,7 +181,7 @@ DDWORD Cat::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRea
 				{
 					DVector vPos;
 					pServerDE->GetObjectPos(m_hObject, &vPos);
-					char* pSound = pServerDE->GetStringData(m_hstrDeathSound);
+					const char* pSound = pServerDE->GetStringData(m_hstrDeathSound);
 					if (pSound) PlaySoundFromPos(&vPos, pSound, m_fSoundRadius, SOUNDPRIORITY_MISC_MEDIUM );
 				}
 
@@ -318,7 +318,7 @@ void Cat::CacheFiles()
 {
 	if (!g_pServerDE) return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 
 	if (m_hstrSqueakedAtSound)
 	{

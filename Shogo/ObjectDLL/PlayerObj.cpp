@@ -9,8 +9,12 @@
 // ----------------------------------------------------------------------- //
 
 #include "PlayerObj.h"
+#include "de_commandedges.h"
+#include "Camera.h"
+#include "KeyFramer.h"
+#include "Trigger.h"
 #include "cpp_server_de.h"
-#include "RiotCommandIds.h"
+#include "RiotCommandIDs.h"
 #include "RiotObjectUtilities.h"
 #include "TractorBeam.h"
 #include "PVWeaponModel.h"
@@ -33,6 +37,9 @@ DBOOL LoadVectorPtrFn(HMESSAGEREAD hRead, void* pPtDataItem);
 #define DEFAULT_SKINFILENAME				"Skins\\Player\\sanjuro.dtx"
 #define DEFAULT_PLAYERNAME					"Sanjuro"
 
+// Trigger.h defines UPDATE_DELTA as 0.1f.
+// The #undef keeps this file's own value from tripping /we4005
+#undef  UPDATE_DELTA
 #define UPDATE_DELTA						0.001f
 #define PO_DEFAULT_FRICTION_COEFFICIENT		1.0f
 #define MAX_AIR_LEVEL						100.0f
@@ -73,6 +80,9 @@ static DBOOL s_bTweakCameraOffset		= DFALSE;
 
 CPlayerObj::CPlayerObj() : CBaseCharacter()
 {
+	m_nCommandBits[0] = 0;
+	m_nCommandBits[1] = 0;
+
 	// The ammo for every weapon, hit points, and armor on the last update...
 
 	for (int i=GUN_FIRST_ID; i < GUN_MAX_NUMBER; i++)
@@ -334,7 +344,10 @@ DDWORD CPlayerObj::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGERE
 		{
 			DialogQueueCharacter *pDialogQueueCharacter;
 
-			pDialogQueueCharacter = ( DialogQueueCharacter * )g_pServerDE->ReadFromMessageDWord( hRead );
+			// Pointer sent as two DWords, low then high (see CPlayerObj::Update())
+			uintptr_t nLow  = (uintptr_t)g_pServerDE->ReadFromMessageDWord( hRead );
+			uintptr_t nHigh = (uintptr_t)g_pServerDE->ReadFromMessageDWord( hRead );
+			pDialogQueueCharacter = ( DialogQueueCharacter * )( nLow | ( (uint64)nHigh << 32 ) );
 			if( pDialogQueueCharacter )
 			{
 				PlayDialogSound( pDialogQueueCharacter->m_szDialogFile, pDialogQueueCharacter->m_eCharacterSoundType );
@@ -361,14 +374,12 @@ DDWORD CPlayerObj::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGERE
 DBOOL CPlayerObj::PlayerTriggerMsg(HMESSAGEREAD hRead)
 {
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pMsg = g_pServerDE->GetStringData(hMsg);
+	const char* pMsg = g_pServerDE->GetStringData(hMsg);
 	if (!pMsg) return DFALSE;;
 
 	// Don't modify real data...
 	char buf[255];
 	SAFE_STRCPY(buf, pMsg);
-
-	g_pServerDE->FreeString(hMsg);
 
 	char* pMsgType = strtok(buf, " ");
 	if (pMsgType)
@@ -377,10 +388,18 @@ DBOOL CPlayerObj::PlayerTriggerMsg(HMESSAGEREAD hRead)
 		{
 			pMsgType = strtok( NULL, "" );
 			if( m_Music.HandleMusicMessage( pMsgType ))
+			{
+				g_pServerDE->FreeString(hMsg);
 				return DTRUE;
+			}
 		}
 	}
 
+	// No ProcessTriggerMsg here.
+	// DECompat rewinds the message after this read, so the CBaseCharacter handler still gets the text.
+	// Passing it on here too would play every line twice
+
+	g_pServerDE->FreeString(hMsg);
 	return DFALSE;
 }
 
@@ -393,7 +412,7 @@ DBOOL CPlayerObj::PlayerTriggerMsg(HMESSAGEREAD hRead)
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerObj::PlayDialogSound(char* pSound, CharacterSoundType eType,
+void CPlayerObj::PlayDialogSound(const char* pSound, CharacterSoundType eType,
 									 DBOOL bAtObjectPos)
 {
 	CServerDE* pServerDE = GetServerDE();
@@ -709,7 +728,10 @@ DBOOL CPlayerObj::Update()
 		if( pDialogQueueElement->m_hObject && pDialogQueueElement )
 		{
 			hMsg = g_pServerDE->StartMessageToObject( this, pDialogQueueElement->m_hObject, MID_PLAYDIALOG );
-			g_pServerDE->WriteToMessageDWord( hMsg, ( DDWORD )pDialogQueueElement->m_pData );
+			// Sends a heap pointer to the MID_PLAYDIALOG handlers as two DWords, since one truncates it on x64
+			uintptr_t nDialogPtr = (uintptr_t)pDialogQueueElement->m_pData;
+			g_pServerDE->WriteToMessageDWord( hMsg, ( DDWORD )( nDialogPtr & 0xFFFFFFFF ) );
+			g_pServerDE->WriteToMessageDWord( hMsg, ( DDWORD )( (uint64)nDialogPtr >> 32 ) );
 			g_pServerDE->EndMessage( hMsg );
 			delete pDialogQueueElement->m_pData;
 			delete pDialogQueueElement;
@@ -760,12 +782,12 @@ void CPlayerObj::UpdateControlFlags()
 
 	// Determine what commands are currently on...
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_RUN) || m_bRunLock)
+	if (IsCommandOn(COMMAND_ID_RUN) || m_bRunLock)
 	{
 		m_dwControlFlags |= BC_CFLG_RUN;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_DUCK))
+	if (IsCommandOn(COMMAND_ID_DUCK))
 	{
 		m_dwControlFlags |= BC_CFLG_DUCK;
 	}
@@ -774,12 +796,12 @@ void CPlayerObj::UpdateControlFlags()
 
 	if (!(m_dwControlFlags & BC_CFLG_DUCK))
 	{
-		if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_JUMP))
+		if (IsCommandOn(COMMAND_ID_JUMP))
 		{
 			m_dwControlFlags |= BC_CFLG_JUMP;
 		}
 
-		if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_DOUBLEJUMP))
+		if (IsCommandOn(COMMAND_ID_DOUBLEJUMP))
 		{
 			// Can only double jump in MCA mode...
 
@@ -795,52 +817,52 @@ void CPlayerObj::UpdateControlFlags()
 		}
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_FORWARD))
+	if (IsCommandOn(COMMAND_ID_FORWARD))
 	{
 		m_dwControlFlags |= BC_CFLG_FORWARD;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_REVERSE))
+	if (IsCommandOn(COMMAND_ID_REVERSE))
 	{
 		m_dwControlFlags |= BC_CFLG_REVERSE;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_LEFT))
+	if (IsCommandOn(COMMAND_ID_LEFT))
 	{
 		m_dwControlFlags |= BC_CFLG_LEFT;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_RIGHT))
+	if (IsCommandOn(COMMAND_ID_RIGHT))
 	{
 		m_dwControlFlags |= BC_CFLG_RIGHT;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_STRAFE))
+	if (IsCommandOn(COMMAND_ID_STRAFE))
 	{
 		m_dwControlFlags |= BC_CFLG_STRAFE;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_POSE))
+	if (IsCommandOn(COMMAND_ID_POSE))
 	{
 		m_dwControlFlags |= BC_CFLG_POSING;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_STRAFE_RIGHT))
+	if (IsCommandOn(COMMAND_ID_STRAFE_RIGHT))
 	{
 		m_dwControlFlags |= BC_CFLG_STRAFE_RIGHT;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_STRAFE_LEFT))
+	if (IsCommandOn(COMMAND_ID_STRAFE_LEFT))
 	{
 		m_dwControlFlags |= BC_CFLG_STRAFE_LEFT;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_FIRING))
+	if (IsCommandOn(COMMAND_ID_FIRING))
 	{
 		m_dwControlFlags |= BC_CFLG_FIRING;
 	}
 
-	if (!m_damage.IsDead() && pServerDE->IsCommandOn(m_hClient, COMMAND_ID_SPECIAL_MOVE))
+	if (!m_damage.IsDead() && IsCommandOn(COMMAND_ID_SPECIAL_MOVE))
 	{
 		m_dwControlFlags |= BC_CFLG_SPECIAL_MOVE;
 	}
@@ -1002,7 +1024,7 @@ void CPlayerObj::UpdateClientPhysics()
 	DVector grav;
 	ServerDE *pServerDE = GetServerDE();
 	HOBJECT objContainers[40];
-	DDWORD i, objContainerFlags[40], nContainers;
+	DDWORD i, nContainers;
 	D_WORD containerCode;
 	DVector current;
 	HCLASS hVolClass;
@@ -1055,7 +1077,8 @@ void CPlayerObj::UpdateClientPhysics()
 
 
 	// Did our container states change?
-	nContainers = pServerDE->GetObjectContainers(m_hObject, objContainers, objContainerFlags,
+	// Jupiter's GetObjectContainers dropped the container flags output, which was never read
+	nContainers = pServerDE->GetObjectContainers(m_hObject, objContainers,
 		sizeof(objContainers)/sizeof(objContainers[0]));
 	nContainers = DMIN(nContainers, MAX_TRACKED_CONTAINERS);
 	if(nContainers != m_nCurContainers)
@@ -1144,7 +1167,7 @@ void CPlayerObj::UpdateClientPhysics()
 
 	if(m_PStateChangeFlags & PSTATE_GRAVITY)
 	{
-		pServerDE->GetGlobalForce(&grav);
+		pServerDE->GetGlobalForce(grav);
 		pServerDE->WriteToMessageVector(hWrite, &grav);
 	}
 
@@ -1207,7 +1230,7 @@ void CPlayerObj::UpdateClientPhysics()
 		pServerDE->WriteToMessageFloat(hWrite, m_fLadderVel);
 
 		frigginCoeff = 0.0f;
-		pServerDE->Physics()->GetFrictionCoefficient(m_hObject, frigginCoeff);
+		pServerDE->Physics()->GetFrictionCoefficient(m_hObject, &frigginCoeff);
 		pServerDE->WriteToMessageFloat(hWrite, frigginCoeff);
 	}
 
@@ -1281,9 +1304,9 @@ void CPlayerObj::UpdateSpecialMove()
 
 			ObjectCreateStruct theStruct;
 			INIT_OBJECTCREATESTRUCT (theStruct);
-			theStruct.m_UserData = (DDWORD) &beamInfo;
+			theStruct.m_UserData = (DDWORD)(uintptr_t) &beamInfo;
 
-			LPBASECLASS pBeam =  pServerDE->CreateObject (pServerDE->GetClass ("TractorBeam"), &theStruct);
+			DEBaseClass* pBeam =  pServerDE->CreateObject (pServerDE->GetClass ("TractorBeam"), &theStruct);
 			if (!pBeam) return;
 
 			m_hTractorBeam = pBeam->m_hObject;
@@ -1309,7 +1332,7 @@ void CPlayerObj::ProcessInput()
 
 	// see if we want to drop any upgrade we have
 	
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ID_DROPUPGRADE))
+	if (IsCommandOn(COMMAND_ID_DROPUPGRADE))
 	{
 		DropUpgrade();
 	}
@@ -1957,7 +1980,7 @@ void CPlayerObj::DropUpgrade()
 	ObjectCreateStruct theStruct;
 	INIT_OBJECTCREATESTRUCT(theStruct);
 	theStruct.m_Flags |= FLAG_VISIBLE | FLAG_SHADOW | FLAG_TOUCH_NOTIFY | FLAG_GRAVITY;
-	theStruct.m_UserData = (DDWORD) m_hObject;
+	theStruct.m_UserData = (DDWORD)(uintptr_t) m_hObject;
 	VEC_COPY (theStruct.m_Pos, pos);
 	ROT_COPY (theStruct.m_Rotation, rot);
 
@@ -2216,7 +2239,7 @@ void CPlayerObj::SetPlayerMode(int nMode, DBOOL bSetDamage)
 	// Change the model...
 
 	char* pFilename = m_playerMode.GetModelFilename();
-	char* pSkin		= m_playerMode.GetSkinFilename();
+	const char* pSkin		= m_playerMode.GetSkinFilename();
 	pServerDE->SetModelFilenames(m_hObject, pFilename, pSkin);
 
 
@@ -2689,7 +2712,7 @@ void CPlayerObj::AddBiscuitModel(DVector* pvPos)
 	theStruct.m_Flags = FLAG_VISIBLE | FLAG_MODELGOURAUDSHADE;
 
 	HCLASS hClass = pServerDE->GetClass("Model");
-	LPBASECLASS pModel = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pModel = pServerDE->CreateObject(hClass, &theStruct);
 	if (!pModel) return;
 
 	DVector vScale;
@@ -2713,7 +2736,7 @@ void CPlayerObj::RemoveBiscuitModel()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
-	BaseClass** pClass= m_biscuitModels.GetItem(TLIT_FIRST);
+	DEBaseClass** pClass= m_biscuitModels.GetItem(TLIT_FIRST);
 	if (pClass && *pClass)
 	{
 		pServerDE->RemoveObject((*pClass)->m_hObject);
@@ -2780,7 +2803,7 @@ DBOOL CPlayerObj::MultiplayerInit(HMESSAGEREAD hMessage)
 	DBYTE nColor = pServerDE->ReadFromMessageByte(hMessage);
 	HSTRING hstr = pServerDE->ReadFromMessageHString(hMessage);
 
-	char* pStr = pServerDE->GetStringData(hstr);
+	const char* pStr = pServerDE->GetStringData(hstr);
 	if (pStr) strncpy(m_sNetName, pStr, NET_NAME_LENGTH-1);
 
 	pServerDE->FreeString(hstr);
@@ -3019,7 +3042,7 @@ void CPlayerObj::HandleGameRestore()
 	// Make sure we are using the correct model/skin...
 
 	char* pFilename = m_playerMode.GetModelFilename();
-	char* pSkin		= m_playerMode.GetSkinFilename();
+	const char* pSkin		= m_playerMode.GetSkinFilename();
 	pServerDE->SetModelFilenames(m_hObject, pFilename, pSkin);
 	
 	// Make sure the client is updated...
@@ -3234,6 +3257,17 @@ void CPlayerObj::BuildCameraList()
 }
 #endif
 
+// Callback for DECompat_FireCommandEdges, passing the client handle
+static void lt1_FireCommandOn(void *pContext, int nCommand)
+{
+	CPlayerObj *pPlayer = (CPlayerObj*)pContext;
+	if (pPlayer && g_pRiotServerShellDE)
+	{
+		g_pRiotServerShellDE->OnCommandOn(pPlayer->GetClient(), nCommand);
+	}
+}
+
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CPlayerObj::ClientUpdate
@@ -3261,7 +3295,7 @@ DBOOL CPlayerObj::ClientUpdate(HMESSAGEREAD hMessage)
 		
 		//pServerDE->ReadFromMessageRotation(hMessage, &rRot);
 		byteRotation = pServerDE->ReadFromMessageByte(hMessage);
-		UncompressRotationByte(pServerDE->Common(), byteRotation, &rRot);
+		UncompressRotationByte(byteRotation, &rRot);
 		
 		pServerDE->SetObjectRotation(m_hObject, &rRot);
 	}
@@ -3273,6 +3307,11 @@ DBOOL CPlayerObj::ClientUpdate(HMESSAGEREAD hMessage)
 	{
 		m_b3rdPersonView = ( m_nClientChangeFlags & CLIENTUPDATE_3RDPERVAL ) ? DTRUE : DFALSE;
 	}
+	if ( m_nClientChangeFlags & CLIENTUPDATE_SKIPCUTSCENE )
+	{
+		SkipActiveCinematic();
+	}
+
 	if ( m_nClientChangeFlags & CLIENTUPDATE_ALLOWINPUT )
 	{
 		m_bAllowInput = (DBOOL)pServerDE->ReadFromMessageByte(hMessage);
@@ -3287,6 +3326,20 @@ DBOOL CPlayerObj::ClientUpdate(HMESSAGEREAD hMessage)
 	else
 	{
 		m_bUseExternalCameraPos = DFALSE;
+	}
+
+	// Client command state (read last because the client writes it last)
+	// Jupiter has no server IsCommandOn so it travels in the update message
+	if ( m_nClientChangeFlags & CLIENTUPDATE_COMMANDS )
+	{
+		uint64 nOldBits[2] = { m_nCommandBits[0], m_nCommandBits[1] };
+		m_nCommandBits[0] = hMessage->Readuint64();
+		m_nCommandBits[1] = hMessage->Readuint64();
+
+		if (g_pRiotServerShellDE)
+		{
+			DECompat_FireCommandEdges(nOldBits, m_nCommandBits, 2, lt1_FireCommandOn, this);
+		}
 	}
 
 
@@ -3327,7 +3380,7 @@ DBOOL CPlayerObj::ClientUpdate(HMESSAGEREAD hMessage)
 
 void CPlayerObj::CreateSpecialFX()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	// Create the special fx...
@@ -3348,7 +3401,7 @@ void CPlayerObj::CreateSpecialFX()
 
 void CPlayerObj::UpdateSpecialFX()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD dwUserFlags = pServerDE->GetObjectUserFlags(m_hObject);
@@ -3414,7 +3467,7 @@ void CPlayerObj::UpdateSpecialFX()
 //
 // --------------------------------------------------------------------------- //
 
-DBOOL CPlayerObj::ProcessCommand(char** pTokens, int nArgs, char* pNextCommand)
+DBOOL CPlayerObj::ProcessCommand(const char** pTokens, int nArgs, const char* pNextCommand)
 {
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pTokens || nArgs < 1) return DFALSE;
@@ -3424,7 +3477,7 @@ DBOOL CPlayerObj::ProcessCommand(char** pTokens, int nArgs, char* pNextCommand)
 	{
 		// Get sound name from message...
 
-		char* pSoundName = pTokens[1];
+		const char* pSoundName = pTokens[1];
 
 		if( pSoundName )
 		{
@@ -3458,7 +3511,7 @@ DBOOL CPlayerObj::ProcessCommand(char** pTokens, int nArgs, char* pNextCommand)
 	{
 		if (nArgs > 1)
 		{
-			char* pObjName = pTokens[1];
+			const char* pObjName = pTokens[1];
 			if (pObjName)
 			{
 				ObjectList*	pList = pServerDE->FindNamedObjects(pObjName);
@@ -3492,7 +3545,269 @@ DBOOL CPlayerObj::ProcessCommand(char** pTokens, int nArgs, char* pNextCommand)
 	return DFALSE;
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerObj::ClearDialogQueue
+//
+//	PURPOSE:	Drop queued transmissions and any line currently playing
+//
+// ----------------------------------------------------------------------- //
+//
+// The same drain the respawn path does.
+// Without it a skipped scene's queued lines play over the gameplay that follows.
+void CPlayerObj::ClearDialogQueue()
+{
+	DLink *pCur;
+	DialogQueueElement *pDialogQueueElement;
 
+	m_bDialogActive = DFALSE;
+
+	pCur = m_DialogQueue.m_Head.m_pNext;
+	while( pCur != &m_DialogQueue.m_Head )
+	{
+		pDialogQueueElement = ( DialogQueueElement * )pCur->m_pData;
+		pCur = pCur->m_pNext;
+		dl_RemoveAt( &m_DialogQueue, &pDialogQueueElement->m_Link );
+		delete pDialogQueueElement->m_pData;
+		delete pDialogQueueElement;
+	}
+	dl_InitList( &m_DialogQueue );
+}
+
+
+DBOOL CPlayerObj::s_bSkippingCinematic = DFALSE;
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerObj::SkipActiveCinematic
+//
+//	PURPOSE:	Skip the whole cinematic, not just the shot playing now
+//
+// ----------------------------------------------------------------------- //
+//
+// A Shogo cutscene is a chain of camera shots, and skipping one starts the next.
+// This repeats until no cutscene camera is live (in one frame since DECompat delivers messages synchronously).
+//
+// A virtual clock advances beat by beat to the scene's next scheduled trigger and fires only what it reaches,
+// so the cascade can't run on into the level's own script.
+// Anything still pending when it stops keeps its own delay.
+//
+// Bounded four ways, because this runs inside one frame:
+//   - a step count
+//   - each step reporting whether it changed anything
+//   - a per step cap on how far the clock may jump
+//   - a cap on the total advance
+void CPlayerObj::SkipActiveCinematic()
+{
+	CServerDE* pServerDE = GetServerDE();
+	if (!pServerDE) return;
+
+	// A cutscene is a couple dozen beats at most
+	const int kMaxSteps = 64;
+
+	// Held for the whole fast forward since a trigger in one step can chain a dialogue key into the next
+	s_bSkippingCinematic = DTRUE;
+
+	DFLOAT fVirtualTime = pServerDE->GetTime();
+
+	for (int nStep = 0; nStep < kMaxSteps; nStep++)
+	{
+		// Control is back, so every pending trigger belongs to the level now
+		if (!IsCinematicCameraLive()) break;
+
+		if (!SkipOneCinematicStep(&fVirtualTime)) break;
+	}
+
+	s_bSkippingCinematic = DFALSE;
+
+	// The scene's transmissions queued up while fast forwarding, so drop them
+	ClearDialogQueue();
+}
+
+
+// Is a cutscene camera on screen?
+// The client watches the same flag for its letterboxed camera mode
+DBOOL CPlayerObj::IsCinematicCameraLive()
+{
+	CServerDE* pServerDE = GetServerDE();
+	if (!pServerDE) return DFALSE;
+
+	HCLASS  hCameraClass = pServerDE->GetClass("Camera");
+	HOBJECT hCurObject   = DNULL;
+
+	while ((hCurObject = pServerDE->GetNextObject(hCurObject)) != DNULL)
+	{
+		if (!pServerDE->IsKindOf(pServerDE->GetObjectClass(hCurObject), hCameraClass)) continue;
+
+		Camera* pCamera = (Camera*)pServerDE->HandleToObject(hCurObject);
+		if (pCamera && pCamera->IsLive()) return DTRUE;
+	}
+
+	return DFALSE;
+}
+
+
+// One step of the fast forward.
+// Returns DTRUE only if something changed so the caller can stop when it's stuck
+DBOOL CPlayerObj::SkipOneCinematicStep(DFLOAT* pfVirtualTime)
+{
+	CServerDE* pServerDE = GetServerDE();
+	if (!pServerDE || !pfVirtualTime) return DFALSE;
+
+	DBOOL bChanged = DFALSE;
+
+	// How far the virtual clock may jump in one step.
+	// The longest ActiveTime among the live cameras, so a level timer isn't mistaken for a beat.
+	// The floor covers a camera with ActiveTime 0, which a trigger switches off
+	const DFLOAT kMinBeatGap = 10.0f;
+
+	DFLOAT fMaxBeatGap = kMinBeatGap;
+	{
+		HCLASS  hCamClass = pServerDE->GetClass("Camera");
+		HOBJECT hCamObj   = DNULL;
+
+		while ((hCamObj = pServerDE->GetNextObject(hCamObj)) != DNULL)
+		{
+			if (!pServerDE->IsKindOf(pServerDE->GetObjectClass(hCamObj), hCamClass)) continue;
+
+			Camera* pCam = (Camera*)pServerDE->HandleToObject(hCamObj);
+			if (!pCam || !pCam->IsLive()) continue;
+
+			if (pCam->GetActiveTime() > fMaxBeatGap) fMaxBeatGap = pCam->GetActiveTime();
+		}
+	}
+
+	// Ceiling on the whole advance so a chain of beats can't walk the clock somewhere absurd
+	const DFLOAT kMaxTotalAdvance = 120.0f;
+
+	const DFLOAT kBeatGapEpsilon = 1.0f / 64.0f;
+
+	// Advance the scene's pending timeline by one beat.
+	// A cutscene is Trigger objects requested at t=0 on their own SendDelay, and the camera keyframers carry no message keys.
+	// Only triggers already pending are fired, so nothing new is started
+	{
+		HCLASS  hTriggerClass = pServerDE->GetClass("Trigger");
+		HOBJECT hObj = DNULL;
+
+		// The next beat is the earliest due time still ahead of the clock
+		DFLOAT  fNextBeat  = 0.0f;
+		DBOOL   bHaveBeat  = DFALSE;
+
+		while ((hObj = pServerDE->GetNextObject(hObj)) != DNULL)
+		{
+			if (!pServerDE->IsKindOf(pServerDE->GetObjectClass(hObj), hTriggerClass)) continue;
+
+			Trigger* pTrigger = (Trigger*)pServerDE->HandleToObject(hObj);
+			if (!pTrigger || !pTrigger->IsDelayingActivate()) continue;
+
+			DFLOAT fDue = pTrigger->GetActivateTime();
+			if (!bHaveBeat || fDue < fNextBeat)
+			{
+				fNextBeat = fDue;
+				bHaveBeat = DTRUE;
+			}
+		}
+
+		// A beat close enough to belong to this scene, and inside the ceiling.
+		// Printed every step since a skip is rare
+		pServerDE->CPrint("CUTFF: clock %.2f (real %.2f) next %s%.2f gap %.2f allow %.2f -> %s",
+			(double)(*pfVirtualTime), (double)pServerDE->GetTime(),
+			bHaveBeat ? "" : "none ", (double)(bHaveBeat ? fNextBeat : 0.0f),
+			(double)(bHaveBeat ? fNextBeat - *pfVirtualTime : 0.0f),
+			(double)fMaxBeatGap,
+			(!bHaveBeat) ? "no beat pending, end the shot"
+				: ((fNextBeat - *pfVirtualTime <= fMaxBeatGap + kBeatGapEpsilon) ? "take it"
+					: "TOO FAR!! End the shot"));
+
+		if (bHaveBeat &&
+			fNextBeat - *pfVirtualTime <= fMaxBeatGap + kBeatGapEpsilon &&
+			fNextBeat - pServerDE->GetTime() <= kMaxTotalAdvance)
+		{
+			// Never run the clock backwards.
+			// A trigger requested during the fast forward counts from real time and is due at once
+			if (fNextBeat > *pfVirtualTime) *pfVirtualTime = fNextBeat;
+
+			hObj = DNULL;
+			while ((hObj = pServerDE->GetNextObject(hObj)) != DNULL)
+			{
+				if (!pServerDE->IsKindOf(pServerDE->GetObjectClass(hObj), hTriggerClass)) continue;
+
+				Trigger* pTrigger = (Trigger*)pServerDE->HandleToObject(hObj);
+				if (pTrigger && pTrigger->FastForwardActivateTo(*pfVirtualTime))
+				{
+					bChanged = DTRUE;
+				}
+			}
+		}
+	}
+
+	// A beat fired, so return and let the caller check IsCinematicCameraLive() before the next
+	if (bChanged) return DTRUE;
+
+	// Nothing more is scheduled, so end the shot on screen here.
+	// Cameras are collected first because Expire() can remove one mid iteration
+	const int kMaxLiveCameras = 16;
+	HOBJECT hLiveCameras[kMaxLiveCameras];
+	int nLiveCameras = 0;
+
+	HCLASS  hCameraClass = pServerDE->GetClass("Camera");
+	HOBJECT hCurObject   = DNULL;
+
+	while ((hCurObject = pServerDE->GetNextObject(hCurObject)) != DNULL)
+	{
+		if (nLiveCameras >= kMaxLiveCameras) break;
+		if (!pServerDE->IsKindOf(pServerDE->GetObjectClass(hCurObject), hCameraClass)) continue;
+
+		Camera* pCamera = (Camera*)pServerDE->HandleToObject(hCurObject);
+		if (pCamera && pCamera->IsLive())
+		{
+			hLiveCameras[nLiveCameras++] = hCurObject;
+		}
+	}
+
+	// Nothing playing
+	if (nLiveCameras == 0) return DFALSE;
+
+	// Fast forward the keyframers driving live cameras whose message keys open doors, wake AI and fire triggers.
+	// Other keyframers move the world and would teleport it
+	HCLASS hKeyFramerClass = pServerDE->GetClass("KeyFramer");
+	hCurObject = DNULL;
+
+	while ((hCurObject = pServerDE->GetNextObject(hCurObject)) != DNULL)
+	{
+		if (!pServerDE->IsKindOf(pServerDE->GetObjectClass(hCurObject), hKeyFramerClass)) continue;
+
+		KeyFramer* pKeyFramer = (KeyFramer*)pServerDE->HandleToObject(hCurObject);
+		if (!pKeyFramer || !pKeyFramer->IsActive() || pKeyFramer->IsLooping()) continue;
+
+		for (int i = 0; i < nLiveCameras; i++)
+		{
+			if (pKeyFramer->DrivesObject(hLiveCameras[i]))
+			{
+				pKeyFramer->FastForward();
+				bChanged = DTRUE;
+				break;
+			}
+		}
+	}
+
+	// Then end the cameras that turn themselves off.
+	// One with no active time was switched off by a trigger the fast forward just sent, which IsLive() catches
+	for (int i = 0; i < nLiveCameras; i++)
+	{
+		Camera* pCamera = (Camera*)pServerDE->HandleToObject(hLiveCameras[i]);
+		if (!pCamera || !pCamera->IsLive()) continue;
+
+		if (pCamera->IsSelfTerminating())
+		{
+			pCamera->Expire();
+			bChanged = DTRUE;
+		}
+	}
+
+	return bChanged;
+}
 
 // ----------------------------------------------------------------------- //
 //
@@ -4002,16 +4317,15 @@ DBOOL LoadVectorPtrFn(HMESSAGEREAD hRead, void* pPtDataItem)
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL TractorBeamFilter (HOBJECT hObject, void* pUserData)
+bool TractorBeamFilter (HOBJECT hObject, void* pUserData)
 {
 	if (!g_pServerDE) return DTRUE;
 	
 	// return true to stop, false to keep going
 	short nObjectType   = g_pServerDE->GetObjectType (hObject);
 	HCLASS hObjectClass = g_pServerDE->GetObjectClass (hObject);
-	HCLASS hWorldClass  = g_pServerDE->GetObjectClass (g_pServerDE->GetWorldObject());
-
-	if (nObjectType == OT_MODEL || g_pServerDE->IsKindOf (hObjectClass, hWorldClass))
+	// In LT1: IsKindOf(hObjectClass, GetObjectClass(GetWorldObject()))
+	if (nObjectType == OT_MODEL || g_pServerDE->IsWorldObject(hObject) == LT_YES)
 	{
 		return DTRUE;
 	}

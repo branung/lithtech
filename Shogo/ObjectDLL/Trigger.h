@@ -20,7 +20,7 @@
 #define TRIGGER_DEACTIVATION_TIME		0.001f
 
 
-class Trigger : public BaseClass
+class Trigger : public DEBaseClass
 {
 	public :
 
@@ -35,6 +35,16 @@ class Trigger : public BaseClass
 		void SetAITriggerable(DBOOL bBool)  { m_bAITriggerable = bBool; }
 
 		void ToggleBoundingBoxes();
+
+		// Cutscene skipping runs these forward from CPlayerObj::SkipOneCinematicStep.
+		// Every fire is checked against a time, so a level timer that isn't due yet stays pending
+		DBOOL IsDelayingActivate() const	{ return m_bDelayingActivate; }
+
+		// When this pending trigger is due (only meaningful while IsDelayingActivate())
+		DFLOAT GetActivateTime() const		{ return m_fStartDelayTime + m_fSendDelay; }
+
+		// Fires if fTime has reached its due time, and returns DTRUE if it did
+		DBOOL FastForwardActivateTo(DFLOAT fTime);
 
 	protected :
 

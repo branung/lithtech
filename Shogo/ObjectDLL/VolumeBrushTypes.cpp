@@ -26,7 +26,7 @@
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL LiquidFilterFn(HOBJECT hObj, void *pUserData)
+bool LiquidFilterFn(HOBJECT hObj, void *pUserData)
 {
 	if (!hObj || !g_pServerDE) return DFALSE;
 

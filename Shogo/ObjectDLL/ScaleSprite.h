@@ -14,7 +14,7 @@
 #include "cpp_engineobjects_de.h"
 #include "Destructable.h"
 
-class ScaleSprite : public BaseClass
+class ScaleSprite : public DEBaseClass
 {
 	public :
 

@@ -14,7 +14,7 @@
 #include "basedefs_de.h"
 #include "serverobj_de.h"
 #include "Projectile.h"
-#include "Weapondefs.h"
+#include "WeaponDefs.h"
 #include "DamageTypes.h"
 #include "RiotObjectUtilities.h"
 #include "ModelFuncs.h"

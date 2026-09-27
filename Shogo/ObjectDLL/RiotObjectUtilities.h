@@ -17,16 +17,26 @@
 
 #define DEG2RAD(x)		(((x)*MATH_PI)/180.0f)
 
-void SendTriggerMsgToObjects(LPBASECLASS pSender, HSTRING hName, HSTRING hMsg);
-void SendTriggerMsgToObject(LPBASECLASS pSender, HOBJECT hObj, HSTRING hMsg);
+void SendTriggerMsgToObjects(DEBaseClass* pSender, HSTRING hName, HSTRING hMsg);
+void SendTriggerMsgToObject(DEBaseClass* pSender, HOBJECT hObj, HSTRING hMsg);
 
-HSOUNDDE PlaySoundFromObject( HOBJECT hObject, char *pSoundName, DFLOAT fRadius, DBYTE nSoundPriority, 
+/*
+	[D:TRIG] trace
+
+	The two functions above send every MID_TRIGGER in the ObjectDLL, so tracing them catches all triggers.
+	Off unless Diag is set. It's read directly since a CVarTrack would reset the client's Diag on a listen server.
+	Depth is recorded because one trigger can set off others inside the same call.
+*/
+int  ShogoDiagLevel();
+int  ShogoDiagTrigDepth();
+
+HSOUNDDE PlaySoundFromObject( HOBJECT hObject, const char *pSoundName, DFLOAT fRadius, DBYTE nSoundPriority, 
 							 DBOOL bLoop = DFALSE, DBOOL bHandle = DFALSE, DBOOL bTime = DFALSE, 
 							 DBYTE nVolume = 100, DBOOL bInstant = DFALSE );
-HSOUNDDE PlaySoundFromPos( DVector *vPos, char *pSoundName, DFLOAT fRadius, DBYTE nSoundPriority, 
+HSOUNDDE PlaySoundFromPos( DVector *vPos, const char *pSoundName, DFLOAT fRadius, DBYTE nSoundPriority, 
 						  DBOOL bLoop = DFALSE, DBOOL bHandle = DFALSE, DBOOL bTime = DFALSE, DBYTE nVolume = 100 );
 
-HSOUNDDE PlaySoundLocal( char *pSoundName, DBYTE nSoundPriority, DBOOL bLoop = DFALSE, DBOOL bHandle = DFALSE, DBOOL bTime = DFALSE, 
+HSOUNDDE PlaySoundLocal( const char *pSoundName, DBYTE nSoundPriority, DBOOL bLoop = DFALSE, DBOOL bHandle = DFALSE, DBOOL bTime = DFALSE, 
 						DBYTE nVolume = 100, DBOOL bReverb = DFALSE );
 
 

@@ -12,7 +12,7 @@
 #define __KEYFRAMER_H__
 
 #include "cpp_engineobjects_de.h"
-#include "dynarray.h"
+#include "DynArray.h"
 #include "KeyData.h"
 
 
@@ -25,7 +25,7 @@ struct KEYNODE
 	KEYNODE*	pNext;
 };
 
-class KeyFramer : public BaseClass
+class KeyFramer : public DEBaseClass
 {
 	public :
 
@@ -35,6 +35,12 @@ class KeyFramer : public BaseClass
 		void		GoActive();
 		void		Pause()				{ m_bActive = DFALSE; }
 		void		Resume()			{ m_bActive = DTRUE; }
+
+		// Cutscene skipping
+		DBOOL		IsActive() const	{ return m_bActive; }
+		DBOOL		IsLooping() const	{ return m_bLooping; }
+		DBOOL		DrivesObject(HOBJECT hObj) const;
+		void		FastForward();
 
 	protected :
 
@@ -64,6 +70,10 @@ class KeyFramer : public BaseClass
 
 		DFLOAT		m_fCurTime;
 		DBOOL		m_bFirstUpdate;
+
+		// True only inside FastForward(), where ProcessKey skips sounds and prints.
+		// Not saved
+		DBOOL		m_bFastForwarding;
 
 	private :
 

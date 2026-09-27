@@ -17,7 +17,7 @@
 #include "Weapon.h"
 #include "ModelFuncs.h"
 
-class BaseClass;
+class DEBaseClass;
 class CServerDE;
 
 // Class Definition
@@ -61,8 +61,8 @@ class CWeapons : public Aggregate
 
 	protected :
 	
-		DDWORD EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT lData);
-		DDWORD ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
+		DDWORD EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT lData);
+		DDWORD ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
 
 		void Save(HMESSAGEWRITE hWrite, DBYTE nType);
 		void Load(HMESSAGEREAD hRead, DBYTE nType);

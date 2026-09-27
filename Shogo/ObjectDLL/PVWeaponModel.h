@@ -15,7 +15,7 @@
 
 class CWeapon;
 
-class CPVWeaponModel : public BaseClass
+class CPVWeaponModel : public DEBaseClass
 {
 	public :
 

@@ -14,7 +14,7 @@
 #include "cpp_engineobjects_de.h"
 #include "ClientServerShared.h"
 
-class PickupItem : public BaseClass
+class PickupItem : public DEBaseClass
 {
 	public :
 
@@ -50,6 +50,7 @@ class PickupItem : public BaseClass
 		DFLOAT	m_fYaw;				// Angular position around Y axis
 		DFLOAT	m_fLastTime;		// Last update time
 		DDWORD	m_dwFlags;			// Copy of flags
+		DDWORD	m_dwFlags2;			// Copy of Jupiter's second flags (not saved)
 		DFLOAT	m_fBounce;			// Bounce acceleration
 		DBOOL	m_bBouncing;		// Bounce indicator
 		DVector m_vRestPos;			// Position when not bouncing

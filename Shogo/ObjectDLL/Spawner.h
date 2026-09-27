@@ -14,9 +14,9 @@
 #include "cpp_engineobjects_de.h"
 
 
-BaseClass *SpawnObject( char *pszSpawn, DVector *pvPos, DRotation *prRot );
+DEBaseClass *SpawnObject( char *pszSpawn, DVector *pvPos, DRotation *prRot );
 
-class Spawner : public BaseClass
+class Spawner : public DEBaseClass
 {
 	public :
 

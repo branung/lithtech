@@ -12,12 +12,12 @@
 #define __GAME_START_POINT_H__
 
 #include "cpp_engineobjects_de.h"
-#include "..\Shared\NetDefs.h"
+#include "../Shared/NetDefs.h"
 #include "SurfaceTypes.h"
 
 enum GameType { SINGLE=NGT_SINGLE, COOPERATIVE=NGT_COOPERATIVE, DEATHMATCH=NGT_DEATHMATCH, CAPTURE_FLAG=NGT_CAPTUREFLAG };
 
-class GameStartPoint : public StartPoint
+class GameStartPoint : public DEBaseClass
 {
 	public :
 

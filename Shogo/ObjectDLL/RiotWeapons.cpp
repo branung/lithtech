@@ -50,7 +50,7 @@ CProjectile* CPulseRifle::CreateProjectile(ObjectCreateStruct & theStruct)
 {
 	CProjectile* pRet = DNULL;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE)
 	{
@@ -99,7 +99,7 @@ CProjectile* CShredder::CreateProjectile(ObjectCreateStruct & theStruct)
 {
 	CProjectile* pRet = DNULL;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE)
 	{
@@ -153,7 +153,7 @@ CProjectile* CBullgut::CreateProjectile(ObjectCreateStruct & theStruct)
 {
 	CProjectile* pRet = DNULL;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE)
 	{
@@ -202,7 +202,7 @@ CProjectile* CJuggernaut::CreateProjectile(ObjectCreateStruct & theStruct)
 {
 	CProjectile* pRet = DNULL;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE)
 	{
@@ -253,7 +253,7 @@ CProjectile* CSpider::CreateProjectile(ObjectCreateStruct & theStruct)
 {
 	CProjectile* pRet = DNULL;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE)
 	{
@@ -302,7 +302,7 @@ CProjectile* CRedRiot::CreateProjectile(ObjectCreateStruct & theStruct)
 {
 	CProjectile* pRet = DNULL;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE)
 	{
@@ -573,7 +573,7 @@ CProjectile* CEnergyGrenade::CreateProjectile(ObjectCreateStruct & theStruct)
 {
 	CProjectile* pRet = DNULL;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE)
 	{
@@ -626,7 +626,7 @@ CProjectile* CTOW::CreateProjectile(ObjectCreateStruct & theStruct)
 {
 	CProjectile* pRet = DNULL;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE)
 	{
@@ -699,7 +699,7 @@ CProjectile* CKatoGrenade::CreateProjectile(ObjectCreateStruct & theStruct)
 {
 	CProjectile* pRet = DNULL;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE)
 	{

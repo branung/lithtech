@@ -10,7 +10,7 @@
 
 #include "EnhancementItem.h"
 #include "InventoryTypes.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "cpp_server_de.h"
 
 // ----------------------------------------------------------------------- //

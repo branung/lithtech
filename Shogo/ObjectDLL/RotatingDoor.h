@@ -11,7 +11,7 @@
 #ifndef __ROTATING_DOOR_H__
 #define __ROTATING_DOOR_H__
 
-#include "door.h"
+#include "Door.h"
 
 class RotatingDoor : public Door
 {

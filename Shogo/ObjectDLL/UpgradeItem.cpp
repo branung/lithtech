@@ -10,7 +10,7 @@
 
 #include "UpgradeItem.h"
 #include "InventoryTypes.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "cpp_server_de.h"
 
 // ----------------------------------------------------------------------- //
@@ -146,7 +146,7 @@ void UpgradeItem::PostPropRead(ObjectCreateStruct *pStruct)
 
 	// get the handle of the player that dropped us, if any
 
-	m_hDroppedBy = (HOBJECT) pStruct->m_UserData;
+	m_hDroppedBy = (HOBJECT)(uintptr_t) pStruct->m_UserData;
 
 	// get the current time
 

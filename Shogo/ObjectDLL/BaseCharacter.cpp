@@ -9,6 +9,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "BaseCharacter.h"
+#include "PlayerObj.h"
 #include "cpp_server_de.h"
 #include "RiotObjectUtilities.h"
 #include "generic_msg_de.h"
@@ -32,7 +33,7 @@ BEGIN_CLASS(CBaseCharacter)
 	ADD_BOOLPROP(MoveToFloor, DTRUE)
 	ADD_BOOLPROP(ShowDeadBody, DTRUE)
 	ADD_STRINGPROP(SpawnItem, "")
-END_CLASS_DEFAULT_FLAGS(CBaseCharacter, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CBaseCharacter, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 #define KEY_FOOTSTEP_SOUND		"FOOTSTEP_KEY"
 #define KEY_SET_DIMS			"SETDIMS"
@@ -150,8 +151,8 @@ END_CLASS_DEFAULT_FLAGS(CBaseCharacter, BaseClass, NULL, NULL, CF_HIDDEN)
 // updated in multiple calls to Parse()
 
 char g_tokenSpace[PARSE_MAXTOKENS*PARSE_MAXTOKENSIZE];
-char *g_pTokens[PARSE_MAXTOKENS];
-char *g_pCommandPos;
+const char *g_pTokens[PARSE_MAXTOKENS];
+const char *g_pCommandPos;
 
 
 
@@ -163,7 +164,7 @@ char *g_pCommandPos;
 //
 // ----------------------------------------------------------------------- //
 
-CBaseCharacter::CBaseCharacter() : BaseClass(OT_MODEL) 
+CBaseCharacter::CBaseCharacter() : DEBaseClass(OT_MODEL) 
 {
 	AddAggregate(&m_damage);
 	AddAggregate(&m_weapons);
@@ -188,6 +189,8 @@ CBaseCharacter::CBaseCharacter() : BaseClass(OT_MODEL)
 	m_fJumpVel					= DEFAULT_JUMP_VEL;
 	m_fBaseMoveAccel			= DEFAULT_MOVE_ACCEL;
 	m_fTimeInAir				= 0.0;
+	m_fLastGroundUpdateTime	= 0.0f;
+	m_fAirStartTime			= 0.0f;
 	m_dwLastHitNode				= -1;
 	m_bUsingHitDetection		= DTRUE;
 	m_bCreateBody				= DTRUE;
@@ -474,7 +477,7 @@ DDWORD CBaseCharacter::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDa
 
 		case MID_INITIALUPDATE:
 		{
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 			InitialUpdate((int)fData);
 			CacheFiles();
 			return dwRet;
@@ -485,7 +488,7 @@ DDWORD CBaseCharacter::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDa
 		{
 			// Let aggregates go first...
 
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 
 			Save((HMESSAGEWRITE)pData);
 
@@ -497,7 +500,7 @@ DDWORD CBaseCharacter::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDa
 		{
 			// Let aggregates go first...
 
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 
 			Load((HMESSAGEREAD)pData);
 
@@ -521,7 +524,7 @@ DDWORD CBaseCharacter::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDa
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -543,7 +546,7 @@ DDWORD CBaseCharacter::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSA
 		case MID_TRIGGER:
 		{
 			HSTRING hMsg = pServerDE->ReadFromMessageHString(hRead);
-			char *pMsg = pServerDE->GetStringData(hMsg);
+			const char* pMsg = pServerDE->GetStringData(hMsg);
 
 			ProcessTriggerMsg(pMsg);
 
@@ -553,13 +556,13 @@ DDWORD CBaseCharacter::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSA
 
 		case MID_DAMAGE:
 		{
-			DDWORD dwRet = BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+			DDWORD dwRet = DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 			ProcessDamageMsg(hRead);
 			return dwRet;
 		}
 	}
 	
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
@@ -619,7 +622,7 @@ DBOOL CBaseCharacter::ReadProp(ObjectCreateStruct *pStruct)
 //
 // --------------------------------------------------------------------------- //
 
-DBOOL CBaseCharacter::ProcessTriggerMsg(char* pMsg)
+DBOOL CBaseCharacter::ProcessTriggerMsg(const char* pMsg)
 {
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pMsg) return DFALSE;
@@ -627,10 +630,11 @@ DBOOL CBaseCharacter::ProcessTriggerMsg(char* pMsg)
 
 	int nArgs;
 
-	char* pCommand = pMsg;
+	const char* pCommand = pMsg;
 	bMore = DTRUE;
 	while( bMore )
 	{
+		g_pCommandPos = DNULL;
 		bMore = pServerDE->Parse(pCommand, &g_pCommandPos, g_tokenSpace, g_pTokens, &nArgs);
 		ProcessCommand(g_pTokens, nArgs, g_pCommandPos);
 		pCommand = g_pCommandPos;
@@ -647,7 +651,7 @@ DBOOL CBaseCharacter::ProcessTriggerMsg(char* pMsg)
 //
 // --------------------------------------------------------------------------- //
 
-DBOOL CBaseCharacter::ProcessCommand(char** pTokens, int nArgs, char* pNextCommand)
+DBOOL CBaseCharacter::ProcessCommand(const char** pTokens, int nArgs, const char* pNextCommand)
 {
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pTokens || !pTokens[0] || nArgs < 1) return DFALSE;
@@ -656,11 +660,15 @@ DBOOL CBaseCharacter::ProcessCommand(char** pTokens, int nArgs, char* pNextComma
 	{
 		// Get sound name from message...
 
-		char* pSoundName = pTokens[1];
+		const char* pSoundName = pTokens[1];
 
 		if (pSoundName)
 		{
-			PlayDialogSound(pSoundName, CST_EXCLAMATION);
+			// Skipped during a cutscene fast forward, or every voice line lands in one frame
+			if (!CPlayerObj::IsSkippingCinematic())
+			{
+				PlayDialogSound(pSoundName, CST_EXCLAMATION);
+			}
 			return DTRUE;
 		}
 	}
@@ -938,10 +946,10 @@ void CBaseCharacter::CreateDialogSprite()
 
 	theStruct.m_Flags		= FLAG_GOTHRUWORLD;
 	theStruct.m_ObjectType  = OT_SPRITE;
-	theStruct.m_fDeactivationTime = 0.001f;
+	// ObjectCreateStruct lost m_fDeactivationTime because Jupiter manages deactivation itself
 
 	HCLASS hClass = pServerDE->GetClass("BaseClass");
-	LPBASECLASS pSprite = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pSprite = pServerDE->CreateObject(hClass, &theStruct);
 	if (!pSprite) return;
 
 	m_hDlgSprite = pSprite->m_hObject;
@@ -1003,7 +1011,7 @@ char* CBaseCharacter::GetDialogSpriteFilename(DVector & vScale)
 //
 // ----------------------------------------------------------------------- //
 	
-void CBaseCharacter::CreateHandHeldWeapon(char* pFilename, char* pSkin)
+void CBaseCharacter::CreateHandHeldWeapon(char* pFilename, const char* pSkin)
 {
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || m_hHandHeldWeapon || !pFilename) return;
@@ -1021,7 +1029,7 @@ void CBaseCharacter::CreateHandHeldWeapon(char* pFilename, char* pSkin)
 	theStruct.m_Flags = FLAG_VISIBLE | FLAG_GOTHRUWORLD;
 
 	HCLASS hClass = pServerDE->GetClass("CPVWeaponModel");
-	LPBASECLASS pModel = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pModel = pServerDE->CreateObject(hClass, &theStruct);
 	if (!pModel) return;
 
 	m_hHandHeldWeapon = pModel->m_hObject;
@@ -1077,7 +1085,11 @@ DVector	CBaseCharacter::HandHeldWeaponFirePos()
 		return vPos;
 	}
 
+	// Zeroed first because it's only set the when weapon model resolves.
+	// All three components are read below
 	DVector vFlashOffset;
+	VEC_INIT(vFlashOffset);
+
 	CPVWeaponModel* pModel = (CPVWeaponModel*)pServerDE->HandleToObject(m_hHandHeldWeapon);
 	if (pModel)
 	{
@@ -1138,7 +1150,7 @@ void CBaseCharacter::HandleWeaponChange()
 	// Check for big guns...
 
 	HCONVAR	hVar  = pServerDE->GetGameConVar("BigGuns");
-	char* pVar = pServerDE->GetVarValueString(hVar);
+	const char* pVar = pServerDE->GetVarValueString(hVar);
 
 	if (pVar && _stricmp(pVar, "0") != 0)
 	{
@@ -1450,7 +1462,7 @@ void CBaseCharacter::HandleModelString(ArgList* pArgList)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
-	char* pKey = pArgList->argv[0];
+	const char* pKey = pArgList->argv[0];
 	if (!pKey) return;
 
 	// Only play footstep sound if we are on the ground...
@@ -1474,7 +1486,7 @@ void CBaseCharacter::HandleModelString(ArgList* pArgList)
 
 				if (Info.m_hObject) 
 				{
-					if (Info.m_hPoly)
+					if (Info.m_hPoly != INVALID_HPOLY)
 					{
 						eSurface = GetSurfaceType(Info.m_hPoly);
 					}
@@ -1492,7 +1504,7 @@ void CBaseCharacter::HandleModelString(ArgList* pArgList)
 	{
 		// Get sound name from message...
 
-		char* pSoundName = pArgList->argv[1];
+		const char* pSoundName = pArgList->argv[1];
 
 		if (pSoundName)
 		{
@@ -2368,9 +2380,38 @@ void CBaseCharacter::UpdateOnGround()
 	DBOOL bFreeMovement = (IsFreeMovement(m_eContainerCode) || 
 						   m_bBodyOnLadder || m_bBodyInLiquid);
 
-	if (m_bOnGround && !m_bLastOnGround && !m_damage.IsDead()) 
+	// An AI runs on its own update delta, so frame time alone undercounts its air time.
+	// Take the time since this character's last run when longer, capped at 0.05s
+	DFLOAT fAirDelta = pServerDE->GetFrameTime();
 	{
-		if (m_fTimeInAir > FALL_LANDING_TIME) 
+		const DFLOAT fNow = pServerDE->GetTime();
+		if (m_fLastGroundUpdateTime > 0.0f)
+		{
+			const DFLOAT fElapsed = fNow - m_fLastGroundUpdateTime;
+			if (fElapsed > fAirDelta)
+				fAirDelta = (fElapsed < 0.05f) ? fElapsed : 0.05f;
+		}
+		m_fLastGroundUpdateTime = fNow;
+	}
+
+	if (m_bOnGround && !m_bLastOnGround && !m_damage.IsDead())
+	{
+		// [D:AIFALL] Air time against the clock at every landing.
+		// The two should agree to within one update
+		if (m_fTimeInAir > 0.0f && m_fAirStartTime > 0.0f)
+		{
+			static int s_nAIFallLines = 0;
+			if (s_nAIFallLines < 200)
+			{
+				++s_nAIFallLines;
+				pServerDE->CPrint("[D:AIFALL] %s landed: accumulated %.3fs of %.3fs in the air (landing anim at %.2f)",
+					pServerDE->GetObjectName(m_hObject), m_fTimeInAir,
+					pServerDE->GetTime() - m_fAirStartTime, FALL_LANDING_TIME);
+			}
+		}
+		m_fAirStartTime = 0.0f;
+
+		if (m_fTimeInAir > FALL_LANDING_TIME)
 		{
 			m_fTimeInAir = 0.0;
 
@@ -2378,19 +2419,22 @@ void CBaseCharacter::UpdateOnGround()
 			{
 				SetLandingAnimation();
 			}
-		} 
-	} 
-	
+		}
+	}
+
 	DVector vVel;
 	pServerDE->GetVelocity(m_hObject, &vVel);
 
-	if (!m_bOnGround && !bFreeMovement && vVel.y < 0.0f) 
+	if (!m_bOnGround && !bFreeMovement && vVel.y < 0.0f)
 	{
-		m_fTimeInAir += pServerDE->GetFrameTime();
+		if (m_fTimeInAir <= 0.0f)
+			m_fAirStartTime = pServerDE->GetTime();
+		m_fTimeInAir += fAirDelta;
 	}
 	else
 	{
 		m_fTimeInAir = 0.0f;
+		m_fAirStartTime = 0.0f;
 	}
 
 /*
@@ -2560,7 +2604,7 @@ void CBaseCharacter::UpdateSounds()
 //
 // ----------------------------------------------------------------------- //
 
-void CBaseCharacter::PlaySound(char *pSoundName, DBYTE nPriorityMod, DFLOAT fRadius, DBOOL bAttached)
+void CBaseCharacter::PlaySound(const char *pSoundName, DBYTE nPriorityMod, DFLOAT fRadius, DBOOL bAttached)
 {
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
@@ -2585,7 +2629,7 @@ void CBaseCharacter::PlaySound(HSTRING hstrSoundName, DBYTE nPriorityMod, DFLOAT
 
 	if (hstrSoundName)
 	{
-		char* pSound = pServerDE->GetStringData(hstrSoundName);
+		const char* pSound = pServerDE->GetStringData(hstrSoundName);
 		if (pSound && pSound[0] != '\0')
 		{
 			PlaySound( pSound, nPriorityMod, fRadius, bAttached );
@@ -2627,7 +2671,7 @@ void CBaseCharacter::PlayDamageSound(DamageType eType)
 //
 // ----------------------------------------------------------------------- //
 
-void CBaseCharacter::PlayDialogSound(char* pSound, CharacterSoundType eType,
+void CBaseCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType,
 									 DBOOL bAtObjectPos)
 {
 	CServerDE* pServerDE = GetServerDE();
@@ -2924,10 +2968,10 @@ void CBaseCharacter::CreateBoundingBox()
 	SAFE_STRCPY(theStruct.m_SkinName, "SpecialFX\\smoke.dtx");
 	theStruct.m_ObjectType  = OT_MODEL;
 	theStruct.m_Flags = FLAG_VISIBLE | FLAG_MODELGOURAUDSHADE |  FLAG_MODELWIREFRAME;
-	theStruct.m_fDeactivationTime = 0.001f;
+	// ObjectCreateStruct lost m_fDeactivationTime because Jupiter manages deactivation itself
 
 	HCLASS hClass = pServerDE->GetClass("BaseClass");
-	LPBASECLASS pModel = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pModel = pServerDE->CreateObject(hClass, &theStruct);
 
 	if (pModel)
 	{
@@ -3085,7 +3129,7 @@ void CBaseCharacter::SpawnWeapon()
 
 		DDWORD nAmmo = GetSpawnedAmmo(pWeapon->GetId());
 
-		char* pName = pServerDE->GetObjectName(m_hObject);
+		const char* pName = pServerDE->GetObjectName(m_hObject);
 		pName = (pName && strlen(pName) ? pName : "noname");
 
 		char buf[200];
@@ -3110,7 +3154,7 @@ void CBaseCharacter::SpawnItem(char* pItem, DVector & vPos, DRotation & rRot)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pItem) return;
 
-	BaseClass* pObj = SpawnObject(pItem, &vPos, &rRot);
+	DEBaseClass* pObj = SpawnObject(pItem, &vPos, &rRot);
 
 	if (pObj && pObj->m_hObject)
 	{
@@ -3149,7 +3193,7 @@ void CBaseCharacter::StartDeath()
 
 	if (m_hstrSpawnItem)
 	{
-		char* pItem = pServerDE->GetStringData(m_hstrSpawnItem);
+		const char* pItem = pServerDE->GetStringData(m_hstrSpawnItem);
 		if (pItem)
 		{
 			// Add gravity to the item...
@@ -3254,7 +3298,7 @@ void CBaseCharacter::UpdateCheatInfo()
 	// See if we should show our bounding box...
 
 	HCONVAR	hVar  = pServerDE->GetGameConVar("ShowDims");
-	char* pVar = pServerDE->GetVarValueString(hVar);
+	const char* pVar = pServerDE->GetVarValueString(hVar);
 
 	if (!pVar) return;
 
@@ -3300,7 +3344,7 @@ void CBaseCharacter::HandleBigGunsCheat()
 	// Check for big guns...
 
 	HCONVAR	hVar  = pServerDE->GetGameConVar("BigGuns");
-	char* pVar = pServerDE->GetVarValueString(hVar);
+	const char* pVar = pServerDE->GetVarValueString(hVar);
 
 	hVar = pServerDE->GetGameConVar("BigGunsScale");
 

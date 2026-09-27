@@ -3,7 +3,7 @@
 
 #include "cpp_engineobjects_de.h"
 
-class TriggerSound : public BaseClass
+class TriggerSound : public DEBaseClass
 {
 	public :
 

@@ -11,7 +11,7 @@
 #include "Weapons.h"
 #include "RiotWeapons.h"
 #include "PlayerObj.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "cpp_server_de.h"
 #include "BaseCharacter.h"
 #include "RiotServerShell.h"
@@ -290,7 +290,7 @@ void CWeapons::CreateOnFootWeapons()
 //
 // ----------------------------------------------------------------------- //
 		
-DDWORD CWeapons::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT lData)
+DDWORD CWeapons::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT lData)
 {
 	switch(messageID)
 	{
@@ -319,13 +319,13 @@ DDWORD CWeapons::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pD
 //
 // ----------------------------------------------------------------------- //
 
-DDWORD CWeapons::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
+DDWORD CWeapons::ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
 {
 	switch(messageID)
 	{
 		case MID_ADDWEAPON:
 		{	
-			CServerDE* pServerDE = BaseClass::GetServerDE();
+			CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			if (!pServerDE) return DFALSE;
 
 			DBOOL	bHadIt	  = DTRUE;
@@ -449,7 +449,7 @@ void CWeapons::ObtainWeapon(DBYTE nWeaponId, int nDefaultAmmo,
 
 	if (bNotifyClient)
 	{
-		CServerDE* pServerDE = BaseClass::GetServerDE();
+		CServerDE* pServerDE = DEBaseClass::GetServerDE();
 		if (!pServerDE) return;
 
 		// Send the appropriate message to the client...
@@ -525,7 +525,7 @@ DBOOL CWeapons::ChangeWeapon(DBYTE nNewWeapon)
 
 	// Let the base character know that a weapon change occured...
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	HCLASS hClass = pServerDE->GetObjectClass(m_hObject);
@@ -635,7 +635,7 @@ int CWeapons::GetAmmoCount(DBYTE nWeaponID)
 
 void CWeapons::Save(HMESSAGEWRITE hWrite, DBYTE nType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToLoadSaveMessageObject(hWrite, m_hObject);
@@ -668,7 +668,7 @@ void CWeapons::Save(HMESSAGEWRITE hWrite, DBYTE nType)
 
 void CWeapons::Load(HMESSAGEREAD hRead, DBYTE nType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromLoadSaveMessageObject(hRead, &m_hObject);

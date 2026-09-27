@@ -44,7 +44,7 @@ CBouncer::CBouncer() : Aggregate()
 
 CBouncer::~CBouncer()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hstrBounceSound)
@@ -66,7 +66,7 @@ CBouncer::~CBouncer()
 //
 // ----------------------------------------------------------------------- //
 
-DDWORD CBouncer::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData)
+DDWORD CBouncer::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData)
 {
 	switch(messageID)
 	{
@@ -119,9 +119,9 @@ DDWORD CBouncer::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pD
 //
 // ----------------------------------------------------------------------- //
 	
-void CBouncer::InitialUpdate(LPBASECLASS pObject)
+void CBouncer::InitialUpdate(DEBaseClass* pObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pObject) return;
 
 	//m_fPitchVel = pServerDE->Random(-MATH_CIRCLE/2.0f, MATH_CIRCLE/2.0f);
@@ -149,9 +149,9 @@ void CBouncer::InitialUpdate(LPBASECLASS pObject)
 //
 // ----------------------------------------------------------------------- //
 	
-void CBouncer::Update(LPBASECLASS pObject)
+void CBouncer::Update(DEBaseClass* pObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pObject || m_bDoneBouncing) return;
 
 	// Save position for bounce calculations...
@@ -201,18 +201,18 @@ void CBouncer::Update(LPBASECLASS pObject)
 //
 // ----------------------------------------------------------------------- //
 	
-void CBouncer::HandleTouch(LPBASECLASS pObject, HOBJECT hObj)
+void CBouncer::HandleTouch(DEBaseClass* pObject, HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pObject || !hObj || (m_nBounceCount <= 0)) return;
 
 
 	// Return if it hit a non solid object...
 
-	HOBJECT hWorld = pServerDE->GetWorldObject();
 	DDWORD dwFlags = pServerDE->GetObjectFlags(hObj);
 
-	if (hObj != hWorld && !(dwFlags & FLAG_SOLID)) return;
+	// IsWorldObject answers LT_YES or LT_NO, never LT_OK
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(dwFlags & FLAG_SOLID)) return;
 
 	DVector vVel;
 	pServerDE->GetVelocity(pObject->m_hObject, &vVel);
@@ -235,7 +235,7 @@ void CBouncer::HandleTouch(LPBASECLASS pObject, HOBJECT hObj)
 			
 	if (m_hstrBounceSound)
 	{
-		char* pSound = pServerDE->GetStringData(m_hstrBounceSound);
+		const char* pSound = pServerDE->GetStringData(m_hstrBounceSound);
 		if (m_hstrBounceSound2)
 		{ 
 			if (GetRandom(0,1) == 0) pSound = pServerDE->GetStringData(m_hstrBounceSound2);
@@ -260,7 +260,7 @@ void CBouncer::HandleTouch(LPBASECLASS pObject, HOBJECT hObj)
 	
 void CBouncer::SetBounceSound(char* pSound)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pSound) return;
 
 	if (m_hstrBounceSound)
@@ -281,7 +281,7 @@ void CBouncer::SetBounceSound(char* pSound)
 	
 void CBouncer::SetBounceSound2(char* pSound)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pSound) return;
 
 	if (m_hstrBounceSound2)
@@ -303,7 +303,7 @@ void CBouncer::SetBounceSound2(char* pSound)
 
 void CBouncer::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageFloat(hWrite, m_fPitchVel);
@@ -329,7 +329,7 @@ void CBouncer::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CBouncer::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	m_fPitchVel			= pServerDE->ReadFromMessageFloat(hRead);

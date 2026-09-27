@@ -289,7 +289,7 @@ void PolyGrid::CacheFiles()
 
 	if (m_hstrSurfaceSprite)
 	{
-		char* pFile = pServerDE->GetStringData(m_hstrSurfaceSprite);
+		const char* pFile = pServerDE->GetStringData(m_hstrSurfaceSprite);
 		if (pFile && pFile[0])
 		{
 			pServerDE->CacheFile(FT_SPRITE, pFile);

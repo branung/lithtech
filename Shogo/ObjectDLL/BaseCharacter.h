@@ -67,7 +67,7 @@ enum CharacterDeath { CD_NORMAL=0, CD_GIB, CD_FREEZE, CD_VAPORIZE, CD_BURST };
 
 enum CharacterSoundType { CST_NONE=0, CST_DAMAGE, CST_DEATH, CST_DIALOG, CST_EXCLAMATION };
 
-class CBaseCharacter : public BaseClass
+class CBaseCharacter : public DEBaseClass
 {
 	public :
 
@@ -207,7 +207,7 @@ class CBaseCharacter : public BaseClass
 		virtual char*	GetFootStepSound(SurfaceType eSurfaceType);
 		virtual void	PlayFootStepSound(SurfaceType eSurfaceType);
 		virtual char*	GetDeathSound();
-		virtual void    PlayDialogSound(char* pSound, CharacterSoundType eType=CST_DIALOG, DBOOL bAtObjectPos=DFALSE);
+		virtual void    PlayDialogSound(const char* pSound, CharacterSoundType eType=CST_DIALOG, DBOOL bAtObjectPos=DFALSE);
 		virtual void	PlayDamageSound(DamageType eType);
 		virtual void	PlayDeathSound();
 		virtual void	HandleDead(DBOOL bRemoveObj);
@@ -217,14 +217,14 @@ class CBaseCharacter : public BaseClass
 		virtual void	SpawnItem(char* pItem, DVector & vPos, DRotation & rRot);
 		virtual void	CreateBody();
 
-		virtual DBOOL	ProcessTriggerMsg(char* pMsg);
+		virtual DBOOL	ProcessTriggerMsg(const char* pMsg);
 		virtual void	ProcessDamageMsg(HMESSAGEREAD hRead);
-		virtual DBOOL	ProcessCommand(char** pTokens, int nArgs, char* pNextCommand);
+		virtual DBOOL	ProcessCommand(const char** pTokens, int nArgs, const char* pNextCommand);
 
-		virtual void	PlaySound( char *pSoundName, DBYTE nPriorityMod, DFLOAT fRadius=1500.0f, DBOOL bAttached = DTRUE);
+		virtual void	PlaySound( const char *pSoundName, DBYTE nPriorityMod, DFLOAT fRadius=1500.0f, DBOOL bAttached = DTRUE);
 		virtual void	PlaySound( HSTRING hstrSoundName, DBYTE nPriorityMod, DFLOAT fRadius=1500.0f, DBOOL bAttached = DTRUE);
 
-		virtual void	CreateHandHeldWeapon(char* pFilename, char* pSkin);
+		virtual void	CreateHandHeldWeapon(char* pFilename, const char* pSkin);
 		virtual DVector	HandHeldWeaponFirePos();
 
 		virtual void	CreateDialogSprite();
@@ -246,6 +246,8 @@ class CBaseCharacter : public BaseClass
 		DDWORD			m_dwControlFlags;			// Control (movement) flags
 		DDWORD			m_dwLastFrameCtlFlgs;		// Control flags on the last frame
 		DFLOAT			m_fTimeInAir;				// How long have we been in the air
+		DFLOAT			m_fLastGroundUpdateTime;	// Last UpdateOnGround time
+		DFLOAT			m_fAirStartTime;		// [D:AIFALL]
 		CharacterDeath	m_eDeathType;				// How did we die
 		DBOOL			m_bStartedDeath;			// Did I start death ani?
 		DBOOL			m_bOneHandedWeapon;			// Are we holding a one handed weapon?

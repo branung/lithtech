@@ -13,7 +13,7 @@
 
 #include "cpp_engineobjects_de.h"
 
-class Key : public BaseClass
+class Key : public DEBaseClass
 {
 	public :
 

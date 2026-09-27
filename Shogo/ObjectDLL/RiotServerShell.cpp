@@ -9,6 +9,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "RiotServerShell.h"
+#include "de_lt1defaults.h"
 #include "PlayerObj.h"
 #include "cpp_server_de.h"
 #include "RiotMsgIDs.h"
@@ -29,86 +30,12 @@
 
 SETUP_SERVERSHELL()
 
+// LT1's CreateServerShell exports are gone as the engine creates the server shell through define_interface
+define_interface(CRiotServerShell, IServerShell);
+
 
 CRiotServerShell* g_pRiotServerShellDE = DNULL;
 
-
-
-// The default server shell maker.
-SShellMaker *g_pSShellMakerHead=DNULL;
-
-
-ServerShellDE* CreateShogoServerShell(ServerDE *pServerDE)
-{
-	g_pServerDE = pServerDE;
-
-	// Make sure we are using autodeactivation...
-
-	pServerDE->RunGameConString("autodeactivate 1.0");
-
-	CRiotServerShell *pShell = new CRiotServerShell;
-
-	g_pRiotServerShellDE = pShell;
-
-	return (ServerShellDE*)pShell;
-}
-
-void DeleteShogoServerShell(ServerShellDE *pInputShell)
-{
-	CRiotServerShell *pShell = (CRiotServerShell*)pInputShell;
-
-	// g_pRiotServerShellDE = DNULL; 
-	// (kls - 2/22/98 - CreateSeverShell() is called BEFORE
-	// DeleteServerShell() is called so we CAN'T set this to NULL)
-
-	delete pShell;
-}
-
-
-SShellMaker g_RiotSShellMaker(0, CreateShogoServerShell, DeleteShogoServerShell);
-
-
-SShellMaker* GetSShellMaker()
-{
-	SShellMaker *pCur, *pBest;
-	DDWORD bestPriority;
-
-	pBest = DNULL;
-	bestPriority = 0;	
-	for(pCur=g_pSShellMakerHead; pCur; pCur=pCur->m_pNext)
-	{
-		if(pCur->m_Priority >= bestPriority)
-		{
-			pBest = pCur;
-			bestPriority = pCur->m_Priority;
-		}
-	}
-
-	return pBest;
-}
-
-
-ServerShellDE* CreateServerShell(ServerDE *pServerDE)
-{
-	SShellMaker *pBest;
-
-	pBest = GetSShellMaker();	
-	if(!pBest)
-		return DNULL;
-
-	return pBest->m_CreateFn(pServerDE);
-}
-
-void DeleteServerShell(ServerShellDE *pInputShell)
-{
-	SShellMaker *pBest;
-
-	pBest = GetSShellMaker();	
-	if(!pBest)
-		return;
-
-	pBest->m_DeleteFn(pInputShell);
-}
 
 DBOOL g_bInfiniteAmmo = DFALSE;
 DBOOL g_bRobert = DFALSE;
@@ -144,27 +71,83 @@ inline float TODHoursToSeconds(float time)
 
 CRiotServerShell::CRiotServerShell()
 {
+	// This runs during static initialization, before g_pServerDE is set.
+	// Anything that touches the engine goes in OnServerInitialized()
+	g_pRiotServerShellDE = this;
+
 	memset(&m_GameInfo, 0, sizeof(NetGame));
 
-	m_hstrStartPointName = g_pServerDE->CreateString("DEFAULT");
+	m_hstrStartPointName = DNULL;
 	m_nCurLevel			 = 0;
-	
+
 	ClearClientList();
 	SetUpdateShogoServ();
 
 	m_bShogoServHosted = DFALSE;
 	m_WorldTimeColor[0] = m_WorldTimeColor[1] = m_WorldTimeColor[2] = MAX_WORLDTIME_COLOR;
 
-	SetupGameInfo();
-
 	m_nLastLGFlags  = LOAD_NEW_GAME;
 	m_hSwitchWorldVar = DNULL;
 	m_bFirstUpdate = DTRUE;
-	
+
 	m_TODSeconds = TODHoursToSeconds(12.0f);
 	m_TODCounter = 0.0f;
 	m_ClientPingSendCounter = 0.0f;
-	
+
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CRiotServerShell::OnServerInitialized()
+//
+//	PURPOSE:	Initialization that needs the engine, the first point g_pServerDE is valid
+//
+// ----------------------------------------------------------------------- //
+
+LTRESULT CRiotServerShell::OnServerInitialized()
+{
+	// No base call since IServerShellStub's default is private and only returns LT_OK
+	if (!g_pServerDE) return LT_ERROR;
+
+	g_pServerDE->RunGameConString("autodeactivate 1.0");
+
+	// The shared LT1 server defaults
+	DECompat_ApplyLT1ServerDefaults(g_pServerDE);
+
+	// LT1 stair step and resting behavior.
+	// Each side compiles its own collision.cpp so the client shell sets this too
+	g_pServerDE->RunGameConString("LT1StairStep 1");
+
+	// Keep gravity on a standing object like LT1.
+	// Without it a standing character flickers between grounded and airborne and loses jumps (client too)
+	g_pServerDE->RunGameConString("LT1StandGravity 1");
+
+	// Keep the solver's resolved position when the strike or restart cap fires (client too)
+	g_pServerDE->RunGameConString("LT1StrikeKeep 1");
+
+	// LT1StrikeKeep's other half.
+	// A strike leaves the candidate loop early, and Jupiter put the main world in that loop (client too)
+	g_pServerDE->RunGameConString("LT1WorldAfterObjects 1");
+
+	// The rest of LT1's contact stack: 0.1 clearance, exact contact isn't a hit, no stale detections.
+	// Without them LT1StrikeKeep parks the player on the wall plane (client sets all four)
+	g_pServerDE->RunGameConString("LT1IntersectPushback 1");
+	g_pServerDE->RunGameConString("LT1PlaneRecheck 1");
+	g_pServerDE->RunGameConString("LT1SweepRebuild 1");
+	g_pServerDE->RunGameConString("LT1PolyTest 1");
+
+	// LT1 picks the path that prevents tunneling geometrically, Jupiter by a flag no 1998 game sets (client too)
+	g_pServerDE->RunGameConString("LT1TunnelPath 1");
+
+	if (!m_hstrStartPointName)
+	{
+		m_hstrStartPointName = g_pServerDE->CreateString("DEFAULT");
+	}
+
+	SetupGameInfo();
+
+	return LT_OK;
 }
 
 
@@ -254,11 +237,11 @@ void CRiotServerShell::OnRemoveClient(HCLIENT hClient)
 //
 // ----------------------------------------------------------------------- //
 
-BaseClass* CRiotServerShell::OnClientEnterWorld(HCLIENT hClient, void *pClientData, DDWORD clientDataLen)
+DEBaseClass* CRiotServerShell::OnClientEnterWorld(HCLIENT hClient, void *pClientData, DDWORD clientDataLen)
 {
 	if (!g_pServerDE || !hClient) return DNULL;
 
-	BaseClass* pClass  = DNULL;
+	DEBaseClass* pClass  = DNULL;
 	DBOOL bFoundClient = DFALSE;
 
 	char sClientName[MAX_CLIENT_NAME_LENGTH];
@@ -314,7 +297,7 @@ BaseClass* CRiotServerShell::OnClientEnterWorld(HCLIENT hClient, void *pClientDa
 		if (bFoundClient)
 		{
 			HOBJECT	hObject = g_pServerDE->GetClientRefObject(hClientRef);
-			pClass = g_pServerDE->HandleToObject(hObject);
+			pClass = (DEBaseClass*)g_pServerDE->HandleToObject(hObject);
 
 			if (pClass)
 			{
@@ -508,7 +491,7 @@ void CRiotServerShell::OnMessage(HCLIENT hSender, DBYTE messageID, HMESSAGEREAD 
 			CPlayerObj* pPlayer = (CPlayerObj*)pServerDE->GetClientUserData(hSender);
 			if(pPlayer)
 			{		
-				LPBASECLASS pClass = pServerDE->HandleToObject(pPlayer->m_hObject);
+				DEBaseClass* pClass = pServerDE->HandleToObject(pPlayer->m_hObject);
 				if (pClass)
 				{
 					DVector vDir(0,1,0);
@@ -637,12 +620,10 @@ void CRiotServerShell::OnMessage(HCLIENT hSender, DBYTE messageID, HMESSAGEREAD 
 			DDWORD nByte3 = (DDWORD) pServerDE->ReadFromMessageByte (hMessage);
 			DDWORD nByte4 = (DDWORD) pServerDE->ReadFromMessageByte (hMessage);
 			
-			DDWORD nDlgObject = (nByte1) | (nByte2 << 8) | (nByte3 << 16) | (nByte4 << 24);
-			
-			HOBJECT hDlgObj = (HOBJECT) nDlgObject;
-			if (!hDlgObj) break;
+			DDWORD nDialogID = (nByte1) | (nByte2 << 8) | (nByte3 << 16) | (nByte4 << 24);
 
-			DialogTrigger* pDlg = (DialogTrigger*) pServerDE->HandleToObject (hDlgObj);
+			// A registry ID, since a pointer truncates on x64 and an unissued ID resolves to NULL
+			DialogTrigger* pDlg = DialogTrigger::FromDialogID((uint32)nDialogID);
 			if (!pDlg) break;
 
 			pDlg->Trigger ((int) fSelection);
@@ -911,7 +892,7 @@ void CRiotServerShell::SetStartPointName(HSTRING hString)
 //
 // ----------------------------------------------------------------------- //
 
-BaseClass* CRiotServerShell::CreatePlayer(HCLIENT hClient)
+DEBaseClass* CRiotServerShell::CreatePlayer(HCLIENT hClient)
 {
 	if (!g_pServerDE) return DNULL;
 
@@ -924,7 +905,7 @@ BaseClass* CRiotServerShell::CreatePlayer(HCLIENT hClient)
 
 	HCLASS hClass = g_pServerDE->GetClass("CPlayerObj");
 
-	BaseClass* pClass = NULL;
+	DEBaseClass* pClass = NULL;
 	if (hClass)
 	{
 		pClass = g_pServerDE->CreateObject(hClass, &theStruct);
@@ -962,7 +943,7 @@ BaseClass* CRiotServerShell::CreatePlayer(HCLIENT hClient)
 //
 // ----------------------------------------------------------------------- //
 
-void CRiotServerShell::RespawnPlayer(BaseClass* pClass, HCLIENT hClient)
+void CRiotServerShell::RespawnPlayer(DEBaseClass* pClass, HCLIENT hClient)
 {
 	if (!pClass || !hClient) return;
 
@@ -1076,7 +1057,7 @@ void CRiotServerShell::HandleCheatRemoveAI(DBYTE nData)
 			DVector vDir;
 			VEC_INIT(vDir);
 	
-			LPBASECLASS pClass = g_pServerDE->HandleToObject(hRemoveObj);
+			DEBaseClass* pClass = (DEBaseClass*)g_pServerDE->HandleToObject(hRemoveObj);
 			if (pClass)
 			{
 				HMESSAGEWRITE hMessage = g_pServerDE->StartMessageToObject(pClass, hRemoveObj, MID_DAMAGE);
@@ -1108,7 +1089,7 @@ void CRiotServerShell::HandleCheatRemoveAI(DBYTE nData)
 			DVector vDir;
 			VEC_INIT(vDir);
 	
-			LPBASECLASS pClass = g_pServerDE->HandleToObject(hRemoveObj);
+			DEBaseClass* pClass = (DEBaseClass*)g_pServerDE->HandleToObject(hRemoveObj);
 			if (pClass)
 			{
 				HMESSAGEWRITE hMessage = g_pServerDE->StartMessageToObject(pClass, hRemoveObj, MID_DAMAGE);
@@ -1204,9 +1185,9 @@ void CRiotServerShell::HandleLoadGameMsg(HCLIENT hSender, HMESSAGEREAD hMessage)
 	ObjectList* pKeepAliveList = pServerDE->CreateObjectList();
 
 
-	char* pLGFileName = DNULL;
-	char* pSGFileName = DNULL;
-	char* pROFileName = DNULL;
+	const char* pLGFileName = DNULL;
+	const char* pSGFileName = DNULL;
+	const char* pROFileName = DNULL;
 	
 	if (hLGName) pLGFileName = pServerDE->GetStringData(hLGName);
 	if (hSGName) pSGFileName = pServerDE->GetStringData(hSGName);
@@ -1439,7 +1420,7 @@ void CRiotServerShell::HandleSaveGameMsg(HCLIENT hSender, HMESSAGEREAD hMessage)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pSGFileName = DNULL;
+	const char* pSGFileName = DNULL;
 	HOBJECT	hObj = DNULL;
 	ObjectList* pSaveList = pServerDE->CreateObjectList();
 
@@ -1718,7 +1699,7 @@ void CRiotServerShell::Update(DFLOAT timeElapsed)
 
 
 	// Did the server want to say something?
-	char *pSay = m_SayTrack.GetStr("");
+	const char *pSay = m_SayTrack.GetStr("");
 	if(pSay && pSay[0] != 0)
 	{
 		char fullMsg[512];
@@ -1737,7 +1718,7 @@ void CRiotServerShell::Update(DFLOAT timeElapsed)
 	DBYTE newColor[3];
 	float brightness;
 	HMESSAGEWRITE hWrite;
-	char *pStr;
+	const char *pStr;
 
 	if(m_WorldTimeSpeedTrack.GetFloat() == -1)
 	{
@@ -1851,7 +1832,8 @@ void CRiotServerShell::Update(DFLOAT timeElapsed)
 void CRiotServerShell::CheckSwitchWorldCommand()
 {
 	ServerDE *pServerDE;
-	char *pCurLevelName, *pNextLevelName, *pCmdName, *pVal;
+	char *pCurLevelName, *pNextLevelName, *pCmdName;
+	const char *pVal;
 
 	pCmdName = "SwitchWorld";
 	pServerDE = GetServerDE();	
@@ -2224,7 +2206,8 @@ void CRiotServerShell::SetupGameInfo()
 {
 	if (g_pServerDE)
 	{
-		NetGame* pGameInfo;
+		// Initialized because GetGameInfo may return without writing it
+		NetGame* pGameInfo = NULL;
 		DDWORD dwLen = sizeof(NetGame);
 		g_pServerDE->GetGameInfo((void**)&pGameInfo, &dwLen);
 
@@ -2290,7 +2273,7 @@ void CRiotServerShell::UpdateMultiplayer()
 }
 
 
-DRESULT CRiotServerShell::SwitchToWorld(char *pWorldName, char *pNextWorldName)
+DRESULT CRiotServerShell::SwitchToWorld(const char *pWorldName, const char *pNextWorldName)
 {
 	ServerDE *pServerDE = GetServerDE();
 	DRESULT dResult;

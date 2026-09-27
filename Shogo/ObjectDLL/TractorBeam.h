@@ -31,7 +31,7 @@ struct BeamInfo
 
 inline void BeamInfo::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToLoadSaveMessageObject(hWrite, hObjectSrc);
@@ -45,7 +45,7 @@ inline void BeamInfo::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 inline void BeamInfo::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromLoadSaveMessageObject(hRead, &hObjectSrc);
@@ -57,7 +57,7 @@ inline void BeamInfo::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 	nSurfaceFlags	= pServerDE->ReadFromMessageDWord(hRead);	
 }
 
-class TractorBeam : public BaseClass
+class TractorBeam : public DEBaseClass
 {
 	public :
 

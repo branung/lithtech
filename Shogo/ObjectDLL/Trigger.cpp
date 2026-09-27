@@ -12,7 +12,7 @@
 #include "cpp_server_de.h"
 #include "RiotObjectUtilities.h"
 #include "InventoryTypes.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "PlayerObj.h"
 #include <stdio.h>
 
@@ -65,7 +65,7 @@ BEGIN_CLASS(Trigger)
 	ADD_STRINGPROP(ActivationSound, "")
 	ADD_REALPROP_FLAG(SoundRadius, 200.0f, PF_RADIUS)
 	ADD_STRINGPROP(AttachToObject, "")
-END_CLASS_DEFAULT(Trigger, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(Trigger, DEBaseClass, NULL, NULL)
 
 
 // Static global variables...
@@ -82,7 +82,7 @@ static char *g_szTrigger = "TRIGGER";
 //
 // ----------------------------------------------------------------------- //
 
-Trigger::Trigger() : BaseClass()
+Trigger::Trigger() : DEBaseClass()
 {
 	AddAggregate(&m_activation);
 
@@ -253,7 +253,7 @@ DDWORD Trigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		{
 			if (!Update())
 			{
-				CServerDE* pServerDE = BaseClass::GetServerDE();
+				CServerDE* pServerDE = DEBaseClass::GetServerDE();
 				if (!pServerDE) return 0;
 
 				pServerDE->RemoveObject(m_hObject);		
@@ -278,7 +278,7 @@ DDWORD Trigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 			}
 
 			pStruct->m_UserData = USRFLG_IGNORE_PROJECTILES;
-			pStruct->m_fDeactivationTime = TRIGGER_DEACTIVATION_TIME;
+	// ObjectCreateStruct lost m_fDeactivationTime because Jupiter manages deactivation itself
 		}
 		break;
 
@@ -319,7 +319,7 @@ DDWORD Trigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		{
 			// Go away if our parent is removed...
 
-			CServerDE* pServerDE = BaseClass::GetServerDE();
+			CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			if (pServerDE)
 			{
 				pServerDE->RemoveObject(m_hObject);
@@ -331,7 +331,7 @@ DDWORD Trigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -356,7 +356,7 @@ DDWORD Trigger::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD 
 		break;
 	}
 
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
@@ -370,11 +370,11 @@ DDWORD Trigger::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD 
 
 void Trigger::HandleTriggerMsg(HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	HSTRING hMsg = pServerDE->ReadFromMessageHString(hRead);
-	char* pMsg   = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 
 	// See if we should trigger the trigger...
 
@@ -451,7 +451,7 @@ void Trigger::HandleInventoryQueryResponse(HOBJECT hSender, HMESSAGEREAD hRead)
 
 			if (m_hstrAccessGrantedSound)
 			{
-				char *pSound = pServerDE->GetStringData(m_hstrAccessGrantedSound);
+				const char* pSound = pServerDE->GetStringData(m_hstrAccessGrantedSound);
 				if (!pSound) return;
 
 				PlaySoundFromObject(hSender, pSound, m_fSoundRadius, SOUNDPRIORITY_MISC_HIGH );
@@ -474,7 +474,7 @@ void Trigger::HandleInventoryQueryResponse(HOBJECT hSender, HMESSAGEREAD hRead)
 			
 			if (m_hstrAccessDeniedSound)
 			{
-				char *pSound = pServerDE->GetStringData(m_hstrAccessDeniedSound);
+				const char* pSound = pServerDE->GetStringData(m_hstrAccessDeniedSound);
 				if (!pSound) return;
 
 				PlaySoundFromObject(hSender, pSound, m_fSoundRadius, SOUNDPRIORITY_MISC_HIGH);
@@ -611,8 +611,8 @@ void Trigger::ObjectTouch(HOBJECT hObj)
 		{
 			if (m_hstrAIName) // See if only a specific AI can trigger it...
 			{
-				char* pAIName  = pServerDE->GetStringData(m_hstrAIName);
-				char* pObjName = pServerDE->GetObjectName(hObj);
+				const char* pAIName = pServerDE->GetStringData(m_hstrAIName);
+				const char* pObjName = pServerDE->GetObjectName(hObj);
 
 				if (pAIName && pObjName)
 				{
@@ -641,6 +641,13 @@ void Trigger::ObjectTouch(HOBJECT hObj)
 
 		if ( pServerDE->IsKindOf(hClassObj, hClassPlayer) )
 		{
+			if (ShogoDiagLevel() > 1)
+			{
+				pServerDE->CPrint("[D:TRIG] t=%.2f TOUCH-REFUSED '%s' player, PlayerTriggerable=%d hClassPlayer=%s",
+					(double)pServerDE->GetTime(),
+					pServerDE->GetObjectName(m_hObject) ? pServerDE->GetObjectName(m_hObject) : "<unnamed>",
+					(int)m_bPlayerTriggerable, hClassPlayer ? "ok" : "NULL");
+			}
 			return;
 		}
 	}
@@ -671,6 +678,16 @@ void Trigger::DoTrigger(HOBJECT hObj, DBOOL bTouchNotify)
 {
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
+
+	if (ShogoDiagLevel() > 0)
+	{
+		pServerDE->CPrint("[D:TRIG] t=%.2f d=%d DOTRIGGER '%s' via %s from '%s' active=%d locked=%d",
+			(double)pServerDE->GetTime(), ShogoDiagTrigDepth(),
+			pServerDE->GetObjectName(m_hObject) ? pServerDE->GetObjectName(m_hObject) : "<unnamed>",
+			bTouchNotify ? "TOUCH" : "MESSAGE-or-TIMED",
+			hObj ? (pServerDE->GetObjectName(hObj) ? pServerDE->GetObjectName(hObj) : "<unnamed>") : "<none>",
+			(int)m_bActive, (int)m_bLocked);
+	}
 
 	m_bTouchNotifyActivation = bTouchNotify;
 	m_hTouchObject = hObj;
@@ -846,6 +863,22 @@ void Trigger::RequestActivate()
 	}
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Trigger::FastForwardActivateTo
+//
+//	PURPOSE:	Run a pending delayed trigger forward to a given time (cutscene skip)
+//
+// ----------------------------------------------------------------------- //
+DBOOL Trigger::FastForwardActivateTo(DFLOAT fTime)
+{
+	if (!m_bDelayingActivate) return DFALSE;
+	if (fTime < GetActivateTime()) return DFALSE;
+
+	m_bDelayingActivate = DFALSE;
+	Activate();
+	return DTRUE;
+}
 
 // ----------------------------------------------------------------------- //
 //
@@ -854,7 +887,6 @@ void Trigger::RequestActivate()
 //	PURPOSE:	Update the delaying (and possibly activate) the trigger
 //
 // ----------------------------------------------------------------------- //
-
 void Trigger::UpdateDelayingActivate()
 {
 	CServerDE* pServerDE = GetServerDE();
@@ -917,11 +949,22 @@ void Trigger::Activate()
 
 	if (m_hstrActivationSound)
 	{
-		char* pSound = pServerDE->GetStringData(m_hstrActivationSound);
+		const char* pSound = pServerDE->GetStringData(m_hstrActivationSound);
 		if (pSound && pSound[0] != '\0')
 		{
 			PlaySoundFromObject(m_hObject, pSound, m_fSoundRadius, SOUNDPRIORITY_MISC_HIGH);
 		}
+	}
+
+	if (ShogoDiagLevel() > 0)
+	{
+		DVector vPos;
+		pServerDE->GetObjectPos(m_hObject, &vPos);
+		pServerDE->CPrint("[D:TRIG] t=%.2f d=%d ACTIVATE '%s' at (%.0f %.0f %.0f) activationcount=%d",
+			(double)pServerDE->GetTime(), ShogoDiagTrigDepth(),
+			pServerDE->GetObjectName(m_hObject) ? pServerDE->GetObjectName(m_hObject) : "<unnamed>",
+			(double)vPos.x, (double)vPos.y, (double)vPos.z,
+			(int)m_nActivationCount);
 	}
 
 	DBOOL bTriggerMsg1 = DTRUE;
@@ -1005,7 +1048,7 @@ void Trigger::CreateBoundingBox()
 	theStruct.m_Flags = FLAG_VISIBLE;
 
 	HCLASS hClass = pServerDE->GetClass("Model");
-	LPBASECLASS pModel = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pModel = pServerDE->CreateObject(hClass, &theStruct);
 
 	if (pModel)
 	{
@@ -1037,7 +1080,7 @@ void Trigger::AttachToObject()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !m_hstrAttachToObject) return;
 
-	char* pObjName = pServerDE->GetStringData(m_hstrAttachToObject);
+	const char* pObjName = pServerDE->GetStringData(m_hstrAttachToObject);
 	if (!pObjName) return;
 
 
@@ -1190,7 +1233,7 @@ void Trigger::CacheFiles()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 	if (m_hstrAccessDeniedSound)
 	{
 		pFile = pServerDE->GetStringData(m_hstrAccessDeniedSound);

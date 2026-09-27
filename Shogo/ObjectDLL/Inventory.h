@@ -12,7 +12,7 @@
 #define __INVENTORY_H
 
 #include "cpp_aggregate_de.h"
-#include "dynarray.h"
+#include "DynArray.h"
 
 struct ITEM
 {
@@ -69,8 +69,8 @@ class Inventory : public Aggregate
 	
 	protected:
 
-		virtual DDWORD		EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT lData);
-		virtual DDWORD		ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
+		virtual DDWORD		EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT lData);
+		virtual DDWORD		ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
 
 	protected:
 

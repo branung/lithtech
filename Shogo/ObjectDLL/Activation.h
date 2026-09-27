@@ -38,15 +38,15 @@ class CActivation : public Aggregate
 
 	protected :
 
-		DDWORD EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT lData);
+		DDWORD EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT lData);
 
 	private :
 
-		void Save(LPBASECLASS pObject, HMESSAGEWRITE hWrite);
-		void Load(LPBASECLASS pObject, HMESSAGEREAD hRead);
+		void Save(DEBaseClass* pObject, HMESSAGEWRITE hWrite);
+		void Load(DEBaseClass* pObject, HMESSAGEREAD hRead);
 
-		void ReadProp(LPBASECLASS pObject, ObjectCreateStruct* pStruct);
-		void InitialUpdate(LPBASECLASS pObject, DFLOAT fInfo);
+		void ReadProp(DEBaseClass* pObject, ObjectCreateStruct* pStruct);
+		void InitialUpdate(DEBaseClass* pObject, DFLOAT fInfo);
 
 		HSTRING m_hstrActivateCondition;
 		DBOOL	m_bIsActive;

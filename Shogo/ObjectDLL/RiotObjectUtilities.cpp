@@ -11,22 +11,99 @@
 #include <stdlib.h>
 #include "RiotObjectUtilities.h"
 #include "cpp_server_de.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "RiotSoundTypes.h"
+
+
+// [D:TRIG] trace on the two send helpers below
+
+static HCONVAR	g_hShogoDiagVar		= DNULL;
+static int		g_nTrigSendDepth	= 0;
+
+int ShogoDiagLevel()
+{
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
+	if (!pServerDE) return 0;
+
+	if (!g_hShogoDiagVar)
+	{
+		g_hShogoDiagVar = pServerDE->GetGameConVar("Diag");
+		if (!g_hShogoDiagVar)
+		{
+			static DBOOL s_bWarnedNoDiag = DFALSE;
+			if (!s_bWarnedNoDiag)
+			{
+				s_bWarnedNoDiag = DTRUE;
+				pServerDE->CPrint("[D:TRIG] Server diagnostics are off. Type serv Diag 1 to turn them on.");
+			}
+			return 0;
+		}
+	}
+
+
+	return (int)pServerDE->GetVarValueFloat(g_hShogoDiagVar);
+}
+
+int ShogoDiagTrigDepth()
+{
+	return g_nTrigSendDepth;
+}
+
+// Object name for the trace,
+// with <unnamed>, <unresolved> and <null> for the cases GetObjectName can't name
+static const char* DiagObjName(HOBJECT hObj)
+{
+	if (!hObj) return "<null>";
+
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
+	if (!pServerDE) return "<?>";
+
+	const char* pName = pServerDE->GetObjectName(hObj);
+	if (!pName) return "<unresolved>";
+	if (!pName[0]) return "<unnamed>";
+	return pName;
+}
+
+static const char* DiagObjKind(HOBJECT hObj)
+{
+	if (!hObj)					return "none";
+	if (IsPlayer(hObj))			return "player";
+	if (IsAI(hObj))				return "ai";
+	if (IsBaseCharacter(hObj))	return "character";
+	return "object";
+}
+
+static const char* DiagStr(HSTRING hStr)
+{
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
+	if (!pServerDE || !hStr) return "<null>";
+
+	const char* pStr = pServerDE->GetStringData(hStr);
+	return pStr ? pStr : "<null>";
+}
 
 
 // Send hMsg string to all objects named hName...
 
-void SendTriggerMsgToObjects(LPBASECLASS pSender, HSTRING hName, HSTRING hMsg)
+void SendTriggerMsgToObjects(DEBaseClass* pSender, HSTRING hName, HSTRING hMsg)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
-	char* pName = pServerDE->GetStringData(hName);
+	const char* pName = pServerDE->GetStringData(hName);
 	if (!pName || pName[0] == '\0') return;
 
 	ObjectList*	pList = pServerDE->FindNamedObjects(pName);
 	if (!pList) return;
+
+	if (ShogoDiagLevel() > 0)
+	{
+		HOBJECT hSender = pSender ? pSender->m_hObject : DNULL;
+		pServerDE->CPrint("[D:TRIG] t=%.2f d=%d SEND-BY-NAME from '%s' (%s) -> '%s' x%d msg '%s'",
+			(double)pServerDE->GetTime(), g_nTrigSendDepth,
+			DiagObjName(hSender), DiagObjKind(hSender),
+			pName, (int)pList->m_nInList, DiagStr(hMsg));
+	}
 
 	HMESSAGEWRITE hMessage;
 
@@ -35,9 +112,12 @@ void SendTriggerMsgToObjects(LPBASECLASS pSender, HSTRING hName, HSTRING hMsg)
 	{
 		if (pLink)
 		{
+			// Jupiter dispatches on this stack during EndMessage so the depth has to bracket the send
+			++g_nTrigSendDepth;
 			hMessage = pServerDE->StartMessageToObject(pSender, pLink->m_hObject, MID_TRIGGER);
 			pServerDE->WriteToMessageHString(hMessage, hMsg);
 			pServerDE->EndMessage(hMessage);
+			--g_nTrigSendDepth;
 		}
 
 		pLink = pLink->m_pNext;
@@ -46,16 +126,27 @@ void SendTriggerMsgToObjects(LPBASECLASS pSender, HSTRING hName, HSTRING hMsg)
 	pServerDE->RelinquishList(pList);
 }
 
-void SendTriggerMsgToObject(LPBASECLASS pSender, HOBJECT hObj, HSTRING hMsg)
+void SendTriggerMsgToObject(DEBaseClass* pSender, HOBJECT hObj, HSTRING hMsg)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
+
+	if (ShogoDiagLevel() > 0)
+	{
+		HOBJECT hSender = pSender ? pSender->m_hObject : DNULL;
+		pServerDE->CPrint("[D:TRIG] t=%.2f d=%d SEND-BY-HANDLE from '%s' (%s) -> '%s' (%s) msg '%s'",
+			(double)pServerDE->GetTime(), g_nTrigSendDepth,
+			DiagObjName(hSender), DiagObjKind(hSender),
+			DiagObjName(hObj), DiagObjKind(hObj), DiagStr(hMsg));
+	}
 
 	HMESSAGEWRITE hMessage;
 
+	++g_nTrigSendDepth;
 	hMessage = pServerDE->StartMessageToObject(pSender, hObj, MID_TRIGGER);
 	pServerDE->WriteToMessageHString(hMessage, hMsg);
 	pServerDE->EndMessage(hMessage);
+	--g_nTrigSendDepth;
 }
 
 //-------------------------------------------------------------------------------------------
@@ -75,7 +166,7 @@ void SendTriggerMsgToObject(LPBASECLASS pSender, HOBJECT hObj, HSTRING hMsg)
 // Return:
 //		Handle to sound, if bHandle was set to TRUE.
 //-------------------------------------------------------------------------------------------
-HSOUNDDE PlaySoundFromObject( HOBJECT hObject, char *pSoundName, DFLOAT fRadius, DBYTE nSoundPriority, 
+HSOUNDDE PlaySoundFromObject( HOBJECT hObject, const char *pSoundName, DFLOAT fRadius, DBYTE nSoundPriority, 
 							 DBOOL bLoop, DBOOL bHandle, DBOOL bTime, DBYTE nVolume, DBOOL bInstant )
 {
 	if (!pSoundName) return DNULL;
@@ -131,7 +222,7 @@ HSOUNDDE PlaySoundFromObject( HOBJECT hObject, char *pSoundName, DFLOAT fRadius,
 // Return:
 //		Handle to sound, if bHandle was set to TRUE.
 //-------------------------------------------------------------------------------------------
-HSOUNDDE PlaySoundFromPos( DVector *vPos, char *pSoundName, DFLOAT fRadius, DBYTE nSoundPriority, 
+HSOUNDDE PlaySoundFromPos( DVector *vPos, const char *pSoundName, DFLOAT fRadius, DBYTE nSoundPriority, 
 						  DBOOL bLoop, DBOOL bHandle, DBOOL bTime, DBYTE nVolume )
 {
 	if (!pSoundName) return DNULL;
@@ -174,7 +265,7 @@ HSOUNDDE PlaySoundFromPos( DVector *vPos, char *pSoundName, DFLOAT fRadius, DBYT
 // Return:
 //		Handle to sound, if bHandle was set to TRUE.
 //-------------------------------------------------------------------------------------------
-HSOUNDDE PlaySoundLocal( char *pSoundName, DBYTE nSoundPriority, DBOOL bLoop, DBOOL bHandle, DBOOL bTime, DBYTE nVolume, DBOOL bReverb )
+HSOUNDDE PlaySoundLocal( const char *pSoundName, DBYTE nSoundPriority, DBOOL bLoop, DBOOL bHandle, DBOOL bTime, DBYTE nVolume, DBOOL bReverb )
 {
 	PlaySoundInfo playSoundInfo;
 

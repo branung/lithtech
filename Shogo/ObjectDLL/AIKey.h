@@ -13,7 +13,7 @@
 
 #include "cpp_engineobjects_de.h"
 
-class AIKey : public BaseClass
+class AIKey : public DEBaseClass
 {
 	public :
 

@@ -14,7 +14,7 @@
 #include "BaseCharacter.h"
 #include "PlayerMode.h"
 #include "GameStartPoint.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "CheatDefs.h"
 #include "Music.h"
 #include "TemplateList.h"
@@ -27,11 +27,15 @@
 class TractorBeam;
 class CWeapon;
 
-DBOOL TractorBeamFilter (HOBJECT hObject, void* pUserData);
+bool TractorBeamFilter (HOBJECT hObject, void* pUserData);
 
 class CPlayerObj : public CBaseCharacter
 {
 	public :
+
+		// True while SkipActiveCinematic runs a scene's timeline in one frame.
+		// Static because CBaseCharacter::ProcessTriggerMsg reads it
+		static DBOOL IsSkippingCinematic()	{ return s_bSkippingCinematic; }
 
 		CPlayerObj();
 		virtual ~CPlayerObj();
@@ -52,6 +56,18 @@ class CPlayerObj : public CBaseCharacter
 		// If the update had CLIENTUPDATE_ALLOWINPUT, then it returns FALSE because nothing
 		// else will be in the packet.
 		DBOOL ClientUpdate(HMESSAGEREAD hMessage);
+
+		/*
+			Is the client holding this command?
+			Jupiter has no server IsCommandOn so the state comes in the player update (CLIENTUPDATE_COMMANDS).
+		*/
+		DBOOL IsCommandOn(int nCommand) const
+		{
+			if (nCommand < 0 || nCommand >= PLAYER_COMMAND_BITS)
+				return DFALSE;
+			return (m_nCommandBits[nCommand >> 6] &
+					(((uint64)1) << (nCommand & 63))) ? DTRUE : DFALSE;
+		}
 
 		DBOOL MultiplayerInit(HMESSAGEREAD hMessage);
 
@@ -121,12 +137,12 @@ class CPlayerObj : public CBaseCharacter
 		virtual void OnTimedPowerupExpiration (PickupItemType eType);
 
 		virtual DVector	GetHeadOffset() { return m_playerMode.GetCameraOffset(); }
-		virtual DBOOL ProcessCommand(char** pTokens, int nArgs, char* pNextCommand);
+		virtual DBOOL ProcessCommand(const char** pTokens, int nArgs, const char* pNextCommand);
 
 		virtual void	KillDlgSnd();
 
 		void	TransmissionEnded( );
-		virtual void    PlayDialogSound(char* pSound, CharacterSoundType eType=CST_DIALOG, DBOOL bAtObjectPos=DFALSE);
+		virtual void    PlayDialogSound(const char* pSound, CharacterSoundType eType=CST_DIALOG, DBOOL bAtObjectPos=DFALSE);
 
 	private :
 
@@ -173,6 +189,21 @@ class CPlayerObj : public CBaseCharacter
 		void UpdateScentBiscuits();
 
 		void UpdateConsoleVars();
+
+		// Cutscene skipping, run when the client asks
+		void SkipActiveCinematic();
+
+		// One step of the fast forward.
+		// Returns DTRUE if it changed anything
+		DBOOL SkipOneCinematicStep(DFLOAT* pfVirtualTime);
+
+		// Is a cutscene camera still on screen? (the fast forward's stop condition)
+		DBOOL IsCinematicCameraLive();
+
+		static DBOOL s_bSkippingCinematic;
+
+		// Drops every queued transmission and any line in flight
+		void ClearDialogQueue();
 
 		void TeleportClientToServerPos();
 		void TeleFragObjects(DVector & vPos);
@@ -247,6 +278,9 @@ class CPlayerObj : public CBaseCharacter
 
 		D_WORD		m_nClientChangeFlags;
 
+		// Client command state, a bit per COMMAND_ID_*
+		uint64		m_nCommandBits[2];
+
 		HOBJECT		m_hTractorBeam;		// Tractor beam object
 
 
@@ -260,7 +294,7 @@ class CPlayerObj : public CBaseCharacter
 	// should be added here (to keep them together)...
 
 
-		CTList<BaseClass*>	m_biscuitModels;	// Temp for testing
+		CTList<DEBaseClass*>	m_biscuitModels;	// Temp for testing
 
 		int				m_nOldAmmo[GUN_MAX_NUMBER];
 
@@ -294,6 +328,7 @@ class CPlayerObj : public CBaseCharacter
 		HCONVAR		m_hTractorBeamVar;
 		HCONVAR		m_hSwimVelVar;
 		HCONVAR		m_hLadderVelVar;
+
 
 		DBOOL		m_bTractorBeamAvailable;
 		DBOOL		m_bLevelStarted;

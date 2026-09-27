@@ -12,7 +12,7 @@
 #include "cpp_server_de.h"
 
 BEGIN_CLASS(AIKey)
-END_CLASS_DEFAULT(AIKey, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(AIKey, DEBaseClass, NULL, NULL)
 
 // ----------------------------------------------------------------------- //
 //
@@ -22,6 +22,6 @@ END_CLASS_DEFAULT(AIKey, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-AIKey::AIKey() : BaseClass(OT_NORMAL)
+AIKey::AIKey() : DEBaseClass(OT_NORMAL)
 {
 }

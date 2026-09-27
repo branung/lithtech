@@ -26,38 +26,20 @@
 class CPlayerObj;
 
 
-// If you make a global one of these, you can override the default server shell.
-// The default ServerShellMaker makes a CRiotServerShell and has priority 0.
-// If you make one with a higher priority, it'll use yours instead.
-class SShellMaker;
-extern SShellMaker *g_pSShellMakerHead;
-
-class SShellMaker
-{
-public:
-	SShellMaker(DDWORD priority, CreateServerShellFn createFn, DeleteServerShellFn deleteFn)
-	{
-		m_Priority = priority;
-		m_CreateFn = createFn;
-		m_DeleteFn = deleteFn;
-		m_pNext = g_pSShellMakerHead;
-		g_pSShellMakerHead = this;
-	}
-
-	DDWORD				m_Priority;
-	CreateServerShellFn m_CreateFn;
-	DeleteServerShellFn m_DeleteFn;
-	SShellMaker			*m_pNext;
-};
-
+// No SShellMaker list as Jupiter picks the shell from define_interface
 
 
 class CRiotServerShell : public CServerShellDE
 {
 	public :
 
+		declare_interface(CRiotServerShell);
+
 		CRiotServerShell();
 		~CRiotServerShell();
+
+		// Initialization that needs the engine since the constructor runs before g_pServerDE exists
+		virtual LTRESULT OnServerInitialized();
 
 		void			SetStartPointName(HSTRING hString);
 		GameType		GetGameType()	const { return (GameType)m_GameInfo.m_byType; }
@@ -84,12 +66,18 @@ class CRiotServerShell : public CServerShellDE
 
 		void		OnAddClient(HCLIENT hClient);
 		void		OnRemoveClient(HCLIENT hClient);
-		BaseClass*	OnClientEnterWorld(HCLIENT hClient, void *pClientData, DDWORD clientDataLen);
+		DEBaseClass*	OnClientEnterWorld(HCLIENT hClient, void *pClientData, DDWORD clientDataLen);
 		void		OnClientExitWorld(HCLIENT hClient);
 
 		void		SendPlayerInfoMsgToClients(HCLIENT hClients, CPlayerObj *pPlayer);
 		void		OnMessage(HCLIENT hSender, DBYTE messageID, HMESSAGEREAD hMessage);
+
+	public :
+
+		// Public because CPlayerObj::ClientUpdate fires it from the command mask
 		void		OnCommandOn(HCLIENT hClient, int command);
+
+	protected :
 		void		PreStartWorld(DBOOL bSwitchingWorlds);
 		void		PostStartWorld();
 		void		CacheFiles();
@@ -110,8 +98,8 @@ class CRiotServerShell : public CServerShellDE
 		void HandleLoadGameMsg(HCLIENT hSender, HMESSAGEREAD hMessage);
 		void HandleSaveGameMsg(HCLIENT hSender, HMESSAGEREAD hMessage);
 
-		BaseClass* CreatePlayer(HCLIENT hClient);
-		void RespawnPlayer(BaseClass* pClass, HCLIENT hClient);
+		DEBaseClass* CreatePlayer(HCLIENT hClient);
+		void RespawnPlayer(DEBaseClass* pClass, HCLIENT hClient);
 
 		float			m_ClientPingSendCounter;
 
@@ -150,7 +138,7 @@ class CRiotServerShell : public CServerShellDE
 		void SetupGameInfo();
 		void UpdateMultiplayer();
 		void CheckSwitchWorldCommand();
-		DRESULT SwitchToWorld(char *pWorldName, char *pNextWorldName);
+		DRESULT SwitchToWorld(const char *pWorldName, const char *pNextWorldName);
 		void StartNextMultiplayerLevel();
 		void ReportError(HCLIENT hClient, DBYTE nErrorType);
 

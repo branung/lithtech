@@ -13,7 +13,7 @@
 
 #include "cpp_engineobjects_de.h"
 
-class CStoryTrigger : public BaseClass
+class CStoryTrigger : public DEBaseClass
 {
 	public :
 

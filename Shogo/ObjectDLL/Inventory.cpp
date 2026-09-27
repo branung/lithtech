@@ -11,7 +11,7 @@
 #include "Inventory.h"
 #include "cpp_server_de.h"
 #include "cpp_engineobjects_de.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "InventoryTypes.h"
 #include "RiotObjectUtilities.h"
 
@@ -41,7 +41,7 @@ Inventory::Inventory() : Aggregate()
 
 Inventory::~Inventory()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 	
 	for (DDWORD i = 0; i < m_nItems; i++)
@@ -87,7 +87,7 @@ DBOOL Inventory::HaveItem (DBYTE itemType, DBYTE itemSubType)
 
 DBOOL Inventory::HaveItem (HSTRING itemName, DBYTE itemType, DBYTE itemSubType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	for (DDWORD i = 0; i < m_nItems; i++)
@@ -131,7 +131,7 @@ DDWORD Inventory::GetNumItems (DBYTE itemType, DBYTE itemSubType)
 
 DDWORD Inventory::GetNumItems (HSTRING itemName, DBYTE itemType, DBYTE itemSubType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return 0;
 
 	DDWORD nCount = 0;
@@ -155,7 +155,7 @@ DDWORD Inventory::GetNumItems (HSTRING itemName, DBYTE itemType, DBYTE itemSubTy
 
 void Inventory::RemoveItem (DBYTE itemType, DBYTE itemSubType, DDWORD nCount)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	for (DDWORD i = 0; i < m_nItems; i++)
@@ -186,7 +186,7 @@ void Inventory::RemoveItem (DBYTE itemType, DBYTE itemSubType, DDWORD nCount)
 
 void Inventory::RemoveItem (HSTRING itemName, DBYTE itemType, DBYTE itemSubType, DDWORD nCount)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	for (DDWORD i = 0; i < m_nItems; i++)
@@ -261,9 +261,9 @@ DFLOAT Inventory::GetItemData (DBYTE itemType, DBYTE itemSubType, DDWORD nItem)
 //
 // ----------------------------------------------------------------------- //
 		
-DDWORD Inventory::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT lData)
+DDWORD Inventory::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT lData)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	switch(messageID)
@@ -299,9 +299,9 @@ DDWORD Inventory::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *p
 //
 // ----------------------------------------------------------------------- //
 
-DDWORD Inventory::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
+DDWORD Inventory::ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return 0;
 	
 	switch (messageID)
@@ -368,8 +368,8 @@ DDWORD Inventory::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD m
 			DBOOL bHaveItem = DFALSE;
 			for (DDWORD i = 0; i < m_nItems; i++)
 			{
-				char* pStr1 = pServerDE->GetStringData (m_pItems[i].itemName);
-				char* pStr2 = pServerDE->GetStringData (itemName);
+				const char* pStr1 = pServerDE->GetStringData (m_pItems[i].itemName);
+				const char* pStr2 = pServerDE->GetStringData (itemName);
 				if (m_pItems[i].itemType == itemType && (itemSubType == 0 || m_pItems[i].itemSubType == itemSubType) && pServerDE->CompareStrings (m_pItems[i].itemName, itemName))
 				{
 					bHaveItem = DTRUE;
@@ -408,7 +408,7 @@ DDWORD Inventory::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD m
 
 void Inventory::Save(HMESSAGEWRITE hWrite, DBYTE nType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageDWord(hWrite, m_nItems);
@@ -430,7 +430,7 @@ void Inventory::Save(HMESSAGEWRITE hWrite, DBYTE nType)
 
 void Inventory::Load(HMESSAGEREAD hRead, DBYTE nType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	m_nItems = pServerDE->ReadFromMessageDWord(hRead);

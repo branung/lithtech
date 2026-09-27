@@ -54,8 +54,8 @@ class CDestructableWorldModel : public CDestructable
 
 	protected:
 
-		DDWORD EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT lData);
-		DDWORD ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
+		DDWORD EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT lData);
+		DDWORD ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
 	
 		DBOOL ReadProp(ObjectCreateStruct *);
 		void  CreateWorldModelDebris();

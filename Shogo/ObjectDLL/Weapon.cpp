@@ -8,11 +8,11 @@
 //
 // ----------------------------------------------------------------------- //
 
-#include "weapon.h"
+#include "Weapon.h"
 #include "RiotObjectUtilities.h"
 #include "cpp_server_de.h"
 #include "cpp_engineobjects_de.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "PVWeaponModel.h"
 #include "BaseCharacter.h"
 #include "WeaponFXTypes.h"
@@ -105,7 +105,7 @@ CWeapon::~CWeapon()
 
 DBOOL CWeapon::Init(HOBJECT hObj, ModelSize eSize)
 { 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hObj) return DFALSE;
 
 	m_hObject	 = hObj; 
@@ -185,7 +185,7 @@ void CWeapon::SetAmmo(int nAmount)
 
 void CWeapon::UpdateFiring()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	switch (m_eState)
@@ -257,7 +257,7 @@ void CWeapon::UpdateFiring()
 
 void CWeapon::UpdateNonFiring()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	switch (m_eState)
@@ -332,7 +332,7 @@ void CWeapon::UpdateNonFiring()
 WeaponState CWeapon::UpdateWeapon(HOBJECT hFiredFrom, DVector vPath, 
 								  DVector vFirePos, DBOOL bFire, DBOOL bZoomed)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return W_IDLE;
 
 	WeaponState eRet = W_IDLE;
@@ -372,7 +372,7 @@ WeaponState CWeapon::UpdateWeapon(HOBJECT hFiredFrom, DVector vPath,
 WeaponState CWeapon::Fire(HOBJECT hFiredFrom, DVector vPath, 
 						  DVector vFirePos, DBYTE nRandomSeed)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hFiredFrom) return W_IDLE;
 
 	WeaponState eRet = W_IDLE;
@@ -518,9 +518,9 @@ WeaponState CWeapon::Fire(HOBJECT hFiredFrom, DVector vPath,
 
 CProjectile* CWeapon::CreateProjectile(ObjectCreateStruct & theStruct)
 {
-	LPBASECLASS pRet = DNULL;
+	DEBaseClass* pRet = DNULL;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE)
 	{
@@ -549,7 +549,7 @@ DVector	CWeapon::GetHandModelFlashOffset()
 	DVector vOffset;
 	VEC_INIT(vOffset);
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return vOffset;
 
 	if (m_hModelObject)
@@ -575,7 +575,7 @@ DVector	CWeapon::GetHandModelFlashOffset()
 
 DBOOL CWeapon::PlaySelectAnimation()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hModelObject || m_nSelectAni == INVALID_ANI) return DFALSE;
 
 	DDWORD dwAni	= pServerDE->GetModelAnimation(m_hModelObject);
@@ -604,7 +604,7 @@ DBOOL CWeapon::PlaySelectAnimation()
 
 DBOOL CWeapon::PlayDeselectAnimation()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hModelObject || m_nDeselectAni == INVALID_ANI) return DFALSE;
 
 	DDWORD dwAni	= pServerDE->GetModelAnimation(m_hModelObject);
@@ -633,7 +633,7 @@ DBOOL CWeapon::PlayDeselectAnimation()
 
 DBOOL CWeapon::PlayStartFireAnimation()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hModelObject || m_nStartFireAni == INVALID_ANI) return DFALSE;
 
 	DDWORD dwAni	= pServerDE->GetModelAnimation(m_hModelObject);
@@ -662,7 +662,7 @@ DBOOL CWeapon::PlayStartFireAnimation()
 
 DBOOL CWeapon::PlayStopFireAnimation()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hModelObject || m_nStopFireAni == INVALID_ANI) return DFALSE;
 
 	DDWORD dwAni	= pServerDE->GetModelAnimation(m_hModelObject);
@@ -691,7 +691,7 @@ DBOOL CWeapon::PlayStopFireAnimation()
 
 DBOOL CWeapon::PlayFireAnimation()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hModelObject) return DFALSE;
 
 	DDWORD dwAni	= pServerDE->GetModelAnimation(m_hModelObject);
@@ -733,7 +733,7 @@ DBOOL CWeapon::PlayFireAnimation()
 
 DBOOL CWeapon::PlayReloadAnimation()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hModelObject || m_nReloadAni == INVALID_ANI) return DFALSE;
 
 	DDWORD dwAni	= pServerDE->GetModelAnimation(m_hModelObject);
@@ -762,7 +762,7 @@ DBOOL CWeapon::PlayReloadAnimation()
 
 DBOOL CWeapon::PlayIdleAnimation()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hModelObject || m_bIsZoomed) return DFALSE;
 
 	// Make sure idle animation is done if one is currently playing...
@@ -829,7 +829,7 @@ void CWeapon::SetModelObject(HOBJECT hObj)
 
 	if (m_hModelObject) 
 	{
-		CServerDE* pServerDE = BaseClass::GetServerDE();
+		CServerDE* pServerDE = DEBaseClass::GetServerDE();
 		if (!pServerDE) return;
 
 		pServerDE->SetModelLooping(m_hModelObject, DFALSE);
@@ -846,7 +846,7 @@ void CWeapon::SetModelObject(HOBJECT hObj)
 
 void CWeapon::InitAnimations()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hModelObject) return;
 
 	m_nSelectAni	= pServerDE->GetAnimIndex(m_hModelObject, "Select");
@@ -872,7 +872,7 @@ void CWeapon::InitAnimations()
 
 void CWeapon::Select()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_eState = W_SELECT;
@@ -897,7 +897,7 @@ void CWeapon::Select()
 
 void CWeapon::Deselect()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_bIsZoomed = DFALSE;
@@ -923,7 +923,7 @@ void CWeapon::Deselect()
 
 void CWeapon::HandleStateChange(HMESSAGEREAD hMessage)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_eState = (WeaponState) pServerDE->ReadFromMessageByte(hMessage);
@@ -940,7 +940,7 @@ void CWeapon::HandleStateChange(HMESSAGEREAD hMessage)
 
 void CWeapon::Save(HMESSAGEWRITE hWrite, DBYTE nType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	DVector vOldLastModelPos, vOldLastFirePos;
@@ -995,7 +995,7 @@ void CWeapon::Save(HMESSAGEWRITE hWrite, DBYTE nType)
 
 void CWeapon::Load(HMESSAGEREAD hRead, DBYTE nType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	DVector vOldLastModelPos, vOldLastFirePos;
@@ -1052,7 +1052,7 @@ DFLOAT CWeapon::GetDamage() const
 {
 	DFLOAT fDamage = GetWeaponDamage(m_nId) * GetRandom(0.8f, 1.2f) * m_fDamageFactor;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return fDamage;
 
 	// If we're an AI damage is based on the current difficutly setting...

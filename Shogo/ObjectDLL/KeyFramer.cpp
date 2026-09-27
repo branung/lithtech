@@ -20,7 +20,7 @@ BEGIN_CLASS(KeyFramer)
 	ADD_STRINGPROP(BaseKeyName, "")
 	ADD_BOOLPROP(StartActive, DFALSE)
 	ADD_BOOLPROP(Looping, DFALSE)
-END_CLASS_DEFAULT(KeyFramer, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(KeyFramer, DEBaseClass, NULL, NULL)
 
 // ----------------------------------------------------------------------- //
 //
@@ -30,7 +30,7 @@ END_CLASS_DEFAULT(KeyFramer, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-KeyFramer::KeyFramer() : BaseClass(OT_NORMAL)
+KeyFramer::KeyFramer() : DEBaseClass(OT_NORMAL)
 {
 	m_hstrObjectName = NULL;
 	m_hstrBaseKeyName = NULL;
@@ -46,6 +46,7 @@ KeyFramer::KeyFramer() : BaseClass(OT_NORMAL)
 	
 	m_pKeys = NULL;
 	m_pCurKey = NULL;
+	m_bFastForwarding = DFALSE;
 	m_pPosition1 = NULL;
 	m_pPosition2 = NULL;
 	m_nNumKeys = 0;
@@ -124,7 +125,7 @@ DBOOL KeyFramer::CreateKeyList()
 
 	// Find the objects...
 
-	char* pName = pServerDE->GetStringData(m_hstrObjectName);
+	const char* pName = pServerDE->GetStringData(m_hstrObjectName);
 	m_pObjectList = pServerDE->FindNamedObjects(pName);
 
 	if (m_pObjectList)
@@ -260,8 +261,8 @@ DBOOL KeyFramer::CreateKeyList()
 
 			DRotation objrot;
 			pServerDE->GetObjectRotation(pLink->m_hObject, &objrot);
-			VEC_SUB(m_pRotations[i].m_Vec, objrot.m_Vec, rot.m_Vec);
-			m_pRotations[i].m_Spin = objrot.m_Spin - rot.m_Spin;
+
+			m_pRotations[i] = rot.Conjugate() * objrot;
 
 			i++;
 			pLink = pLink->m_pNext;
@@ -316,7 +317,9 @@ void KeyFramer::ProcessKey (KEYNODE* pNode)
 		m_pPosition2 = GetNextPositionKey(pNode->pNext);
 	}
 
-	if (pNode->keyData.m_nKeyType & SOUND_KEY)
+	// Sounds and prints are skipped when fast forwarding since every remaining key runs in one frame.
+	// Message keys still run because they carry the level's logic
+	if ((pNode->keyData.m_nKeyType & SOUND_KEY) && !m_bFastForwarding)
 	{
 		PlaySoundFromObject(m_hObject, pServerDE->GetStringData(pNode->keyData.m_hstrSoundName), pNode->keyData.m_fSoundRadius, SOUNDPRIORITY_MISC_HIGH );
 	}
@@ -326,11 +329,68 @@ void KeyFramer::ProcessKey (KEYNODE* pNode)
 		SendTriggerMsgToObjects(this, pNode->keyData.m_hstrMessageTarget, pNode->keyData.m_hstrMessageName);
 	}
 
-	if (pNode->keyData.m_nKeyType & BPRINT_KEY)
+	if ((pNode->keyData.m_nKeyType & BPRINT_KEY) && !m_bFastForwarding)
 	{
 		pServerDE->BPrint(pServerDE->GetStringData(pNode->keyData.m_hstrBPrintMessage));
 	}
 }
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	KeyFramer::DrivesObject
+//
+//	PURPOSE:	Is hObj one of the objects this keyframer moves?
+//
+// ----------------------------------------------------------------------- //
+
+DBOOL KeyFramer::DrivesObject(HOBJECT hObj) const
+{
+	if (!hObj || !m_pObjectList) return DFALSE;
+
+	ObjectLink* pLink = m_pObjectList->m_pFirstLink;
+	while (pLink)
+	{
+		if (pLink->m_hObject == hObj) return DTRUE;
+		pLink = pLink->m_pNext;
+	}
+
+	return DFALSE;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	KeyFramer::FastForward
+//
+//	PURPOSE:	Run the remaining keys immediately, then finish.
+//
+// ----------------------------------------------------------------------- //
+
+void KeyFramer::FastForward()
+{
+	CServerDE* pServerDE = GetServerDE();
+	if (!pServerDE || !m_bActive) return;
+
+	// A looping keyframer (a fan, a patrolling lift) has no end to fast forward to
+	if (m_bLooping) return;
+
+	// Process every remaining key in order, as Update() does minus the time check
+	m_bFastForwarding = DTRUE;
+
+	while (m_pCurKey)
+	{
+		ProcessKey(m_pCurKey);
+		m_pCurKey = m_pCurKey->pNext;
+	}
+
+	m_bFastForwarding = DFALSE;
+	m_pCurKey  = m_pKeys;
+	m_fCurTime = 0.0f;
+	m_bActive  = DFALSE;
+
+	pServerDE->SetNextUpdate(m_hObject, 0.0f);
+}
+
 
 // ----------------------------------------------------------------------- //
 //
@@ -428,7 +488,7 @@ DDWORD KeyFramer::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -450,7 +510,7 @@ DDWORD KeyFramer::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREA
 			if (!pServerDE) return 0;
 
 			HSTRING hMsg = pServerDE->ReadFromMessageHString(hRead);
-			char* pMsg = pServerDE->GetStringData(hMsg);
+			const char* pMsg = pServerDE->GetStringData(hMsg);
 			if (!pMsg) return 0;
 
 			if (_stricmp(pMsg, "ON") == 0)
@@ -471,7 +531,7 @@ DDWORD KeyFramer::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREA
 		default : break;
 	}
 	
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
@@ -633,9 +693,8 @@ DBOOL KeyFramer::Update(DVector* pMovement)
 				pServerDE->GetObjectPos(pLink->m_hObject, &pos1);
 				VEC_ADD (pos1, posNew, m_pOffsets[i]);
 
-				pServerDE->GetObjectRotation(pLink->m_hObject, &rot1);
-				VEC_ADD(rot1.m_Vec, rotNew.m_Vec, m_pRotations[i].m_Vec);
-				rot1.m_Spin = rotNew.m_Spin + m_pRotations[i].m_Spin;
+				// Apply the captured rotation in the keyframer's frame so attached objects stay put
+				rot1 = rotNew * m_pRotations[i];
 
 				pServerDE->SetObjectPos(pLink->m_hObject, &pos1);
 				pServerDE->RotateObject(pLink->m_hObject, &rot1);

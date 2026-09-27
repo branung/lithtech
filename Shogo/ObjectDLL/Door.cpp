@@ -11,7 +11,7 @@
 // Includes...
 
 #include "generic_msg_de.h"
-#include "door.h"
+#include "Door.h"
 #include "Trigger.h"
 #include "DebrisTypes.h"
 #include "ClientServerShared.h"
@@ -61,14 +61,16 @@ BEGIN_CLASS(Door)
 	ADD_LONGINTPROP(Waveform, DOORWAVE_LINEAR)
 	ADD_LONGINTPROP(DebrisType, DBT_METAL_BIG)
 	ADD_REALPROP(Mass, 30.0f)			//  Set above 2000/10000 to crush player
-END_CLASS_DEFAULT(Door, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(Door, DEBaseClass, NULL, NULL)
 
 DFLOAT GetDoorWaveValue( DFLOAT fSpeed, DFLOAT fPercent, DDWORD nWaveType )
 {
 	if (nWaveType == DOORWAVE_LINEAR)
 		return fSpeed;
 
-	DFLOAT fNewSpeed;
+	// Seeded with the linear result.
+	// Waveform can be any integer, and the switch below only covers three
+	DFLOAT fNewSpeed = fSpeed;
 	DFLOAT f10Percent = fSpeed * 0.1f;
 
 	switch ( nWaveType )
@@ -97,7 +99,7 @@ DFLOAT GetDoorWaveValue( DFLOAT fSpeed, DFLOAT fPercent, DDWORD nWaveType )
 //
 // ----------------------------------------------------------------------- //
 
-Door::Door() : BaseClass(OT_WORLDMODEL)
+Door::Door() : DEBaseClass(OT_WORLDMODEL)
 {
 	m_hstrOpenStartSound	= DNULL;
 	m_hstrOpenBusySound		= DNULL;
@@ -267,7 +269,7 @@ void Door::PostPropRead(ObjectCreateStruct *pStruct)
 	SAFE_STRCPY(pStruct->m_Filename, pStruct->m_Name);
 	pStruct->m_SkinName[0] = '\0';
 	pStruct->m_Flags |= FLAG_FULLPOSITIONRES | FLAG_GOTHRUWORLD | FLAG_DONTFOLLOWSTANDING | (m_bBoxPhysics ? FLAG_BOXPHYSICS : 0);
-	pStruct->m_fDeactivationTime = DOOR_DEFAULT_DEACTIVATION_TIME;
+	// ObjectCreateStruct lost m_fDeactivationTime because Jupiter manages deactivation itself
 
 	m_fClosingSpeed = m_fClosingSpeed ? m_fClosingSpeed : m_fSpeed;
 }
@@ -569,14 +571,16 @@ void Door::SetOpening()
 
 	if (m_hstrPortalName)
 	{
-		char* pName = pServerDE->GetStringData(m_hstrPortalName);
+		const char* pName = pServerDE->GetStringData(m_hstrPortalName);
 		if (pName)
 		{	
-			DDWORD dwFlags = 0;
-			pServerDE->GetPortalFlags(pName, &dwFlags);
-
-			dwFlags |= PORTAL_OPEN;
-			pServerDE->SetPortalFlags(pName, dwFlags);
+			// Jupiter has no portal API, so the doorway behaves as permanently open.
+			// Kept for whoever restores portal control:
+			//
+			//	DDWORD dwFlags = 0;
+			//	pServerDE->GetPortalFlags(pName, &dwFlags);
+			//	dwFlags |= PORTAL_OPEN;
+			//	pServerDE->SetPortalFlags(pName, dwFlags);
 		}
 	}
 
@@ -673,14 +677,16 @@ void Door::SetClosed(DBOOL bPlaySound)
 
 	if (m_hstrPortalName)
 	{
-		char* pName = pServerDE->GetStringData(m_hstrPortalName);
+		const char* pName = pServerDE->GetStringData(m_hstrPortalName);
 		if (pName)
 		{	
-			DDWORD dwFlags = 0;
-			pServerDE->GetPortalFlags(pName, &dwFlags);
-
-			dwFlags &= ~PORTAL_OPEN;
-			pServerDE->SetPortalFlags(pName, dwFlags);
+			// Jupiter has no portal API, so the doorway behaves as permanently open.
+			// Kept for whoever restores portal control:
+			//
+			//	DDWORD dwFlags = 0;
+			//	pServerDE->GetPortalFlags(pName, &dwFlags);
+			//	dwFlags &= ~PORTAL_OPEN;
+			//	pServerDE->SetPortalFlags(pName, dwFlags);
 		}
 	}
 }
@@ -810,7 +816,7 @@ DDWORD Door::EngineMessageFn(DDWORD messageID, void *pData, float fData)
 			// Need to call base class to have the object name read in before
 			// we call PostPropRead()
 
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 
 			if ((int)fData == PRECREATE_WORLDFILE)
 			{
@@ -846,7 +852,7 @@ DDWORD Door::EngineMessageFn(DDWORD messageID, void *pData, float fData)
 		break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 // --------------------------------------------------------------------------- //
@@ -862,7 +868,7 @@ void Door::TriggerMsg(HOBJECT hSender, HSTRING hMsg)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (!pMsg) return;
 
 
@@ -903,7 +909,7 @@ DDWORD Door::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRe
 		break;
 	}
 	
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 // --------------------------------------------------------------------------- //
@@ -929,7 +935,7 @@ void Door::StartSound(HSTRING hstrSoundName, DBOOL bLoop)
 
 	if (!hstrSoundName) return;
 
-	char *pSoundName = pServerDE->GetStringData(hstrSoundName);
+	const char* pSoundName = pServerDE->GetStringData(hstrSoundName);
 	if (!pSoundName) return;
 
 
@@ -1104,7 +1110,7 @@ void Door::CacheFiles()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 	if (m_hstrOpenStartSound)
 	{
 		pFile = pServerDE->GetStringData(m_hstrOpenStartSound);

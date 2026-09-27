@@ -12,9 +12,9 @@
 #define __TRANSMISSION_TRIGGER_H__
 
 #include "cpp_engineobjects_de.h"
-#include "activation.h"
+#include "Activation.h"
 
-class TransmissionTrigger : public BaseClass
+class TransmissionTrigger : public DEBaseClass
 {
 	public :
 

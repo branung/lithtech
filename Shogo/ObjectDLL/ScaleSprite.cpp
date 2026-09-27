@@ -24,7 +24,7 @@ BEGIN_CLASS(ScaleSprite)
 	ADD_BOOLPROP(FlushWithWorld, 0)
 	ADD_BOOLPROP(Rotatable, 0)
 	ADD_LONGINTPROP(AdditionalFlags, 0)
-END_CLASS_DEFAULT(ScaleSprite, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(ScaleSprite, DEBaseClass, NULL, NULL)
 
 
 // ----------------------------------------------------------------------- //
@@ -35,7 +35,7 @@ END_CLASS_DEFAULT(ScaleSprite, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-ScaleSprite::ScaleSprite() : BaseClass(OT_SPRITE)
+ScaleSprite::ScaleSprite() : DEBaseClass(OT_SPRITE)
 {
 	VEC_SET(m_vScale, 1.0f, 1.0f, 1.0f);
 	VEC_SET(m_vColor, 1.0f, 1.0f, 1.0f);
@@ -89,7 +89,7 @@ DDWORD ScaleSprite::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	{
 		case MID_PRECREATE:
 		{
-			dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
 			{
 				ReadProp((ObjectCreateStruct *)pData);
@@ -132,7 +132,7 @@ DDWORD ScaleSprite::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 // ----------------------------------------------------------------------- //
@@ -150,7 +150,7 @@ DDWORD ScaleSprite::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGER
  		case MID_TRIGGER:
 		{
 			HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-			char *pszMessage = g_pServerDE->GetStringData(hMsg);
+			const char* pszMessage = g_pServerDE->GetStringData(hMsg);
 
 			if (stricmp(pszMessage, "DESTROY") == 0)
 			{
@@ -166,7 +166,7 @@ DDWORD ScaleSprite::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGER
 		default : break;
 	}
 
-	return BaseClass::ObjectMessageFn (hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn (hSender, messageID, hRead);
 }
 
 // ----------------------------------------------------------------------- //
@@ -179,7 +179,7 @@ DDWORD ScaleSprite::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGER
 
 void ScaleSprite::ReadProp(ObjectCreateStruct *pStruct)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	GenericProp genProp;
@@ -240,7 +240,7 @@ void ScaleSprite::ReadProp(ObjectCreateStruct *pStruct)
 
 void ScaleSprite::PostPropRead(ObjectCreateStruct *pStruct)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (pStruct)
@@ -273,7 +273,7 @@ void ScaleSprite::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL ScaleSprite::InitialUpdate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	// Do everything in Update (we need to make sure all the objects in
@@ -297,7 +297,7 @@ DBOOL ScaleSprite::InitialUpdate()
 
 DBOOL ScaleSprite::Update()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, 0.0f);
@@ -361,7 +361,7 @@ DBOOL ScaleSprite::Update()
 
 void ScaleSprite::SetDestroyed()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
 	if (m_hstrDestroyedFile)
@@ -385,7 +385,7 @@ void ScaleSprite::SetDestroyed()
 
 void ScaleSprite::SetDamaged()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject || !m_hstrDamagedFile) return;
 
 	pServerDE->SetObjectFilenames(m_hObject, pServerDE->GetStringData(m_hstrDamagedFile), "");
@@ -454,7 +454,7 @@ void ScaleSprite::CacheFiles()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 	if (m_hstrDamagedFile)
 	{
 		pFile = pServerDE->GetStringData(m_hstrDamagedFile);

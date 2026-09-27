@@ -166,7 +166,7 @@ class BaseAI : public CBaseCharacter
 		void	SetAnimationIndexes();
 
 		virtual void PostPropRead(ObjectCreateStruct *pStruct);
-		virtual DBOOL ProcessCommand(char** pTokens, int nArgs, char* pNextCommand);
+		virtual DBOOL ProcessCommand(const char** pTokens, int nArgs, const char* pNextCommand);
 
 
 		// Utility functions...
@@ -322,7 +322,9 @@ class BaseAI : public CBaseCharacter
 
 		virtual DBOOL UpdateScriptMovement(DVector* pvTargetPos);
 
-		virtual void BuildScript(char* pScriptBody);
+		virtual void BuildScript(const char* pScriptBody);
+
+		DFLOAT			MovementTimeDelta();
 
 		void	NewUpdateMovement();
 		void	HandleGameRestore();
@@ -363,6 +365,15 @@ class BaseAI : public CBaseCharacter
 		DVector		m_vForward;				// Object's forward
 		DVector		m_vLastPos;				// Object's last position
 		DBOOL		m_bStuckOnSomething;	// Are we stuck on a wall/ledge?
+
+		// Movement updates in a row where this AI wanted to move and didn't (diagnostics only)
+		uint32		m_nStuckUpdates;
+		DFLOAT		m_fNextStuckPrint;
+
+		// [D:STAND] Whether this AI reported its standing plane, and when it may report a steep one again.
+		// Diagnostics only, not saved
+		DBOOL		m_bStandPrinted;
+		DFLOAT		m_fNextStandPrint;
 
 		DFLOAT		m_fNextSoundTime;		// When can I play a sound
 		DFLOAT		m_fFollowStartTime;		// When did I start following this object
@@ -437,6 +448,15 @@ class BaseAI : public CBaseCharacter
 		DBOOL			m_bLoopScriptedAni; // Loop scripted animations?
 
 		DFLOAT			m_fPredTravelDist;	// Predicted distance we would travel
+
+		// Server time of the last NewUpdateMovement, read by MovementTimeDelta
+		DFLOAT			m_fLastMoveUpdateTime;
+
+		// [D:AIMOVE] window start
+		DFLOAT			m_fAIMoveWindowStart;
+		DVector			m_vAIMoveWindowPos;
+		DDWORD			m_nAIMoveWindowUpdates;
+		DFLOAT			m_fAIMoveWindowFrameTime;
 		DFLOAT			m_fLastDistTraveled;// How far did we travel last frame
 
 

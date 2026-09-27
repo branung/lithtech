@@ -14,7 +14,7 @@
 #include "DestructableWorldModel.h"
 #include "cpp_engineobjects_de.h"
 
-class RotatingWorldModel : public BaseClass
+class RotatingWorldModel : public DEBaseClass
 {
 	public :
 

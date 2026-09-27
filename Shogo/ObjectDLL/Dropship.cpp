@@ -8,7 +8,7 @@
 //
 // ----------------------------------------------------------------------- //
 
-#include "DropShip.h"
+#include "Dropship.h"
 #include "cpp_server_de.h"
 #include "SFXMsgIds.h"
 
@@ -203,7 +203,7 @@ void DropShip::CreateThrusterSprites()
 	pServerDE->GetObjectPos(m_hObject, &vPos);
 	VEC_COPY(theStruct.m_Pos, vPos);
 
-	char* pFilename = m_hstrThrusterFilename ? pServerDE->GetStringData(m_hstrThrusterFilename) : DEFAULT_THRUSTER_SPRITE;
+	const char* pFilename = m_hstrThrusterFilename ? pServerDE->GetStringData(m_hstrThrusterFilename) : DEFAULT_THRUSTER_SPRITE;
 	pFilename = pFilename ? pFilename : DEFAULT_THRUSTER_SPRITE;
 
 	SAFE_STRCPY(theStruct.m_Filename, pFilename);
@@ -222,7 +222,7 @@ void DropShip::CreateThrusterSprites()
 	//}
 
 	HCLASS hClass = pServerDE->GetClass("BaseClass");
-	LPBASECLASS pSprite = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pSprite = pServerDE->CreateObject(hClass, &theStruct);
 	if (!pSprite) return;
 
 	m_hThruster1 = pSprite->m_hObject;
@@ -336,7 +336,7 @@ void DropShip::CacheFiles()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pFilename = DNULL;
+	const char* pFilename = DNULL;
 	if (m_hstrThrusterFilename)
 	{
 		pFilename = pServerDE->GetStringData(m_hstrThrusterFilename);

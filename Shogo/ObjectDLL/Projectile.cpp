@@ -11,7 +11,7 @@
 #include "Projectile.h"
 #include "cpp_engineobjects_de.h"
 #include "cpp_server_de.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "RiotObjectUtilities.h"
 #include "Explosion.h"
 #include "BaseCharacter.h"
@@ -29,13 +29,13 @@
 #include "CVarTrack.h"
 
 BEGIN_CLASS(CProjectile)
-END_CLASS_DEFAULT_FLAGS(CProjectile, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CProjectile, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 extern DBYTE g_nIgnoreFX;
 extern DBYTE g_nRandomWeaponSeed;
 
-static DBOOL AttackerLiquidFilterFn(HOBJECT hObj, void *pUserData);
-static DBOOL DoVectorFilterFn(HOBJECT hObj, void *pUserData);
+static bool AttackerLiquidFilterFn(HOBJECT hObj, void *pUserData);
+static bool DoVectorFilterFn(HOBJECT hObj, void *pUserData);
 
 #define	DEFAULT_SOUND_RADIUS	3000.0f
 #define MAX_MODEL_NODES			9999
@@ -52,7 +52,7 @@ static CVarTrack g_MissileSpeedTrack;
 //
 // ----------------------------------------------------------------------- //
 
-CProjectile::CProjectile() : BaseClass(OT_NORMAL)
+CProjectile::CProjectile() : DEBaseClass(OT_NORMAL)
 {
 	AddAggregate(&m_damage);
 
@@ -82,6 +82,7 @@ CProjectile::CProjectile() : BaseClass(OT_NORMAL)
 	m_pProjectileSkin		= DNULL;
 
 	m_bDetonated			= DFALSE;
+	m_bSetupDone			= DFALSE;
 
 	m_dwFlags = FLAG_POINTCOLLIDE | FLAG_NOSLIDING | FLAG_VISIBLE | 
 		FLAG_TOUCH_NOTIFY | FLAG_NOLIGHT | FLAG_RAYHIT;
@@ -96,6 +97,9 @@ CProjectile::CProjectile() : BaseClass(OT_NORMAL)
 	m_fSnakeUpVel		= 0.0f;
 
 
+	m_fSnakeProbeStart = 0.0f;
+	m_fSnakeProbeRad = 0.0f;
+	m_nSnakeProbeUpdates = 0;
 	// Lock on target?
 
 	m_bCanLockOnTarget	= DFALSE;
@@ -184,7 +188,7 @@ DDWORD CProjectile::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 // ----------------------------------------------------------------------- //
@@ -197,7 +201,7 @@ DDWORD CProjectile::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 
 DDWORD CProjectile::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
 {
-	DDWORD dwRet = BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	DDWORD dwRet = DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 
 	switch(messageID)
 	{
@@ -230,8 +234,10 @@ DDWORD CProjectile::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGER
 
 void CProjectile::Setup(CWeapon* pWeapon, HOBJECT hFiredFrom)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pWeapon || !hFiredFrom) return;
+
+	m_bSetupDone = DTRUE;
 
 	VEC_COPY(m_vDir, pWeapon->GetLastFirePath());
 	VEC_NORM(m_vDir);
@@ -272,7 +278,7 @@ void CProjectile::Setup(CWeapon* pWeapon, HOBJECT hFiredFrom)
 
 void CProjectile::InitialUpdate(int nInfo)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	pServerDE->SetNetFlags(m_hObject, NETFLAG_POSUNGUARANTEED);
@@ -315,7 +321,7 @@ void CProjectile::InitialUpdate(int nInfo)
 
 void CProjectile::Update()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	pServerDE->SetNextUpdate(m_hObject, UPDATE_DELTA);
@@ -376,7 +382,35 @@ void CProjectile::Update()
 			VEC_SUB(vVel, vVel, vTemp);
 		}
 
-		pServerDE->RotateAroundAxis(&rRot, &vF, m_fSnakeDir * 10.0f * pServerDE->GetFrameTime());
+		// The weave's time step, floored at 1/60.
+		// It's integrated by GetFrameTime().. so without the floor its amplitude shrinks at higher frame rates
+		DFLOAT fSnakeDelta = pServerDE->GetFrameTime();
+		if (fSnakeDelta < (1.0f / 60.0f))
+			fSnakeDelta = 1.0f / 60.0f;
+
+		// [D:SNAKE] Weave per second of clock, per projectile, once a second
+		{
+			static int s_nSnakeLines = 0;
+			const DFLOAT fNow = pServerDE->GetTime();
+			if (m_fSnakeProbeStart <= 0.0f)
+			{
+				m_fSnakeProbeStart = fNow;
+				m_fSnakeProbeRad = 0.0f;
+				m_nSnakeProbeUpdates = 0;
+			}
+			m_fSnakeProbeRad += 10.0f * fSnakeDelta;
+			++m_nSnakeProbeUpdates;
+			if (fNow - m_fSnakeProbeStart >= 1.0f && s_nSnakeLines < 100)
+			{
+				++s_nSnakeLines;
+				pServerDE->CPrint("[D:SNAKE] %.2f rad of weave over %.2fs (%u updates, step %.4fs, frame %.4fs)",
+					m_fSnakeProbeRad, fNow - m_fSnakeProbeStart, m_nSnakeProbeUpdates,
+					fSnakeDelta, pServerDE->GetFrameTime());
+				m_fSnakeProbeStart = 0.0f;
+			}
+		}
+
+		pServerDE->RotateAroundAxis(&rRot, &vF, m_fSnakeDir * 10.0f * fSnakeDelta);
 		
 		//pServerDE->SetObjectRotation(m_hObject, &rRot);
 		m_SnakingRot = rRot;
@@ -386,7 +420,7 @@ void CProjectile::Update()
 
 		// Add velocity to new up vector...
 
-		m_fSnakeUpVel = m_fVelocity * 0.67f * pServerDE->GetFrameTime();
+		m_fSnakeUpVel = m_fVelocity * 0.67f * fSnakeDelta;
 
 		VEC_MULSCALAR(vTemp, vU, m_fSnakeUpVel);
 		VEC_ADD(vVel, vVel, vU);
@@ -414,9 +448,11 @@ void CProjectile::Update()
 
 void CProjectile::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || m_bObjectRemoved) return;
 
+	// Ignore touches until Setup(), because the first arrives during CreateObject against the entity firing the projectile
+	if (!m_bSetupDone) return;
 
 	 // Let it get out of our bounding box...
 
@@ -431,13 +467,10 @@ void CProjectile::HandleTouch(HOBJECT hObj)
 
 	HCLASS hClassMe		= pServerDE->GetObjectClass(m_hObject);
 	HCLASS hClassObj	= pServerDE->GetObjectClass(hObj);
-	HCLASS hClassWorld  = pServerDE->GetObjectClass(pServerDE->GetWorldObject());
-
-
 	// Don't impact on non-solid objects...
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(hObj);
-	if (!pServerDE->IsKindOf(hClassObj, hClassWorld) && !(dwFlags & FLAG_SOLID)) return;
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(dwFlags & FLAG_SOLID)) return;
 
 
 	// Don't hit projectiles fired from the same person (e.g., bullgut)...
@@ -457,7 +490,8 @@ void CProjectile::HandleTouch(HOBJECT hObj)
 
 	// See if we hit the sky...
 
-	if (pServerDE->IsKindOf(hClassObj, hClassWorld))
+		// IsWorldObject answers LT_YES or LT_NO, never LT_OK
+	if (pServerDE->IsWorldObject(hObj) == LT_YES)
 	{
 		CollisionInfo info;
 		pServerDE->GetLastCollision(&info);
@@ -501,7 +535,7 @@ void CProjectile::HandleImpact(HOBJECT hObj)
 
 void CProjectile::Detonate(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || m_bDetonated) return;
 
 	m_bDetonated = DTRUE;
@@ -518,15 +552,12 @@ void CProjectile::Detonate(HOBJECT hObj)
 
 	if (hObj)
 	{
-		HCLASS hClassObj   = pServerDE->GetObjectClass(hObj);
-		HCLASS hClassWorld = pServerDE->GetObjectClass(pServerDE->GetWorldObject());
-
-		if (pServerDE->IsKindOf(hClassObj, hClassWorld))
+		if (pServerDE->IsWorldObject(hObj) == LT_YES)
 		{
 			CollisionInfo info;
 			pServerDE->GetLastCollision(&info);
 
-			if (info.m_hPoly)
+			if (info.m_hPoly != INVALID_HPOLY)
 			{
 				eType = GetSurfaceType(info.m_hPoly);
 			}
@@ -577,7 +608,7 @@ void CProjectile::Detonate(HOBJECT hObj)
 
 	AddImpact(hObj, vPos, vNormal, eType);
 
-	
+
 	// See if this projectile does impact damage...
 
 	if (hObj && (m_fDamage > 0.0f && m_fRadius <= 0.0f))
@@ -585,7 +616,6 @@ void CProjectile::Detonate(HOBJECT hObj)
 		HOBJECT hDamager = m_hFiredFrom ? m_hFiredFrom : m_hObject;
 		DamageObject(hDamager, this, hObj, m_fDamage, m_vDir, m_eDamageType);
 	}
-
 
 	// Remove projectile from world...
 
@@ -604,7 +634,7 @@ void CProjectile::Detonate(HOBJECT hObj)
 void CProjectile::AddImpact(HOBJECT hObj, DVector vPoint, DVector vNormal, 
 							SurfaceType eType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector vPos, vTemp;
@@ -687,7 +717,7 @@ void CProjectile::AddImpact(HOBJECT hObj, DVector vPoint, DVector vNormal,
 
 void CProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	Explosion* pExplosion = DNULL;
@@ -726,7 +756,7 @@ void CProjectile::AddExplosion(DVector vPos, DVector vNormal)
 
 void CProjectile::AddSpecialFX()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (GetProjectileFX(m_nId) == 0) return;
@@ -767,7 +797,7 @@ void CProjectile::AddSpecialFX()
 
 void CProjectile::RemoveObject()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	pServerDE->RemoveObject(m_hObject);	
@@ -785,7 +815,7 @@ void CProjectile::RemoveObject()
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL AttackerLiquidFilterFn(HOBJECT hObj, void *pUserData)
+bool AttackerLiquidFilterFn(HOBJECT hObj, void *pUserData)
 {
 	// We're not attacking our self...
 
@@ -807,7 +837,7 @@ DBOOL AttackerLiquidFilterFn(HOBJECT hObj, void *pUserData)
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL DoVectorFilterFn(HOBJECT hObj, void *pUserData)
+bool DoVectorFilterFn(HOBJECT hObj, void *pUserData)
 {
 	// We're not attacking our self...
 
@@ -842,7 +872,7 @@ DBOOL DoVectorFilterFn(HOBJECT hObj, void *pUserData)
 
 void CProjectile::LockOnTarget()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hFiredFrom) return;
 
 	HCLASS hClassFired = pServerDE->GetObjectClass(m_hFiredFrom);
@@ -945,7 +975,7 @@ void CProjectile::LockOnTarget()
 
 void CProjectile::DoProjectile()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 
@@ -1025,7 +1055,7 @@ void CProjectile::DoProjectile()
 
 void CProjectile::DoVector()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector vFrom;
@@ -1126,7 +1156,7 @@ void CProjectile::DoVector()
 
 void CProjectile::HandleVectorImpact(IntersectQuery & qInfo, IntersectInfo & iInfo)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 
@@ -1190,7 +1220,7 @@ void CProjectile::HandleVectorImpact(IntersectQuery & qInfo, IntersectInfo & iIn
 
 DBOOL CProjectile::HandlePotentialAIImpact(IntersectInfo & iInfo, DVector & vFrom)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	BaseAI *pAI = (BaseAI*) pServerDE->HandleToObject(iInfo.m_hObject);
@@ -1235,7 +1265,7 @@ DBOOL CProjectile::HandlePotentialAIImpact(IntersectInfo & iInfo, DVector & vFro
 
 DBOOL CProjectile::HandlePotentialBodyImpact(IntersectInfo & iInfo, DVector & vFrom)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	BodyProp* pProp = (BodyProp*)pServerDE->HandleToObject(iInfo.m_hObject);
@@ -1262,13 +1292,13 @@ DBOOL CProjectile::DoLocationBasedImpact(IntersectInfo & iInfo, DVector & vFrom,
 										 DDWORD nModelId, ModelSize eModelSize,
 										 DDWORD & nNode)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DFLOAT fTemp = 0, fDis = 999.0f;
 	DVector	vPos, vObjDims, vDir, vTemp;
 	DRotation rRot;
-	DBOOL bStatus = DFALSE;
+	bool bStatus = false;
 	nNode = MAX_MODEL_NODES;
 
 	// SCHLEGZ 3/12/98 3:46:09 AM: Best way to get accurate dims...
@@ -1283,17 +1313,21 @@ DBOOL CProjectile::DoLocationBasedImpact(IntersectInfo & iInfo, DVector & vFrom,
 	vTemp.y = (float)fabs(m_vDir.y);
 	vTemp.z = (float)fabs(m_vDir.z);
 
-	if (vTemp.x > vTemp.y && vTemp.x > vTemp.z)
+	// Scale the shot direction out to the bounding box along its dominant axis.
+	// >= so a tie still picks an axis
+	VEC_INIT(vDir);
+
+	if (vTemp.x >= vTemp.y && vTemp.x >= vTemp.z)
 	{
-		VEC_MULSCALAR(vDir, m_vDir, vObjDims.x/vTemp.x);	
+		if (vTemp.x > 0.0f) VEC_MULSCALAR(vDir, m_vDir, vObjDims.x/vTemp.x);
 	}
-	else if (vTemp.y > vTemp.x  && vTemp.y > vTemp.z)
+	else if (vTemp.y >= vTemp.z)
 	{
-		VEC_MULSCALAR(vDir, m_vDir, vObjDims.y/vTemp.y);	
+		if (vTemp.y > 0.0f) VEC_MULSCALAR(vDir, m_vDir, vObjDims.y/vTemp.y);
 	}
-	else if (vTemp.z > vTemp.x  && vTemp.z > vTemp.y)
+	else
 	{
-		VEC_MULSCALAR(vDir, m_vDir, vObjDims.z/vTemp.z);	
+		if (vTemp.z > 0.0f) VEC_MULSCALAR(vDir, m_vDir, vObjDims.z/vTemp.z);
 	}
 
 	VEC_ADD(vFrom, iInfo.m_Point, vDir);
@@ -1435,6 +1469,9 @@ void CProjectile::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 
 	pServerDE->ReadFromLoadSaveMessageObject(hRead, &m_hFiredFrom);
 	pServerDE->ReadFromLoadSaveMessageObject(hRead, &m_hLockOnTarget);
+
+	// A projectile only reaches a save file after Setup() ran
+	m_bSetupDone = DTRUE;
 
 	pServerDE->ReadFromMessageVector(hRead, &m_vFirePos);
 	pServerDE->ReadFromMessageVector(hRead, &m_vDir);

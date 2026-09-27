@@ -12,7 +12,7 @@
 
 
 BEGIN_CLASS(CClientSFX)
-END_CLASS_DEFAULT_FLAGS(CClientSFX, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CClientSFX, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 // ----------------------------------------------------------------------- //
 //
@@ -22,7 +22,7 @@ END_CLASS_DEFAULT_FLAGS(CClientSFX, BaseClass, NULL, NULL, CF_HIDDEN)
 //
 // ----------------------------------------------------------------------- //
 
-CClientSFX::CClientSFX(DBYTE nType) : BaseClass(nType)
+CClientSFX::CClientSFX(DBYTE nType) : DEBaseClass(nType)
 {
 }
 

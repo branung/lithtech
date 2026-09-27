@@ -26,7 +26,7 @@ BEGIN_CLASS(GameStartPoint)
 	ADD_LONGINTPROP(GameType, 0)
 	ADD_STRINGPROP(TriggerTarget, "")
 	ADD_STRINGPROP(TriggerMessage, "")
-END_CLASS_DEFAULT_FLAGS(GameStartPoint, StartPoint, NULL, NULL, CF_ALWAYSLOAD)
+END_CLASS_DEFAULT_FLAGS(GameStartPoint, DEBaseClass, NULL, NULL, CF_ALWAYSLOAD)
 
 // ----------------------------------------------------------------------- //
 //
@@ -36,7 +36,7 @@ END_CLASS_DEFAULT_FLAGS(GameStartPoint, StartPoint, NULL, NULL, CF_ALWAYSLOAD)
 //
 // ----------------------------------------------------------------------- //
 
-GameStartPoint::GameStartPoint() : StartPoint()
+GameStartPoint::GameStartPoint() : DEBaseClass()
 { 
 	m_nPlayerMode			= PM_MODE_FOOT; 
 	m_eGameType				= SINGLE; 
@@ -92,7 +92,7 @@ DDWORD GameStartPoint::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDa
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return 0;
 
-	DDWORD dwRet = StartPoint::EngineMessageFn(messageID, pData, fData);
+	DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 
 	switch(messageID)
 	{
@@ -309,7 +309,7 @@ void GameStartPoint::CacheMechaFiles()
 void GameStartPoint::CachePlayerModeFiles()
 {
 	DBYTE nModelId;
-	char* pFile;
+	const char* pFile;
 	int i;
 	DebrisType eType;
 	int nMaxDebrisSounds;

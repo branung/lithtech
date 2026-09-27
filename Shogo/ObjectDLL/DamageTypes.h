@@ -71,7 +71,7 @@ inline DBOOL RadiusDamageType(DamageType eType)
 //
 // ----------------------------------------------------------------------- //
 
-inline DBOOL SpecificObjectFilterFn(HOBJECT hObj, void *pUserData)
+inline bool SpecificObjectFilterFn(HOBJECT hObj, void *pUserData)
 {
 	if (!hObj) return DFALSE;
 
@@ -96,11 +96,11 @@ inline DBOOL SpecificObjectFilterFn(HOBJECT hObj, void *pUserData)
 //
 // ----------------------------------------------------------------------- //
 
-inline void DamageObject(HOBJECT hResponsible, LPBASECLASS pDamager, 
+inline void DamageObject(HOBJECT hResponsible, DEBaseClass* pDamager, 
 						 HOBJECT hDamagee, DFLOAT fDamage, DVector vDir, 
 						 DamageType eType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hResponsible || !pDamager || !hDamagee) return;
 
 	// Damage object...
@@ -132,11 +132,11 @@ inline void DamageObject(HOBJECT hResponsible, LPBASECLASS pDamager,
 //
 // ----------------------------------------------------------------------- //
 
-inline void DamageObjectsInRadius(HOBJECT hResponsible, LPBASECLASS pDamager,
+inline void DamageObjectsInRadius(HOBJECT hResponsible, DEBaseClass* pDamager,
 								  DVector vOrigin, DFLOAT fRadius,
 								  DFLOAT fDamage, DamageType eType=DT_EXPLODE)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || fRadius <= 0.0f) return;
 
 	ObjectList* pList = pServerDE->FindObjectsTouchingSphere(&vOrigin, fRadius);

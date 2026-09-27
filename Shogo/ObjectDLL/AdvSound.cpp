@@ -14,7 +14,7 @@ BEGIN_CLASS(AdvSound)
 	ADD_LONGINTPROP(ConeAngle, 360)
 	ADD_LONGINTPROP(OutsideConeVolume, 100)
 	ADD_VECTORPROP(RotateXYZPeriod)
-END_CLASS_DEFAULT(AdvSound, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(AdvSound, DEBaseClass, NULL, NULL)
 
 // ----------------------------------------------------------------------- //
 //
@@ -24,7 +24,7 @@ END_CLASS_DEFAULT(AdvSound, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-AdvSound::AdvSound() : BaseClass(OT_NORMAL)
+AdvSound::AdvSound() : DEBaseClass(OT_NORMAL)
 {
 	m_dwFlags = 0;
 	m_hstrSoundFile = DNULL;
@@ -104,7 +104,7 @@ DDWORD AdvSound::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 

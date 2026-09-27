@@ -82,12 +82,12 @@ class CDestructable : public Aggregate
 
 	protected :
 
-		DDWORD EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT lData);
-		DDWORD ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
+		DDWORD EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT lData);
+		DDWORD ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
 	
 		void   SetBlockingPriority();
 		void   ApplyDamage(DVector vDir, DFLOAT fDamage, DamageType eType, HOBJECT hHeHitMe);
-		DFLOAT ProcessPowerups(LPBASECLASS pObject, DFLOAT fDamage, DamageType eDamageType, HOBJECT hHeHitMe, DVector* pvDir);
+		DFLOAT ProcessPowerups(DEBaseClass* pObject, DFLOAT fDamage, DamageType eDamageType, HOBJECT hHeHitMe, DVector* pvDir);
 		void   HandleRegen();
 
 		HOBJECT		m_hObject;		// The object I'm associated with
@@ -130,17 +130,17 @@ class CDestructable : public Aggregate
 	private :
 
 		// Handle reading the destructable's properties...
-		DBOOL ReadProp(LPBASECLASS pObject, ObjectCreateStruct *pInfo);
-		void InitialUpdate(LPBASECLASS pObject);
+		DBOOL ReadProp(DEBaseClass* pObject, ObjectCreateStruct *pInfo);
+		void InitialUpdate(DEBaseClass* pObject);
 		void Update();
 
-		void HandleTrigger(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREAD hRead);
-		void HandleDamage(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREAD hRead);
-		void HandleHeal(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREAD hRead);
-		void HandleUltraHeal(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREAD hRead);
-		void HandleRepair(LPBASECLASS pObject, HOBJECT hSender, HMESSAGEREAD hRead);
-		void HandleCrush(LPBASECLASS pObject, HOBJECT hSender);
-		void HandleTouch(LPBASECLASS pObject, HOBJECT hSender, DFLOAT fForce);
+		void HandleTrigger(DEBaseClass* pObject, HOBJECT hSender, HMESSAGEREAD hRead);
+		void HandleDamage(DEBaseClass* pObject, HOBJECT hSender, HMESSAGEREAD hRead);
+		void HandleHeal(DEBaseClass* pObject, HOBJECT hSender, HMESSAGEREAD hRead);
+		void HandleUltraHeal(DEBaseClass* pObject, HOBJECT hSender, HMESSAGEREAD hRead);
+		void HandleRepair(DEBaseClass* pObject, HOBJECT hSender, HMESSAGEREAD hRead);
+		void HandleCrush(DEBaseClass* pObject, HOBJECT hSender);
+		void HandleTouch(DEBaseClass* pObject, HOBJECT hSender, DFLOAT fForce);
 		void Save(HMESSAGEWRITE hWrite, DBYTE nType);
 		void Load(HMESSAGEREAD hRead, DBYTE nType);
 		void DoActualHealing(DFLOAT fAmount);

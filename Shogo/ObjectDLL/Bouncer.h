@@ -30,7 +30,7 @@ class CBouncer : public Aggregate
 
 	protected :
 
-		DDWORD EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT lData);
+		DDWORD EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT lData);
 
 	private :
 
@@ -49,9 +49,9 @@ class CBouncer : public Aggregate
 		void Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags);
 		void Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags);
 
-		void InitialUpdate(LPBASECLASS pObject);
-		void Update(LPBASECLASS pObject);
-		void HandleTouch(LPBASECLASS pObject, HOBJECT hObj);
+		void InitialUpdate(DEBaseClass* pObject);
+		void Update(DEBaseClass* pObject);
+		void HandleTouch(DEBaseClass* pObject, HOBJECT hObj);
 };
 
 #endif // __BOUNCER_H__

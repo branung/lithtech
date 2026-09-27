@@ -11,7 +11,7 @@
 #include "Prop.h"
 #include "cpp_server_de.h"
 #include "RiotObjectUtilities.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "Powerup.h"
 #include "Spawner.h"
 #include "DebrisFuncs.h"
@@ -52,7 +52,7 @@ BEGIN_CLASS(Prop)
 		ADD_BOOLPROP_FLAG(FireAlongForward, 0, PF_GROUP1)
 		ADD_REALPROP_FLAG(DamageFactor, 1.0f, PF_GROUP1)
 
-END_CLASS_DEFAULT(Prop, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(Prop, DEBaseClass, NULL, NULL)
 
 
 
@@ -64,7 +64,7 @@ END_CLASS_DEFAULT(Prop, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-Prop::Prop() : BaseClass(OT_MODEL)
+Prop::Prop() : DEBaseClass(OT_MODEL)
 {
 	m_hstrDestroyedModels = DNULL;
 	m_hstrDestroyedSkins = DNULL;
@@ -175,7 +175,7 @@ DDWORD Prop::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 				}
 			}
 
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 			
 			PostPropRead((ObjectCreateStruct*)pData);
 
@@ -234,7 +234,7 @@ DDWORD Prop::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 // ----------------------------------------------------------------------- //
@@ -258,7 +258,7 @@ DDWORD Prop::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hR
 			if (m_Damage.GetCanDamage())
 			{
 				// Let Destructable aggregate do its job first...
-				ret = BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+				ret = DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 
 				if (m_Damage.IsDead() && !m_bDamageDone) 
 				{
@@ -282,7 +282,7 @@ DDWORD Prop::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hR
 		default : break;
 	}
 
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 // ----------------------------------------------------------------------- //
@@ -426,7 +426,8 @@ void Prop::PostPropRead(ObjectCreateStruct *pStruct)
 
 	if (m_bChrome)
 	{
-		pStruct->m_Flags |= FLAG_ENVIRONMENTMAP;
+		// This flag goes into FLAG2_ENVMAP beacuse LT1's FLAG_ENVIRONMENTMAP is 0 in DECompat
+		pStruct->m_Flags2 |= FLAG2_ENVMAP;
 	}
 
 
@@ -706,21 +707,24 @@ void Prop::Damage()
 
 DBOOL Prop::GetNextToken( HSTRING *hString, char *pszValue, int nLength )
 {
-	char *pszToken, *pszString;
+	char *pszToken;
+	const char *pszString;
+	char szWorkBuf[512];
 	HSTRING hNewString = DNULL;
 
 	if( !hString || !*hString)
 		return DFALSE;
 
 	pszString = g_pServerDE->GetStringData( *hString );
-	if( !pszString && pszString[0] == '\0' )
+	if( !pszString || pszString[0] == '\0' )
 	{
 		g_pServerDE->FreeString( *hString );
 		*hString = NULL;
 		return DFALSE;
 	}
 
-	pszToken = strtok( pszString, " " );
+	SAFE_STRCPY( szWorkBuf, pszString );
+	pszToken = strtok( szWorkBuf, " " );
 	if( !pszToken )
 	{
 		g_pServerDE->FreeString( *hString );
@@ -755,7 +759,8 @@ void Prop::CreateDebris(DVector *pvPos, DVector *pvDims)
 	if (!pvPos || !pvDims || m_nMaxNumDebris <= 0) return;
 
 	DFLOAT fDimsMag = VEC_MAG(*pvDims) * 0.5f;
-	::CreatePropDebris(*pvPos, fDimsMag, m_Damage.GetDeathDir(), 
+	DVector vDeathDir = m_Damage.GetDeathDir();
+	::CreatePropDebris(*pvPos, fDimsMag, vDeathDir,
 						m_eDebrisType, m_nMinNumDebris, m_nMaxNumDebris);
 }
 
@@ -772,7 +777,7 @@ void Prop::TriggerMsg(HOBJECT hSender, HSTRING hMsg)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (!pMsg) return;
 
 

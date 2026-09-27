@@ -17,7 +17,7 @@
 #include "Projectile.h"
 #include "DamageTypes.h"
 
-class Explosion : public BaseClass
+class Explosion : public DEBaseClass
 {
 	public :
 

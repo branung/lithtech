@@ -23,7 +23,7 @@ BEGIN_CLASS(ObjectiveTrigger)
 	ADD_STRINGPROP(AddObjectives, "")
 	ADD_STRINGPROP(RemoveObjectives, "")
 	ADD_STRINGPROP(CompleteObjectives, "")
-END_CLASS_DEFAULT(ObjectiveTrigger, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(ObjectiveTrigger, DEBaseClass, NULL, NULL)
 
 // ----------------------------------------------------------------------- //
 //
@@ -33,7 +33,7 @@ END_CLASS_DEFAULT(ObjectiveTrigger, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-ObjectiveTrigger::ObjectiveTrigger() : BaseClass ()
+ObjectiveTrigger::ObjectiveTrigger() : DEBaseClass ()
 {
 	AddAggregate(&m_activation);
 	
@@ -90,7 +90,7 @@ DDWORD ObjectiveTrigger::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMES
 		break;
 	}
 
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
@@ -154,7 +154,7 @@ DDWORD ObjectiveTrigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT f
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -168,7 +168,7 @@ DDWORD ObjectiveTrigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT f
 
 DBOOL ObjectiveTrigger::ReadProp(ObjectCreateStruct *pData)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pData) return DFALSE;
 
 	char buf[MAX_CS_FILENAME_LEN];
@@ -230,8 +230,8 @@ void ObjectiveTrigger::ObjectTouch (HOBJECT hObj)
 	}
 	else if (m_hstrAIName) // See if only a specific AI can trigger it...
 	{
-		char* pAIName  = pServerDE->GetStringData(m_hstrAIName);
-		char* pObjName = pServerDE->GetObjectName(hObj);
+		const char* pAIName = pServerDE->GetStringData(m_hstrAIName);
+		const char* pObjName = pServerDE->GetObjectName(hObj);
 
 		if (pAIName && pObjName)
 		{

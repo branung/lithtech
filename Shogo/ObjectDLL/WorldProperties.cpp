@@ -1,7 +1,7 @@
 #include "cpp_engineobjects_de.h"
 #include <stdio.h>
 
-class WorldProperties : public BaseClass
+class WorldProperties : public DEBaseClass
 {
 	public:
 
@@ -39,7 +39,7 @@ BEGIN_CLASS(WorldProperties)
 	ADD_COLORPROP(LightScale, 255.0f, 255.0f, 255.0f)
 	ADD_STRINGPROP(SoftSky,"textures\\environmentmaps\\clouds\\clouds")
 
-END_CLASS_DEFAULT_FLAGS(WorldProperties, BaseClass, NULL, NULL, CF_ALWAYSLOAD)
+END_CLASS_DEFAULT_FLAGS(WorldProperties, DEBaseClass, NULL, NULL, CF_ALWAYSLOAD)
 
 static char szMusicDirectory[] = "MusicDirectory";
 static char szInstrumentFiles[] = "InstrumentFiles";
@@ -295,5 +295,5 @@ DDWORD WorldProperties::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lD
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, lData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, lData);
 }

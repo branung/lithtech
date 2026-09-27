@@ -111,11 +111,11 @@ DDWORD LaserTrigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData
 
 void LaserTrigger::HandleTriggerMsg(HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	HSTRING hMsg = pServerDE->ReadFromMessageHString(hRead);
-	char* pStr = pServerDE->GetStringData(hMsg);
+	const char* pStr = pServerDE->GetStringData(hMsg);
 	if (!pStr) return;
 
 	// See if we hide/show ourself :)
@@ -213,7 +213,7 @@ void LaserTrigger::InitialUpdate(int nInfo)
 	HCLASS hClass = g_pServerDE->GetClass("BaseClass");
 	if (!hClass) return;
 
-	LPBASECLASS pModel = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pModel = pServerDE->CreateObject(hClass, &theStruct);
 	if (!pModel) return;
 
 	m_hModel = pModel->m_hObject;

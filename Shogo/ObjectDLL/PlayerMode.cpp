@@ -11,7 +11,7 @@
 #include "PlayerMode.h"
 #include "PlayerObj.h"
 #include "cpp_server_de.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "CharacterAttributes.h"
 #include "RiotObjectUtilities.h"
 #include "RiotServerShell.h"
@@ -118,7 +118,7 @@ DBYTE CPlayerMode::SetMode(DBYTE nNewMode, DBOOL bBipedal)
 
 	// Update the Camera FOV to reflect the new player mode...
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (pServerDE && m_pMyObj)
 	{
@@ -258,7 +258,7 @@ DFLOAT CPlayerMode::AdjustArmor(DFLOAT fBaseArmor) const
 
 void CPlayerMode::SetModeOnFoot()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !g_pRiotServerShellDE) return;
 
 	m_nModelId = MI_PLAYER_ONFOOT_ID;
@@ -294,7 +294,7 @@ void CPlayerMode::SetModeOnFoot()
 
 void CPlayerMode::SetModeKid()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !g_pRiotServerShellDE) return;
 
 	m_nModelId = MI_PLAYER_KID_ID;
@@ -374,7 +374,7 @@ void CPlayerMode::SetModeMcaAP(DBOOL bBipedal)
 
 void CPlayerMode::SetModeMcaUE(DBOOL bBipedal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_bBipedal			= bBipedal;
@@ -420,7 +420,7 @@ void CPlayerMode::SetModeMcaUE(DBOOL bBipedal)
 
 void CPlayerMode::SetModeMcaAO(DBOOL bBipedal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_bBipedal			= bBipedal;
@@ -465,7 +465,7 @@ void CPlayerMode::SetModeMcaAO(DBOOL bBipedal)
 
 void CPlayerMode::SetModeMcaSA(DBOOL bBipedal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_bBipedal			= bBipedal;
@@ -623,7 +623,7 @@ DFLOAT CPlayerMode::GetMass()
 //
 // ----------------------------------------------------------------------- //
 
-char* CPlayerMode::GetSkinFilename() const 
+const char* CPlayerMode::GetSkinFilename() const
 {
 	DBOOL bMulti = (g_pRiotServerShellDE->GetGameType() != SINGLE);
 	return GetSkin(m_nModelId, UCA, MS_NORMAL, bMulti); 
@@ -1253,7 +1253,7 @@ DFLOAT CPlayerMode::GetDimsScale() const
 
 void CPlayerMode::Save(HMESSAGEWRITE hWrite)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageByte(hWrite, m_nModelId);
@@ -1280,7 +1280,7 @@ void CPlayerMode::Save(HMESSAGEWRITE hWrite)
 
 void CPlayerMode::Load(HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	m_nModelId			= pServerDE->ReadFromMessageByte(hRead);

@@ -25,9 +25,9 @@ class MajorCharacter : public BaseAI
 
 	protected:
 
-		virtual DBOOL	ProcessCommand(char** pTokens, int nArgs, char* pNextCommand);
+		virtual DBOOL	ProcessCommand(const char** pTokens, int nArgs, const char* pNextCommand);
 		virtual void	KillDlgSnd();
-		virtual void    PlayDialogSound(char* pSound, CharacterSoundType eType=CST_DIALOG, DBOOL bAtObjectPos=DFALSE);
+		virtual void    PlayDialogSound(const char* pSound, CharacterSoundType eType=CST_DIALOG, DBOOL bAtObjectPos=DFALSE);
 
 };
 

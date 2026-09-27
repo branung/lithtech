@@ -12,10 +12,10 @@
 #define __OBJECTIVE_TRIGGER_H__
 
 #include "cpp_engineobjects_de.h"
-#include "activation.h"
+#include "Activation.h"
 
 
-class ObjectiveTrigger : public BaseClass
+class ObjectiveTrigger : public DEBaseClass
 {
 	public :
 

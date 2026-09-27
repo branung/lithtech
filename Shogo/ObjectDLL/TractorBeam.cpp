@@ -9,7 +9,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "TractorBeam.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "cpp_server_de.h"
 #include "ServerRes.h"
 #include "RiotObjectUtilities.h"
@@ -25,7 +25,7 @@
 // ----------------------------------------------------------------------- //
 
 BEGIN_CLASS(TractorBeam)
-END_CLASS_DEFAULT(TractorBeam, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(TractorBeam, DEBaseClass, NULL, NULL)
 
 // ----------------------------------------------------------------------- //
 //
@@ -35,7 +35,7 @@ END_CLASS_DEFAULT(TractorBeam, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-TractorBeam::TractorBeam() : BaseClass (OT_MODEL)
+TractorBeam::TractorBeam() : DEBaseClass (OT_MODEL)
 {
 	m_bTargetIsPlayer = DFALSE;
 }
@@ -88,7 +88,7 @@ DDWORD TractorBeam::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 			{
 				if (fData != PRECREATE_SAVEGAME)
 				{
-					dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+					dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 					PostPropRead ((ObjectCreateStruct*) pData);
 					return dwRet;
 				}
@@ -111,7 +111,7 @@ DDWORD TractorBeam::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		}
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -249,7 +249,13 @@ void TractorBeam::PostPropRead(ObjectCreateStruct* pStruct)
 		SAFE_STRCPY(pStruct->m_SkinName, hstrSkinName ? g_pServerDE->GetStringData (hstrSkinName) : "dummy string");
 		SAFE_STRCPY(pStruct->m_Name, "Tractor Beam");
 
-		memcpy (&m_info, (BeamInfo*)pStruct->m_UserData, sizeof (BeamInfo));
+		// m_UserData is a 32-bit field holding a 64-bit address, which this cast doesn't fix.
+		// Only CPlayerObj::UpdateTractorBeam sets it
+		const BeamInfo* pBeamInfo = (const BeamInfo*)(uintptr_t)pStruct->m_UserData;
+		if (pBeamInfo)
+		{
+			memcpy (&m_info, pBeamInfo, sizeof (BeamInfo));
+		}
 
 		g_pServerDE->FreeString (hstrFilename);
 		g_pServerDE->FreeString (hstrSkinName);

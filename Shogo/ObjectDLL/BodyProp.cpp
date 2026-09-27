@@ -71,7 +71,7 @@ DDWORD BodyProp::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		case MID_UPDATE:
 		{
 			// DON'T call Prop::EngineMessageFn, object might get removed...
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 
 			Update();
 

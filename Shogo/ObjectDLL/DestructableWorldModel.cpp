@@ -64,7 +64,7 @@ CDestructableWorldModel::CDestructableWorldModel() : CDestructable()
 
 CDestructableWorldModel::~CDestructableWorldModel()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hstrDestroySound)
@@ -86,7 +86,7 @@ CDestructableWorldModel::~CDestructableWorldModel()
 //	PURPOSE:	Handler for engine messages
 //
 // --------------------------------------------------------------------------- //
-DDWORD CDestructableWorldModel::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData)
+DDWORD CDestructableWorldModel::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData)
 {
 	switch (messageID)
 	{
@@ -144,7 +144,7 @@ DDWORD CDestructableWorldModel::EngineMessageFn(LPBASECLASS pObject, DDWORD mess
 //
 // ----------------------------------------------------------------------- //
 
-DDWORD CDestructableWorldModel::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
+DDWORD CDestructableWorldModel::ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
 {
 	DDWORD dwRet = CDestructable::ObjectMessageFn(pObject, hSender, messageID, hRead);
 
@@ -154,7 +154,7 @@ DDWORD CDestructableWorldModel::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSe
 		{
 			if (IsDead() && !m_bCreatedDebris)
 			{
-				CServerDE* pServerDE = BaseClass::GetServerDE();
+				CServerDE* pServerDE = DEBaseClass::GetServerDE();
 				if (!pServerDE) break;
 
 				SpawnItem();
@@ -184,7 +184,7 @@ DDWORD CDestructableWorldModel::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSe
 
 DBOOL CDestructableWorldModel::ReadProp(ObjectCreateStruct *)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	pServerDE->GetPropReal("Mass", &m_fMass);
@@ -248,10 +248,10 @@ DBOOL CDestructableWorldModel::ReadProp(ObjectCreateStruct *)
 
 void CDestructableWorldModel::CreateWorldModelDebris()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
-	char* pName = pServerDE->GetObjectName(m_hObject);
+	const char* pName = pServerDE->GetObjectName(m_hObject);
 	if (!pName || !pName[0]) return;
 
 
@@ -316,7 +316,7 @@ void CDestructableWorldModel::CreateWorldModelDebris()
 
 void CDestructableWorldModel::CreateDebris()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || m_nMaxNumDebris <= 0) return;
 
 	DVector vPos;
@@ -324,12 +324,14 @@ void CDestructableWorldModel::CreateDebris()
 
 	if (m_hstrDestroySound)
 	{
-		char* pSound = pServerDE->GetStringData(m_hstrDestroySound);
+		const char* pSound = pServerDE->GetStringData(m_hstrDestroySound);
 		if (pSound) PlaySoundFromPos(&vPos, pSound, m_fSoundRadius, SOUNDPRIORITY_MISC_HIGH );
 	}	
 
 	DFLOAT fDimsMag = GetRandom(10.0f, 20.0f);
-	::CreatePropDebris(vPos, fDimsMag, GetDeathDir(),
+	// CreatePropDebris takes a non-const reference so the temporary needs a name
+	DVector vDeathDir = GetDeathDir();
+	::CreatePropDebris(vPos, fDimsMag, vDeathDir,
 					   m_eDebrisType, m_nMinNumDebris, m_nMaxNumDebris);
 }
 
@@ -470,7 +472,7 @@ void CDestructableWorldModel::CacheFiles()
 {
 	if (!g_pServerDE) return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 
 	if( !( g_pServerDE->GetServerFlags( ) & SS_CACHING ))
 		return;

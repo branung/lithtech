@@ -35,12 +35,12 @@ CAIKeyData::CAIKeyData()
 
 DBOOL CAIKeyData::Copy(HOBJECT hKey)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!hKey || !pServerDE) return DFALSE;
 
 	pServerDE->GetObjectPos(hKey, &m_vPos);
 
-	char* pName = pServerDE->GetObjectName(hKey);
+	const char* pName = pServerDE->GetObjectName(hKey);
 	if (pName)
 	{
 		strncpy(m_Name, pName, MAX_AIKEY_NAME_LENGTH);
@@ -61,7 +61,7 @@ DBOOL CAIKeyData::Copy(HOBJECT hKey)
 
 void CAIKeyData::Save(HMESSAGEWRITE hWrite)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageVector(hWrite, &m_vPos);
@@ -83,7 +83,7 @@ void CAIKeyData::Save(HMESSAGEWRITE hWrite)
 
 void CAIKeyData::Load(HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromMessageVector(hRead, &m_vPos);
@@ -92,7 +92,7 @@ void CAIKeyData::Load(HMESSAGEREAD hRead)
 
 	if (hstr)
 	{
-		char* pData = pServerDE->GetStringData(hstr);
+		const char* pData = pServerDE->GetStringData(hstr);
 		if (pData && pData[0])
 		{
 			SAFE_STRCPY(m_Name, pData);

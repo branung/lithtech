@@ -15,7 +15,7 @@
 #include "ContainerCodes.h"
 #include "DamageTypes.h"
 
-class VolumeBrush : public BaseClass
+class VolumeBrush : public DEBaseClass
 {
 	public :
 

@@ -27,7 +27,8 @@ END_CLASS_DEFAULT(ShogoSecret, PickupItem, NULL, NULL)
 
 ShogoSecret::ShogoSecret()
 {
-	m_dwFlags |= FLAG_ENVIRONMENTMAP;
+	// This flag goes into FLAG2_ENVMAP beacuse LT1's FLAG_ENVIRONMENTMAP is 0 in DECompat
+	m_dwFlags2 |= FLAG2_ENVMAP;
 }
 
 // ----------------------------------------------------------------------- //

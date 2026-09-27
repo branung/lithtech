@@ -11,7 +11,7 @@
 #ifndef __AI_SCRIPT_LIST_H__
 #define __AI_SCRIPT_LIST_H__
 
-#include "dynarray.h"
+#include "DynArray.h"
 #include <memory.h>  // for memset
 
 #define MAX_AI_ARGS_LENGTH				50
@@ -44,7 +44,7 @@ enum AIScriptCmdType {  AI_SCMD_DONE=0, AI_SCMD_SETMOVEMENT, AI_SCMD_FOLLOWPATH,
 
 struct AISCRIPTCMD
 {
-	AISCRIPTCMD::AISCRIPTCMD();
+	AISCRIPTCMD();
 
 	AIScriptCmdType command;
 	char args[MAX_AI_ARGS_LENGTH];
@@ -60,7 +60,7 @@ inline AISCRIPTCMD::AISCRIPTCMD()
 
 inline void AISCRIPTCMD::Save(HMESSAGEWRITE hWrite)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageByte(hWrite, command);
@@ -73,7 +73,7 @@ inline void AISCRIPTCMD::Save(HMESSAGEWRITE hWrite)
 
 inline void AISCRIPTCMD::Load(HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	command = (AIScriptCmdType) pServerDE->ReadFromMessageByte(hRead);
@@ -82,7 +82,7 @@ inline void AISCRIPTCMD::Load(HMESSAGEREAD hRead)
 
 	if (hstr)
 	{
-		char* pData = pServerDE->GetStringData(hstr);
+		const char* pData = pServerDE->GetStringData(hstr);
 		if (pData && pData[0])
 		{
 			SAFE_STRCPY(args, pData);
@@ -219,7 +219,7 @@ class CAIScriptList
 
 inline void CAIScriptList::Save(HMESSAGEWRITE hWrite)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageFloat(hWrite, (DFLOAT)m_nNumItems);
@@ -236,7 +236,7 @@ inline void CAIScriptList::Save(HMESSAGEWRITE hWrite)
 
 inline void CAIScriptList::Load(HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	int nNumItems = (int) pServerDE->ReadFromMessageFloat(hRead);
@@ -252,7 +252,7 @@ inline void CAIScriptList::Load(HMESSAGEREAD hRead)
 }
 
 
-inline AIScriptCmdType StringToAIScriptCmdType(char* pCmdName)
+inline AIScriptCmdType StringToAIScriptCmdType(const char* pCmdName)
 {
 	if (!pCmdName) return AI_SCMD_DONE;
 

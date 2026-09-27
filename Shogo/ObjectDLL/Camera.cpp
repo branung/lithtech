@@ -21,7 +21,7 @@ BEGIN_CLASS(Camera)
 	ADD_LONGINTPROP(Type, CT_CINEMATIC)
 	ADD_BOOLPROP(StartActive, DFALSE)
 	ADD_BOOLPROP(IsListener, DFALSE)
-END_CLASS_DEFAULT(Camera, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(Camera, DEBaseClass, NULL, NULL)
 
 // ----------------------------------------------------------------------- //
 //
@@ -31,7 +31,7 @@ END_CLASS_DEFAULT(Camera, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-Camera::Camera() : BaseClass(OT_NORMAL)
+Camera::Camera() : DEBaseClass(OT_NORMAL)
 {
 	m_bAllowPlayerMovement	= DFALSE;
 	m_fActiveTime			= 1.0f;
@@ -96,7 +96,7 @@ DDWORD Camera::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 // --------------------------------------------------------------------------- //
@@ -123,7 +123,7 @@ DDWORD Camera::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD h
 		}
 	}
 	
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 // ----------------------------------------------------------------------- //
@@ -225,7 +225,7 @@ void Camera::TriggerMsg(HOBJECT hSender, HSTRING hMsg)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (!pMsg) return;
 
 	DDWORD dwUsrFlags = pServerDE->GetObjectUserFlags(m_hObject);
@@ -287,6 +287,52 @@ void Camera::Update()
 	else
 	{
 		pServerDE->SetNextUpdate(m_hObject, 0.001f);
+	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Camera::IsLive
+//
+//	PURPOSE:	Checks if if the camera is currently the player's view
+//
+// ----------------------------------------------------------------------- //
+
+DBOOL Camera::IsLive() const
+{
+	CServerDE* pServerDE = GetServerDE();
+	if (!pServerDE || !m_hObject) return DFALSE;
+
+	DDWORD dwUsrFlags = pServerDE->GetObjectUserFlags(m_hObject);
+	return (dwUsrFlags & USRFLG_CAMERA_LIVE) ? DTRUE : DFALSE;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Camera::Expire
+//
+//	PURPOSE:	End this camera now as if its active time had run out.
+//
+// ----------------------------------------------------------------------- //
+
+void Camera::Expire()
+{
+	CServerDE* pServerDE = GetServerDE();
+	if (!pServerDE || !m_hObject) return;
+
+	DDWORD dwUsrFlags = pServerDE->GetObjectUserFlags(m_hObject);
+	if (!(dwUsrFlags & USRFLG_CAMERA_LIVE)) return;
+
+	// The state Update() leaves when m_fTurnOffTime passes.
+	// The client watches this flag to leave its letterboxed camera mode
+	pServerDE->SetObjectUserFlags(m_hObject, dwUsrFlags & ~USRFLG_CAMERA_LIVE);
+	pServerDE->SetNextUpdate(m_hObject, 0.0f);
+
+	if (m_bOneTime)
+	{
+		pServerDE->RemoveObject(m_hObject);
 	}
 }
 

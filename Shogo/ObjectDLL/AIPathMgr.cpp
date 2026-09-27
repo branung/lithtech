@@ -24,7 +24,7 @@
 
 DBOOL CAIPathMgr::BuildPathList()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 	
 	ClearPathList();

@@ -8,7 +8,7 @@
 //
 // ----------------------------------------------------------------------- //
 
-#include "key.h"
+#include "Key.h"
 #include "cpp_server_de.h"
 
 
@@ -19,7 +19,7 @@ BEGIN_CLASS(Key)
 	ADD_STRINGPROP(MessageTarget, "")
 	ADD_STRINGPROP(MessageName, "")
 	ADD_STRINGPROP(BPrintMessage, "")
-END_CLASS_DEFAULT(Key, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(Key, DEBaseClass, NULL, NULL)
 
 
 // ----------------------------------------------------------------------- //
@@ -30,7 +30,7 @@ END_CLASS_DEFAULT(Key, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-Key::Key() : BaseClass(OT_NORMAL)
+Key::Key() : DEBaseClass(OT_NORMAL)
 {
 	m_fTimeStamp		= 0.0f;
 	m_fSoundRadius		= 0.0f;
@@ -93,7 +93,7 @@ DDWORD Key::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 

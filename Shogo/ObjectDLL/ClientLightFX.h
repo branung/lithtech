@@ -14,7 +14,7 @@
 #include "cpp_engineobjects_de.h"
 #include "Destructable.h"
 
-class ClientLightFX : public BaseClass
+class ClientLightFX : public DEBaseClass
 {
 	public :
 

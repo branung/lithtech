@@ -13,7 +13,7 @@
 #include "generic_msg_de.h"
 
 BEGIN_CLASS(CStoryTrigger)
-END_CLASS_DEFAULT_FLAGS(CStoryTrigger, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CStoryTrigger, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 // ----------------------------------------------------------------------- //
 //
@@ -44,7 +44,7 @@ DDWORD CStoryTrigger::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAG
 		break;
 	}
 
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
@@ -64,7 +64,7 @@ DDWORD CStoryTrigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lDat
 	{
 		case MID_PRECREATE:
 		{
-			dwRet = BaseClass::EngineMessageFn(messageID, pData, lData);
+			dwRet = DEBaseClass::EngineMessageFn(messageID, pData, lData);
 			ObjectCreateStruct* pStruct = (ObjectCreateStruct*)pData;
 			if (pStruct)
 			{
@@ -78,7 +78,7 @@ DDWORD CStoryTrigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lDat
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, lData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, lData);
 }
 
 
@@ -92,13 +92,13 @@ DDWORD CStoryTrigger::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lDat
 
 void CStoryTrigger::HandleTriggerMsg(HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hSender || !hRead) return;
 
 	HSTRING hMsg = pServerDE->ReadFromMessageHString(hRead);
 	if (!hMsg) return;
 
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (pMsg)
 	{
 		// Add the msg to the game console...

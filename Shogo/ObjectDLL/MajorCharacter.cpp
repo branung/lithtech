@@ -11,7 +11,7 @@
 #include "MajorCharacter.h"
 #include "cpp_server_de.h"
 #include "RiotServerShell.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "PlayerObj.h"
 
 extern CRiotServerShell* g_pRiotServerShellDE;
@@ -61,7 +61,9 @@ DDWORD MajorCharacter::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSA
 		{
 			DialogQueueCharacter *pDialogQueueCharacter;
 
-			pDialogQueueCharacter = ( DialogQueueCharacter * )g_pServerDE->ReadFromMessageDWord( hRead );
+			uintptr_t nLow  = (uintptr_t)g_pServerDE->ReadFromMessageDWord( hRead );
+			uintptr_t nHigh = (uintptr_t)g_pServerDE->ReadFromMessageDWord( hRead );
+			pDialogQueueCharacter = ( DialogQueueCharacter * )( nLow | ( (uint64)nHigh << 32 ) );
 			pPlayerObj = g_pRiotServerShellDE->GetFirstPlayer( );
 			if( pPlayerObj )
 			{
@@ -116,7 +118,7 @@ void MajorCharacter::KillDlgSnd()
 //
 // ----------------------------------------------------------------------- //
 
-void MajorCharacter::PlayDialogSound(char* pSound, CharacterSoundType eType,
+void MajorCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType,
 									 DBOOL bAtObjectPos)
 {
 	CServerDE* pServerDE = GetServerDE();
@@ -157,7 +159,7 @@ void MajorCharacter::PlayDialogSound(char* pSound, CharacterSoundType eType,
 //
 // --------------------------------------------------------------------------- //
 
-DBOOL MajorCharacter::ProcessCommand(char** pTokens, int nArgs, char* pNextCommand)
+DBOOL MajorCharacter::ProcessCommand(const char** pTokens, int nArgs, const char* pNextCommand)
 {
 	CServerDE* pServerDE = GetServerDE();
 	CPlayerObj *pPlayerObj;
@@ -169,7 +171,7 @@ DBOOL MajorCharacter::ProcessCommand(char** pTokens, int nArgs, char* pNextComma
 	{
 		// Get sound name from message...
 
-		char* pSoundName = pTokens[1];
+		const char* pSoundName = pTokens[1];
 		pPlayerObj = g_pRiotServerShellDE->GetFirstPlayer( );
 
 		if( pSoundName && pPlayerObj )

@@ -10,7 +10,7 @@
 
 #include "Spawner.h"
 #include "cpp_server_de.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "RiotObjectUtilities.h"
 
 
@@ -23,7 +23,7 @@
 //
 // ----------------------------------------------------------------------- //
 
-BaseClass *SpawnObject( char *pszSpawn, DVector *pvPos, DRotation *prRot )
+DEBaseClass *SpawnObject( char *pszSpawn, DVector *pvPos, DRotation *prRot )
 {
 	HCLASS hClass;
 	char *pszClassName;
@@ -49,7 +49,7 @@ BaseClass *SpawnObject( char *pszSpawn, DVector *pvPos, DRotation *prRot )
 	pszSpawn = strtok( NULL, "" );
 
 	// Allocate an object...
-	return ( BaseClass * )g_pServerDE->CreateObjectProps( hClass, &theStruct, pszSpawn );
+	return ( DEBaseClass * )g_pServerDE->CreateObjectProps( hClass, &theStruct, pszSpawn );
 }
 
 
@@ -58,7 +58,7 @@ BEGIN_CLASS(Spawner)
 	ADD_STRINGPROP( DefaultSpawn, "" )
 	ADD_STRINGPROP( SpawnSound, "" )
 	ADD_REALPROP( SoundRadius, 500.0f )
-END_CLASS_DEFAULT(Spawner, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(Spawner, DEBaseClass, NULL, NULL)
 
 
 // ----------------------------------------------------------------------- //
@@ -69,7 +69,7 @@ END_CLASS_DEFAULT(Spawner, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-Spawner::Spawner() : BaseClass(OT_NORMAL)
+Spawner::Spawner() : DEBaseClass(OT_NORMAL)
 {
 	m_hstrDefaultSpawn = DNULL;
 	m_hstrSpawnSound = DNULL;
@@ -141,7 +141,7 @@ DDWORD Spawner::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -220,7 +220,7 @@ DDWORD Spawner::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAGEREAD
 			HSTRING hMsg = g_pServerDE->ReadFromMessageHString( hRead );
 			if (!hMsg) break;
 
-			char* pMsg = g_pServerDE->GetStringData(hMsg);
+			const char* pMsg = g_pServerDE->GetStringData(hMsg);
 			if (_stricmp(pMsg, "default") == 0)
 			{
 				pMsg = g_pServerDE->GetStringData(m_hstrDefaultSpawn);
@@ -236,7 +236,7 @@ DDWORD Spawner::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAGEREAD
 			// Play spawn sound...
 			if( m_hstrSpawnSound )
 			{
-				char* pSound = g_pServerDE->GetStringData(m_hstrSpawnSound);
+				const char* pSound = g_pServerDE->GetStringData(m_hstrSpawnSound);
 				PlaySoundFromPos( &vPos, pSound, m_fSoundRadius, SOUNDPRIORITY_MISC_LOW );
 			}
 			
@@ -247,7 +247,7 @@ DDWORD Spawner::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAGEREAD
 		default : break;
 	}
 
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
@@ -302,7 +302,7 @@ void Spawner::CacheFiles()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 	if (m_hstrSpawnSound)
 	{
 		pFile = pServerDE->GetStringData(m_hstrSpawnSound);

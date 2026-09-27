@@ -14,7 +14,7 @@ BEGIN_CLASS(TriggerSound)
 	ADD_BOOLPROP(Ambient, 1)
 	ADD_BOOLPROP(On, 0)
 	ADD_BOOLPROP(FileStream, 0)
-END_CLASS_DEFAULT(TriggerSound, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(TriggerSound, DEBaseClass, NULL, NULL)
 
 // ----------------------------------------------------------------------- //
 //
@@ -24,7 +24,7 @@ END_CLASS_DEFAULT(TriggerSound, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-TriggerSound::TriggerSound() : BaseClass(OT_NORMAL)
+TriggerSound::TriggerSound() : DEBaseClass(OT_NORMAL)
 {
 	m_hstrStartSoundFile = DNULL;
 	m_hstrLoopSoundFile = DNULL;
@@ -125,7 +125,7 @@ DDWORD TriggerSound::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -236,7 +236,7 @@ DDWORD TriggerSound::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAG
 		case MID_TRIGGER:
 		{
 			HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-			char *pMsg = g_pServerDE->GetStringData(hMsg);
+			const char* pMsg = g_pServerDE->GetStringData(hMsg);
 
 			// Handle start message
 			if( stricmp( pMsg, "Start" ) == 0 )
@@ -305,7 +305,7 @@ DDWORD TriggerSound::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAG
 		default : break;
 	}
 
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 // ----------------------------------------------------------------------- //
@@ -452,7 +452,7 @@ void TriggerSound::CacheFiles()
 //	if( m_bFileStream )
 //		return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 	if (m_hstrStartSoundFile)
 	{
 		pFile = pServerDE->GetStringData(m_hstrStartSoundFile);

@@ -25,7 +25,7 @@
 
 inline DBOOL IsMoveable(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hObj) return DFALSE;
 
 	DDWORD dwUserFlags = pServerDE->GetObjectUserFlags(hObj);
@@ -43,8 +43,8 @@ inline DBOOL IsMoveable(HOBJECT hObj)
 
 inline SurfaceType GetSurfaceType(HPOLY hPoly)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
-	if (!pServerDE || !hPoly) return ST_UNKNOWN;
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
+	if (!pServerDE || hPoly == INVALID_HPOLY) return ST_UNKNOWN;
 
 	SurfaceType eType = ST_UNKNOWN;
 
@@ -72,12 +72,13 @@ inline SurfaceType GetSurfaceType(HPOLY hPoly)
 
 inline SurfaceType GetSurfaceType(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hObj) return ST_UNKNOWN;
 
 	SurfaceType eType = ST_UNKNOWN;
 
-	if (pServerDE->GetWorldObject() != hObj)
+	// IsWorldObject answers LT_YES or LT_NO, never LT_OK
+	if (pServerDE->IsWorldObject(hObj) != LT_YES)
 	{
 		HCLASS hObjClass  = pServerDE->GetObjectClass(hObj);
 		HCLASS hBase	  = pServerDE->GetClass("CBaseCharacter");

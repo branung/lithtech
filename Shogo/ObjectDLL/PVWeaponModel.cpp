@@ -16,11 +16,11 @@
 #include <stdio.h>
 
 extern char g_tokenSpace[];
-extern char *g_pTokens[];
-extern char *g_pCommandPos;
+extern const char *g_pTokens[];
+extern const char *g_pCommandPos;
 
 BEGIN_CLASS(CPVWeaponModel)
-END_CLASS_DEFAULT_FLAGS(CPVWeaponModel, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CPVWeaponModel, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 // ----------------------------------------------------------------------- //
 //
@@ -30,7 +30,7 @@ END_CLASS_DEFAULT_FLAGS(CPVWeaponModel, BaseClass, NULL, NULL, CF_HIDDEN)
 //
 // ----------------------------------------------------------------------- //
 
-CPVWeaponModel::CPVWeaponModel() : BaseClass(OT_MODEL)
+CPVWeaponModel::CPVWeaponModel() : DEBaseClass(OT_MODEL)
 {
 	m_pParent			= DNULL;
 	m_hParentObject		= DNULL;
@@ -154,7 +154,7 @@ DDWORD CPVWeaponModel::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDa
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -250,7 +250,7 @@ void CPVWeaponModel::CreateFlash()
 	theStruct.m_Flags = 0;
 
 	HCLASS hClass = pServerDE->GetClass("BaseClass");
-	LPBASECLASS pClass = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pClass = pServerDE->CreateObject(hClass, &theStruct);
 
 	if (pClass)
 	{
@@ -433,7 +433,7 @@ void CPVWeaponModel::StringKey(ArgList* pArgList)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
-	char* pKey = pArgList->argv[0];
+	const char* pKey = pArgList->argv[0];
 	if (!pKey) return;
 
 	if (stricmp(pKey, WEAPON_KEY_FIRE) == 0)
@@ -444,7 +444,7 @@ void CPVWeaponModel::StringKey(ArgList* pArgList)
 	{
 		if (pArgList->argc > 1)
 		{
-			char* pSound = pArgList->argv[1];
+			const char* pSound = pArgList->argv[1];
 			if (pSound)
 			{
 				char buf[100];
@@ -487,26 +487,8 @@ void CPVWeaponModel::SetupParent()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !m_pParent || !m_hObject) return;
 
-	char commandStr[100];
-	if (pServerDE->GetModelCommandString(m_hObject, commandStr, 100) != DE_OK)
-	{
-		return;
-	}
-
-	int nArgs;
-	pServerDE->Parse(commandStr, &g_pCommandPos, g_tokenSpace, g_pTokens, &nArgs);
-	if (nArgs < 4) return;
-
-	DFLOAT fMinDur, fMaxDur, fMinRest, fMaxRest;
-	fMinDur  = (DFLOAT)atof(g_pTokens[0]);
-	fMaxDur  = (DFLOAT)atof(g_pTokens[1]);
-	fMinRest = (DFLOAT)atof(g_pTokens[2]);
-	fMaxRest = (DFLOAT)atof(g_pTokens[3]);
-
-	m_pParent->SetMinFireDuration(fMinDur);
-	m_pParent->SetMaxFireDuration(fMaxDur);
-	m_pParent->SetMinFireRest(fMinRest);
-	m_pParent->SetMaxFireRest(fMaxRest);
+	// GetModelCommandString has no Jupiter equivalent,
+	// so the weapon keeps the fire timing SetMin/MaxFire{Duration,Rest} already set
 }
 
 

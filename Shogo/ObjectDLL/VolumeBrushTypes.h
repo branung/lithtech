@@ -13,7 +13,7 @@
 
 #include "VolumeBrush.h"
 
-DBOOL LiquidFilterFn(HOBJECT hObj, void *pUserData);
+bool LiquidFilterFn(HOBJECT hObj, void *pUserData);
 
 class BlueWater : public VolumeBrush
 {

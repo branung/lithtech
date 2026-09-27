@@ -8,7 +8,7 @@
 //
 // ----------------------------------------------------------------------- //
 
-#include "Sparrowhawk.h"
+#include "SparrowHawk.h"
 
 BEGIN_CLASS(Sparrowhawk)
 	ADD_LONGINTPROP( State, Vehicle::DEFENSIVE )

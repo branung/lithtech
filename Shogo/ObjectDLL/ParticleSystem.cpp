@@ -280,7 +280,7 @@ void ParticleSystem::HandleMsg(HOBJECT hSender, HSTRING hMsg)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (!pMsg) return;
 
 	if (_stricmp(pMsg, "ON") == 0 && !m_bOn)
@@ -351,7 +351,7 @@ void ParticleSystem::CacheFiles()
 
 	if (m_hstrTextureName)
 	{
-		char* pFile = pServerDE->GetStringData(m_hstrTextureName);
+		const char* pFile = pServerDE->GetStringData(m_hstrTextureName);
 		if (pFile && pFile[0])
 		{
 			pServerDE->CacheFile(FT_TEXTURE, pFile);

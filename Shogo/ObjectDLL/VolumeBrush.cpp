@@ -44,7 +44,7 @@ BEGIN_CLASS(VolumeBrush)
 	ADD_VECTORPROP_VAL(Current, 0.0f, 0.0f, 0.0f)
 	ADD_REALPROP(Damage, 0.0f)
 	ADD_LONGINTPROP(DamageType, DT_CHOKE)
-END_CLASS_DEFAULT(VolumeBrush, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(VolumeBrush, DEBaseClass, NULL, NULL)
 
 // ----------------------------------------------------------------------- //
 //
@@ -54,7 +54,7 @@ END_CLASS_DEFAULT(VolumeBrush, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-VolumeBrush::VolumeBrush() : BaseClass(OT_CONTAINER)
+VolumeBrush::VolumeBrush() : DEBaseClass(OT_CONTAINER)
 {
 	m_hPlayerClass		= DNULL;
 	m_dwSaveFlags		= 0;
@@ -143,7 +143,7 @@ DDWORD VolumeBrush::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 
 		case MID_PRECREATE:
 		{
-			dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 			if( fData == PRECREATE_WORLDFILE )
 				ReadProp(( ObjectCreateStruct * )pData );
 			PostPropRead(( ObjectCreateStruct * )pData );
@@ -182,7 +182,7 @@ DDWORD VolumeBrush::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -208,7 +208,7 @@ DDWORD VolumeBrush::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGER
 		break;
 	}
 	
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
@@ -225,7 +225,7 @@ void VolumeBrush::HandleTrigger(HOBJECT hSender, HSTRING hMsg)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (!pMsg || !pMsg[0]) return;
 
 	if (m_bHidden && (stricmp(pMsg, TRIGGER_MSG_ON) == 0))
@@ -743,7 +743,7 @@ void VolumeBrush::CacheFiles()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 	if (m_hstrSurfaceSprite)
 	{
 		pFile = pServerDE->GetStringData(m_hstrSurfaceSprite);

@@ -82,7 +82,7 @@ DDWORD CPulseRifleProjectile::EngineMessageFn(DDWORD messageID, void *pData, DFL
 
 		case MID_INITIALUPDATE:
 		{
-			CServerDE* pServerDE = BaseClass::GetServerDE();
+			CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			if (!pServerDE) return 0;
 
 			pServerDE->SetObjectColor(m_hObject, 1.0f, 1.0f, 1.0f, 1.0f);
@@ -233,16 +233,14 @@ DDWORD CKatoGrenadeProjectile::EngineMessageFn(DDWORD messageID, void *pData, DF
 
 void CKatoGrenadeProjectile::HandleImpact(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hObj) return;
 
 	HCLASS hClassObj   = pServerDE->GetObjectClass(hObj);
-	HCLASS hClassWorld = pServerDE->GetObjectClass(pServerDE->GetWorldObject());
-
 	// Don't impact on the world...
 
 	int nType = pServerDE->GetObjectType(hObj);
-	if (pServerDE->IsKindOf(hClassObj, hClassWorld) || nType == OT_WORLDMODEL)
+	if (pServerDE->IsWorldObject(hObj) == LT_YES || nType == OT_WORLDMODEL)
 	{
 		DoBounce();
 		return;
@@ -263,7 +261,7 @@ void CKatoGrenadeProjectile::HandleImpact(HOBJECT hObj)
 
 void CKatoGrenadeProjectile::DoBounce()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 	DVector vPos;
 
@@ -349,7 +347,7 @@ DDWORD CStickyGrenadeProjectile::EngineMessageFn(DDWORD messageID, void *pData, 
 		{
 			if (fData == INITIALUPDATE_SAVEGAME) break;
 
-			CServerDE* pServerDE = BaseClass::GetServerDE();
+			CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			if (!pServerDE) break;
 
 			// Set up anis...
@@ -413,7 +411,7 @@ DDWORD CStickyGrenadeProjectile::EngineMessageFn(DDWORD messageID, void *pData, 
 
 void CStickyGrenadeProjectile::HandleImpact(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || m_bAttached) return;
 	DVector vPos;
 
@@ -432,13 +430,10 @@ void CStickyGrenadeProjectile::HandleImpact(HOBJECT hObj)
 
 	if (hObj)
 	{
-		HCLASS hClassObj   = pServerDE->GetObjectClass(hObj);
-		HCLASS hClassWorld = pServerDE->GetObjectClass(pServerDE->GetWorldObject());
-
 		DVector vMyPos, vHostPos;
 		VEC_INIT(vHostPos);
 
-		if (pServerDE->IsKindOf(hClassObj, hClassWorld))
+		if (pServerDE->IsWorldObject(hObj) == LT_YES)
 		{
 			// Align with surface normal...
 			
@@ -489,7 +484,7 @@ void CStickyGrenadeProjectile::HandleImpact(HOBJECT hObj)
 
 void CStickyGrenadeProjectile::Update()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 
@@ -543,7 +538,7 @@ void CStickyGrenadeProjectile::Update()
 
 void CStickyGrenadeProjectile::RemoveObject()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CProjectile::RemoveObject();

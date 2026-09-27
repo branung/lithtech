@@ -30,8 +30,8 @@
 // Externs...
 
 extern char g_tokenSpace[];
-extern char *g_pTokens[];
-extern char *g_pCommandPos;
+extern const char *g_pTokens[];
+extern const char *g_pCommandPos;
 
 extern CRiotServerShell* g_pRiotServerShellDE;
 extern DBOOL g_bRobert;
@@ -162,7 +162,7 @@ static int s_nNumCallsToIntersectSegment = 0;
 
 // This is a filter function used with cast ray...
 
-static DBOOL TransparentObjectFilterFn(HOBJECT hObj, void *pUserData);
+static bool TransparentObjectFilterFn(HOBJECT hObj, void *pUserData);
 
 
 // Following are tables used to calculate state transitions...
@@ -253,6 +253,10 @@ BaseAI::BaseAI() : CBaseCharacter()
 	VEC_INIT(m_vUp);
 	VEC_INIT(m_vForward);
 	VEC_INIT(m_vLastPos);
+	m_nStuckUpdates    = 0;
+	m_fNextStuckPrint  = 0.0f;
+	m_bStandPrinted    = DFALSE;
+	m_fNextStandPrint  = 0.0f;
 
 	m_AIPathList.Init(DFALSE);
 
@@ -346,6 +350,11 @@ BaseAI::BaseAI() : CBaseCharacter()
 	m_bLoopScriptedAni			= DFALSE;
 
 	m_fPredTravelDist			= 0.0f;
+	m_fAIMoveWindowStart		= 0.0f;
+	m_fLastMoveUpdateTime		= 0.0f;
+	VEC_INIT(m_vAIMoveWindowPos);
+	m_nAIMoveWindowUpdates		= 0;
+	m_fAIMoveWindowFrameTime	= 0.0f;
 	m_fLastDistTraveled			= 0.0f;
 
 	m_fFollowStartTime			= 0.0f;
@@ -1066,7 +1075,7 @@ void BaseAI::PostPropRead(ObjectCreateStruct *pStruct)
 	if (!pStruct) return;
 
 	char* pFilename = GetModel(m_nModelId, m_eModelSize);
-	char* pSkin		= GetSkin(m_nModelId, m_cc, m_eModelSize);
+	const char* pSkin		= GetSkin(m_nModelId, m_cc, m_eModelSize);
 
 	if (pFilename && pFilename[0])
 	{
@@ -1092,6 +1101,14 @@ void BaseAI::InitialUpdate()
 {
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !m_hObject) return;
+
+	// No client prediction for AI.
+	// It's replicated velocity carries a little gravity, which the client predicts under the floor
+	if (pServerDE->Common())
+	{
+		pServerDE->Common()->SetObjectFlags(m_hObject, OFT_Flags2,
+			FLAG2_DISABLEPREDICTION, FLAG2_DISABLEPREDICTION);
+	}
 
 	if (m_eModelSize == MS_SMALL && m_bOkAdjustVel)
 	{
@@ -1132,7 +1149,7 @@ void BaseAI::CacheFiles()
 	if( !( pServerDE->GetServerFlags( ) & SS_CACHING ))
 		return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 
 	// Cache sounds...
 
@@ -1368,7 +1385,7 @@ void BaseAI::HandleWeaponChange()
 
 void BaseAI::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_activation.IsActive()) return;
 
 	if (m_fCurTime < m_fNextBumpedTime) return;
@@ -1945,7 +1962,7 @@ void BaseAI::SetIdle()
 
 	if (m_dwAvailableSounds & AI_SNDFLG_SETIDLE)
 	{
-		char* pSound = DNULL;
+		const char* pSound = DNULL;
 		if (m_hstrSetIdleSound)
 		{
 			pSound = pServerDE->GetStringData(m_hstrSetIdleSound);
@@ -1996,7 +2013,7 @@ void BaseAI::SetDefensive()
 
 	if (m_dwAvailableSounds & AI_SNDFLG_SETDEFENSIVE)
 	{
-		char* pSound = DNULL;
+		const char* pSound = DNULL;
 		if (m_hstrSetDefensiveSound)
 		{
 			pSound = pServerDE->GetStringData(m_hstrSetDefensiveSound);
@@ -2061,7 +2078,7 @@ void BaseAI::SetAggressive()
 
 	if (m_dwAvailableSounds & AI_SNDFLG_SETAGGRESSIVE)
 	{
-		char* pSound = DNULL;
+		const char* pSound = DNULL;
 		if (m_hstrSetAggressiveSound)
 		{
 			pSound = pServerDE->GetStringData(m_hstrSetAggressiveSound);
@@ -2254,7 +2271,7 @@ void BaseAI::SetRetreating()
 
 	if (m_dwAvailableSounds & AI_SNDFLG_SETRETREATING)
 	{
-		char* pSound = DNULL;
+		const char* pSound = DNULL;
 		if (m_hstrSetRetreatingSound)
 		{
 			pSound = pServerDE->GetStringData(m_hstrSetRetreatingSound);
@@ -2362,7 +2379,7 @@ void BaseAI::SetPanicked()
 
 	if (m_dwAvailableSounds & AI_SNDFLG_SETPANICKED)
 	{
-		char* pSound = DNULL;
+		const char* pSound = DNULL;
 		if (m_hstrSetPanickedSound)
 		{
 			pSound = pServerDE->GetStringData(m_hstrSetPanickedSound);
@@ -2419,7 +2436,7 @@ void BaseAI::SetPsycho()
 
 	if (m_dwAvailableSounds & AI_SNDFLG_SETPSYCHO)
 	{
-		char* pSound = DNULL;
+		const char* pSound = DNULL;
 		if (m_hstrSetPsychoSound)
 		{
 			pSound = pServerDE->GetStringData(m_hstrSetPsychoSound);
@@ -2666,6 +2683,39 @@ void BaseAI::UpdateMovement()
 }
 
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	BaseAI::MovementTimeDelta
+//
+//	PURPOSE:	The time one movement update should integrate over
+//
+//	An AI steps by fWalkVel * GetFrameTime(), which is only right while a frame lasts AI_UPDATE_DELTA.
+//	Above that rate the step is raised to the time since its last movement update, capped at two intervals.
+//
+// ----------------------------------------------------------------------- //
+
+DFLOAT BaseAI::MovementTimeDelta()
+{
+	CServerDE* pServerDE = GetServerDE();
+	if (!pServerDE) return 0.0f;
+
+	const DFLOAT fFrame = pServerDE->GetFrameTime();
+	const DFLOAT fNow   = pServerDE->GetTime();
+	DFLOAT fDelta = fFrame;
+
+	if (m_fLastMoveUpdateTime > 0.0f)
+	{
+		const DFLOAT fElapsed = fNow - m_fLastMoveUpdateTime;
+		const DFLOAT fCap     = 2.0f * AI_UPDATE_DELTA;
+		if (fElapsed > fDelta)
+			fDelta = (fElapsed < fCap) ? fElapsed : fCap;
+	}
+
+	m_fLastMoveUpdateTime = fNow;
+	return fDelta;
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	BaseAI::NewUpdateMovement
@@ -2681,11 +2731,12 @@ void BaseAI::NewUpdateMovement()
 
 	m_bStuckOnSomething = DFALSE;
 
+	// Taken before the moving test so the first step after standing still is one interval
+	DFLOAT fTimeDelta = MovementTimeDelta();
+
 	// Make sure we're trying to move...
 
 	if ( !(m_dwControlFlags & BC_CFLG_MOVING) ) return;
-
-	DFLOAT fTimeDelta = pServerDE->GetFrameTime();
 
 	DVector vNewPos;
 	VEC_COPY(vNewPos, m_vPos);
@@ -2701,6 +2752,59 @@ void BaseAI::NewUpdateMovement()
 		if (m_fLastDistTraveled < m_fPredTravelDist * 0.95f)
 		{
 			m_bStuckOnSomething = DTRUE;
+		}
+
+		// [D:AISTUCK] An AI that wants to move and doesn't, after 30 updates and then every two seconds
+		if (m_bStuckOnSomething)
+		{
+			++m_nStuckUpdates;
+		}
+		else
+		{
+			if (m_nStuckUpdates >= 30)
+			{
+				pServerDE->CPrint("[D:AISTUCK] %s freed after %u updates",
+					pServerDE->GetObjectName(m_hObject), m_nStuckUpdates);
+			}
+			m_nStuckUpdates = 0;
+			m_fNextStuckPrint = 0.0f;
+		}
+
+		if (m_nStuckUpdates >= 30 && pServerDE->GetTime() >= m_fNextStuckPrint)
+		{
+			m_fNextStuckPrint = pServerDE->GetTime() + 2.0f;
+
+			DVector vAhead;
+			VEC_COPY(vAhead, m_vPos);
+			VEC_MULSCALAR(vAhead, m_vForward, 32.0f);
+			VEC_ADD(vAhead, m_vPos, vAhead);
+
+			char szBlockers[192];
+			szBlockers[0] = 0;
+			ObjectList* pList = pServerDE->FindObjectsTouchingSphere(&vAhead, 48.0f);
+			if (pList)
+			{
+				for (ObjectLink* pLink = pList->m_pFirstLink; pLink; pLink = pLink->m_pNext)
+				{
+					if (!pLink->m_hObject || pLink->m_hObject == m_hObject) continue;
+					char szOne[64];
+					char szCls[64] = "?";
+					HCLASS hCls = pServerDE->GetObjectClass(pLink->m_hObject);
+					if (hCls) pServerDE->GetClassName(hCls, szCls, sizeof(szCls));
+					sprintf(szOne, "%s ", szCls);
+					if (strlen(szBlockers) + strlen(szOne) < sizeof(szBlockers) - 1)
+						strcat(szBlockers, szOne);
+				}
+				pServerDE->RelinquishList(pList);
+			}
+
+			// AvoidObstacle() only runs outside SCRIPT, so a blocked scripted walker has no recovery
+			pServerDE->CPrint("[D:AISTUCK] %s stuck %u updates state=%d%s at (%.0f,%.0f,%.0f) moved %.2f of %.2f; ahead: %s",
+				pServerDE->GetObjectName(m_hObject), m_nStuckUpdates,
+				(int)m_eState, (m_eState == SCRIPT) ? " (SCRIPT: no AvoidObstacle)" : "",
+				m_vPos.x, m_vPos.y, m_vPos.z,
+				m_fLastDistTraveled, m_fPredTravelDist,
+				szBlockers[0] ? szBlockers : "(nothing - world geometry)");
 		}
 	}
 
@@ -2771,6 +2875,42 @@ void BaseAI::NewUpdateMovement()
 	m_fPredTravelDist = VEC_DIST(m_vLastPos, vNewPos);
 	
 	pServerDE->MoveObject(m_hObject, &vNewPos);
+
+	// [D:AIMOVE] Speed made good against speed asked for, every two seconds while moving.
+	// Throttled and capped so it can't fill the log
+	{
+		static int s_nAIMoveLines = 0;
+		const DFLOAT fNow = pServerDE->GetTime();
+		if (m_fAIMoveWindowStart <= 0.0f)
+		{
+			m_fAIMoveWindowStart = fNow;
+			VEC_COPY(m_vAIMoveWindowPos, m_vPos);
+			m_nAIMoveWindowUpdates = 0;
+			m_fAIMoveWindowFrameTime = 0.0f;
+		}
+		++m_nAIMoveWindowUpdates;
+		m_fAIMoveWindowFrameTime += fTimeDelta;
+		if (fNow - m_fAIMoveWindowStart >= 2.0f)
+		{
+			if (s_nAIMoveLines < 600)
+			{
+				++s_nAIMoveLines;
+				DVector vNow;
+				pServerDE->GetObjectPos(m_hObject, &vNow);
+				const DFLOAT fWindow = fNow - m_fAIMoveWindowStart;
+				const DFLOAT fMoved = VEC_DIST(vNow, m_vAIMoveWindowPos);
+				const DFLOAT fAsked = ((m_dwControlFlags & BC_CFLG_RUN) && m_bAllowRun) ? m_fRunVel : m_fWalkVel;
+				pServerDE->CPrint("[D:AIMOVE] %s state=%d asked %.1f u/s, made good %.1f u/s over %.2fs (%u updates, mean frame %.4fs); last step %.2f of %.2f%s",
+					pServerDE->GetObjectName(m_hObject), (int)m_eState,
+					fAsked, fMoved / (fWindow > 0.0f ? fWindow : 1.0f), fWindow,
+					m_nAIMoveWindowUpdates,
+					m_nAIMoveWindowUpdates ? m_fAIMoveWindowFrameTime / m_nAIMoveWindowUpdates : 0.0f,
+					m_fLastDistTraveled, m_fPredTravelDist,
+					m_bStuckOnSomething ? " STUCK" : "");
+			}
+			m_fAIMoveWindowStart = 0.0f;
+		}
+	}
 }
 
 
@@ -2792,8 +2932,52 @@ void BaseAI::UpdateOnGround()
 	CollisionInfo Info;
 	pServerDE->GetStandingOn(m_hObject, &Info);
 
+	// [D:STAND] What the AI stands on and how fast it's falling.
+	// Outside the standing node guard so standing on nothing is reported too
+	{
+		DVector vVelNow;
+		pServerDE->GetVelocity(m_hObject, &vVelNow);
+
+		DBOOL bSteep = Info.m_hObject && (Info.m_Plane.m_Normal.y < 0.76);
+		DBOOL bFast  = (vVelNow.y < -300.0f);
+
+		if (!m_bStandPrinted || ((bSteep || bFast) && pServerDE->GetTime() >= m_fNextStandPrint))
+		{
+			m_bStandPrinted   = DTRUE;
+			m_fNextStandPrint = pServerDE->GetTime() + 0.5f;
+
+			if (!Info.m_hObject)
+			{
+				pServerDE->CPrint("[D:STAND] t=%.2f %s NO-STANDING-NODE%s at (%.0f,%.0f,%.0f) "
+					"vel=(%.1f,%.1f,%.1f) |vel|=%.1f",
+					(double)pServerDE->GetTime(),
+					pServerDE->GetObjectName(m_hObject) ? pServerDE->GetObjectName(m_hObject) : "<unnamed>",
+					bFast ? " FALLING" : "",
+					(double)m_vPos.x, (double)m_vPos.y, (double)m_vPos.z,
+					(double)vVelNow.x, (double)vVelNow.y, (double)vVelNow.z,
+					(double)VEC_MAG(vVelNow));
+			}
+			else
+			{
+				pServerDE->CPrint("[D:STAND] t=%.2f %s %s%s N=(%.3f,%.3f,%.3f) d=%.1f on=%s "
+					"at (%.0f,%.0f,%.0f) vel=(%.1f,%.1f,%.1f) |vel|=%.1f",
+					(double)pServerDE->GetTime(),
+					pServerDE->GetObjectName(m_hObject) ? pServerDE->GetObjectName(m_hObject) : "<unnamed>",
+					bSteep ? "STEEP(forcing down)" : "flat",
+					bFast ? " FALLING" : "",
+					(double)Info.m_Plane.m_Normal.x, (double)Info.m_Plane.m_Normal.y,
+					(double)Info.m_Plane.m_Normal.z, (double)Info.m_Plane.m_Dist,
+					(Info.m_hPoly == INVALID_HPOLY) ? "object" : "worldpoly",
+					(double)m_vPos.x, (double)m_vPos.y, (double)m_vPos.z,
+					(double)vVelNow.x, (double)vVelNow.y, (double)vVelNow.z,
+					(double)VEC_MAG(vVelNow));
+			}
+		}
+	}
+
 	if (Info.m_hObject) 
 	{
+		// The 1998 steep slope handler, unchanged
 		if (Info.m_Plane.m_Normal.y < 0.76)
 		{
 			// Force us down...
@@ -3631,7 +3815,7 @@ void BaseAI::UpdateFollowObjectCmd()
 	{
 		if (!m_bLostLeader && (m_dwAvailableSounds & AI_SNDFLG_FOLLOWLOST)) 
 		{
-			char* pSound = DNULL;
+			const char* pSound = DNULL;
 			if (m_hstrFollowLostSound)
 			{
 				pSound = pServerDE->GetStringData(m_hstrFollowLostSound);
@@ -3743,7 +3927,13 @@ DBOOL BaseAI::UpdateScriptMovement(DVector* pvTargetPos)
 
 	
 	DFLOAT fDistLeft = VEC_DIST(vPos, vTargetPos);
-	DFLOAT fDistPredict = pServerDE->GetFrameTime() * fSpeed;
+
+	const DFLOAT kMinArrivalFrameTime = 1.0f / 30.0f;
+	DFLOAT fArrivalFrameTime = pServerDE->GetFrameTime();
+	if (fArrivalFrameTime < kMinArrivalFrameTime)
+		fArrivalFrameTime = kMinArrivalFrameTime;
+
+	DFLOAT fDistPredict = fArrivalFrameTime * fSpeed;
 
 	if (fDistLeft <= fDistPredict * 2.0f /*+ AI_SCRIPTMOVEMENT_ERROR*/)
 	{
@@ -4079,7 +4269,7 @@ void BaseAI::UpdateSounds()
 			{
 				if (m_dwAvailableSounds & AI_SNDFLG_IDLE)
 				{
-					char* pSound = DNULL;
+					const char* pSound = DNULL;
 					if (m_hstrIdleSound)
 					{
 						pSound = pServerDE->GetStringData(m_hstrIdleSound);
@@ -4093,7 +4283,7 @@ void BaseAI::UpdateSounds()
 			{
 				if (m_dwAvailableSounds & AI_SNDFLG_DEFENSIVE)
 				{
-					char* pSound = DNULL;
+					const char* pSound = DNULL;
 					if (m_hstrDefensiveSound)
 					{
 						pSound = pServerDE->GetStringData(m_hstrDefensiveSound);
@@ -4107,7 +4297,7 @@ void BaseAI::UpdateSounds()
 			{
 				if (m_dwAvailableSounds & AI_SNDFLG_AGGRESSIVE)
 				{
-					char* pSound = DNULL;
+					const char* pSound = DNULL;
 					if (m_hstrAggressiveSound)
 					{
 						pSound = pServerDE->GetStringData(m_hstrAggressiveSound);
@@ -4121,7 +4311,7 @@ void BaseAI::UpdateSounds()
 			{
 				if (m_dwAvailableSounds & AI_SNDFLG_RETREATING)
 				{
-					char* pSound = DNULL;
+					const char* pSound = DNULL;
 					if (m_hstrRetreatingSound)
 					{
 						pSound = pServerDE->GetStringData(m_hstrRetreatingSound);
@@ -4135,7 +4325,7 @@ void BaseAI::UpdateSounds()
 			{
 				if (m_dwAvailableSounds & AI_SNDFLG_GUARDING)
 				{
-					char* pSound = DNULL;
+					const char* pSound = DNULL;
 					if (m_hstrGuardingSound)
 					{
 						pSound = pServerDE->GetStringData(m_hstrGuardingSound);
@@ -4149,7 +4339,7 @@ void BaseAI::UpdateSounds()
 			{
 				if (m_dwAvailableSounds & AI_SNDFLG_PANICKED)
 				{
-					char* pSound = DNULL;
+					const char* pSound = DNULL;
 					if (m_hstrPanickedSound)
 					{
 						pSound = pServerDE->GetStringData(m_hstrPanickedSound);
@@ -4168,7 +4358,7 @@ void BaseAI::UpdateSounds()
 			{
 				if (m_dwAvailableSounds & AI_SNDFLG_PSYCHO)
 				{
-					char* pSound = DNULL;
+					const char* pSound = DNULL;
 					if (m_hstrPsychoSound)
 					{
 						pSound = pServerDE->GetStringData(m_hstrPsychoSound);
@@ -4198,7 +4388,7 @@ void BaseAI::PlayDeathSound()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !(m_dwAvailableSounds & AI_SNDFLG_DEATH)) return;
 
-	char* pSound = DNULL;
+	const char* pSound = DNULL;
 
 	if (g_bRobert)
 	{
@@ -4513,7 +4703,7 @@ DBOOL BaseAI::IsPosVisibleToAI(DVector* pvPos)
 }	
 
 
-DBOOL TransparentObjectFilterFn(HOBJECT hObj, void *pUserData)
+bool TransparentObjectFilterFn(HOBJECT hObj, void *pUserData)
 {
 	if (!hObj || !g_pServerDE) return DFALSE;
 	
@@ -4759,6 +4949,12 @@ void BaseAI::FacePos(DVector vTargetPos)
 
 	DVector vDir;
 	VEC_SUB(vDir, vTargetPos, m_vPos);
+
+	// VEC_NORM has no zero guard.
+	// Facing a position the AI already occupies would store a NaN rotation for good
+	if (VEC_MAGSQR(vDir) <= 0.0f)
+		return;
+
 	VEC_NORM(vDir);
 
 	DRotation rRot;
@@ -5295,8 +5491,8 @@ void BaseAI::PrintDebugInfo()
 	if (!pServerDE) return;
 
 	HCONVAR	hVar  = pServerDE->GetGameConVar("DebugAI");
-	char* pArg = pServerDE->GetVarValueString(hVar);
-	char* pName   = pServerDE->GetObjectName(m_hObject);
+	const char* pArg = pServerDE->GetVarValueString(hVar);
+	const char* pName = pServerDE->GetObjectName(m_hObject);
 
 	if (!pArg) return;
 
@@ -5326,9 +5522,9 @@ void BaseAI::PrintDebugInfo()
 		DVector vDims;
 		pServerDE->GetObjectDims(m_hObject, &vDims);
 
-		char* pTargetName  = m_hTarget ? pServerDE->GetObjectName(m_hTarget) : "";
-		char* pDamagerName = m_hLastDamager ? pServerDE->GetObjectName(m_hLastDamager) : "";
-		char* pLeaderName  = m_hLeader ? pServerDE->GetObjectName(m_hLeader) : "";
+		const char* pTargetName = m_hTarget ? pServerDE->GetObjectName(m_hTarget) : "";
+		const char* pDamagerName = m_hLastDamager ? pServerDE->GetObjectName(m_hLastDamager) : "";
+		const char* pLeaderName = m_hLeader ? pServerDE->GetObjectName(m_hLeader) : "";
 		
 		// Print out basic info...
 
@@ -5379,7 +5575,7 @@ void BaseAI::HandleModelString(ArgList* pArgList)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
-	char* pKey = pArgList->argv[0];
+	const char* pKey = pArgList->argv[0];
 	if (!pKey) return;
 
 	if (stricmp(pKey, KEY_FIRE_WEAPON) == 0)
@@ -5409,7 +5605,7 @@ void BaseAI::HandleModelString(ArgList* pArgList)
 //
 // --------------------------------------------------------------------------- //
 
-DBOOL BaseAI::ProcessCommand(char** pTokens, int nArgs, char* pNextCommand)
+DBOOL BaseAI::ProcessCommand(const char** pTokens, int nArgs, const char* pNextCommand)
 {
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pTokens || nArgs < 1) return DFALSE;
@@ -5430,7 +5626,7 @@ DBOOL BaseAI::ProcessCommand(char** pTokens, int nArgs, char* pNextCommand)
 
 		if (nArgs > 1)
 		{
-			char* pType = pTokens[1];
+			const char* pType = pTokens[1];
 			if (pType)
 			{
 				if (stricmp(TRIGGER_STYPE_INTERRUPTABLE, pType) == 0)
@@ -5461,15 +5657,24 @@ DBOOL BaseAI::ProcessCommand(char** pTokens, int nArgs, char* pNextCommand)
 //
 // --------------------------------------------------------------------------- //
 
-void BaseAI::BuildScript(char* pScriptBody)
+void BaseAI::BuildScript(const char* pScriptBody)
 {
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
+
+	// A SCRIPT command with nothing after it.
+	// cp_Parse dereferences its input without a null check, so this clears the list and stops scripting
+	if (!pScriptBody || !pScriptBody[0])
+	{
+		m_scriptCmdList.RemoveAll();
+		return;
+	}
+
 	DBOOL bMore;
 
 	m_scriptCmdList.RemoveAll();
 
-	char* pCommand = pScriptBody;
+	const char* pCommand = pScriptBody;
 
 	int nArgs;
 	bMore = DTRUE;
@@ -5485,7 +5690,7 @@ void BaseAI::BuildScript(char* pScriptBody)
 
 		if (nArgs > 1)
 		{
-			char* pArgs = g_pTokens[1];
+			const char* pArgs = g_pTokens[1];
 			if (pArgs) strncpy(pCmd->args, pArgs, MAX_AI_ARGS_LENGTH);
 		}
 
@@ -5653,7 +5858,7 @@ void BaseAI::SpotPlayer(HOBJECT hObj)
 
 		if (m_hstrSpotTriggerTarget && m_hstrSpotTriggerMessage)
 		{
-			LPBASECLASS pAI = pServerDE->HandleToObject(m_hObject);
+			DEBaseClass* pAI = pServerDE->HandleToObject(m_hObject);
 			if (pAI && m_nSpotTriggerNumSends != 0)
 			{
 				SendTriggerMsgToObjects(pAI, m_hstrSpotTriggerTarget, m_hstrSpotTriggerMessage);
@@ -5663,7 +5868,7 @@ void BaseAI::SpotPlayer(HOBJECT hObj)
 	
 		if (m_dwAvailableSounds & AI_SNDFLG_SPOT)
 		{
-			char* pSound = DNULL;
+			const char* pSound = DNULL;
 			if (m_hstrSpotSound)
 			{
 				pSound = pServerDE->GetStringData(m_hstrSpotSound);
@@ -5699,7 +5904,7 @@ void BaseAI::HandleLostPlayer()
 
 	if (m_hstrLostTargetTriggerTarget && m_hstrLostTargetTriggerMessage)
 	{
-		LPBASECLASS pAI = pServerDE->HandleToObject(m_hObject);
+		DEBaseClass* pAI = pServerDE->HandleToObject(m_hObject);
 		if (pAI && m_nLostTargetTriggerNumSends != 0)
 		{
 			SendTriggerMsgToObjects(pAI, m_hstrLostTargetTriggerTarget, m_hstrLostTargetTriggerMessage);
@@ -5711,7 +5916,7 @@ void BaseAI::HandleLostPlayer()
 #ifdef PLAY_LOST_TARGET_SOUNDS
 	if (m_dwAvailableSounds & AI_SNDFLG_LOSTTARGET)
 	{
-		char* pSound = DNULL;
+		const char* pSound = DNULL;
 		if (m_hstrLostTargetSound)
 		{
 			pSound = pServerDE->GetStringData(m_hstrLostTargetSound);
@@ -5746,7 +5951,7 @@ void BaseAI::HandleBumped()
 
 	if (m_hstrBumpedTriggerTarget && m_hstrBumpedTriggerMessage)
 	{
-		LPBASECLASS pAI = pServerDE->HandleToObject(m_hObject);
+		DEBaseClass* pAI = pServerDE->HandleToObject(m_hObject);
 		if (pAI && m_nBumpedTriggerNumSends != 0)
 		{
 			SendTriggerMsgToObjects(pAI, m_hstrBumpedTriggerTarget, m_hstrBumpedTriggerMessage);
@@ -5756,7 +5961,7 @@ void BaseAI::HandleBumped()
 	
 	if (m_dwAvailableSounds & AI_SNDFLG_BUMPED)
 	{
-		char* pSound = DNULL;
+		const char* pSound = DNULL;
 		if (m_hstrBumpedSound)
 		{
 			pSound = pServerDE->GetStringData(m_hstrBumpedSound);

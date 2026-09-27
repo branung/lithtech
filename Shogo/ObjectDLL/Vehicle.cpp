@@ -226,7 +226,7 @@ void Vehicle::HandleWeaponChange()
 	if (!pServerDE) return;
 
 	char* pTurretFilename = GetTurretFilename(m_nModelId, m_eModelSize);
-	char* pTurretSkin	  = GetSkin(m_nModelId, m_cc, m_eModelSize);
+	const char* pTurretSkin	  = GetSkin(m_nModelId, m_cc, m_eModelSize);
 
 	if (!pTurretFilename) return;
 
@@ -561,7 +561,7 @@ void Vehicle::CreateHeadLights()
 	theStruct.m_ObjectType  = OT_SPRITE;
 
 	HCLASS hClass = pServerDE->GetClass("BaseClass");
-	LPBASECLASS pSprite = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pSprite = pServerDE->CreateObject(hClass, &theStruct);
 	if (!pSprite) return;
 
 	m_hLHeadLight = pSprite->m_hObject;

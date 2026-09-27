@@ -13,8 +13,8 @@
 #include "InventoryTypes.h"
 #include "cpp_server_de.h"
 #include "generic_msg_de.h"
-#include "basecharacter.h"
-#include "playerobj.h"
+#include "BaseCharacter.h"
+#include "PlayerObj.h"
 #include "RiotObjectUtilities.h"
 
 // UltraDamage

@@ -39,7 +39,7 @@ BEGIN_CLASS(RotatingWorldModel)
 	ADD_REALPROP(ZAxisSpinUpTime,   0.0f)
 	ADD_REALPROP(ZAxisSpinDownTime, 0.0f)
 	ADD_BOOLPROP(ZRotateForward, DTRUE)
-END_CLASS_DEFAULT(RotatingWorldModel, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(RotatingWorldModel, DEBaseClass, NULL, NULL)
 
 #define RWM_UPDATE_DELTA	0.01f
 #define TRIGGER_MSG_ON		"ON"
@@ -53,7 +53,7 @@ END_CLASS_DEFAULT(RotatingWorldModel, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-RotatingWorldModel::RotatingWorldModel() : BaseClass(OT_WORLDMODEL)
+RotatingWorldModel::RotatingWorldModel() : DEBaseClass(OT_WORLDMODEL)
 {
 	AddAggregate(&m_damage);
 
@@ -138,7 +138,7 @@ DDWORD RotatingWorldModel::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT
 
 		case MID_PRECREATE:
 		{
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 
 			ObjectCreateStruct* pStruct = (ObjectCreateStruct*)pData;
 			
@@ -193,7 +193,7 @@ DDWORD RotatingWorldModel::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -221,7 +221,7 @@ DDWORD RotatingWorldModel::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HM
 		break;
 	}
 	
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
@@ -644,7 +644,7 @@ void RotatingWorldModel::HandleTrigger(HOBJECT hSender, HSTRING hMsg)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (!pMsg || !pMsg[0]) return;
 
 	if (m_eState == RWM_OFF && stricmp(pMsg, TRIGGER_MSG_ON) == 0)
@@ -682,7 +682,7 @@ void RotatingWorldModel::StartSound(HSTRING hstrSoundName, DBOOL bLoop)
 
 	if (!hstrSoundName) return;
 
-	char *pSoundName = pServerDE->GetStringData(hstrSoundName);
+	const char* pSoundName = pServerDE->GetStringData(hstrSoundName);
 	if (!pSoundName) return;
 
 
@@ -796,7 +796,7 @@ void RotatingWorldModel::CacheFiles()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 	if (m_hstrBusySound)
 	{
 		pFile = pServerDE->GetStringData(m_hstrBusySound);

@@ -514,7 +514,7 @@ void Gabriel::CreateShield()
 	theStruct.m_Flags		= FLAG_VISIBLE | FLAG_GOTHRUWORLD;
 
 	HCLASS hClass = pServerDE->GetClass("BaseClass");
-	LPBASECLASS pModel = pServerDE->CreateObject(hClass, &theStruct);
+	DEBaseClass* pModel = pServerDE->CreateObject(hClass, &theStruct);
 	if (!pModel) return;
 
 	m_hShield = pModel->m_hObject;

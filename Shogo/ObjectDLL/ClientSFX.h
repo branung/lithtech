@@ -14,7 +14,7 @@
 #include "cpp_engineobjects_de.h"
 
 
-class CClientSFX : public BaseClass
+class CClientSFX : public DEBaseClass
 {
 	public :
 

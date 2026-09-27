@@ -12,7 +12,7 @@
 #include "cpp_server_de.h"
 #include "generic_msg_de.h"
 #include "ClientLightFX.h"
-#include "SfxMsgIds.h"
+#include "SFXMsgIds.h"
 #include "ClientServerShared.h"
 
 #include "ObjectUtilities.h"
@@ -45,7 +45,7 @@ BEGIN_CLASS(ClientLightFX)
 	ADD_BOOLPROP(OnlyLightWorldFlag, DFALSE)
 	ADD_BOOLPROP(DontLightBackfacingFlag, DFALSE)
 	ADD_BOOLPROP(FogLightFlag, DFALSE)
-END_CLASS_DEFAULT(ClientLightFX, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(ClientLightFX, DEBaseClass, NULL, NULL)
 
 
 // Additional light classes (w/ waveforms preset)
@@ -149,7 +149,7 @@ END_CLASS_DEFAULT(GlowingLight, ClientLightFX, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-ClientLightFX::ClientLightFX() : BaseClass(OT_NORMAL /*OT_LIGHT*/)
+ClientLightFX::ClientLightFX() : DEBaseClass(OT_NORMAL /*OT_LIGHT*/)
 {
 	AddAggregate(&m_damage);
 
@@ -225,7 +225,7 @@ DDWORD ClientLightFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDat
 	{
 		case MID_PRECREATE:
 		{
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 
 			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
 			{
@@ -253,7 +253,7 @@ DDWORD ClientLightFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDat
 		{
     		if (!Update()) 
             {
-		    	CServerDE* pServerDE = BaseClass::GetServerDE();
+		    	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			    if (pServerDE) pServerDE->RemoveObject(m_hObject);
             }
 		}
@@ -274,7 +274,7 @@ DDWORD ClientLightFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDat
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -298,7 +298,7 @@ DDWORD ClientLightFX::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAG
     
 		case MID_DAMAGE:
 		{
-			DDWORD dwRet = BaseClass::ObjectMessageFn (hSender, messageID, hRead);
+			DDWORD dwRet = DEBaseClass::ObjectMessageFn (hSender, messageID, hRead);
 			if (m_damage.IsDead())
 			{
 				g_pServerDE->RemoveObject(m_hObject);
@@ -309,7 +309,7 @@ DDWORD ClientLightFX::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAG
 		default : break;
 	}
 
-	return BaseClass::ObjectMessageFn (hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn (hSender, messageID, hRead);
 }
 
 
@@ -326,7 +326,7 @@ DDWORD ClientLightFX::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAG
 void ClientLightFX::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 {
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pszMessage = g_pServerDE->GetStringData( hMsg );
+	const char* pszMessage = g_pServerDE->GetStringData( hMsg );
 
 	DDWORD dwUsrFlags = g_pServerDE->GetObjectUserFlags(m_hObject);
 	DDWORD dwFlags    = g_pServerDE->GetObjectFlags(m_hObject);
@@ -683,7 +683,7 @@ void ClientLightFX::CacheFiles()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 
 	if (m_hstrRampUpSound)
 	{

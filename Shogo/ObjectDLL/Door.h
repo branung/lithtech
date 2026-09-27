@@ -26,7 +26,7 @@ DFLOAT GetDoorWaveValue( DFLOAT fSpeed, DFLOAT fPercent, DDWORD nWaveType );
 class Trigger;
 
 // Door structure
-class Door : public BaseClass
+class Door : public DEBaseClass
 {
 	public:
 

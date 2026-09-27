@@ -21,7 +21,7 @@
 class CWeapon;
 class CBaseCharacter;
 
-class CProjectile : public BaseClass
+class CProjectile : public DEBaseClass
 {
 	public :
 
@@ -66,6 +66,7 @@ class CProjectile : public BaseClass
 		DBOOL			m_bFirstSnake;			// First snake calculation
 		DBOOL			m_bCanLockOnTarget;		// Can we lock on targets
 		DBOOL			m_bDetonated;			// Have we detonated yet?
+		DBOOL			m_bSetupDone;			// Setup() has set the shooter
 
 		ModelSize		m_eModelSize;		    // Relative model size...
 		RiotWeaponId	m_nId;					// Type of gun...
@@ -81,6 +82,9 @@ class CProjectile : public BaseClass
 		DFLOAT			m_fMass;				// What is our mass
 		DFLOAT			m_fRange;				// Vector weapon range
 		DFLOAT			m_fSnakeUpVel;			// Speed of snake up
+		DFLOAT			m_fSnakeProbeStart;		// [D:SNAKE]
+		DFLOAT			m_fSnakeProbeRad;
+		DDWORD			m_nSnakeProbeUpdates;
 		DFLOAT			m_fSnakeDir;			// Direction to rotate
 		DFLOAT			m_fLockWaitTime;		// How long to wait to lock on target
 

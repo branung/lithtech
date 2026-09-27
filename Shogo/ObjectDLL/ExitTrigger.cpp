@@ -10,7 +10,7 @@
 
 #include "ExitTrigger.h"
 #include "cpp_server_de.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "RiotServerShell.h"
 #include "PlayerObj.h"
 #include "RiotObjectUtilities.h"

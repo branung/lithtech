@@ -12,7 +12,7 @@
 #define __DESTRUCTABLE_DOOR_H__
 
 #include "DestructableWorldModel.h"
-#include "door.h"
+#include "Door.h"
 
 class DestructableDoor : public Door
 {

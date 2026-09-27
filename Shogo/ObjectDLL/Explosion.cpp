@@ -21,7 +21,7 @@ BEGIN_CLASS(Explosion)
 	ADD_REALPROP(Duration, 1.5f)
 	ADD_REALPROP_FLAG(DamageRadius, 200.0f, PF_RADIUS)
 	ADD_REALPROP(MaxDamage, 50.0f)
-END_CLASS_DEFAULT(Explosion, BaseClass, NULL, NULL)
+END_CLASS_DEFAULT(Explosion, DEBaseClass, NULL, NULL)
 
 
 // ----------------------------------------------------------------------- //
@@ -32,7 +32,7 @@ END_CLASS_DEFAULT(Explosion, BaseClass, NULL, NULL)
 //
 // ----------------------------------------------------------------------- //
 
-Explosion::Explosion() : BaseClass()
+Explosion::Explosion() : DEBaseClass()
 {
 	m_fDamageRadius			= 200.0f;
 	m_fMaxDamage			= 50.0f;
@@ -115,7 +115,7 @@ DDWORD Explosion::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREA
 		default : break;
 	}
 
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
@@ -180,7 +180,7 @@ DDWORD Explosion::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -215,7 +215,7 @@ void Explosion::HandleTrigger(HOBJECT hSender, HMESSAGEREAD hRead)
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
 	if (!hMsg) return;
 
-	char* pMsg = g_pServerDE->GetStringData(hMsg);
+	const char* pMsg = g_pServerDE->GetStringData(hMsg);
 	if (!pMsg) return;
 
 	// See if we should make big boom...

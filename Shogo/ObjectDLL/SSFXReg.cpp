@@ -17,7 +17,7 @@ SSFXReg *g_SSFXRegHead = NULL;
 // --------------------------------------------------------------------------- //
 
 BEGIN_CLASS(SAutoSpecialFX)
-END_CLASS_DEFAULT_FLAGS(SAutoSpecialFX, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(SAutoSpecialFX, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 
 DDWORD SAutoSpecialFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
@@ -41,7 +41,7 @@ DDWORD SAutoSpecialFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDa
 		break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 

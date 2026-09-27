@@ -215,7 +215,7 @@ T* CTList<T>::GetItem(TListItemType et)
 template <class T>
 void CTList<T>::Save(HMESSAGEWRITE hWrite, SaveDataFn saveFn)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite  || !saveFn) return;
 
 	pServerDE->WriteToMessageByte(hWrite, m_bManageData);
@@ -234,7 +234,7 @@ void CTList<T>::Save(HMESSAGEWRITE hWrite, SaveDataFn saveFn)
 template <class T>
 void CTList<T>::Load(HMESSAGEREAD hRead, LoadDataFn loadFn)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead || !loadFn) return;
 
 	m_bManageData = (DBOOL) pServerDE->ReadFromMessageByte(hRead);

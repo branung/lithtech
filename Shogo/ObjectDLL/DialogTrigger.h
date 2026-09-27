@@ -12,11 +12,11 @@
 #define __DIALOG_TRIGGER_H__
 
 #include "cpp_engineobjects_de.h"
-#include "activation.h"
+#include "Activation.h"
 
 #define MAX_MESSAGES_NUM	3
 
-class DialogTrigger : public BaseClass
+class DialogTrigger : public DEBaseClass
 {
 	public :
 
@@ -24,6 +24,15 @@ class DialogTrigger : public BaseClass
 		~DialogTrigger();
 
 				void	Trigger (int nSelection);
+
+		/*
+			Dialog registry
+
+			The dialog round trip names its trigger by a 32-bit ID (MID_COMMAND_SHOWDLG out, MID_DIALOG_CLOSE back).
+			An ID can't name a freed object, and one the server never issued is rejected.
+		*/
+		static DialogTrigger*	FromDialogID (uint32 nID);
+				uint32			GetDialogID () const { return m_nDialogID; }
 
 	protected :
 
@@ -48,6 +57,8 @@ class DialogTrigger : public BaseClass
 		HSTRING			m_hMessage[MAX_MESSAGES_NUM];
 		DFLOAT			m_fSendDelay;
 		DVector			m_vDims;
+
+		uint32			m_nDialogID;
 		
 
 	private :
