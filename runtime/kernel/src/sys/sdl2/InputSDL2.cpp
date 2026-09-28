@@ -19,6 +19,7 @@
 #define SPECIAL_MOUSECLICK_RIGHT -50003
 #define SPECIAL_MOUSEWHEEL_UP	 -50004
 #define SPECIAL_MOUSEWHEEL_DOWN -50005
+#define SPECIAL_MOUSECLICK_MIDDLE -50006
 
 struct SDL2Key
 {
@@ -48,7 +49,7 @@ std::unordered_map<std::string, ISAction*> g_sdl2_actions;
 std::vector<ISBinding*> g_sdl2_bindings;
 
 int g_key_state[SDL_NUM_SCANCODES];
-int g_click_state[2];
+int g_click_state[3];
 int g_mousewheel;
 
 SDL2Key g_Keys[] =
@@ -148,9 +149,63 @@ SDL2Key g_Keys[] =
 	"Right Shift", SDLK_RSHIFT, 1.0f,
 	"Space", SDLK_SPACE, 1.0f,
 	"CapsLock", SDLK_CAPSLOCK, 1.0f,
-	"Delete", SDLK_DELETE, 1.0f
+	"Delete", SDLK_DELETE, 1.0f,
+
+	"Minus", SDLK_MINUS, 1.0f,
+	"Equals", SDLK_EQUALS, 1.0f,
+	"LBracket", SDLK_LEFTBRACKET, 1.0f,
+	"RBracket", SDLK_RIGHTBRACKET, 1.0f,
+	"Backslash", SDLK_BACKSLASH, 1.0f,
+	"Semicolon", SDLK_SEMICOLON, 1.0f,
+	"Apostrophe", SDLK_QUOTE, 1.0f,
+	"Grave", SDLK_BACKQUOTE, 1.0f,
+	"Comma", SDLK_COMMA, 1.0f,
+	"Period", SDLK_PERIOD, 1.0f,
+	"Slash", SDLK_SLASH, 1.0f,
+
+	"Insert", SDLK_INSERT, 1.0f,
+	"Home", SDLK_HOME, 1.0f,
+	"End", SDLK_END, 1.0f,
+	"PgUp", SDLK_PAGEUP, 1.0f,
+	"PgDn", SDLK_PAGEDOWN, 1.0f,
+
+	"Numpad 0", SDLK_KP_0, 1.0f,
+	"Numpad 1", SDLK_KP_1, 1.0f,
+	"Numpad 2", SDLK_KP_2, 1.0f,
+	"Numpad 3", SDLK_KP_3, 1.0f,
+	"Numpad 4", SDLK_KP_4, 1.0f,
+	"Numpad 5", SDLK_KP_5, 1.0f,
+	"Numpad 6", SDLK_KP_6, 1.0f,
+	"Numpad 7", SDLK_KP_7, 1.0f,
+	"Numpad 8", SDLK_KP_8, 1.0f,
+	"Numpad 9", SDLK_KP_9, 1.0f,
+	"Numpad .", SDLK_KP_PERIOD, 1.0f,
+	"Numpad +", SDLK_KP_PLUS, 1.0f,
+	"Numpad -", SDLK_KP_MINUS, 1.0f,
+	"Numpad *", SDLK_KP_MULTIPLY, 1.0f,
+	"Numpad /", SDLK_KP_DIVIDE, 1.0f,
+	"Numpad Enter", SDLK_KP_ENTER, 1.0f,
+
+	"Button 2", SPECIAL_MOUSECLICK_MIDDLE, 1.0f
 };
 #define NUM_KEYS (sizeof(g_Keys)/sizeof(g_Keys[0]))
+
+static SDL2Key* input_sdl2_MouseButton(int nButton)
+{
+	switch (nButton)
+	{
+	case 0: return &g_Keys[2];
+	case 1: return &g_Keys[3];
+	case 2:
+		for (uint32 i = 0; i < NUM_KEYS; ++i)
+		{
+			if (g_Keys[i].key == SPECIAL_MOUSECLICK_MIDDLE)
+				return &g_Keys[i];
+		}
+		break;
+	}
+	return LTNULL;
+}
 
 static int SDLScanCodeToKeyNum(SDL_Scancode sc)
 {
@@ -166,6 +221,17 @@ SDL2Key* input_sdl2_FindKey(const char *pName, const char* deviceName, float ran
 	int dik;
 	SDL_Scancode scancode;
 
+	if (stricmp(deviceName, "##mouse") == 0)
+	{
+		const char *pBare = (pName[0] == '#' && pName[1] == '#') ? pName + 2 : pName;
+		if (stricmp(pBare, "z-axis") == 0 || stricmp(pBare, "wheel") == 0)
+		{
+			if (rangelow > 0.0f && rangehigh > 0.0f) return &g_Keys[4];
+			if (rangelow < 0.0f && rangehigh < 0.0f) return &g_Keys[5];
+			return LTNULL;
+		}
+	}
+
 	if(strlen(pName) > 2 && pName[0] == '#' && pName[1] == '#')
 	{
 		pName += 2;
@@ -178,36 +244,32 @@ SDL2Key* input_sdl2_FindKey(const char *pName, const char* deviceName, float ran
 		{
 			return &g_Keys[1];
 		}
-		if(!strcmp(pName, "3") && !strcmp(deviceName, "##mouse"))
+		if(!strcmp(pName, "3") && !stricmp(deviceName, "##mouse"))
 		{
 			return &g_Keys[2];
 		}
-		if(!strcmp(pName, "4") && !strcmp(deviceName, "##mouse"))
+		if(!strcmp(pName, "4") && !stricmp(deviceName, "##mouse"))
 		{
 			return &g_Keys[3];
 		}
-		if(!strcmp(pName, "z-axis"))
+		if(!strcmp(pName, "5") && !stricmp(deviceName, "##mouse"))
 		{
-			if (rangelow > 0.0f && rangehigh > 0.0f)
-			{
-				return &g_Keys[4];
-			}
-			if (rangelow < 0.0f && rangehigh < 0.0f)
-			{
-				return &g_Keys[5];
-			}
-			ASSERT(0);
+			return input_sdl2_MouseButton(2);
 		}
 
-		testCode = atoi(pName);
-		for(i=0; i < NUM_KEYS; i++)
+		if(isdigit((unsigned char)pName[0]))
 		{
-			scancode = SDL_GetScancodeFromKey(g_Keys[i].key);
-			dik = SDLScanCodeToKeyNum(scancode);
-
-			if(dik == testCode)
+			testCode = atoi(pName);
+			for(i=0; i < NUM_KEYS; i++)
 			{
-				return &g_Keys[i];
+				scancode = SDL_GetScancodeFromKey(g_Keys[i].key);
+				dik = SDLScanCodeToKeyNum(scancode);
+
+				// dik 0 means the entry has no DirectInput number (the mouse keys). Never match on it
+				if(dik != 0 && dik == testCode)
+				{
+					return &g_Keys[i];
+				}
 			}
 		}
 
@@ -279,7 +341,7 @@ void input_sdl2_ReadInput(InputMgr *pMgr, uint8 *pActionsOn, float axisOffsets[3
 {
 	SDL_Keycode* downs = (SDL_Keycode*)keyDowns;
 	memcpy(g_key_state, keyDowns, sizeof(int) * SDL_NUM_SCANCODES);
-	memcpy(g_click_state, mouseclick, sizeof(int) * 2);
+	memcpy(g_click_state, mouseclick, sizeof(int) * 3);
 	g_mousewheel = mousewheel;
 
 	axisOffsets[0] = axisOffsets[1] = axisOffsets[2] = 0.0f;
@@ -302,6 +364,10 @@ void input_sdl2_ReadInput(InputMgr *pMgr, uint8 *pActionsOn, float axisOffsets[3
 			break;
 		case SPECIAL_MOUSECLICK_RIGHT:
 			if(mouseclick[1])
+				value = 1.0f;
+			break;
+		case SPECIAL_MOUSECLICK_MIDDLE:
+			if(mouseclick[2])
 				value = 1.0f;
 			break;
 		case SPECIAL_MOUSEWHEEL_UP:
@@ -369,8 +435,79 @@ bool input_sdl2_EnableDevice(InputMgr *pMgr, const char *pDeviceName)
 	return true;
 }
 
+/*
+    Device names in the '##' spelling
+
+    LT1 wrote 'Keyboard", 'Mouse' and 'Joystick', and Jupiter compares against "##keyboard" and so on.
+    An LT1 spelling works in game but is invisible to the menus and dropped from autoexec.cfg.
+    Converting it where the name is stored fixes every consumer, and both spellings still load.
+*/
+static const char *input_sdl2_CanonicalDeviceName(const char *pDeviceName)
+{
+	if (!pDeviceName)
+		return pDeviceName;
+
+	// Already in the '##' spelling or a device this doesn't know
+	if (pDeviceName[0] == '#' && pDeviceName[1] == '#')
+		return pDeviceName;
+
+	if (stricmp(pDeviceName, "keyboard") == 0)
+		return "##keyboard";
+	if (stricmp(pDeviceName, "mouse") == 0)
+		return "##mouse";
+	if (stricmp(pDeviceName, "joystick") == 0)
+		return "##joystick";
+
+	return pDeviceName;
+}
+
 bool input_sdl2_ClearBindings(InputMgr *pMgr, const char *pDeviceName, const char *pTriggerName)
 {
+	if (!pDeviceName || !pTriggerName)
+		return false;
+
+	pDeviceName = input_sdl2_CanonicalDeviceName(pDeviceName);
+
+	// Which keys the trigger stands for.
+	// Only the wheel needs two since a clear carries no range to pick up or down
+	const char *pBare = pTriggerName;
+	if (pBare[0] == '#' && pBare[1] == '#')
+		pBare += 2;
+
+	SDL2Key *pKeys[2] = { LTNULL, LTNULL };
+
+	if (stricmp(pBare, "z-axis") == 0 || stricmp(pBare, "wheel") == 0)
+	{
+		pKeys[0] = input_sdl2_FindKey(pTriggerName, pDeviceName,  1.0f,  1.0f);
+		pKeys[1] = input_sdl2_FindKey(pTriggerName, pDeviceName, -1.0f, -1.0f);
+	}
+	else
+	{
+		pKeys[0] = input_sdl2_FindKey(pTriggerName, pDeviceName, 0.0f, 0.0f);
+	}
+
+	if (!pKeys[0] && !pKeys[1])
+		return false;
+
+	for (auto it = g_sdl2_bindings.begin(); it != g_sdl2_bindings.end(); )
+	{
+		ISBinding *pBinding = *it;
+
+		bool bSameKey = pBinding &&
+			((pKeys[0] && pBinding->m_pKey == pKeys[0]) ||
+			 (pKeys[1] && pBinding->m_pKey == pKeys[1]));
+
+		if (bSameKey && stricmp(pBinding->m_deviceName, pDeviceName) == 0)
+		{
+			dfree(pBinding);
+			it = g_sdl2_bindings.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+
 	return true;
 }
 
@@ -384,6 +521,8 @@ bool input_sdl2_AddBinding(InputMgr *pMgr,
 		return false;
 	}
 
+	pDeviceName = input_sdl2_CanonicalDeviceName(pDeviceName);
+
 	ISAction *pAction = input_sdl2_FindAction(pActionName);
 	if(!pAction)
 		return false;
@@ -392,7 +531,7 @@ bool input_sdl2_AddBinding(InputMgr *pMgr,
 	if(!pKey)
 		return false;
     auto bind = std::find_if(g_sdl2_bindings.begin(),g_sdl2_bindings.end(),
-		[pAction, pDeviceName](auto b) { return (b->m_pAction == pAction && !strcmp(b->m_deviceName, pDeviceName)); }
+		[pAction, pDeviceName](auto b) { return (b->m_pAction == pAction && !stricmp(b->m_deviceName, pDeviceName)); }
 	);
 	if (bind != g_sdl2_bindings.end())
 	{
@@ -404,8 +543,9 @@ bool input_sdl2_AddBinding(InputMgr *pMgr,
 			bind_cur->m_ranges[1] = rangeHigh;
 			return true;
 		} else {
-			// no duplicates
-			return false;
+			bind_cur->m_ranges[0] = rangeLow;
+			bind_cur->m_ranges[1] = rangeHigh;
+			return true;
 		}
 	}
 
@@ -453,6 +593,9 @@ void make_mouse_binding(DeviceBinding* pBinding, ISBinding *bind)
 	case SPECIAL_MOUSECLICK_RIGHT:
 		pBinding->m_nObjectId = 2;
 		break;
+	case SPECIAL_MOUSECLICK_MIDDLE:
+		pBinding->m_nObjectId = 5;
+		break;
 	case SPECIAL_MOUSEWHEEL_UP:
 		pBinding->m_nObjectId = 3;
 		pBinding->pActionHead->nRangeLow = bind->m_ranges[0];
@@ -472,11 +615,11 @@ DeviceBinding* input_sdl2_GetDeviceBindings ( uint32 nDevice )
 
 	for (auto &cur_bind: g_sdl2_bindings)
 	{
-		if (nDevice == DEVICETYPE_MOUSE && strcmp(cur_bind->m_deviceName, "##mouse"))
+		if (nDevice == DEVICETYPE_MOUSE && stricmp(cur_bind->m_deviceName, "##mouse"))
 		{
 			continue;
 		}
-		if (nDevice == DEVICETYPE_KEYBOARD && strcmp(cur_bind->m_deviceName, "##keyboard"))
+		if (nDevice == DEVICETYPE_KEYBOARD && stricmp(cur_bind->m_deviceName, "##keyboard"))
 		{
 			continue;
 		}
@@ -520,7 +663,7 @@ void input_sdl2_SaveBindings(FILE *fp)
 
 	for (auto &cur_bind: g_sdl2_bindings)
 	{
-		if(!strcmp(cur_bind->m_deviceName, "##keyboard"))
+		if(!stricmp(cur_bind->m_deviceName, "##keyboard"))
 		{
 			auto dik = SDLScanCodeToKeyNum(
 				SDL_GetScancodeFromKey(cur_bind->m_pKey->key)
@@ -537,7 +680,7 @@ void input_sdl2_SaveBindings(FILE *fp)
 	for(auto &cur_bind: g_sdl2_bindings)
 	{
 		const char *axis = nullptr;
-		if(strcmp(cur_bind->m_deviceName, "##mouse")) // if not mouse binding, continue
+		if(stricmp(cur_bind->m_deviceName, "##mouse")) // if not mouse binding, continue
 			continue;
 
 		if (!strcmp(cur_bind->m_pAction->m_Name, "Axis1"))
@@ -555,10 +698,12 @@ void input_sdl2_SaveBindings(FILE *fp)
 			case SPECIAL_MOUSECLICK_RIGHT:
 				axis = "4";
 				break;
+			case SPECIAL_MOUSECLICK_MIDDLE:
+				axis = "5";
+				break;
 			case SPECIAL_MOUSEWHEEL_DOWN:
 			case SPECIAL_MOUSEWHEEL_UP:
-				axis = "z-axis";
-				break;
+				continue;
 			}
 		}
 		if (!axis)
@@ -566,6 +711,27 @@ void input_sdl2_SaveBindings(FILE *fp)
 
 		fprintf(fp, "rangebind \"##mouse\" \"##%s\" %f %f \"%s\"\n",
 			axis, cur_bind->m_ranges[0], cur_bind->m_ranges[1], cur_bind->m_pAction->m_Name);
+	}
+
+	{
+		char szLine[512];
+		LTSNPrintF(szLine, sizeof(szLine), "rangebind \"##mouse\" \"##z-axis\"");
+		bool bAny = false;
+		for (auto &cur_bind : g_sdl2_bindings)
+		{
+			if (stricmp(cur_bind->m_deviceName, "##mouse"))
+				continue;
+			if (cur_bind->m_pKey->key != SPECIAL_MOUSEWHEEL_UP &&
+				cur_bind->m_pKey->key != SPECIAL_MOUSEWHEEL_DOWN)
+				continue;
+			char szAct[160];
+			LTSNPrintF(szAct, sizeof(szAct), " %f %f \"%s\"",
+				cur_bind->m_ranges[0], cur_bind->m_ranges[1], cur_bind->m_pAction->m_Name);
+			LTStrCat(szLine, szAct, sizeof(szLine));
+			bAny = true;
+		}
+		if (bAny)
+			fprintf(fp, "%s\n", szLine);
 	}
 
 	for(int i = 0; i < NUM_KEYS; i++)
@@ -600,8 +766,20 @@ void input_sdl2_FreeDeviceBindings ( DeviceBinding* pBindings )
 	}
 }
 
+// Edge state for device tracking
+static int g_track_prev_key[SDL_NUM_SCANCODES];
+static int g_track_prev_click[3];
+
 bool input_sdl2_StartDeviceTrack(InputMgr *pMgr, uint32 nDeviceFlags, uint32 nBufferSize)
 {
+	for (size_t i = 0; i < SDL_NUM_SCANCODES; i++)
+	{
+		g_track_prev_key[i] = dsi_GetSDLInput((uint32)i);
+	}
+	for (size_t i = 0; i < 3; i++)
+	{
+		g_track_prev_click[i] = dsi_GetSDLMouseDown((uint32)i);
+	}
 	return true;
 }
 
@@ -614,7 +792,7 @@ bool input_sdl2_TrackDevice(DeviceInput *pInputArray, uint32 *pnInOut)
 
 	for (i = 0; i < SDL_NUM_SCANCODES; i++)
 	{
-		if (g_key_state[i] == 1)
+		if (g_key_state[i] == 1 && g_track_prev_key[i] == 0)
 		{
 			found_keycode = 0;
 			pInputArray[cnt].m_DeviceType = DEVICETYPE_KEYBOARD;
@@ -632,14 +810,18 @@ bool input_sdl2_TrackDevice(DeviceInput *pInputArray, uint32 *pnInOut)
 					found_keycode = 1;
 				}
 			}
-			ASSERT(found_keycode);
+			// A key with no g_Keys entry should be skipped since it has no name to report
+			if (!found_keycode)
+			{
+				continue;
+			}
 			cnt++;
 		}
 	}
 
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < 3; i++)
 	{
-		if (g_click_state[i] == 1)
+		if (g_click_state[i] == 1 && g_track_prev_click[i] == 0)
 		{
 			pInputArray[cnt].m_DeviceType = DEVICETYPE_MOUSE;
 			LTStrCpy(pInputArray[cnt].m_DeviceName, "##mouse", sizeof(pInputArray[cnt].m_DeviceName) );
@@ -647,7 +829,10 @@ bool input_sdl2_TrackDevice(DeviceInput *pInputArray, uint32 *pnInOut)
 			pInputArray[cnt].m_ControlCode = 0;
 			pInputArray[cnt].m_nObjectId = i + 1;
 			pInputArray[cnt].m_InputValue = 1;
-			LTStrCpy(pInputArray[cnt].m_ControlName, g_Keys[i + 2].m_pName, sizeof(pInputArray[cnt].m_ControlName) );
+			SDL2Key *pBtn = input_sdl2_MouseButton((int)i);
+			if (!pBtn)
+				continue;
+			LTStrCpy(pInputArray[cnt].m_ControlName, pBtn->m_pName, sizeof(pInputArray[cnt].m_ControlName) );
 			cnt++;
 		}
 	}
@@ -663,6 +848,9 @@ bool input_sdl2_TrackDevice(DeviceInput *pInputArray, uint32 *pnInOut)
 		LTStrCpy(pInputArray[cnt].m_ControlName, g_Keys[g_mousewheel > 0 ? 4 : 5].m_pName, sizeof(pInputArray[cnt].m_ControlName) );
 		cnt++;
 	}
+	memcpy(g_track_prev_key, g_key_state, sizeof(g_track_prev_key));
+	memcpy(g_track_prev_click, g_click_state, sizeof(g_track_prev_click));
+
 	*pnInOut = cnt;
 	return true;
 }
@@ -674,11 +862,62 @@ bool input_sdl2_EndDeviceTrack()
 
 DeviceObject* input_sdl2_GetDeviceObjects ( uint32 nDeviceFlags )
 {
-	return LTNULL;
+	if ((nDeviceFlags & DEVICETYPE_MOUSE) == 0)
+		return LTNULL;
+
+	struct SObjectDesc
+	{
+		uint32      m_nType;
+		const char *m_pName;
+		uint32      m_nId;
+	};
+
+	static const SObjectDesc kMouseObjects[] =
+	{
+		{ CONTROLTYPE_XAXIS,  "##x-axis", 0 },
+		{ CONTROLTYPE_YAXIS,  "##y-axis", 1 },
+		{ CONTROLTYPE_BUTTON, "Button 0", 2 },
+		{ CONTROLTYPE_BUTTON, "Button 1", 3 },
+		{ CONTROLTYPE_BUTTON, "Button 2", 6 },
+	};
+
+	DeviceObject *pHead = LTNULL;
+	DeviceObject *pTail = LTNULL;
+
+	for (uint32 i = 0; i < sizeof(kMouseObjects) / sizeof(kMouseObjects[0]); ++i)
+	{
+		DeviceObject *pObj = new DeviceObject;
+		if (!pObj)
+			break;
+
+		memset(pObj, 0, sizeof(DeviceObject));
+		pObj->m_DeviceType = DEVICETYPE_MOUSE;
+		LTStrCpy(pObj->m_DeviceName, "##mouse", sizeof(pObj->m_DeviceName));
+		pObj->m_ObjectType = kMouseObjects[i].m_nType;
+		LTStrCpy(pObj->m_ObjectName, kMouseObjects[i].m_pName, sizeof(pObj->m_ObjectName));
+		pObj->m_nObjectId = kMouseObjects[i].m_nId;
+		pObj->m_RangeLow = 0.0f;
+		pObj->m_RangeHigh = 0.0f;
+		pObj->m_pNext = LTNULL;
+
+		if (pTail)
+			pTail->m_pNext = pObj;
+		else
+			pHead = pObj;
+		pTail = pObj;
+	}
+
+	return pHead;
 }
 
 void input_sdl2_FreeDeviceObjects ( DeviceObject* pList )
 {
+	while (pList)
+	{
+		DeviceObject *pNext = pList->m_pNext;
+		delete pList;
+		pList = pNext;
+	}
 }
 
 bool input_sdl2_GetDeviceName ( uint32 nDeviceType, char* pStrBuffer, uint32 nBufferSize )
