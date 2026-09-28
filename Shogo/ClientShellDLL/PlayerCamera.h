@@ -11,7 +11,7 @@
 #ifndef __PLAYER_CAMERA_H__
 #define __PLAYER_CAMERA_H__
 
-#include "clientutilities.h"
+#include "ClientUtilities.h"
 #include "iltmath.h"
 
 class CPlayerCamera

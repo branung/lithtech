@@ -13,9 +13,10 @@
 
 // Includes...
 
-#include "Windows.h"
 #include "Sparam.h"
 #include "assert.h"
+#include <stdio.h>
+#include <string.h>
 
 
 // Functions...
@@ -39,7 +40,7 @@ BOOL Sparam_Get(char* sDest, const char* sSource, const char* sId)
 	// Scan for the ID...
 
 	char sRealId[256];
-	wsprintf(sRealId, "[%s:", sId);
+	sprintf(sRealId, "[%s:", sId);
 
 	const char* sStart = strstr(sSource, sRealId);
 	if (!sStart) return(FALSE);
@@ -123,7 +124,7 @@ BOOL Sparam_Add(char* sSource, const char* sId, const char* sParam)
 BOOL Sparam_Add(char* sSource, const char* sId, int nParam)
 {
 	char sTmp[256];
-	wsprintf(sTmp, "%i", nParam);
+	sprintf(sTmp, "%i", nParam);
 
 	return(Sparam_Add(sSource, sId, sTmp));
 }

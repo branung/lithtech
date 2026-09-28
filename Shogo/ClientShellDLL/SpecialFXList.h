@@ -52,7 +52,7 @@ class CSpecialFXList
 			return LTTRUE;
 		}
 
-		CSpecialFX* CSpecialFXList::operator[] (unsigned int nIndex)
+		CSpecialFX* operator[] (unsigned int nIndex)
 		{
 			if (!m_pArray || nIndex < 0 || nIndex >= m_nArraySize) return LTNULL;
 			return m_pArray[nIndex];

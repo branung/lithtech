@@ -22,7 +22,7 @@
 
 struct WCREATESTRUCT : public SFXCREATESTRUCT
 {
-	WCREATESTRUCT::WCREATESTRUCT();
+	WCREATESTRUCT();
 
 	uint8		nWeaponId;
 	uint8		nSurfaceType;
@@ -132,7 +132,7 @@ class CWeaponFX : public CSpecialFX
 		void CreateLightFX();
 		void CreateVectorBloodFX(LTVector & vVelMin, LTVector & vVelMax, LTFLOAT fRange);
 		void CreateLowVectorBloodFX(LTVector & vVelMin, LTVector & vVelMax, LTFLOAT fRange);
-		void CreateMeLTVectorBloodFX(LTVector & vVelMin, LTVector & vVelMax, LTFLOAT fRange);
+		void CreateMedVectorBloodFX(LTVector & vVelMin, LTVector & vVelMax, LTFLOAT fRange);
 		void CreateBlastMark();
 
 		LTBOOL IsBulletTrailWeapon(RiotWeaponId nWeaponId);

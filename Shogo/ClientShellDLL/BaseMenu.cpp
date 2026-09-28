@@ -202,6 +202,92 @@ void CBaseMenu::Draw (HSURFACE hScreen, int nScreenWidth, int nScreenHeight, int
 	}
 }
 
+LTBOOL CBaseMenu::LoadChildSurfaces (CBaseMenu& child, const char* pszName, LTBOOL& bAll)
+{
+	LTBOOL bOK = child.LoadAllSurfaces();
+
+	if (!bOK)
+	{
+		bAll = LTFALSE;
+		if (m_pClientDE)
+		{
+			m_pClientDE->CPrint ("[D:MENU] %s failed to load its surfaces... that screen will draw empty", pszName ? pszName : "<unnamed>");
+		}
+	}
+
+	return bOK;
+}
+
+// Mouse support
+
+// How wide item nItem is for hit testing.
+// The label's width by default, and a two column screen reaches its value column
+int CBaseMenu::GetItemWidth (int nItem)
+{
+	if (nItem < 0 || nItem >= MAX_GENERIC_ITEMS) return 0;
+	return (int)m_GenericItem[nItem].szMenuItem.cx;
+}
+
+int CBaseMenu::GetItemUnderPoint (int x, int y)
+{
+	if (!m_pClientDE) return -1;
+
+	int nCurrentY = m_nMenuY;
+	if (m_hMenuTitle)
+	{
+		nCurrentY += m_szMenuTitle.cy + m_nMenuTitleSpacing;
+	}
+
+	for (int i = m_nTopItem; i < MAX_GENERIC_ITEMS; i++)
+	{
+		if (!m_GenericItem[i].hMenuItem) continue;
+
+		int nItemHeight = (int)m_GenericItem[i].szMenuItem.cy;
+
+		if (y >= nCurrentY && y < nCurrentY + nItemHeight &&
+			x >= m_nMenuX && x < m_nMenuX + GetItemWidth (i))
+		{
+			return i;
+		}
+
+		nCurrentY += nItemHeight + m_nMenuSpacing;
+		if (nCurrentY > GetMenuAreaBottom() - nItemHeight)
+		{
+			break;
+		}
+	}
+
+	return -1;
+}
+
+void CBaseMenu::OnMouseMove (int x, int y)
+{
+	int nItem = GetItemUnderPoint (x, y);
+	if (nItem < 0 || nItem == m_nSelection) return;
+
+	m_nSelection = nItem;
+	PlayUpSound();
+}
+
+LTBOOL CBaseMenu::OnLButtonDown (int x, int y)
+{
+	int nItem = GetItemUnderPoint (x, y);
+	if (nItem < 0) return LTFALSE;
+
+	// Select first because Activate() decides what to do from m_nSelection
+	m_nSelection = nItem;
+
+	Activate (nItem);
+	return LTTRUE;
+}
+
+void CBaseMenu::Activate (int /*nItem*/)
+{
+	// Return() only so a click is the Enter key sound included.
+	// Playing the sound here would double it on some rows
+	Return();
+}
+
 LTBOOL CBaseMenu::LoadSurfaces()
 {
 	if (!m_pClientDE) return LTFALSE;

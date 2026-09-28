@@ -12,7 +12,11 @@
 #include "clientheaders.h"
 #include "ClientUtilities.h"
 #include "ltobjectcreate.h"
+#include "iltmath.h"
 
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 // ----------------------------------------------------------------------- //
 //
@@ -128,9 +132,9 @@ LTBOOL CBaseParticleSystemFX::Update()
 		VEC_MULSCALAR(vTemp, m_vRotVel, fDelta);
 		VEC_ADD(m_vRotAmount, m_vRotAmount, vTemp);
 
-		if (m_vRotVel.x != 0.0f) m_pClientDE->Math()->EulerRotateX(rRot, m_vRotAmount.x);
-		if (m_vRotVel.y != 0.0f) m_pClientDE->Math()->EulerRotateY(rRot, m_vRotAmount.y);
-		if (m_vRotVel.z != 0.0f) m_pClientDE->Math()->EulerRotateZ(rRot, m_vRotAmount.z);
+		if (m_vRotVel.x != 0.0f) pMath->EulerRotateX(rRot, m_vRotAmount.x);
+		if (m_vRotVel.y != 0.0f) pMath->EulerRotateY(rRot, m_vRotAmount.y);
+		if (m_vRotVel.z != 0.0f) pMath->EulerRotateZ(rRot, m_vRotAmount.z);
 
 		m_pClientDE->SetObjectRotation(m_hObject, &rRot);
 	}

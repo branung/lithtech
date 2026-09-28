@@ -2,9 +2,19 @@
 #include "iltclient.h"
 #include "RiotSettings.h"
 #include "stdio.h"
+#ifdef _WIN32
 #include "windows.h"
+#else
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+#endif
 #include "TextHelper.h"
 #include "ClientRes.h"
+#include "iltsoundmgr.h"
 
 CRiotSettings::CRiotSettings()
 {
@@ -56,6 +66,8 @@ LTBOOL CRiotSettings::Init (ILTClient* pClientDE, CRiotClientShell* pClientShell
 	Control[RS_CTRL_LOOKSPRING].hVar = m_pClientDE->GetConsoleVar (Control[RS_CTRL_LOOKSPRING].strVarName);
 	SAFE_STRCPY(Control[RS_CTRL_RUNLOCK].strVarName, "RunLock");
 	Control[RS_CTRL_RUNLOCK].hVar = m_pClientDE->GetConsoleVar (Control[RS_CTRL_RUNLOCK].strVarName);
+	SAFE_STRCPY(Control[RS_CTRL_USEWHEEL].strVarName, "UseWheel");	// PORT, see RiotSettings.h
+	Control[RS_CTRL_USEWHEEL].hVar = m_pClientDE->GetConsoleVar (Control[RS_CTRL_USEWHEEL].strVarName);
 
 	// init sound settings...
 
@@ -621,7 +633,7 @@ LTBOOL CRiotSettings::ImplementRendererSetting()
 	// attempt to set the render mode
 
 	m_pClientShell->m_bSwitchingModes = LTTRUE;
-	LTRESULT hResult = m_pClientDE->SetRenderMode (&CurrentRenderer);
+	LTRESULT hResult = m_pClientDE->SetRenderMode(&CurrentRenderer, GAME_NAME);
 	m_pClientShell->m_bSwitchingModes = LTFALSE;
 
 	if (hResult == LT_KEPTSAMEMODE || hResult == LT_UNABLETORESTOREVIDEO)
@@ -739,7 +751,7 @@ void CRiotSettings::ImplementMusicVolume()
 	m_pClientDE->SetMusicVolume ((short)nMusicVolume);
 
 	char strConsole[64];
-	sprintf (strConsole, "+MusicVolume %d", nMusicVolume);
+	sprintf (strConsole, "+MusicVolume %f", nMusicVolume);
 	m_pClientDE->RunConsoleString (strConsole);
 }
 
@@ -765,7 +777,7 @@ void CRiotSettings::ImplementSoundVolume()
 
 	LTFLOAT nSoundVolume = Sound[RS_SND_SOUNDVOL].nValue;
 
-	m_pClientDE->SetSoundVolume ((short)nSoundVolume);
+	((ILTClientSoundMgr *)g_pLTClient->SoundMgr())->SetVolume((uint16)nSoundVolume);
 
 	char strConsole[64];
 	sprintf (strConsole, "+SoundVolume %f", nSoundVolume);
@@ -835,6 +847,17 @@ void CRiotSettings::ImplementMouseSensitivity()
 	}
 }
 
+// The wheel binds as one rangebind under 'Wheel', and both lines are safe to reissue
+void CRiotSettings::ImplementUseWheel()
+{
+	if (!m_pClientDE) return;
+
+	if (UseWheel())
+		m_pClientDE->RunConsoleString ("rangebind \"##Mouse\" \"Wheel\" 0.1 10000.0 \"NextWeapon\" -0.1 -10000.0 \"PrevWeapon\"");
+	else
+		m_pClientDE->RunConsoleString ("rangebind \"##Mouse\" \"Wheel\" 0 0");
+}
+
 void CRiotSettings::ImplementInputRate()
 {
 	if (!m_pClientDE) return;
@@ -885,6 +908,7 @@ void CRiotSettings::ImplementDetailSetting (int nSetting)
 		
 		case RS_SUBDET_SHADOWS:
 		{
+			// LT1's own shadow switch (0 to 3 directions). Read by lt1modelshadow.cpp
 			sprintf (str, "+MaxModelShadows %d", Shadows() ? 1 : 0);
 			m_pClientDE->RunConsoleString (str);
 		}

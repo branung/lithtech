@@ -13,7 +13,7 @@
 #include "ClientUtilities.h"
 #include "ParticleTrailSegmentFX.h"
 #include "RiotClientShell.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "WeaponFXTypes.h"
 
 extern CRiotClientShell* g_pRiotClientShell;

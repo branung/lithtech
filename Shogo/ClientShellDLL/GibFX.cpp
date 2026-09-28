@@ -24,6 +24,10 @@
 #include "DebrisTypes.h"
 #include "SmokeFX.h"
 #include "ltobjectcreate.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern CRiotClientShell* g_pRiotClientShell;
 
@@ -395,7 +399,7 @@ void CGibFX::UpdateGib(int nIndex, LTBOOL bBounced)
 HLOCALOBJ CGibFX::CreateGib(GibType eType)
 {
 	char* pFilename = GetGibModel(m_nModelId, eType, m_eSize);
-	char* pSkin		= GetSkin(m_nModelId, m_eCharacterClass, m_eSize);
+	const char* pSkin		= GetSkin(m_nModelId, m_eCharacterClass, m_eSize);
 
 	if (!pFilename) return LTNULL;
 
@@ -657,7 +661,8 @@ void CGibFX::HandleBounce(int nIndex)
 
 		SPRITECREATESTRUCT sc;
 
-		m_pClientDE->Math()->AlignRotation(sc.rRot, m_info.m_Plane.m_Normal, LTVector(0, 1, 0));
+		LTVector vWorldUp(0, 1, 0);
+		pMath->AlignRotation(sc.rRot, m_info.m_Plane.m_Normal, vWorldUp);
 
 		LTVector vTemp;
 		VEC_MULSCALAR(vTemp, m_info.m_Plane.m_Normal, 2.0f);

@@ -6,6 +6,10 @@
 #include "RiotClientShell.h"
 #include "ltobjectcreate.h"
 #include "iltsoundmgr.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 #define SCALE_UP_TIME	0.3f
 #define ROTATE_TIME		0.1f
@@ -98,9 +102,9 @@ LTBOOL CAnimeLineFX::CreateObject(ILTClient* pClientDE)
 		g_AnimeVariance.Init(pClientDE, "AnimeVariance", LTNULL, 1.2f);
 
 	
-	nLines = (uint32)g_AnimeNumLines.GetLTFLOAT();
-	theScale = g_AnimeScale.GetLTFLOAT();
-	angleSpeed = g_AnimeAngleSpeed.GetLTFLOAT();
+	nLines = (uint32)g_AnimeNumLines.GetFloat();
+	theScale = g_AnimeScale.GetFloat();
+	angleSpeed = g_AnimeAngleSpeed.GetFloat();
 	sscanf(g_AnimeColor.GetStr(), "%f %f %f", &theColor[0], &theColor[1], &theColor[2]);
 
 
@@ -130,7 +134,7 @@ LTBOOL CAnimeLineFX::CreateObject(ILTClient* pClientDE)
 			curAngle += angleAdd;
 
 			// Vary it..
-			pLine->m_Angle += (Rand01() - 0.5f) * g_AnimeVariance.GetLTFLOAT();
+			pLine->m_Angle += (Rand01() - 0.5f) * g_AnimeVariance.GetFloat();
 
 			pLine->m_AngleSpeed = Rand01();
 			pLine->m_AngleSpeed = LTMAX(0.3f, pLine->m_AngleSpeed);
@@ -203,8 +207,9 @@ LTBOOL CAnimeLineFX::Update()
 				pLine->m_Angle += pLine->m_AngleSpeed * frameTime;
 			}
 			
-			m_pClientDE->Math()->AlignRotation(rot, m_BaseDir, LTVector(0, 1, 0));
-			m_pClientDE->Math()->RotateAroundAxis(rot, m_BaseDir, pLine->m_Angle);
+			LTVector vWorldUp(0, 1, 0);
+			pMath->AlignRotation(rot, m_BaseDir, vWorldUp);
+			pMath->RotateAroundAxis(rot, m_BaseDir, pLine->m_Angle);
 			m_pClientDE->SetObjectRotation(pLine->m_hObject, &rot);
 			
 			// Set alpha.

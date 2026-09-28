@@ -1,9 +1,10 @@
 #include "ClientInfoMgr.h"
 #include "clientheaders.h"
 #include "TextHelper.h"
-#include "font12.h"
-#include "font28.h"
+#include "Font12.h"
+#include "Font28.h"
 #include "RiotClientShell.h"
+#include "ClientUtilities.h"
 #include <stdio.h>
 
 #define VERT_SPACING 3
@@ -458,23 +459,29 @@ void CClientInfoMgr::Draw (LTBOOL bDrawSingleFragCount, LTBOOL bDrawAllFragCount
 	m_pClientDE->GetSurfaceDims (hScreen, &nScreenWidth, &nScreenHeight);
 	int nHalfWidth = (int)nScreenWidth / 2;
 
+	// The frag readout and scoreboard are fixed pixel text scaled by the HUD slider.
+	// Their bitmap fonts have no size, so they take a scaled blit
+	LTFLOAT fScale = GetHUDScale();
+
 	// should we draw our frag count?
 	if (bDrawSingleFragCount)
 	{
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hFragDisplay, LTNULL, nScreenWidth - m_cxFragDisplay, 0, LTNULL);
+		DrawHUDScaled (hScreen, m_hFragDisplay, LTNULL,
+					   (int)nScreenWidth - HUDScaled ((int)m_cxFragDisplay, fScale), 0, fScale, LTNULL);
 	}
 
 	// should we draw all the frag counts?
 	
 	if (bDrawAllFragCounts && m_bFragSurfacesUpToDate)
 	{
+		// Centered on its total height, so the total is in scaled pixels
 		int nTotalHeight = 0;
 		int nClients = 0;
 		CLIENT_INFO* pClient = m_pClients;
 		while (pClient)
 		{
-			nTotalHeight += __max (pClient->szName.cy, pClient->szFragCount.cy);
-			nTotalHeight += VERT_SPACING;
+			nTotalHeight += HUDScaled ((int)__max (pClient->szName.cy, pClient->szFragCount.cy), fScale);
+			nTotalHeight += HUDScaled (VERT_SPACING, fScale);
 			++nClients;
 			pClient = pClient->pNext;
 		}
@@ -522,12 +529,17 @@ void CClientInfoMgr::Draw (LTBOOL bDrawSingleFragCount, LTBOOL bDrawAllFragCount
 			//m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, pClient->hName, LTNULL, nHalfWidth - pClient->szName.cx - 5, nY, LTNULL);
 			//m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, pClient->hFragCount, LTNULL, nHalfWidth + 5, nY, LTNULL);
 
-			m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, pClient->hName, LTNULL, 15, nY, LTNULL);
-			m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, pClient->hFragCount, LTNULL, pClient->szName.cx + 20, nY, LTNULL);
+			// The frag count goes past the name so the gap uses the name's scaled width
+			DrawHUDScaled (hScreen, pClient->hName, LTNULL,
+						   HUDScaled (15, fScale), nY, fScale, LTNULL);
+			DrawHUDScaled (hScreen, pClient->hFragCount, LTNULL,
+						   HUDScaled ((int)pClient->szName.cx + 20, fScale), nY, fScale, LTNULL);
 
-			nY += __max (pClient->szName.cy, pClient->szFragCount.cy) + VERT_SPACING;
+			int nRowHeight = HUDScaled ((int)__max (pClient->szName.cy, pClient->szFragCount.cy), fScale);
 
-			if (nY + __max (pClient->szName.cy, pClient->szFragCount.cy) > (int)nScreenHeight) break;
+			nY += nRowHeight + HUDScaled (VERT_SPACING, fScale);
+
+			if (nY + nRowHeight > (int)nScreenHeight) break;
 		}
 	}
 }

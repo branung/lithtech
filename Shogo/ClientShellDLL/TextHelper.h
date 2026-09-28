@@ -8,7 +8,7 @@ class ILTClient;
 
 struct FONT
 {
-	FONT (char* pStr, int w, int h, LTBOOL i = LTFALSE, LTBOOL u = LTFALSE, LTBOOL b = LTFALSE)
+	FONT (const char* pStr, int w, int h, LTBOOL i = LTFALSE, LTBOOL u = LTFALSE, LTBOOL b = LTFALSE)
 				{ SAFE_STRCPY(strFontName, pStr); nWidth = w; nHeight = h; bItalic = i; bUnderline = u; bBold = b; }
 
 	FONT()		{ memset (strFontName, 0, 64); nWidth = 0; nHeight = 0; bItalic = LTFALSE; bUnderline = LTFALSE; bBold = LTFALSE; }
@@ -33,13 +33,13 @@ class CTextHelper
 {
 public:
 
-	static HSURFACE CreateSurfaceFromString (ILTClient* pClientDE, CBitmapFont* pFont, char* str, int nReplacementFont = 0);
+	static HSURFACE CreateSurfaceFromString (ILTClient* pClientDE, CBitmapFont* pFont, const char* str, int nReplacementFont = 0);
 	static HSURFACE CreateSurfaceFromString (ILTClient* pClientDE, CBitmapFont* pFont, int strID, int nReplacementFont = 0);
 	static HSURFACE CreateWrappedStringSurface (ILTClient* pClientDE, int nWidth, CBitmapFont* pFont, char* str, int nAlignment = TH_ALIGN_LEFT, LTBOOL bCrop = LTTRUE);
 	static HSURFACE CreateWrappedStringSurface (ILTClient* pClientDE, int nWidth, CBitmapFont* pFont, int strID, int nAlignment = TH_ALIGN_LEFT, LTBOOL bCrop = LTTRUE);
 
-	static HSURFACE CreateSurfaceFromString (ILTClient* pClientDE, FONT* pFontDef, char* str, HLTCOLOR foreColor, HLTCOLOR backColor = LTNULL, LTBOOL bCropped = LTFALSE, int nExtraX = 0, int nExtraY = 0);
-	static HSURFACE CreateSurfaceFromString (ILTClient* pClientDE, HLTFONT HLTFONT, char* str, HLTCOLOR foreColor, HLTCOLOR backColor = LTNULL, LTBOOL bCropped = LTFALSE, int nExtraX = 0, int nExtraY = 0);
+	static HSURFACE CreateSurfaceFromString (ILTClient* pClientDE, FONT* pFontDef, const char* str, HLTCOLOR foreColor, HLTCOLOR backColor = LTNULL, LTBOOL bCropped = LTFALSE, int nExtraX = 0, int nExtraY = 0);
+	static HSURFACE CreateSurfaceFromString (ILTClient* pClientDE, HLTFONT HLTFONT, const char* str, HLTCOLOR foreColor, HLTCOLOR backColor = LTNULL, LTBOOL bCropped = LTFALSE, int nExtraX = 0, int nExtraY = 0);
 	static HSURFACE CreateSurfaceFromString (ILTClient* pClientDE, FONT* pFontDef, int strID, HLTCOLOR foreColor, HLTCOLOR backColor = LTNULL, LTBOOL bCropped = LTFALSE, int nExtraX = 0, int nExtraY = 0);
 	static HSURFACE CreateSurfaceFromString (ILTClient* pClientDE, HLTFONT HLTFONT, int strID, HLTCOLOR foreColor, HLTCOLOR backColor = LTNULL, LTBOOL bCropped = LTFALSE, int nExtraX = 0, int nExtraY = 0);
 	
@@ -64,7 +64,7 @@ protected:
 
 LTBOOL TextHelperCheckStringID(ILTClient* pClientDE, int nStringID, const char* sCheck, LTBOOL bIgnoreCase = LTTRUE, LTBOOL bDefaultVal = LTFALSE);
 
-LTFLOAT TextHelperGetLTFLOATValFromStringID(ILTClient* pClientDE, int nStringID, LTFLOAT nDefaultVal);
+LTFLOAT TextHelperGetFloatValFromStringID(ILTClient* pClientDE, int nStringID, LTFLOAT nDefaultVal);
 
 int TextHelperGetIntValFromStringID(ILTClient* pClientDE, int nStringID, int nDefaultVal);
 

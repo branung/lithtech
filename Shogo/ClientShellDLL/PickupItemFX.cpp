@@ -14,6 +14,10 @@
 #include "ClientServerShared.h"
 #include "RiotClientShell.h"
 #include "SFXMsgIds.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern CRiotClientShell* g_pRiotClientShell;
 
@@ -71,7 +75,7 @@ LTBOOL CPickupItemFX::Update()
 	{
 		LTRotation rRot;
 		m_pClientDE->GetObjectRotation(m_hServerObject, &rRot);
-		m_pClientDE->Math()->EulerRotateY(rRot, PICKUPITEM_ROTVEL * fDeltaTime);
+		pMath->EulerRotateY(rRot, PICKUPITEM_ROTVEL * fDeltaTime);
 		m_pClientDE->SetObjectRotation(m_hServerObject, &rRot);
 	}
 

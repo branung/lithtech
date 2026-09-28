@@ -2,6 +2,7 @@
 #include "clientheaders.h"
 #include "InfoDisplay.h"
 #include "TextHelper.h"
+#include "ClientUtilities.h"
 
 LTBOOL CInfoDisplay::Init (ILTClient* pClientDE)
 {
@@ -45,7 +46,7 @@ LTBOOL CInfoDisplay::AddInfo (HSURFACE hSurface, LTFLOAT nSeconds, uint32 nLocat
 	return AddToList (hSurface, nSeconds, nLocationFlags, bDeleteSurface);
 }
 
-LTBOOL CInfoDisplay::AddInfo (char* str, CBitmapFont* pFont, LTFLOAT nSeconds, uint32 nLocationFlags)
+LTBOOL CInfoDisplay::AddInfo (const char* str, CBitmapFont* pFont, LTFLOAT nSeconds, uint32 nLocationFlags)
 {
 	if (!m_pClientDE) return LTFALSE;
 	HSURFACE hSurf = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFont, str);
@@ -69,7 +70,7 @@ LTBOOL CInfoDisplay::AddInfo (int nStringID, CBitmapFont* pFont, LTFLOAT nSecond
 	return AddToList (hSurf, nSeconds, nLocationFlags, LTTRUE);
 }
 
-LTBOOL CInfoDisplay::AddInfo (char* str, FONT* pFontDef, HLTCOLOR hForeColor, LTFLOAT nSeconds, uint32 nLocationFlags)
+LTBOOL CInfoDisplay::AddInfo (const char* str, FONT* pFontDef, HLTCOLOR hForeColor, LTFLOAT nSeconds, uint32 nLocationFlags)
 {
 	if (!m_pClientDE) return LTFALSE;
 	HSURFACE hSurf = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontDef, str, hForeColor);
@@ -101,38 +102,44 @@ void CInfoDisplay::Draw()
 	CSize szScreen;
 	m_pClientDE->GetSurfaceDims (hScreen, &szScreen.cx, &szScreen.cy);
 
+	LTFLOAT fScale = GetHUDScale();
+
 	DI_INFO* pInfo = m_pInfoList;
 	while (pInfo)
 	{
+		int nSurfW = HUDScaled ((int)pInfo->szSurface.cx, fScale);
+		int nSurfH = HUDScaled ((int)pInfo->szSurface.cy, fScale);
+		int nInset = HUDScaled (20, fScale);
+
 		int nY = 0;
 		if (pInfo->nLocationFlags & DI_TOP)
 		{
-			nY = 20;
+			nY = nInset;
 		}
 		else if (pInfo->nLocationFlags & DI_BOTTOM)
 		{
-			nY = (int)szScreen.cy - 20 - (int)pInfo->szSurface.cy;
+			nY = (int)szScreen.cy - nInset - nSurfH;
 		}
 		else
 		{
-			nY = ((int)szScreen.cy - (int)pInfo->szSurface.cy) / 2;
+			nY = ((int)szScreen.cy - nSurfH) / 2;
 		}
 
 		int nX = 0;
 		if (pInfo->nLocationFlags & DI_LEFT)
 		{
-			nX = 20;
+			nX = nInset;
 		}
 		else if (pInfo->nLocationFlags & DI_RIGHT)
 		{
-			nX = (int)szScreen.cx - 20 - (int)pInfo->szSurface.cx;
+			nX = (int)szScreen.cx - nInset - nSurfW;
 		}
 		else
 		{
-			nX = ((int)szScreen.cx - (int)pInfo->szSurface.cx) / 2;
+			nX = ((int)szScreen.cx - nSurfW) / 2;
 		}
 
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, pInfo->hSurface, LTNULL, nX, nY, LTNULL);
+		DrawHUDScaled (hScreen, pInfo->hSurface, LTNULL, nX, nY, fScale, LTNULL);
 		pInfo = pInfo->pNext;
 	}
 

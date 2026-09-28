@@ -260,6 +260,12 @@ LTBOOL CLoadSavedLevelMenu::LoadSurfaces()
 					ptr++;
 					time_t nSeconds = (time_t) atol (ptr);
 					pTimeDate = localtime (&nSeconds);
+
+					if (!*pWorldName)
+					{
+						pWorldName = LTNULL;
+						pTimeDate  = LTNULL;
+					}
 				}
 			}
 		}

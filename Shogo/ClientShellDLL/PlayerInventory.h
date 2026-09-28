@@ -76,6 +76,18 @@ protected:
 	HSURFACE			m_hGunName[GUN_MAX_NUMBER];
 	HSURFACE			m_hAmmoCount[GUN_MAX_NUMBER];
 
+	LTFLOAT				m_fFontScale;
+	uint32				m_nAmmoCount[GUN_MAX_NUMBER];
+
+	// Infinity.pcx, pre-tinted orange and white.
+	// The tint is baked in, as a scaled solid color blit drops rows
+	HSURFACE			m_hInfinity[2];		// [0] normal, [1] current weapon
+	uint32				m_cxInfinity, m_cyInfinity;
+
+	void				UpdateFontScale();
+	void				RebuildScaledText();
+	HSURFACE			BuildAmmoCountSurface (uint32 nCount);
+
 };
 
 #endif

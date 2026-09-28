@@ -18,6 +18,11 @@
 #include "ParticleTrailFX.h"
 #include "CMoveMgr.h"
 #include "ltobjectcreate.h"
+#include "iltmath.h"
+#include "iltsoundmgr.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern CRiotClientShell* g_pRiotClientShell;
 extern uint8 g_nRandomWeaponSeed;
@@ -105,6 +110,8 @@ LTBOOL CProjectileFX::CreateObject(ILTClient* pClientDE)
 	m_pClientDE->GetObjectPos(m_hServerObject, &vPos);
 	m_pClientDE->GetObjectRotation(m_hServerObject, &rRot);
 
+	m_fStartTime = m_pClientDE->GetTime();
+
 	if (nDetailLevel != RS_LOW)
 	{
 		if (m_nFX & PFX_SMOKETRAIL)
@@ -145,7 +152,7 @@ LTBOOL CProjectileFX::CreateObject(ILTClient* pClientDE)
 			m_fStartTime = m_pClientDE->GetTime();
 
 			LTVector vVel, vU, vR, vF;
-			m_pClientDE->Math()->GetRotationVectors(rRot, vU, vR, vF);
+			pMath->GetRotationVectors(rRot, vU, vR, vF);
 
 			VEC_COPY(m_vPath, vF);
 
@@ -242,7 +249,7 @@ LTBOOL CProjectileFX::Update()
 
 	if (m_hFlyingSound)
 	{
-		m_pClientDE->SetSoundPosition(m_hFlyingSound, &vPos);
+		((ILTClientSoundMgr *)g_pLTClient->SoundMgr())->SetSoundPosition(m_hFlyingSound, &vPos);
 	}
 
 	return LTTRUE;
@@ -294,7 +301,7 @@ LTBOOL CProjectileFX::MoveServerObj()
 
 		LTRotation rRot;
 		m_pClientDE->GetObjectRotation(m_hServerObject, &rRot);
-		m_pClientDE->Math()->GetRotationVectors(rRot, vU, vR, vF);
+		pMath->GetRotationVectors(rRot, vU, vR, vF);
 		VEC_NORM(vU);
 		VEC_NORM(vF);
 		
@@ -311,9 +318,9 @@ LTBOOL CProjectileFX::MoveServerObj()
 			VEC_SUB(vVel, vVel, vTemp);
 		}
 
-		m_pClientDE->Math()->RotateAroundAxis(rRot, vF, m_fSnakeDir * 10.0f * fFrameTime);
+		pMath->RotateAroundAxis(rRot, vF, m_fSnakeDir * 10.0f * fFrameTime);
 		m_pClientDE->SetObjectRotation(m_hServerObject, &rRot);
-		m_pClientDE->Math()->GetRotationVectors(rRot, vU, vR, vF);
+		pMath->GetRotationVectors(rRot, vU, vR, vF);
 		VEC_NORM(vU);
 
 		// Add velocity to new up vector...
@@ -333,7 +340,7 @@ LTBOOL CProjectileFX::MoveServerObj()
 
 	info.m_hObject  = m_hServerObject;
 	info.m_dt		= fFrameTime;
-	pPhysicsLT->UpdateMovement(&info);
+	((ILTClientPhysics*)pPhysicsLT)->UpdateMovement(&info);
 
 	if (info.m_Offset.MagSqr() > 0.01f)
 	{
@@ -680,14 +687,12 @@ void CProjectileFX::HandleTouch(CollisionInfo *pInfo, LTFLOAT forceMag)
 	m_pClientDE->Common()->GetObjectFlags(pInfo->m_hObject, OFT_User, dwUsrFlags);
 	if (dwUsrFlags & USRFLG_IGNORE_PROJECTILES) return;
 
-	HLOCALOBJ hWorld;
-	m_pClientDE->Physics()->GetWorldObject(&hWorld);
 
 	// Don't impact on non-solid objects...
 
 	uint32 dwFlags;
 	m_pClientDE->Common()->GetObjectFlags(pInfo->m_hObject, OFT_Flags, dwFlags);
-	if (pInfo->m_hObject != hWorld && !(dwFlags & FLAG_SOLID)) return;
+	if (m_pClientDE->Physics()->IsWorldObject(pInfo->m_hObject) != LT_YES && !(dwFlags & FLAG_SOLID)) return;
 
 
 	// Don't hit projectiles we (i.e., this client) fired...
@@ -700,7 +705,7 @@ void CProjectileFX::HandleTouch(CollisionInfo *pInfo, LTFLOAT forceMag)
 
 	// See if we hit the sky...
 
-	if (pInfo->m_hObject == hWorld)
+	if (m_pClientDE->Physics()->IsWorldObject(pInfo->m_hObject) == LT_YES)
 	{
 		SurfaceType eType = GetSurfaceType(pInfo->m_hPoly);
 
@@ -753,7 +758,8 @@ void CProjectileFX::Detonate(CollisionInfo* pInfo)
 			VEC_COPY(vNormal, pInfo->m_Plane.m_Normal);
 
 			LTRotation rRot;
-			m_pClientDE->Math()->AlignRotation(rRot, vNormal, LTVector(0, 1, 0));
+			LTVector vWorldUp(0, 1, 0);
+			pMath->AlignRotation(rRot, vNormal, vWorldUp);
 			m_pClientDE->SetObjectRotation(m_hServerObject, &rRot);
 
 			// Calculate where we really hit the plane...

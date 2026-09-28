@@ -11,7 +11,7 @@
 #include "WeaponSoundFX.h"
 #include "RiotClientShell.h"
 #include "clientheaders.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "WeaponDefs.h"
 
 extern CRiotClientShell* g_pRiotClientShell;

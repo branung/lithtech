@@ -4,7 +4,7 @@
 #include "ClientRes.h"
 #include "RiotMenu.h"
 #include "ClientUtilities.h"
-#include "vkdefs.h"
+#include "VKDefs.h"
 #include "RiotClientShell.h"
 #include "WinUtil.h"
 #include <stdio.h>

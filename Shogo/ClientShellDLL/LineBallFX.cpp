@@ -14,6 +14,10 @@
 #include "SFXMsgIds.h"
 #include "SpriteFX.h"
 #include "RiotClientShell.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern CRiotClientShell* g_pRiotClientShell;
 
@@ -152,7 +156,7 @@ void CLineBallFX::UpdateRotation(LTFLOAT fTimeDelta)
 	m_pClientDE->Common()->GetRotationVectors(rRot, vU, vR, vF);
 	VEC_NORM(vF);
 
-	m_pClientDE->Math()->RotateAroundAxis(rRot, vF, 0.25f * fTimeDelta);
+	pMath->RotateAroundAxis(rRot, vF, 0.25f * fTimeDelta);
 	m_pClientDE->SetObjectRotation(m_hObject, &rRot);
 }
 
@@ -171,7 +175,8 @@ void CLineBallFX::CreateLines()
 	LTVector vUp;
 	VEC_SET(vUp, 0.0f, 1.0f, 0.0f);
 	LTRotation rRot2;
-	m_pClientDE->Math()->AlignRotation(rRot2, vUp, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(rRot2, vUp, vWorldUp);
 	m_pClientDE->SetObjectRotation(m_hObject, &rRot2);
 
 	LTLine line;

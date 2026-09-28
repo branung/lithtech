@@ -11,6 +11,10 @@
 #include "BaseScaleFX.h"
 #include "clientheaders.h"
 #include "ltobjectcreate.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 static int s_nRotDir = 1;
 
@@ -270,6 +274,6 @@ void CBaseScaleFX::UpdateRot(LTFLOAT fTimeDelta)
 	m_pClientDE->Common()->GetRotationVectors(rRot, vU, vR, vF);
 	VEC_NORM(vF);
 
-	m_pClientDE->Math()->RotateAroundAxis(rRot, vF, m_nRotDir * 0.25f * fTimeDelta);
+	pMath->RotateAroundAxis(rRot, vF, m_nRotDir * 0.25f * fTimeDelta);
 	m_pClientDE->SetObjectRotation(m_hObject, &rRot);
 }

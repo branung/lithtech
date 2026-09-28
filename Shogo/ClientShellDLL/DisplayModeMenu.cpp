@@ -487,6 +487,23 @@ LTBOOL CDisplayModeMenu::LoadRealSurfaces()
 	return CBaseMenu::LoadSurfaces();
 }
 
+// Adds a resolution to a renderer once.
+// This page only shows width by height, and aResolutions is MAX_RESOLUTIONS long
+static void AddResolutionOnce (RENDERER* pRenderer, int nWidth, int nHeight)
+{
+	for (int i = 0; i < pRenderer->nResolutions; i++)
+	{
+		if (pRenderer->aResolutions[i].nWidth == nWidth && pRenderer->aResolutions[i].nHeight == nHeight)
+			return;
+	}
+	if (pRenderer->nResolutions >= MAX_RESOLUTIONS) return;
+
+	RESOLUTION* pResolution = &pRenderer->aResolutions[pRenderer->nResolutions];
+	pRenderer->nResolutions++;
+	pResolution->nWidth = nWidth;
+	pResolution->nHeight = nHeight;
+}
+
 LTBOOL CDisplayModeMenu::InitRenderDlls()
 {
 	if (!m_pClientDE || !m_pRiotMenu) return LTFALSE;
@@ -508,7 +525,7 @@ LTBOOL CDisplayModeMenu::InitRenderDlls()
 		LTBOOL bDllFound = LTFALSE;
 		for (int i = 0; i < m_nRenderDlls && !bDllFound; i++)
 		{
-			if (strnicmp (m_aRenderDlls[i].strDllName, pRMode->m_RenderDLL, LEN_RENDERDLL) == 0)
+			if (strnicmp (m_aRenderDlls[i].strDllName, pRMode->m_InternalName, LEN_RENDERDLL) == 0)
 			{
 				bDllFound = LTTRUE;
 
@@ -521,26 +538,19 @@ LTBOOL CDisplayModeMenu::InitRenderDlls()
 						bRendererFound = LTTRUE;
 
 						// add this resolution to this Renderer's list of resolutions
-						RENDERER* pRenderer = &m_aRenderDlls[i].aRenderers[j];
-						RESOLUTION* pResolution = &pRenderer->aResolutions[pRenderer->nResolutions];
-						pRenderer->nResolutions++;
-						pResolution->nWidth = pRMode->m_Width;
-						pResolution->nHeight = pRMode->m_Height;
+						AddResolutionOnce (&m_aRenderDlls[i].aRenderers[j], pRMode->m_Width, pRMode->m_Height);
 					}
 				}
 
 				// if we don't already have this Renderer in this DLL's array, add it and configure the first mode...
-				if (!bRendererFound)
+				if (!bRendererFound && m_aRenderDlls[i].nRenderers < MAX_RENDERERS) 
 				{
 					RENDERER* pRenderer = &m_aRenderDlls[i].aRenderers[m_aRenderDlls[i].nRenderers];
 					m_aRenderDlls[i].nRenderers++;
 					strncpy (pRenderer->strRenderer, pRMode->m_Description, LEN_RENDERER - 1);
 					strncpy (pRenderer->strInternalName, pRMode->m_InternalName, LEN_RENDERER - 1);
 
-					RESOLUTION* pResolution = &pRenderer->aResolutions[0];
-					pRenderer->nResolutions++;
-					pResolution->nWidth = pRMode->m_Width;
-					pResolution->nHeight = pRMode->m_Height;
+					AddResolutionOnce (pRenderer, pRMode->m_Width, pRMode->m_Height);
 				}
 			}
 		}
@@ -548,17 +558,14 @@ LTBOOL CDisplayModeMenu::InitRenderDlls()
 		// if we don't already have this DLL in our array, add it and configure the first mode...
 		if (!bDllFound && m_nRenderDlls < MAX_RENDERDLLS)
 		{
-			strncpy (m_aRenderDlls[m_nRenderDlls].strDllName, pRMode->m_RenderDLL, LEN_RENDERDLL - 1);
+			strncpy (m_aRenderDlls[m_nRenderDlls].strDllName, pRMode->m_InternalName, LEN_RENDERDLL - 1);
 			
 			RENDERER* pRenderer = &m_aRenderDlls[m_nRenderDlls].aRenderers[0];
 			m_aRenderDlls[m_nRenderDlls].nRenderers++;
 			strncpy (pRenderer->strRenderer, pRMode->m_Description, LEN_RENDERER - 1);
 			strncpy (pRenderer->strInternalName, pRMode->m_InternalName, LEN_RENDERER - 1);
 
-			RESOLUTION* pResolution = &pRenderer->aResolutions[0];
-			pRenderer->nResolutions++;
-			pResolution->nWidth = pRMode->m_Width;
-			pResolution->nHeight = pRMode->m_Height;
+			AddResolutionOnce (pRenderer, pRMode->m_Width, pRMode->m_Height);
 
 			m_nRenderDlls++;
 		}
@@ -619,11 +626,15 @@ void CDisplayModeMenu::GetCurrentSettings()
 
 	CRiotSettings* pSettings = m_pRiotMenu->GetSettings();
 	if (!pSettings) return;
-	
-	/*
+
+	// Opens on the running mode, matching DLL, renderer and resolution.
+	// Anything that doesn't match keeps 0
+	const RMode* pCurrent = pSettings->GetRenderMode();
+	if (!pCurrent) return;
+
 	for (int i = 0; i < m_nRenderDlls; i++)
 	{
-		if (strnicmp (m_aRenderDlls[i].strDllName, pSettings->GetRenderMode()->m_RenderDLL, LEN_RENDERDLL) == 0)
+		if (strnicmp (m_aRenderDlls[i].strDllName, pCurrent->m_InternalName, LEN_RENDERDLL) == 0)
 		{
 			m_nCurrentRenderDll = i;
 			break;
@@ -632,7 +643,7 @@ void CDisplayModeMenu::GetCurrentSettings()
 	RENDERDLL* pRenderDll = &m_aRenderDlls[m_nCurrentRenderDll];
 	for (int i = 0; i < pRenderDll->nRenderers; i++)
 	{
-		if (strnicmp (pRenderDll->aRenderers[i].strRenderer, pSettings->GetRenderMode()->m_Description, LEN_RENDERER) == 0)
+		if (strnicmp (pRenderDll->aRenderers[i].strRenderer, pCurrent->m_Description, LEN_RENDERER) == 0)
 		{
 			m_nCurrentRenderer = i;
 			break;
@@ -641,14 +652,13 @@ void CDisplayModeMenu::GetCurrentSettings()
 	RENDERER* pRenderer = &pRenderDll->aRenderers[m_nCurrentRenderer];
 	for (int i = 0; i < pRenderer->nResolutions; i++)
 	{
-		if (pRenderer->aResolutions[i].nWidth == (int)pSettings->GetRenderMode()->m_Width &&
-			pRenderer->aResolutions[i].nHeight == (int)pSettings->GetRenderMode()->m_Height)
+		if (pRenderer->aResolutions[i].nWidth == (int)pCurrent->m_Width &&
+			pRenderer->aResolutions[i].nHeight == (int)pCurrent->m_Height)
 		{
 			m_nCurrentResolution = i;
 			break;
 		}
 	}
-	*/
 
 	m_nCurrentBitDepth = (int) pSettings->Textures8Bit();
 }

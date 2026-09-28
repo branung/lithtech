@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME} SHARED
 	DynamicLightFX.cpp
 	ExplosionFX.cpp
 	GibFX.cpp
+	GlobalsInit.cpp
 	InfoDisplay.cpp
 	IpMgr.cpp
 	JoystickMenu.cpp
@@ -50,6 +51,7 @@ add_library(${PROJECT_NAME} SHARED
 	Music.cpp
 	NetStart.cpp
 	NewGameMenu.cpp
+	GeneralOptionsMenu.cpp
 	OptionsMenu.cpp
 	ParticleExplosionFX.cpp
 	ParticleSystemFX.cpp
@@ -73,6 +75,7 @@ add_library(${PROJECT_NAME} SHARED
 	SFXMgr.cpp
 	SFXReg.cpp
 	ShellCasingFX.cpp
+	ShogoDiag.cpp
 	SinglePlayerMenu.cpp
 	Slider.cpp
 	SmokeFX.cpp

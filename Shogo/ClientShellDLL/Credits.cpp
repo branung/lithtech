@@ -16,11 +16,13 @@
 #include "clientheaders.h"
 #include "Credits.h"
 #include "RiotClientShell.h"
-#include "vkdefs.h"
+#include "VKDefs.h"
 #include <stdio.h>
 #include "CreditsWin.h"
 #include "ClientRes.h"
+#ifdef _WIN32
 #include "mbstring.h"
+#endif
 
 // Macros...
 
@@ -818,7 +820,7 @@ void CCredits::Update()
 
 	if (m_bClearScreen)
 	{
-		m_pClientDE->ClearScreen(NULL, CLEARSCREEN_SCREEN);
+		m_pClientDE->ClearScreen(NULL, CLEARSCREEN_SCREEN, 0);
 	}
 
 

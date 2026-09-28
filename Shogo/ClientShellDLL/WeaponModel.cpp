@@ -14,7 +14,7 @@
 #include "ShellCasingFX.h"
 #include "SFXMsgIds.h"
 #include "RiotSettings.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "WeaponFX.h"
 #include "ProjectileFX.h"
 #include "ClientServerShared.h"
@@ -24,6 +24,11 @@
 #include "PlayerStats.h"
 #include "CMoveMgr.h"
 #include "ltobjectcreate.h"
+#include "iltmath.h"
+#include "AutoMessage.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern CRiotClientShell* g_pRiotClientShell;
 
@@ -52,6 +57,8 @@ CWeaponModel::CWeaponModel()
 	m_fFlashStartTime	= 0.0f;
 
 	VEC_INIT(m_vFlashPos);
+	VEC_INIT(m_vFlashLocalPos);
+	VEC_INIT(m_vModelPos);
 	VEC_INIT(m_vOffset);
 	VEC_INIT(m_vMuzzleOffset);
 
@@ -251,13 +258,16 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 								  
 	
 		
-	LTVector vU, vR, vF, vNewPos;
+	LTVector vU, vR, vF, vNewPos, vLocalPos;
 	VEC_COPY(vNewPos, vPos);
+	VEC_SET(vLocalPos, 0.0f, 0.0f, 0.0f);
 
 	// Compute offset for WeaponModel and move the model to the correct position
 
-	m_pClientDE->SetObjectPosAnLTRotation(m_hObject, &vPos, &rRot);
-	m_pClientDE->Math()->GetRotationVectors(rRot, vU, vR, vF);
+	LTRotation rIdentity;
+	rIdentity.Init();
+	g_pLTClient->SetObjectRotation(m_hObject, &rIdentity);
+	pMath->GetRotationVectors(rRot, vU, vR, vF);
 
 	LTVector vOffset, vMuzzleOffset, vRecoil;
 
@@ -293,6 +303,12 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 	VEC_MULSCALAR(vTemp, vF, (vOffset.z));
 	VEC_ADD(vNewPos, vNewPos, vTemp);
 
+	// The same offsets in camera space, where right/up/forward are the axes
+
+	VEC_SET(vLocalPos, (vOffset.x + m_fBobWidth),
+					   (vOffset.y + m_fBobHeight),
+					   (vOffset.z));
+
 	// m_Flash.m_Pos.Copy(pos);
 	VEC_COPY(m_vFlashPos, vPos);
 
@@ -315,6 +331,11 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 		LTFLOAT yRand = GetRandom(-vRecoil.y, vRecoil.y);
 		LTFLOAT zRand = GetRandom(-vRecoil.z, vRecoil.z);
 
+		// Latched on the firing frame since the dual pistol offsets go to zero a frame later
+		VEC_SET(m_vFlashLocalPos, (vOffset.x + vMuzzleOffset.x + m_fBobWidth),
+								  (vOffset.y + vMuzzleOffset.y + m_fBobHeight),
+								  (vOffset.z + vMuzzleOffset.z));
+
 		// m_Pos += vU * yRand;
 		VEC_MULSCALAR(vTemp, vU, yRand);
 		VEC_ADD(vNewPos, vNewPos, vTemp);
@@ -326,6 +347,10 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 		// m_Pos += vF * zRand;
 		VEC_MULSCALAR(vTemp, vF, zRand);
 		VEC_ADD(vNewPos, vNewPos, vTemp);
+
+		vLocalPos.x += xRand;
+		vLocalPos.y += yRand;
+		vLocalPos.z += zRand;
 
 		//m_Flash.m_Pos += vU * yRand;
 		VEC_MULSCALAR(vTemp, vU, yRand);
@@ -339,7 +364,11 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 		VEC_MULSCALAR(vTemp, vF, zRand);
 		VEC_ADD(m_vFlashPos, m_vFlashPos, vTemp);
 
-		if (!g_pRiotClientShell->HaveSilencer()) 
+		m_vFlashLocalPos.x += xRand;
+		m_vFlashLocalPos.y += yRand;
+		m_vFlashLocalPos.z += zRand;
+
+		if (!g_pRiotClientShell->HaveSilencer())
 		{
 			StartFlash();
 		}
@@ -347,11 +376,14 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 		
 		// Send message to server telling player to fire...
 			
-		SendFireMsg();
+		SendFireMsg(rRot);
 	} 
 
 
-	m_pClientDE->SetObjectPos(m_hObject, &vNewPos);
+	// Keep the world space position for GetModelPos (which the server needs)
+
+	VEC_COPY(m_vModelPos, vNewPos);
+	m_pClientDE->SetObjectPos(m_hObject, &vLocalPos);
 
 
 	// Update the muzzle flash...
@@ -446,7 +478,8 @@ void CWeaponModel::CreateFlash()
 	
 	createStruct.m_ObjectType = OT_SPRITE;
 	SAFE_STRCPY(createStruct.m_Filename, pFlashName);
-	createStruct.m_Flags	  = 0;
+	// Set to REALLYCLOSE so it draws in the weapon's pass and stays on the barrel
+	createStruct.m_Flags	  = FLAG_REALLYCLOSE;
 
 	if (createStruct.m_Filename[0] != ' ')
 	{
@@ -481,7 +514,10 @@ void CWeaponModel::CreateModel()
 	SAFE_STRCPY(createStruct.m_Filename, pModelName);
 	SAFE_STRCPY(createStruct.m_SkinName, pModelSkin);
 	createStruct.m_ObjectType = OT_MODEL;
-	createStruct.m_Flags	  = FLAG_VISIBLE | FLAG_REALLYCLOSE | GetExtraWeaponFlags(m_nWeaponId);
+	createStruct.m_Flags	  = FLAG_VISIBLE | FLAG_REALLYCLOSE;
+
+	// The chrome weapon environment map, FLAG2_ENVMAP in Jupiter
+	createStruct.m_Flags2	  = GetExtraWeaponFlags2(m_nWeaponId);
 
 	m_hObject = m_pClientDE->CreateObject(&createStruct);
 	if (!m_hObject) return;
@@ -524,8 +560,9 @@ void CWeaponModel::UpdateFlash(WeaponState eState)
 	}	
 	else
 	{
-		m_pClientDE->Common()->SetObjectFlags(m_hFlashObject, OFT_Flags, FLAG_VISIBLE, FLAGMASK_ALL);
-		m_pClientDE->SetObjectPos(m_hFlashObject, &m_vFlashPos);
+		// FLAGMASK_ALL, so FLAG_REALLYCLOSE is restated or the flash drops to world space
+		m_pClientDE->Common()->SetObjectFlags(m_hFlashObject, OFT_Flags, FLAG_VISIBLE | FLAG_REALLYCLOSE, FLAGMASK_ALL);
+		m_pClientDE->SetObjectPos(m_hFlashObject, &m_vFlashLocalPos);
 	}
 }
 
@@ -580,18 +617,7 @@ void CWeaponModel::StartFlash()
 //
 // ----------------------------------------------------------------------- //
 
-LTVector CWeaponModel::GetModelPos() const
-{
-	LTVector vPos;
-	VEC_INIT(vPos);
-
-	if (m_pClientDE && m_hObject)
-	{
-		m_pClientDE->GetObjectPos(m_hObject, &vPos);
-	}
-			
-	return vPos;
-}
+// GetModelPos is inline in the header and returns the cached world position
 
 
 
@@ -607,7 +633,7 @@ void CWeaponModel::OnModelKey(HLOCALOBJ hObj, ArgList* pArgList)
 {
 	if (!m_pClientDE || !hObj || (hObj != m_hObject) || !pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
-	char* pKey = pArgList->argv[0];
+	const char* pKey = pArgList->argv[0];
 	if (!pKey) return;
 
 	if (stricmp(pKey, WEAPON_KEY_FIRE) == 0)
@@ -618,7 +644,7 @@ void CWeaponModel::OnModelKey(HLOCALOBJ hObj, ArgList* pArgList)
 	{
 		if (pArgList->argc > 1)
 		{
-			char* pSound = pArgList->argv[1];
+			const char* pSound = pArgList->argv[1];
 			if (pSound)
 			{
 				char buf[100];
@@ -630,12 +656,13 @@ void CWeaponModel::OnModelKey(HLOCALOBJ hObj, ArgList* pArgList)
 
 				HSTRING hSound = m_pClientDE->CreateString(buf);
 
-				ILTMessage_Write* hWrite = m_pClientDE->StartMessage(MID_WEAPON_SOUND);
-				m_pClientDE->WriteToMessageByte(hWrite, WEAPON_SOUND_KEY);
-				m_pClientDE->WriteToMessageByte(hWrite, m_nWeaponId);
-				m_pClientDE->WriteToMessageVector(hWrite, &m_vFlashPos);
-				m_pClientDE->WriteToMessageHString(hWrite, hSound);
-				m_pClientDE->EndMessage2(hWrite, MESSAGE_NAGGLEFAST|MESSAGE_GUARANTEED);
+				CAutoMessage cMsg;
+				cMsg.Writeuint8(MID_WEAPON_SOUND);
+				cMsg.Writeuint8(WEAPON_SOUND_KEY);
+				cMsg.Writeuint8(m_nWeaponId);
+				cMsg.WriteLTVector(m_vFlashPos);
+				cMsg.WriteHString(hSound);
+				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 
 				m_pClientDE->FreeString(hSound);
 			}
@@ -771,12 +798,13 @@ WeaponState CWeaponModel::Fire()
 		
 		// Send message to Server so that other client's can hear this sound...
 
-		ILTMessage_Write* hWrite = m_pClientDE->StartMessage(MID_WEAPON_SOUND);
-		m_pClientDE->WriteToMessageByte(hWrite, WEAPON_SOUND_DRYFIRE);
-		m_pClientDE->WriteToMessageByte(hWrite, m_nWeaponId);
-		m_pClientDE->WriteToMessageVector(hWrite, &m_vFlashPos);
-		m_pClientDE->WriteToMessageHString(hWrite, LTNULL);
-		m_pClientDE->EndMessage2(hWrite, MESSAGE_NAGGLEFAST|MESSAGE_GUARANTEED);
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_WEAPON_SOUND);
+		cMsg.Writeuint8(WEAPON_SOUND_DRYFIRE);
+		cMsg.Writeuint8(m_nWeaponId);
+		cMsg.WriteLTVector(m_vFlashPos);
+		cMsg.WriteHString(LTNULL);
+		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 	}
 
 	m_bFire = LTFALSE;
@@ -1224,11 +1252,11 @@ void CWeaponModel::Deselect()
 //
 // ----------------------------------------------------------------------- //
 
-void CWeaponModel::HandleStateChange(ILTMessage_Read hMessage)
+void CWeaponModel::HandleStateChange(ILTMessage_Read* hMessage)
 {
 	if (!m_pClientDE) return;
 
-	m_eState = (WeaponState) m_pClientDE->ReadFromMessageByte(hMessage);
+	m_eState = (WeaponState) hMessage->Readuint8();
 
 	if (m_eState == W_DESELECT)
 	{
@@ -1245,14 +1273,14 @@ void CWeaponModel::HandleStateChange(ILTMessage_Read hMessage)
 //
 // ----------------------------------------------------------------------- //
 
-void CWeaponModel::SendFireMsg()
+void CWeaponModel::SendFireMsg(const LTRotation& rCameraRot)
 {
 	if (!m_pClientDE || !m_hObject) return;
 
-	LTRotation rRot;
+	// The camera's basis, since the weapon's own rotation is identity
+	LTRotation rRot = rCameraRot;
 	LTVector vU, vR, vF;
-	m_pClientDE->GetObjectRotation(m_hObject, &rRot);
-	m_pClientDE->Math()->GetRotationVectors(rRot, vU, vR, vF);
+	pMath->GetRotationVectors(rRot, vU, vR, vF);
 
 
 	// Make sure we always ignore the fire sound...
@@ -1310,13 +1338,30 @@ void CWeaponModel::SendFireMsg()
 
 	// Send Fire message to server...
 
-	ILTMessage_Write hWrite = m_pClientDE->StartMessage(MID_WEAPON_FIRE);
-	m_pClientDE->WriteToMessageVector(hWrite, &m_vFlashPos);
-	m_pClientDE->WriteToMessageVector(hWrite, &vF);
-	m_pClientDE->WriteToMessageLTFLOAT(hWrite, fNewRange);
-	m_pClientDE->WriteToMessageByte(hWrite, nRandomSeed);
-	m_pClientDE->WriteToMessageByte(hWrite, nWeaponId);
-	m_pClientDE->EndMessage2(hWrite, MESSAGE_NAGGLEFAST|MESSAGE_GUARANTEED);
+	// The camera rotation, read back from the camera object to compare against
+	if (g_pRiotClientShell && g_pRiotClientShell->GetDiag().IsOn())
+	{
+		LTRotation rCam;
+		rCam.Init();
+		g_pRiotClientShell->GetCameraRotation(&rCam);
+
+		LTVector vCamU, vCamR, vCamF;
+		VEC_INIT(vCamU);
+		VEC_INIT(vCamR);
+		VEC_INIT(vCamF);
+		pMath->GetRotationVectors(rCam, vCamU, vCamR, vCamF);
+
+		g_pRiotClientShell->GetDiag().OnWeaponFired(m_vFlashPos, vF, vCamF);
+	}
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_WEAPON_FIRE);
+	cMsg.WriteLTVector(m_vFlashPos);
+	cMsg.WriteLTVector(vF);
+	cMsg.Writefloat(fNewRange);
+	cMsg.Writeuint8(nRandomSeed);
+	cMsg.Writeuint8(nWeaponId);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 }
 
 
@@ -1395,7 +1440,8 @@ HLOCALOBJ CWeaponModel::CreateServerObj()
 	if (!m_pClientDE || !m_hObject) return LTNULL;
 
 	LTRotation rRot;
-	m_pClientDE->Math()->AlignRotation(rRot, m_vPath, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(rRot, m_vPath, vWorldUp);
 
 	ObjectCreateStruct createStruct;
 	INIT_OBJECTCREATESTRUCT(createStruct);

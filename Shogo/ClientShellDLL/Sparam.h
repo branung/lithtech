@@ -14,6 +14,18 @@
 #ifndef _SPARAM_H_
 #define _SPARAM_H_
 
+#ifdef _WIN32
+#include "Windows.h"
+#else
+typedef int BOOL;
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+#endif
+
 
 // Prototypes...
 

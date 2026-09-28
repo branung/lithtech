@@ -13,14 +13,16 @@
 
 // Includes...
 
-#include "Windows.h"
 #include <stdio.h>
 #include "NetStart.h"
+
+#ifdef _WIN32
+#include "Windows.h"
 #include "NetInfo.h"
 #include "IpMgr.h"
 #include "Sparam.h"
-#include "dplobby.h"
 #include "ClientRes.h"
+#include "RiotClientShell.h"
 
 
 // Defines...
@@ -202,8 +204,8 @@ int    GetConsoleInt(char* sKey, int nDefault);
 void   GetConsoleString(char* sKey, char* sDest, char* sDefault);
 void   WriteConsoleString(char* sKey, char* sValue);
 void   WriteConsoleInt(char* sKey, int nValue);
-LTFLOAT GetConsoleLTFLOAT(char* sKey, LTFLOAT fDefault);
-void   WriteConsoleLTFLOAT(char* sKey, LTFLOAT fValue);
+LTFLOAT GetConsoleFloat(char* sKey, LTFLOAT fDefault);
+void   WriteConsoleFloat(char* sKey, LTFLOAT fValue);
 
 BOOL AddSelToList(HWND hSrcList, HWND hDestList);
 BOOL RemoveSelFromList(HWND hList);
@@ -215,8 +217,8 @@ int	 DoNoSessionsMessage(HWND hParentWnd);
 void FixAddress(char* sAddress);
 
 BOOL  DoOptionHelp(HWND hParentWnd, int iMsg, int iTitle);
-void  SetDlgItemLTFLOAT(HWND hDlg, int iCtrl, LTFLOAT fValue);
-LTFLOAT GetDlgItemLTFLOAT(HWND hDlg, int iCtrl);
+void  SetDlgItemFloat(HWND hDlg, int iCtrl, LTFLOAT fValue);
+LTFLOAT GetDlgItemFloat(HWND hDlg, int iCtrl);
 
 
 // Functions...
@@ -448,11 +450,11 @@ LTBOOL NetStart_DoWizard(ILTClient* pClient, NetStart* pNetStart)
 	s_pServerOptions->m_bTractorBeam    = GetConsoleInt("NetTractorBeam", s_pServerOptions->m_bTractorBeam);
 	s_pServerOptions->m_bDoubleJump     = GetConsoleInt("NetDoubleJump", s_pServerOptions->m_bDoubleJump);
 	s_pServerOptions->m_bRammingDamage  = GetConsoleInt("NetRammingDamage", s_pServerOptions->m_bRammingDamage);
-	s_pServerOptions->m_fWorldTimeSpeed = GetConsoleLTFLOAT("NetWorldTimeSpeed", s_pServerOptions->m_fWorldTimeSpeed);
-	s_pServerOptions->m_fRunSpeed       = GetConsoleLTFLOAT("NetRunSpeed", s_pServerOptions->m_fRunSpeed);
-	s_pServerOptions->m_fMissileSpeed   = GetConsoleLTFLOAT("NetMissileSpeed", s_pServerOptions->m_fMissileSpeed);
-	s_pServerOptions->m_fRespawnScale   = GetConsoleLTFLOAT("NetRespawnScale", s_pServerOptions->m_fRespawnScale);
-	s_pServerOptions->m_fHealScale      = GetConsoleLTFLOAT("NetHealScale", s_pServerOptions->m_fHealScale);
+	s_pServerOptions->m_fWorldTimeSpeed = GetConsoleFloat("NetWorldTimeSpeed", s_pServerOptions->m_fWorldTimeSpeed);
+	s_pServerOptions->m_fRunSpeed       = GetConsoleFloat("NetRunSpeed", s_pServerOptions->m_fRunSpeed);
+	s_pServerOptions->m_fMissileSpeed   = GetConsoleFloat("NetMissileSpeed", s_pServerOptions->m_fMissileSpeed);
+	s_pServerOptions->m_fRespawnScale   = GetConsoleFloat("NetRespawnScale", s_pServerOptions->m_fRespawnScale);
+	s_pServerOptions->m_fHealScale      = GetConsoleFloat("NetHealScale", s_pServerOptions->m_fHealScale);
 
 	GetConsoleString("NetWorldNightColor", s_pServerOptions->m_sWorldNightColor, s_pServerOptions->m_sWorldNightColor);
 
@@ -599,11 +601,11 @@ FinishedDlg:
 		WriteConsoleInt("NetTractorBeam", s_pServerOptions->m_bTractorBeam);
 		WriteConsoleInt("NetDoubleJump", s_pServerOptions->m_bDoubleJump);
 		WriteConsoleInt("NetRammingDamage", s_pServerOptions->m_bRammingDamage);
-		WriteConsoleLTFLOAT("NetWorldTimeSpeed", s_pServerOptions->m_fWorldTimeSpeed);
-		WriteConsoleLTFLOAT("NetRunSpeed", s_pServerOptions->m_fRunSpeed);
-		WriteConsoleLTFLOAT("NetMissileSpeed", s_pServerOptions->m_fMissileSpeed);
-		WriteConsoleLTFLOAT("NetRespawnScale", s_pServerOptions->m_fRespawnScale);
-		WriteConsoleLTFLOAT("NetHealScale", s_pServerOptions->m_fHealScale);
+		WriteConsoleFloat("NetWorldTimeSpeed", s_pServerOptions->m_fWorldTimeSpeed);
+		WriteConsoleFloat("NetRunSpeed", s_pServerOptions->m_fRunSpeed);
+		WriteConsoleFloat("NetMissileSpeed", s_pServerOptions->m_fMissileSpeed);
+		WriteConsoleFloat("NetRespawnScale", s_pServerOptions->m_fRespawnScale);
+		WriteConsoleFloat("NetHealScale", s_pServerOptions->m_fHealScale);
 		WriteConsoleString("NetWorldNightColor", s_pServerOptions->m_sWorldNightColor);
 	}
 
@@ -673,7 +675,7 @@ int GetConsoleInt(char* sKey, int nDefault)
 	return(nDefault);
 }
 
-LTFLOAT GetConsoleLTFLOAT(char* sKey, LTFLOAT fDefault)
+LTFLOAT GetConsoleFloat(char* sKey, LTFLOAT fDefault)
 {
 	if (s_pClient)
 	{
@@ -708,7 +710,7 @@ void WriteConsoleInt(char* sKey, int nValue)
 	}
 }
 
-void WriteConsoleLTFLOAT(char* sKey, LTFLOAT fValue)
+void WriteConsoleFloat(char* sKey, LTFLOAT fValue)
 {
 	if (s_pClient)
 	{
@@ -745,6 +747,9 @@ void NetStart_DisplayError(HINSTANCE hInst)
 
 LTBOOL NetStart_DoLobbyLaunchWizard(ILTClient* pClient)
 {
+	// DirectPlay lobby launching is gone so fail it up front
+	return(LTFALSE);
+
 	// Sanity checks...
 
 	if (!pClient) return(LTFALSE);
@@ -834,7 +839,6 @@ LTBOOL NetStart_DoLobbyLaunchWizard(ILTClient* pClient)
 		return(LTFALSE);
 	}
 
-	LPDPLCONNECTION pDplConn = (LPDPLCONNECTION)pLobbyLaunchInfo;
 
 
 	// Read some default values from the console...
@@ -863,20 +867,12 @@ LTBOOL NetStart_DoLobbyLaunchWizard(ILTClient* pClient)
 
 	// Update info from the lobby info...
 
-	if (strlen(pDplConn->lpSessionDesc->lpszSessionNameA) > 0)
-	{
-		strcpy(s_sSessionName, pDplConn->lpSessionDesc->lpszSessionNameA);
-	}
-
-	if (strlen(pDplConn->lpPlayerName->lpszShortNameA) > 0)
-	{
-		strcpy(s_sPlayerName, pDplConn->lpPlayerName->lpszShortNameA);
-	}
+	// (Session/player names came from the DirectPlay lobby connection)
 
 
 	// Set our join host info...
 
-	if (pDplConn->dwFlags & DPLCONNECTION_CREATESESSION)
+	if (LTFALSE)	// Originally was: pDplConn->dwFlags & DPLCONNECTION_CREATESESSION
 	{
 		s_pNetStart->m_bHost = LTTRUE;
 	}
@@ -992,7 +988,7 @@ Launch:
 	HSURFACE hScreen = pClient->GetScreenSurface();
 	pClient->GetSurfaceDims (hScreen, &cxScreen, &cyScreen);
 
-	pClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN);
+	pClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN, 0);
 	pClient->Start3D();
 	pClient->StartOptimized2D();
 	pClient->DrawSurfaceToSurface(hScreen, hLoading, LTNULL, ((int)cxScreen - (int)cxLoading) / 2, ((int)cyScreen - (int)cyLoading) / 2);
@@ -1066,7 +1062,7 @@ LTBOOL NetStart_RestoreMainWnd()
 
 	// Restore the main window as necessary...
 
-	LTRESULT dr = s_pClient->SetRenderMode(&s_RMode);
+	LTRESULT dr = s_pClient->SetRenderMode(&s_RMode, GAME_NAME);
 	if (dr != LT_OK) return(LTFALSE);
 
 
@@ -1285,7 +1281,7 @@ BOOL NetStart_SelectCurrentService(HWND hList)
 
 	// Get the item data for this index...
 
-	int nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
+	LRESULT nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
 	if (nRet == LB_ERR) return(FALSE);
 
 	HNETSERVICE hNetService = (HNETSERVICE)nRet;
@@ -1643,7 +1639,7 @@ BOOL NetStart_DisplaySelectedSessionInfo(HWND hDlg)
 
 	// Get the item data for this index...
 
-	int nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
+	LRESULT nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
 	if (nRet == LB_ERR) return(FALSE);
 
 	NetSession* pNetSession = (NetSession*)nRet;
@@ -1760,7 +1756,7 @@ BOOL NetStart_JoinCurrentSession(HWND hList)
 
 	// Get the item data for this index...
 
-	int nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
+	LRESULT nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
 	if (nRet == LB_ERR) return(FALSE);
 
 	NetSession* pNetSession = (NetSession*)nRet;
@@ -1940,7 +1936,7 @@ BOOL CALLBACK NetDlg_Sessions(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		case WM_INITDIALOG:
 		{
 			bFirstFill = TRUE;
-			hCurCursor = (HCURSOR)GetClassLong(hDlg, GCL_HCURSOR);
+			hCurCursor = (HCURSOR)GetClassLongPtr(hDlg, GCLP_HCURSOR);
 
 			ForceActiveFocus(hDlg);
 
@@ -3254,28 +3250,28 @@ BOOL NetStart_InitOptions(HWND hDlg)
 	CheckDlgButton(hDlg, IDC_DOUBLEJUMP,    s_pServerOptions->m_bDoubleJump    ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(hDlg, IDC_RAMMINGDAMAGE, s_pServerOptions->m_bRammingDamage ? BST_CHECKED : BST_UNCHECKED);
 
-	SetDlgItemLTFLOAT(hDlg, IDC_RUNSPEED,       s_pServerOptions->m_fRunSpeed);
-	SetDlgItemLTFLOAT(hDlg, IDC_MISSILESPEED,   s_pServerOptions->m_fMissileSpeed);
-	SetDlgItemLTFLOAT(hDlg, IDC_HEALSCALE,      s_pServerOptions->m_fHealScale);
-	SetDlgItemLTFLOAT(hDlg, IDC_RESPAWNSCALE,   s_pServerOptions->m_fRespawnScale);
+	SetDlgItemFloat(hDlg, IDC_RUNSPEED,       s_pServerOptions->m_fRunSpeed);
+	SetDlgItemFloat(hDlg, IDC_MISSILESPEED,   s_pServerOptions->m_fMissileSpeed);
+	SetDlgItemFloat(hDlg, IDC_HEALSCALE,      s_pServerOptions->m_fHealScale);
+	SetDlgItemFloat(hDlg, IDC_RESPAWNSCALE,   s_pServerOptions->m_fRespawnScale);
 
 	SetDlgItemText(hDlg, IDC_NIGHTCOLOR, s_pServerOptions->m_sWorldNightColor);
 
 	LTFLOAT fTime = s_pServerOptions->m_fWorldTimeSpeed;
 	//fTime = fTime / HOURS_PER_SEC;
-	SetDlgItemLTFLOAT(hDlg, IDC_TIMESPEED, fTime);
+	SetDlgItemFloat(hDlg, IDC_TIMESPEED, fTime);
 
 	return(TRUE);
 }
 
-void SetDlgItemLTFLOAT(HWND hDlg, int iCtrl, LTFLOAT fValue)
+void SetDlgItemFloat(HWND hDlg, int iCtrl, LTFLOAT fValue)
 {
 	char sBuf[64];
 	sprintf(sBuf, "%f", fValue);
 	SetDlgItemText(hDlg, iCtrl, sBuf);
 }
 
-LTFLOAT GetDlgItemLTFLOAT(HWND hDlg, int iCtrl)
+LTFLOAT GetDlgItemFloat(HWND hDlg, int iCtrl)
 {
 	char sBuf[64];
 	GetDlgItemText(hDlg, iCtrl, sBuf, 62);
@@ -3291,14 +3287,14 @@ BOOL NetStart_FillOptions(HWND hDlg)
 	s_pServerOptions->m_bDoubleJump    = IsDlgButtonChecked(hDlg, IDC_DOUBLEJUMP) == BST_CHECKED;
 	s_pServerOptions->m_bRammingDamage = IsDlgButtonChecked(hDlg, IDC_RAMMINGDAMAGE) == BST_CHECKED;
 
-	s_pServerOptions->m_fRunSpeed       = GetDlgItemLTFLOAT(hDlg, IDC_RUNSPEED);
-	s_pServerOptions->m_fMissileSpeed   = GetDlgItemLTFLOAT(hDlg, IDC_MISSILESPEED);
-	s_pServerOptions->m_fRespawnScale   = GetDlgItemLTFLOAT(hDlg, IDC_RESPAWNSCALE);
-	s_pServerOptions->m_fHealScale      = GetDlgItemLTFLOAT(hDlg, IDC_HEALSCALE);
+	s_pServerOptions->m_fRunSpeed       = GetDlgItemFloat(hDlg, IDC_RUNSPEED);
+	s_pServerOptions->m_fMissileSpeed   = GetDlgItemFloat(hDlg, IDC_MISSILESPEED);
+	s_pServerOptions->m_fRespawnScale   = GetDlgItemFloat(hDlg, IDC_RESPAWNSCALE);
+	s_pServerOptions->m_fHealScale      = GetDlgItemFloat(hDlg, IDC_HEALSCALE);
 
 	GetDlgItemText(hDlg, IDC_NIGHTCOLOR, s_pServerOptions->m_sWorldNightColor, 30);
 
-	LTFLOAT fTime = GetDlgItemLTFLOAT(hDlg, IDC_TIMESPEED);
+	LTFLOAT fTime = GetDlgItemFloat(hDlg, IDC_TIMESPEED);
 	if (fTime != 0) 
 		s_pServerOptions->m_fWorldTimeSpeed = fTime;
 
@@ -3918,7 +3914,7 @@ int NetStart_FillSessionListTcpIp(HWND hDlg)
 	int iSel = SendMessage(hList, LB_GETCURSEL, 0, 0);
 	if (iSel != LB_ERR)
 	{
-		int nRet = SendMessage(hList, LB_GETITEMDATA, iSel, 0);
+		LRESULT nRet = SendMessage(hList, LB_GETITEMDATA, iSel, 0);
 		if (nRet != LB_ERR)
 		{
 			NetSession* pNetSession = (NetSession*)nRet;
@@ -3981,7 +3977,7 @@ int NetStart_FillSessionListTcpIp(HWND hDlg)
 
 	for (DWORD i = 0; i < (DWORD)c; i++)
 	{
-		int nRet = SendMessage(hList, LB_GETITEMDATA, i, 0);
+		LRESULT nRet = SendMessage(hList, LB_GETITEMDATA, i, 0);
 		if (nRet != LB_ERR)
 		{
 			NetSession* pNetSession = (NetSession*)nRet;
@@ -4118,3 +4114,213 @@ BOOL NetStart_HostTcpIp(ILTClient* pClientDE)
 
 
 
+
+#else // !_WIN32
+
+/*
+	Linux implementation
+
+	The Win32 wizard dialogs have no SDL equivalent.. so those entry points fail.
+	Every caller treats that as multiplayer unavailable.
+*/
+
+#define MODEM_UPDATERATE	6
+#define DEFAULT_UPDATERATE	MODEM_UPDATERATE
+
+#ifndef BOOL
+typedef int		    BOOL;
+#define FALSE		    0
+#define TRUE		    1
+#endif
+
+static	ILTClient*		s_pClient      = NULL;
+static	NetPlayer		s_NetPlayer;
+static	NetGame			s_NetGame;
+static	NetSession*		s_pSessionList = NULL;
+static	BOOL			s_bLobbyLaunch = FALSE;
+static	char			s_sPlayerName[32] = { "" };
+static	int				s_nPlayerColor    = 0;
+static	int				s_nMech           = 0;
+static	int				s_nNetLatency     = MODEM_UPDATERATE;
+
+static void GetConsoleString(char* sKey, char* sDest, char* sDefault)
+{
+	if (s_pClient)
+	{
+		HCONSOLEVAR hVar = s_pClient->GetConsoleVar(sKey);
+		if (hVar)
+		{
+			const char* sValue = s_pClient->GetVarValueString(hVar);
+			if (sValue)
+			{
+				strcpy(sDest, sValue);
+				return;
+			}
+		}
+	}
+
+	strcpy(sDest, sDefault);
+}
+
+static int GetConsoleInt(char* sKey, int nDefault)
+{
+	if (s_pClient)
+	{
+		HCONSOLEVAR hVar = s_pClient->GetConsoleVar(sKey);
+		if (hVar) return (int)s_pClient->GetVarValueFloat(hVar);
+	}
+
+	return nDefault;
+}
+
+NetPlayer* NetStart_GetPlayerStruct()
+{
+	return(&s_NetPlayer);
+}
+
+NetGame* NetStart_GetGameStruct()
+{
+	return(&s_NetGame);
+}
+
+void NetStart_ClearGameStruct()
+{
+	memset(&s_NetGame, 0, sizeof(NetGame));
+}
+
+void NetStart_FreeSessionList(ILTClient* pClientDE)
+{
+	if (!pClientDE) return;
+	if (!s_pSessionList) return;
+
+	pClientDE->FreeSessionList(s_pSessionList);
+	s_pSessionList = NULL;
+}
+
+LTBOOL NetStart_MinimizeMainWnd(ILTClient* /*pClient*/)
+{
+	// No native window to minimize under SDL's single game window.
+	return LTTRUE;
+}
+
+LTBOOL NetStart_RestoreMainWnd()
+{
+	return LTTRUE;
+}
+
+// No multiplayer wizard on Linux
+LTBOOL NetStart_DoWizard(ILTClient* /*pClientDE*/)
+{
+	return LTFALSE;
+}
+
+LTBOOL NetStart_DoWizard(ILTClient* /*pClient*/, NetStart* /*pNetStart*/)
+{
+	return LTFALSE;
+}
+
+LTBOOL NetStart_DoLobbyLaunchWizard(ILTClient* /*pClientDE*/)
+{
+	return LTFALSE;
+}
+
+LTBOOL NetStart_RunServerOptions(ILTClient* /*pClientDE*/)
+{
+	return LTFALSE;
+}
+
+LTBOOL NetStart_RunServerOptions(ILTClient* /*pClientDE*/, ServerOptions* /*pServerOptions*/)
+{
+	return LTFALSE;
+}
+
+LTBOOL NetStart_DoSettingsDialog()
+{
+	return LTFALSE;
+}
+
+NetSession* NetStart_GetSessionList(ILTClient* /*pClientDE*/, char* /*pInfo*/)
+{
+	return NULL;
+}
+
+LTBOOL NetStart_StartSessionQuery(ILTClient* /*pClientDE*/, char* /*sInfo*/)
+{
+	return LTFALSE;
+}
+
+LTBOOL NetStart_StartSessionQuery(ILTClient* /*pClientDE*/, CIpMgr* /*pIpMgr*/)
+{
+	return LTFALSE;
+}
+
+void NetStart_EndSessionQuery(ILTClient* /*pClientDE*/)
+{
+}
+
+void NetStart_UpdateSessionQuery(ILTClient* /*pClientDE*/)
+{
+}
+
+NetSession* NetStart_GetSessionQueryResults(ILTClient* /*pClientDE*/)
+{
+	return NULL;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	NetStart_DoConsoleConnect
+//
+//	PURPOSE:	Connect to a TCP/IP address given on the console, skipping the wizard
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL NetStart_DoConsoleConnect(ILTClient* pClientDE, char* sAddress)
+{
+	if (!pClientDE) return(LTFALSE);
+	if (!sAddress) return(LTFALSE);
+
+	s_pClient      = pClientDE;
+	s_bLobbyLaunch = FALSE;
+
+	if (strcmp(sAddress, "*") == 0) strcpy(sAddress, "");
+
+	memset(&s_NetPlayer, 0, sizeof(NetPlayer));
+	memset(&s_NetGame, 0, sizeof(NetGame));
+
+	LTRESULT dr = pClientDE->InitNetworking(NULL, 0);
+	if (dr != LT_OK)
+	{
+		return(LTFALSE);
+	}
+
+	GetConsoleString("NetPlayerName", s_sPlayerName, "Sanjuro");
+
+	s_nPlayerColor = GetConsoleInt("NetPlayerColor", NPC_DEFAULT);
+	s_nMech        = GetConsoleInt("NetMech", NMT_ORDOG);
+	s_nNetLatency  = GetConsoleInt("UpdateRate", DEFAULT_UPDATERATE);
+
+	strcpy(s_NetPlayer.m_sName, s_sPlayerName);
+	s_NetPlayer.m_byColor   = s_nPlayerColor;
+	s_NetPlayer.m_byMech    = s_nMech;
+	s_NetPlayer.m_dwLatency = s_nNetLatency;
+
+	StartGameRequest req;
+	memset(&req, 0, sizeof(req));
+
+	req.m_Type = STARTGAME_CLIENTTCP;
+	strcpy(req.m_TCPAddress, sAddress);
+
+	dr = pClientDE->StartGame(&req);
+
+	NetStart_FreeSessionList(pClientDE);
+
+	if (dr != LT_OK)
+	{
+		return(LTFALSE);
+	}
+
+	return(LTTRUE);
+}
+
+#endif // _WIN32

@@ -1034,8 +1034,10 @@ void CMoveMgr::UpdatePlayerAnimation()
 		// we change animations but it doesn't do collision detection (and we don't want
 		// it to) so we may end up clipping into the world so we set it to a small cube
 		// and resize the dims with collision detection.
-		m_pClientDE->Common()->GetObjectFlags(m_hObject, OFT_Flags, curFlags);
-		curFlags = (curFlags | FLAG_GOTHRUWORLD) & ~FLAG_SOLID;
+		// Keep the original flags as FLAG_GOTHRUWORLD makes CollideAgainstWorld skip the player
+		uint32 origFlags;
+		m_pClientDE->Common()->GetObjectFlags(m_hObject, OFT_Flags, origFlags);
+		curFlags = (origFlags | FLAG_GOTHRUWORLD) & ~FLAG_SOLID;
 		m_pClientDE->Common()->SetObjectFlags(m_hObject, OFT_Flags, curFlags, FLAGMASK_ALL);
 
 		m_pClientDE->SetModelAnimation(m_hObject, modelAnim);
@@ -1054,7 +1056,8 @@ void CMoveMgr::UpdatePlayerAnimation()
 			offset.y += .01f; // Fudge factor
 		}
 
-		m_pClientDE->Common()->SetObjectFlags(m_hObject, OFT_Flags, curFlags, FLAGMASK_ALL);
+		// Restored before ResetDims so the resize collides
+		m_pClientDE->Common()->SetObjectFlags(m_hObject, OFT_Flags, origFlags, FLAGMASK_ALL);
 		
 		// This makes you small before setting the dims so you don't clip thru stuff.
 		ResetDims(&offset);
@@ -1101,7 +1104,7 @@ void CMoveMgr::MoveLocalSolidObject()
 
 	info.m_hObject = m_hObject;
 	info.m_dt = m_FrameTime;
-	m_pPhysicsLT->UpdateMovement(&info);
+	((ILTClientPhysics*)m_pPhysicsLT)->UpdateMovement(&info);
 
 	if(info.m_Offset.MagSqr() > 0.01f)
 	{
@@ -1213,6 +1216,15 @@ void CMoveMgr::Update()
 	SetClientObjNonsolid();
 
 	UpdatePlayerAnimation();
+
+	// Don't integrate motion while m_WantedDims is still the (1,1,1) placeholder.
+	// Gravity would pull the small box down and the full box would land past the floor
+	if (m_WantedDims.x <= 1.0f && m_WantedDims.y <= 1.0f && m_WantedDims.z <= 1.0f)
+	{
+		LTVector vZero(0.0f, 0.0f, 0.0f);
+		m_pPhysicsLT->SetVelocity(m_hObject, &vZero);
+		return;
+	}
 
 	UpdateControlFlags();
 
@@ -1354,7 +1366,9 @@ void CMoveMgr::OnPhysicsUpdate(ILTMessage_Read* hRead)
 LTRESULT CMoveMgr::OnObjectMove(HOBJECT hObj, LTBOOL bTeleport, LTVector *pPos)
 {
 	HOBJECT hClientObj;
-	uint32 type;
+
+	// Seeded because GetObjectType's result is ignored below
+	uint32 type = OT_NORMAL;
 
 	if(!m_hObject || !m_pClientDE)
 		return LT_OK;

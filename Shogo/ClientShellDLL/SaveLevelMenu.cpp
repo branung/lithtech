@@ -230,6 +230,14 @@ LTBOOL CSaveLevelMenu::LoadSurfaces()
 				ptr++;
 				time_t nSeconds = (time_t) atol (ptr);
 				pTimeDate = localtime (&nSeconds);
+
+				// An empty world name is a broken index entry.
+				// Drawing it gives a null surface that takes the parent menu down
+				if (!*pWorldName)
+				{
+					pWorldName = LTNULL;
+					pTimeDate  = LTNULL;
+				}
 			}
 		}
 
@@ -268,6 +276,9 @@ LTBOOL CSaveLevelMenu::LoadSurfaces()
 	{
 		if (!m_GenericItem[i].hMenuItem || !m_GenericItem[i].hMenuItemSelected || !m_DateTime[i].hMenuItem || !m_DateTime[i].hMenuItemSelected )
 		{
+			m_pClientDE->CPrint ("[D:MENU] SaveLevel slot %d: name=%d/%d date=%d/%d (0 = surface not created)",
+				i, m_GenericItem[i].hMenuItem ? 1 : 0, m_GenericItem[i].hMenuItemSelected ? 1 : 0,
+				m_DateTime[i].hMenuItem ? 1 : 0, m_DateTime[i].hMenuItemSelected ? 1 : 0);
 			UnloadSurfaces();
 			return LTFALSE;
 		}

@@ -19,6 +19,10 @@
 #include "ExplosionFX.h"
 #include "DebrisFX.h"
 #include "SparksFX.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern CRiotClientShell* g_pRiotClientShell;
 
@@ -480,7 +484,7 @@ void CWeaponFX::CreateMedSniperRifleFX()
 		VEC_SET(vVelMax, 10.0f, 350.0f, 10.0f)
 		LTFLOAT fRange = 200.0f;
 
-		CreateMeLTVectorBloodFX(vVelMin, vVelMax, fRange);
+		CreateMedVectorBloodFX(vVelMin, vVelMax, fRange);
 		return;
 	}
 
@@ -670,7 +674,8 @@ void CWeaponFX::CreateMedEnergyGrenadeFX()
 
 	LTVector vUp;
 	VEC_SET(vUp, 1.0f, 0.0f, 1.0f);
-	m_pClientDE->Math()->AlignRotation(ex.rRot, vUp, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(ex.rRot, vUp, vWorldUp);
 
 	VEC_SET(ex.vVel, 0.0f, 0.0f, 0.0f);
 	VEC_SET(ex.vInitialScale, fRadius/5.0f, fRadius/5.0f, fRadius/5.0f);
@@ -718,7 +723,7 @@ void CWeaponFX::CreateMedTantoFX()
 		VEC_SET(vVelMax, 10.0f, 300.0f, 10.0f);
 		LTFLOAT fRange = 100.0f;
 
-		CreateMeLTVectorBloodFX(vVelMin, vVelMax, fRange);
+		CreateMedVectorBloodFX(vVelMin, vVelMax, fRange);
 		return;
 	}
 
@@ -794,7 +799,7 @@ void CWeaponFX::CreateMedColt45FX()
 		VEC_SET(vVelMax, 10.0f, 300.0f, 10.0f)
 		LTFLOAT fRange = 100.0f;
 
-		CreateMeLTVectorBloodFX(vVelMin, vVelMax, fRange);
+		CreateMedVectorBloodFX(vVelMin, vVelMax, fRange);
 		return;
 	}
 
@@ -854,7 +859,7 @@ void CWeaponFX::CreateMedShotgunFX()
 		VEC_SET(vVelMax, 10.0f, 350.0f, 10.0f)
 		LTFLOAT fRange = 75.0f;
 
-		CreateMeLTVectorBloodFX(vVelMin, vVelMax, fRange);
+		CreateMedVectorBloodFX(vVelMin, vVelMax, fRange);
 		return;
 	}
 
@@ -915,7 +920,7 @@ void CWeaponFX::CreateMedAssaultRifleFX()
 		VEC_SET(vVelMax, 10.0f, 400.0f, 10.0f)
 		LTFLOAT fRange = 150.0f;
 
-		CreateMeLTVectorBloodFX(vVelMin, vVelMax, fRange);
+		CreateMedVectorBloodFX(vVelMin, vVelMax, fRange);
 		return;
 	}
 
@@ -975,7 +980,7 @@ void CWeaponFX::CreateMedMac10FX()
 		VEC_SET(vVelMax, 10.0f, 350.0f, 10.0f)
 		LTFLOAT fRange = 125.0f;
 
-		CreateMeLTVectorBloodFX(vVelMin, vVelMax, fRange);
+		CreateMedVectorBloodFX(vVelMin, vVelMax, fRange);
 		return;
 	}
 
@@ -1011,13 +1016,13 @@ void CWeaponFX::CreateMedMac10FX()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CWeaponFX::CreateMeLTVectorBloodFX
+//	ROUTINE:	CWeaponFX::CreateMedVectorBloodFX
 //
 //	PURPOSE:	Create the blood trail, splats, etc.
 //
 // ----------------------------------------------------------------------- //
 
-void CWeaponFX::CreateMeLTVectorBloodFX(LTVector & vVelMin, LTVector & vVelMax, LTFLOAT fRange)
+void CWeaponFX::CreateMedVectorBloodFX(LTVector & vVelMin, LTVector & vVelMax, LTFLOAT fRange)
 {
 	if (!m_pClientDE || !g_pRiotClientShell) return;
 
@@ -1103,7 +1108,8 @@ void CWeaponFX::CreateMeLTVectorBloodFX(LTVector & vVelMin, LTVector & vVelMax, 
 
 		SPRITECREATESTRUCT sc;
 
-		m_pClientDE->Math()->AlignRotation(sc.rRot, iInfo.m_Plane.m_Normal, LTVector(0, 1, 0));
+		LTVector vWorldUp(0, 1, 0);
+		pMath->AlignRotation(sc.rRot, iInfo.m_Plane.m_Normal, vWorldUp);
 
 		VEC_MULSCALAR(vTemp, m_vDir, -2.0f);
 		VEC_ADD(sc.vPos, iInfo.m_Point, vTemp);  // Off the wall a bit

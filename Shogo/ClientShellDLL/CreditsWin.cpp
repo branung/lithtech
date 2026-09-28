@@ -13,15 +13,20 @@
 
 // Includes...
 
+#ifdef _WIN32
 #include "Windows.h"
+#endif
 #include "CreditsWin.h"
 #include "clientheaders.h"
+#include <stdio.h>
 
 
 // Externs...
 
 extern void* g_hLTDLLInstance;
 
+
+#ifdef _WIN32
 
 // Statics...
 
@@ -54,11 +59,52 @@ char* CreditsWin_GetTextBuffer(char* sName)
 
 		s_sBuf = (char*)LockResource(s_hGlobal);
 		if (!s_sBuf) return(NULL);
-		
+
 		return(s_sBuf);
 	}
 }
 
+#else // !_WIN32
 
+/*
+	Reads the credits and intro text off disk
 
+	On Linux the .rc CREDITS entries aren't resources (DynRes only carries string tables).
+	So credits.txt, intro.txt, DemoInfo.txt, DemoIntro.txt and DemoMulti.txt are read from the working directory.
+*/
+static const char* ResourceNameToFilename(const char* sName)
+{
+	if (stricmp(sName, "CREDITS") == 0)     return "credits.txt";
+	if (stricmp(sName, "INTRO") == 0)       return "intro.txt";
+	if (stricmp(sName, "DEMOINFO") == 0)    return "DemoInfo.txt";
+	if (stricmp(sName, "DEMOINTRO") == 0)   return "DemoIntro.txt";
+	if (stricmp(sName, "DEMOMULTI") == 0)   return "DemoMulti.txt";
+	return nullptr;
+}
 
+char* CreditsWin_GetTextBuffer(char* sName)
+{
+	const char* strFilename = ResourceNameToFilename(sName);
+	if (!strFilename) return NULL;
+
+	FILE* pFile = fopen(strFilename, "rb");
+	if (!pFile) return NULL;
+
+	fseek(pFile, 0, SEEK_END);
+	long nSize = ftell(pFile);
+	fseek(pFile, 0, SEEK_SET);
+	if (nSize <= 0)
+	{
+		fclose(pFile);
+		return NULL;
+	}
+
+	char* sBuf = new char[nSize + 1];
+	size_t nRead = fread(sBuf, 1, nSize, pFile);
+	sBuf[nRead] = '\0';
+
+	fclose(pFile);
+	return sBuf;
+}
+
+#endif // _WIN32

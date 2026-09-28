@@ -4,10 +4,12 @@
 #include "BitmapFont.h"
 #include "TextHelper.h"
 #include "ClientRes.h"
+#ifdef _WIN32
 #include "mbstring.h"
+#endif
 
 
-HSURFACE CTextHelper::CreateSurfaceFromString (ILTClient* pClientDE, CBitmapFont* pFont, char* str, int nReplacementFont)
+HSURFACE CTextHelper::CreateSurfaceFromString (ILTClient* pClientDE, CBitmapFont* pFont, const char* str, int nReplacementFont)
 {
 	if (!pClientDE || !pFont || !str) return LTNULL;
 
@@ -25,19 +27,19 @@ HSURFACE CTextHelper::CreateSurfaceFromString (ILTClient* pClientDE, CBitmapFont
 		LTFLOAT nFontHeight = 0.0f;
 		if (strcmp (pFont->GetClassName(), "CFont08") == 0)
 		{
-			nFontHeight = TextHelperGetLTFLOATValFromStringID(pClientDE, IDS_HEIGHTCFONT08, 8.0f);
+			nFontHeight = TextHelperGetFloatValFromStringID(pClientDE, IDS_HEIGHTCFONT08, 8.0f);
 		}
 		else if (strcmp (pFont->GetClassName(), "CFont12") == 0)
 		{
-			nFontHeight = TextHelperGetLTFLOATValFromStringID(pClientDE, IDS_HEIGHTCFONT12, 12.0f);
+			nFontHeight = TextHelperGetFloatValFromStringID(pClientDE, IDS_HEIGHTCFONT12, 12.0f);
 		}
 		else if (strcmp (pFont->GetClassName(), "CFont18") == 0)
 		{
-			nFontHeight = TextHelperGetLTFLOATValFromStringID(pClientDE, IDS_HEIGHTCFONT18, 18.0f);
+			nFontHeight = TextHelperGetFloatValFromStringID(pClientDE, IDS_HEIGHTCFONT18, 18.0f);
 		}
 		else if (strcmp (pFont->GetClassName(), "CFont28") == 0)
 		{
-			nFontHeight = TextHelperGetLTFLOATValFromStringID(pClientDE, IDS_HEIGHTCFONT28, 28.0f);
+			nFontHeight = TextHelperGetFloatValFromStringID(pClientDE, IDS_HEIGHTCFONT28, 28.0f);
 		}
 		
 		// determine the preferred font width
@@ -111,9 +113,19 @@ HSURFACE CTextHelper::CreateSurfaceFromString (ILTClient* pClientDE, CBitmapFont
 	if (!pClientDE) return LTNULL;
 
 	HSTRING hStr = pClientDE->FormatString (strID);
-	if (!hStr) return LTNULL;
+	if (!hStr)
+	{
+		pClientDE->CPrint ("[D:MENU] FormatString(%d) returned nothing", strID);
+		return LTNULL;
+	}
 
-	HSURFACE hSurf = CreateSurfaceFromString (pClientDE, pFont, pClientDE->GetStringData (hStr), nReplacementFont);
+	const char* pszText = pClientDE->GetStringData (hStr);
+	HSURFACE hSurf = CreateSurfaceFromString (pClientDE, pFont, pszText, nReplacementFont);
+	if (!hSurf)
+	{
+		pClientDE->CPrint ("[D:MENU] string %d = \"%s\" made no surface",
+			strID, pszText ? pszText : "<null>");
+	}
 
 	pClientDE->FreeString (hStr);
 
@@ -136,19 +148,19 @@ HSURFACE CTextHelper::CreateWrappedStringSurface (ILTClient* pClientDE, int nWid
 		LTFLOAT nFontHeight = 0.0f;
 		if (strcmp (pFont->GetClassName(), "CFont08") == 0)
 		{
-			nFontHeight = TextHelperGetLTFLOATValFromStringID(pClientDE, IDS_HEIGHTCFONT08, 8.0f);
+			nFontHeight = TextHelperGetFloatValFromStringID(pClientDE, IDS_HEIGHTCFONT08, 8.0f);
 		}
 		else if (strcmp (pFont->GetClassName(), "CFont12") == 0)
 		{
-			nFontHeight = TextHelperGetLTFLOATValFromStringID(pClientDE, IDS_HEIGHTCFONT12, 12.0f);
+			nFontHeight = TextHelperGetFloatValFromStringID(pClientDE, IDS_HEIGHTCFONT12, 12.0f);
 		}
 		else if (strcmp (pFont->GetClassName(), "CFont18") == 0)
 		{
-			nFontHeight = TextHelperGetLTFLOATValFromStringID(pClientDE, IDS_HEIGHTCFONT18, 18.0f);
+			nFontHeight = TextHelperGetFloatValFromStringID(pClientDE, IDS_HEIGHTCFONT18, 18.0f);
 		}
 		else if (strcmp (pFont->GetClassName(), "CFont28") == 0)
 		{
-			nFontHeight = TextHelperGetLTFLOATValFromStringID(pClientDE, IDS_HEIGHTCFONT28, 28.0f);
+			nFontHeight = TextHelperGetFloatValFromStringID(pClientDE, IDS_HEIGHTCFONT28, 28.0f);
 		}
 		
 		// determine the preferred font width
@@ -180,7 +192,9 @@ HSURFACE CTextHelper::CreateWrappedStringSurface (ILTClient* pClientDE, int nWid
 		return CreateWrappedStringSurface (pClientDE, nWidth, &fontdef, str, hFontColor, LTNULL, nAlignment, LTTRUE);
 	}
 	
-	CDynArray<uint32> surfaces (1, 2);		// cannot create a dynarray of HSURFACES - compiler error C2926
+	// uintptr_t elements since CDynArray<HSURFACE> hits C2926.
+	// Pointer sized so the handles don't truncate on x64
+	CDynArray<uintptr_t> surfaces (1, 2);
 	uint32 nSurfaces = 0;
 
 	char* ptr = str;
@@ -218,14 +232,14 @@ HSURFACE CTextHelper::CreateWrappedStringSurface (ILTClient* pClientDE, int nWid
 		{
 			// couldn't shorten the remaining string - just create a surface
 			// from it and add it to the array
-			surfaces[nSurfaces] = (uint32) CreateSurfaceFromString (pClientDE, pFont, ptrStart);
+			surfaces[nSurfaces] = (uintptr_t) CreateSurfaceFromString (pClientDE, pFont, ptrStart);
 		}
 		else
 		{
 			// we shortened it - create a surface and add it to the array
 			char temp = *ptrEnd;
 			*ptrEnd = '\0';			
-			surfaces[nSurfaces] = (uint32) CreateSurfaceFromString (pClientDE, pFont, ptrStart);
+			surfaces[nSurfaces] = (uintptr_t) CreateSurfaceFromString (pClientDE, pFont, ptrStart);
 			*ptrEnd = temp;
 		}
 
@@ -317,14 +331,17 @@ HSURFACE CTextHelper::CreateWrappedStringSurface (ILTClient* pClientDE, int nWid
 	HSTRING hStr = pClientDE->FormatString (strID);
 	if (!hStr) return LTNULL;
 
-	HSURFACE hSurf = CreateWrappedStringSurface (pClientDE, nWidth, pFont, pClientDE->GetStringData (hStr), nAlignment, bCrop);
+	char szText[512];
+	SAFE_STRCPY(szText, pClientDE->GetStringData (hStr));
+
+	HSURFACE hSurf = CreateWrappedStringSurface (pClientDE, nWidth, pFont, szText, nAlignment, bCrop);
 
 	pClientDE->FreeString (hStr);
 
 	return hSurf;
 }
 
-HSURFACE CTextHelper::CreateSurfaceFromString (ILTClient* pClientDE, FONT* pFontDef, char* str, HLTCOLOR foreColor, HLTCOLOR backColor, LTBOOL bCropped, int nExtraX, int nExtraY)
+HSURFACE CTextHelper::CreateSurfaceFromString (ILTClient* pClientDE, FONT* pFontDef, const char* str, HLTCOLOR foreColor, HLTCOLOR backColor, LTBOOL bCropped, int nExtraX, int nExtraY)
 {
 	if (!pClientDE) return LTNULL;
 
@@ -351,7 +368,7 @@ HSURFACE CTextHelper::CreateSurfaceFromString (ILTClient* pClientDE, FONT* pFont
 	return hSurface;
 }
 
-HSURFACE CTextHelper::CreateSurfaceFromString (ILTClient* pClientDE, HLTFONT hFont, char* str, HLTCOLOR foreColor, HLTCOLOR backColor, LTBOOL bCropped, int nExtraX, int nExtraY)
+HSURFACE CTextHelper::CreateSurfaceFromString (ILTClient* pClientDE, HLTFONT hFont, const char* str, HLTCOLOR foreColor, HLTCOLOR backColor, LTBOOL bCropped, int nExtraX, int nExtraY)
 {
 	if (!pClientDE) return LTNULL;
 
@@ -591,7 +608,7 @@ HSURFACE CTextHelper::CreateWrappedSurface (ILTClient* pClientDE, int nWidth, HL
 	// get period or other characters that are not supposed to be at start of a line
 	char sPeriodChars[256] = ".";
 	{
-		HSTRING hStr = pClientDE->FormatString(IDS_EXCLULTLineSTARTCHARS);
+		HSTRING hStr = pClientDE->FormatString(IDS_EXCLUDELINESTARTCHARS);
 		if (hStr)
 		{
 			const char* pComp = pClientDE->GetStringData(hStr);
@@ -607,7 +624,9 @@ HSURFACE CTextHelper::CreateWrappedSurface (ILTClient* pClientDE, int nWidth, HL
 	char* pWorkingString = new char [strlen (pString) + 1];
 	if (!pWorkingString) return LTNULL;
 
-	CDynArray<uint32> surfaces (1, 2);		// cannot create a dynarray of HSURFACES - compiler error C2926
+	// uintptr_t elements since CDynArray<HSURFACE> hits C2926.
+	// Pointer sized so the handles don't truncate on x64
+	CDynArray<uintptr_t> surfaces (1, 2);
 	uint32 nSurfaces = 0;
 
 	char* ptr = (char*) pString;
@@ -747,7 +766,7 @@ HSURFACE CTextHelper::CreateWrappedSurface (ILTClient* pClientDE, int nWidth, HL
 
 		// add this surface to the array
 
-		surfaces[nSurfaces] = (uint32) hSurface;
+		surfaces[nSurfaces] = (uintptr_t) hSurface;
 		nSurfaces++;
 
 		// increment ptr to next character in the string
@@ -783,7 +802,7 @@ HSURFACE CTextHelper::CreateWrappedSurface (ILTClient* pClientDE, int nWidth, HL
 			if (hCropped)
 			{
 				pClientDE->DeleteSurface ((HSURFACE)surfaces[i]);
-				surfaces[i] = (uint32) hCropped;
+				surfaces[i] = (uintptr_t) hCropped;
 			}
 		}
 	}
@@ -1008,7 +1027,7 @@ LTBOOL TextHelperCheckStringID(ILTClient* pClientDE, int nStringID, const char* 
 	return bRetVal;
 }
 
-LTFLOAT TextHelperGetLTFLOATValFromStringID(ILTClient* pClientDE, int nStringID, LTFLOAT nDefaultVal)
+LTFLOAT TextHelperGetFloatValFromStringID(ILTClient* pClientDE, int nStringID, LTFLOAT nDefaultVal)
 {
 	LTFLOAT fRetVal = nDefaultVal;
 	{
@@ -1029,7 +1048,7 @@ LTFLOAT TextHelperGetLTFLOATValFromStringID(ILTClient* pClientDE, int nStringID,
 #pragma warning( disable : 4244 )
 int TextHelperGetIntValFromStringID(ILTClient* pClientDE, int nStringID, int nDefaultVal)
 {  
-	return (int)(TextHelperGetLTFLOATValFromStringID(pClientDE, nStringID, nDefaultVal));
+	return (int)(TextHelperGetFloatValFromStringID(pClientDE, nStringID, nDefaultVal));
 }
 #pragma warning( default : 4244 )
 

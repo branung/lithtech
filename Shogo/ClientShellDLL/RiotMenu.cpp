@@ -1,7 +1,7 @@
 #include "iltclient.h"
 #include "RiotMenu.h"
 #include "RiotClientShell.h"
-#include "vkdefs.h"
+#include "VKDefs.h"
 #include "WinUtil.h"
 #include <stdio.h>
 
@@ -132,6 +132,29 @@ void CRiotMenu::UnloadAllSurfaces()
 	m_MainMenu.UnloadAllSurfaces();
 }
 
+void CRiotMenu::OnMouseMove (int x, int y)
+{
+	if (m_pCurrentMenu) m_pCurrentMenu->OnMouseMove (x, y);
+}
+
+LTBOOL CRiotMenu::OnLButtonDown (int x, int y)
+{
+	if (!m_pCurrentMenu) return LTFALSE;
+	return m_pCurrentMenu->OnLButtonDown (x, y);
+}
+
+// Logs behind Diag that a left/right press reached a row.
+void CRiotMenu::DiagArrow (const char* pszWhich)
+{
+	if (!m_pClientDE || !m_pCurrentMenu) return;
+
+	HCONSOLEVAR hDiag = m_pClientDE->GetConsoleVar ("Diag");
+	if (!hDiag || m_pClientDE->GetVarValueFloat (hDiag) <= 0.0f) return;
+
+	m_pClientDE->CPrint ("[D:MENU] %s pressed, selection %d",
+		pszWhich, m_pCurrentMenu->GetSelection());
+}
+
 void CRiotMenu::HandleInput (int vkey)
 {
 	if (m_pCurrentMenu) m_pCurrentMenu->HandleInput (vkey);
@@ -152,13 +175,13 @@ void CRiotMenu::HandleInput (int vkey)
 
 		case VK_LEFT:
 		{
-			if (m_pCurrentMenu) m_pCurrentMenu->Left();
+			if (m_pCurrentMenu) { DiagArrow ("LEFT"); m_pCurrentMenu->Left(); }
 		}
 		break;
 
 		case VK_RIGHT:
 		{
-			if (m_pCurrentMenu) m_pCurrentMenu->Right();
+			if (m_pCurrentMenu) { DiagArrow ("RIGHT"); m_pCurrentMenu->Right(); }
 		}
 		break;
 

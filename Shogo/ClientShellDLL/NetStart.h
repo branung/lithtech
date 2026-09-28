@@ -18,7 +18,7 @@
 // Includes...
 
 #include "clientheaders.h"
-#include "..\Shared\NetDefs.h"
+#include "../Shared/NetDefs.h"
 
 
 // Structures...

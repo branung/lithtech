@@ -16,6 +16,10 @@
 #include "ltlink.h"
 #include "ClientUtilities.h"
 #include "ltobjectcreate.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern PhysicsState g_normalPhysicsState;
 extern PhysicsState g_waterPhysicsState;
@@ -104,7 +108,7 @@ LTBOOL CShellCasingFX::CreateObject(ILTClient *pClientDE)
 	m_pClientDE->Common()->GetRotationVectors(m_rRot, vU, vR, vF);
 
 	VEC_SET(vU, 0.0f, 1.0f, 0.0f);
-	m_pClientDE->Math()->AlignRotation(m_rRot, vF, vU);
+	pMath->AlignRotation(m_rRot, vF, vU);
 	m_pClientDE->Common()->GetRotationVectors(m_rRot, vU, vR, vF);
 
 	VEC_MULSCALAR(vU, vU, GetRandom(30.0f, 60.0f));

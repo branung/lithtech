@@ -15,7 +15,10 @@ public:
 	virtual void		ScreenDimsChanged (int nScreenWidth, int nScreenHeight);
 	virtual void		Reset();
 	
-	virtual LTBOOL		LoadAllSurfaces()		{ if (!m_SinglePlayerMenu.LoadAllSurfaces() || !m_OptionsMenu.LoadAllSurfaces()) return LTFALSE; return LTTRUE; }
+	virtual LTBOOL		LoadAllSurfaces()		{ LTBOOL bAll = LTTRUE;
+											  LoadChildSurfaces (m_SinglePlayerMenu, "SinglePlayer", bAll);
+											  LoadChildSurfaces (m_OptionsMenu,      "Options",      bAll);
+											  return bAll; }
 	virtual void		UnloadAllSurfaces()		{ m_SinglePlayerMenu.UnloadAllSurfaces(); m_OptionsMenu.UnloadAllSurfaces(); }
 	
 	virtual void		OnEnterWorld()		{ 

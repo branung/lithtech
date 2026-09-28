@@ -18,6 +18,10 @@
 #include "SpriteFX.h"
 #include "ExplosionFX.h"
 #include "DebrisFX.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern CRiotClientShell* g_pRiotClientShell;
 
@@ -483,7 +487,8 @@ void CWeaponFX::CreateLowEnergyGrenadeFX()
 
 	LTVector vUp;
 	VEC_SET(vUp, 1.0f, 0.0f, 1.0f);
-	m_pClientDE->Math()->AlignRotation(ex.rRot, vUp, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(ex.rRot, vUp, vWorldUp);
 
 	ex.fInitialAlpha	= 0.9f;
 	ex.fFinalAlpha		= 0.2f;

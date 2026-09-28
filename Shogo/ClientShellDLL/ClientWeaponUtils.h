@@ -53,7 +53,7 @@ SurfaceType GetSurfaceType(HLOCALOBJ hObj);
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL ObjListFilterFn(HLOCALOBJ hObj, void *pUserData);
+bool ObjListFilterFn(HLOCALOBJ hObj, void *pUserData);
 
 // ----------------------------------------------------------------------- //
 //
@@ -64,7 +64,7 @@ LTBOOL ObjListFilterFn(HLOCALOBJ hObj, void *pUserData);
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL SpecificObjectFilterFn(HLOCALOBJ hObj, void *pUserData);
+bool SpecificObjectFilterFn(HLOCALOBJ hObj, void *pUserData);
 
 // ----------------------------------------------------------------------- //
 //
@@ -76,7 +76,7 @@ LTBOOL SpecificObjectFilterFn(HLOCALOBJ hObj, void *pUserData);
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL AttackerLiquidFilterFn(HLOCALOBJ hObj, void *pUserData);
+bool AttackerLiquidFilterFn(HLOCALOBJ hObj, void *pUserData);
 
 
 // ----------------------------------------------------------------------- //

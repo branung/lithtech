@@ -1,10 +1,17 @@
+#ifdef _WIN32
 #include "Windows.h"
-#include "stdio.h"
-#include "sys\stat.h"
-#include "winutil.h"
-#include <time.h>
 #include <direct.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+#include "stdio.h"
+#include "WinUtil.h"
+#include <time.h>
 #include "clientheaders.h"
+
+#ifdef _WIN32
 
 BOOL CWinUtil::GetMoviesPath (char* strPath)
 {
@@ -143,9 +150,232 @@ char* CWinUtil::GetFocusWindow()
 	return strText;
 }
 
+#else // !_WIN32
+
+// No CD autodetection on Linux, and an empty path means no movies
+BOOL CWinUtil::GetMoviesPath (char* strPath)
+{
+	strPath[0] = '\0';
+	return FALSE;
+}
+
+// CreateDir can pass an "A\B\" partial path, as such separators are normalized before stat()
+static void NormalizeSlashesInPlace(char* strPath)
+{
+	for (char* p = strPath; *p; ++p)
+		if (*p == '\\') *p = '/';
+}
+
+BOOL CWinUtil::DirExist (char* strPath)
+{
+	if (!strPath || !*strPath) return FALSE;
+
+	char strNormalized[MAX_PATH];
+	SAFE_STRCPY(strNormalized, strPath);
+	NormalizeSlashesInPlace(strNormalized);
+
+	size_t nLen = strlen(strNormalized);
+	if (nLen > 0 && strNormalized[nLen - 1] == '/')
+		strNormalized[nLen - 1] = '\0';
+
+	struct stat statbuf;
+	return (stat(strNormalized, &statbuf) != -1) ? TRUE : FALSE;
+}
+
+BOOL CWinUtil::CreateDir (char* strPath)
+{
+	if (DirExist (strPath)) return TRUE;
+	if (strPath[strlen(strPath) - 1] == ':') return FALSE; // special case (drive letter, never applies on Linux)
+
+	char strPartialPath[MAX_PATH];
+	strPartialPath[0] = '\0';
+
+	char* token = strtok (strPath, "\\");
+	while (token)
+	{
+		strcat (strPartialPath, token);
+		if (!DirExist (strPartialPath) && strPartialPath[strlen(strPartialPath) - 1] != ':')
+		{
+			char strNative[MAX_PATH];
+			SAFE_STRCPY(strNative, strPartialPath);
+			NormalizeSlashesInPlace(strNative);
+			if (mkdir(strNative, 0755) != 0) return FALSE;
+		}
+		strcat (strPartialPath, "\\");
+		token = strtok (NULL, "\\");
+	}
+
+	return TRUE;
+}
+
+BOOL CWinUtil::FileExist (char* strPath)
+{
+	char strNormalized[MAX_PATH];
+	SAFE_STRCPY(strNormalized, strPath);
+	NormalizeSlashesInPlace(strNormalized);
+
+	return (access(strNormalized, F_OK) == 0) ? TRUE : FALSE;
+}
+
+static void GetIniPath(const char* lpFileName, char* out, size_t outSize)
+{
+	LTStrCpy(out, lpFileName, outSize);
+	NormalizeSlashesInPlace(out);
+}
+
+DWORD CWinUtil::WinGetPrivateProfileString (char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, DWORD nSize, char* lpFileName)
+{
+	lpReturnedString[0] = '\0';
+
+	char strPath[MAX_PATH];
+	GetIniPath(lpFileName, strPath, sizeof(strPath));
+
+	FILE* pFile = fopen(strPath, "r");
+	if (pFile)
+	{
+		char strLine[512];
+		bool bInSection = false;
+		while (fgets(strLine, sizeof(strLine), pFile))
+		{
+			// Strip trailing newline.
+			size_t nLen = strlen(strLine);
+			while (nLen > 0 && (strLine[nLen-1] == '\n' || strLine[nLen-1] == '\r'))
+				strLine[--nLen] = '\0';
+
+			if (strLine[0] == '[')
+			{
+				char* pClose = strchr(strLine, ']');
+				if (pClose) *pClose = '\0';
+				bInSection = (stricmp(strLine + 1, lpAppName) == 0);
+				continue;
+			}
+
+			if (!bInSection) continue;
+
+			char* pEquals = strchr(strLine, '=');
+			if (!pEquals) continue;
+			*pEquals = '\0';
+
+			if (stricmp(strLine, lpKeyName) == 0)
+			{
+				LTStrCpy(lpReturnedString, pEquals + 1, nSize);
+				fclose(pFile);
+				return (DWORD)strlen(lpReturnedString);
+			}
+		}
+		fclose(pFile);
+	}
+
+	if (lpDefault)
+		LTStrCpy(lpReturnedString, lpDefault, nSize);
+	return (DWORD)strlen(lpReturnedString);
+}
+
+DWORD CWinUtil::WinWritePrivateProfileString (char* lpAppName, char* lpKeyName, char* lpString, char* lpFileName)
+{
+	char strPath[MAX_PATH];
+	GetIniPath(lpFileName, strPath, sizeof(strPath));
+
+	// Read the file line by line, replacing or appending the key in its section
+	char strLines[256][512];
+	int nNumLines = 0;
+	bool bReplaced = false;
+	int nSectionLine = -1;
+
+	FILE* pFile = fopen(strPath, "r");
+	if (pFile)
+	{
+		bool bInSection = false;
+		while (nNumLines < 256 && fgets(strLines[nNumLines], sizeof(strLines[0]), pFile))
+		{
+			char* pLine = strLines[nNumLines];
+			size_t nLen = strlen(pLine);
+			while (nLen > 0 && (pLine[nLen-1] == '\n' || pLine[nLen-1] == '\r'))
+				pLine[--nLen] = '\0';
+
+			if (pLine[0] == '[')
+			{
+				char strSection[256];
+				LTStrCpy(strSection, pLine + 1, sizeof(strSection));
+				char* pClose = strchr(strSection, ']');
+				if (pClose) *pClose = '\0';
+				bInSection = (stricmp(strSection, lpAppName) == 0);
+				if (bInSection) nSectionLine = nNumLines;
+			}
+			else if (bInSection)
+			{
+				char strKey[256];
+				LTStrCpy(strKey, pLine, sizeof(strKey));
+				char* pEquals = strchr(strKey, '=');
+				if (pEquals)
+				{
+					*pEquals = '\0';
+					if (stricmp(strKey, lpKeyName) == 0)
+					{
+						sprintf(pLine, "%s=%s", lpKeyName, lpString ? lpString : "");
+						bReplaced = true;
+					}
+				}
+			}
+
+			nNumLines++;
+		}
+		fclose(pFile);
+	}
+
+	if (!bReplaced && nNumLines < 256)
+	{
+		if (nSectionLine < 0)
+		{
+			sprintf(strLines[nNumLines++], "[%s]", lpAppName);
+			nSectionLine = nNumLines - 1;
+		}
+		if (nNumLines < 256)
+			sprintf(strLines[nNumLines++], "%s=%s", lpKeyName, lpString ? lpString : "");
+	}
+
+	pFile = fopen(strPath, "w");
+	if (!pFile) return 0;
+
+	for (int i = 0; i < nNumLines; i++)
+		fprintf(pFile, "%s\n", strLines[i]);
+
+	fclose(pFile);
+	return 1;
+}
+
+void CWinUtil::DebugOut (char* str)
+{
+	fprintf(stderr, "%s", str);
+}
+
+void CWinUtil::DebugBreak()
+{
+	
+}
+
+float CWinUtil::GetTime()
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (float)ts.tv_sec + (float)ts.tv_nsec / 1e9f;
+}
+
+// Window focus means nothing under SDL's single game window
+char* CWinUtil::GetFocusWindow()
+{
+	return NULL;
+}
+
+#endif // _WIN32
+
 void CWinUtil::WriteToDebugFile (char *strText)
 {
+#ifdef _WIN32
 	FILE* pFile = fopen ("c:\\shodebug.txt", "a+t");
+#else
+	FILE* pFile = fopen ("shodebug.txt", "a+t");
+#endif
 	if (!pFile) return;
 
 	time_t seconds;

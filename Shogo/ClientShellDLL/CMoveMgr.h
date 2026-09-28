@@ -54,6 +54,14 @@
 
 		HOBJECT		GetObject() {return m_hObject;}
 
+		// Accessors for ShogoDiag.cpp
+		LTBOOL		IsOnGround() const		{ return m_bOnGround; }
+		LTVector	GetWantedDims() const	{ return m_WantedDims; }
+		LTFLOAT		GetDimsScale(int i) const
+		{
+			return (i >= 0 && i < NUM_MODELSIZES) ? m_DimsScale[i] : 0.0f;
+		}
+
 		void		SetSpectatorMode(LTBOOL bSet);
 		void		OnTractorBeamPos(ILTMessage_Read* hRead);
 		void		OnServerForcePos(ILTMessage_Read* hRead);

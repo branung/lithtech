@@ -54,7 +54,7 @@
 			return !!m_pClientDE;
 		}
 
-		LTFLOAT		GetLTFLOAT(LTFLOAT defVal=0.0f)
+		LTFLOAT		GetFloat(LTFLOAT defVal=0.0f)
 		{
 			if(m_pClientDE && m_hVar)
 				return m_pClientDE->GetVarValueFloat(m_hVar);
@@ -74,7 +74,7 @@
 			return pDefault;
 		}
 
-		void		SetLTFLOAT(LTFLOAT val)
+		void		SetFloat(LTFLOAT val)
 		{
 			char str[256];
 

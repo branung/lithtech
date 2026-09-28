@@ -15,6 +15,10 @@
 #include "ModelFuncs.h"
 #include "GibFX.h"
 #include "SFXMsgIds.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern CRiotClientShell* g_pRiotClientShell;
 
@@ -152,7 +156,8 @@ void CDeathFX::CreateHumanDeathFX()
 
 	GIBCREATESTRUCT gib;
 
-	m_pClientDE->Math()->AlignRotation(gib.rRot, m_vDir, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(gib.rRot, m_vDir, vWorldUp);
 
 	LTFLOAT fDamage = VEC_MAG(m_vDir);
 
@@ -193,7 +198,8 @@ void CDeathFX::CreateMechaDeathFX()
 
 	GIBCREATESTRUCT gib;
 
-	m_pClientDE->Math()->AlignRotation(gib.rRot, m_vDir, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(gib.rRot, m_vDir, vWorldUp);
 
 	LTFLOAT fDamage = VEC_MAG(m_vDir);
 
@@ -233,7 +239,8 @@ void CDeathFX::CreateVehicleDeathFX()
 
 	GIBCREATESTRUCT gib;
 
-	m_pClientDE->Math()->AlignRotation(gib.rRot, m_vDir, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(gib.rRot, m_vDir, vWorldUp);
 
 	LTFLOAT fDamage = VEC_MAG(m_vDir);
 

@@ -1,7 +1,7 @@
 #ifndef __FONT28_H
 #define __FONT28_H
 
-#include "bitmapfont.h"
+#include "BitmapFont.h"
 
 class CFont28 : public CBitmapFont
 {

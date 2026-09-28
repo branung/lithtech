@@ -8,14 +8,16 @@
 //
 //----------------------------------------------------------
 
-#include "windows.h"
+#include "VKDefs.h"
 #include "iltclient.h"
+#include "SDL.h"
 
 char VKToASCII (int nKey)
 {
-	LTBOOL bShiftDown = !!(GetKeyState (VK_SHIFT) & 0x8000);
-	LTBOOL bCapsLockOn = !!(GetKeyState (VK_CAPITAL) & 0x01);
-	LTBOOL bNumLockOn = !!(GetKeyState (VK_NUMLOCK) & 0x01);
+	SDL_Keymod mod = SDL_GetModState();
+	LTBOOL bShiftDown = !!(mod & KMOD_SHIFT);
+	LTBOOL bCapsLockOn = !!(mod & KMOD_CAPS);
+	LTBOOL bNumLockOn = !!(mod & KMOD_NUM);
 	LTBOOL bUpperCase = (bCapsLockOn && !bShiftDown) || (!bCapsLockOn && bShiftDown);
 
 	if (nKey >= 'A' && nKey <= 'Z' && !bUpperCase)

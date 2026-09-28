@@ -16,7 +16,9 @@ extern CommandID g_CommandArray[];
 #define ID_LEFTBUTTON		5
 #define ID_RIGHTBUTTON		6
 #define ID_MIDDLEBUTTON		7
-#define ID_BACK				8
+#define ID_USEWHEEL			8	// Ports Blood 2's wheel weapon change behavior
+#define ID_BACK				9
+#define NUM_MOUSE_ITEMS		10
 
 CMouseMenu::CMouseMenu() : CBaseMenu()
 {
@@ -117,6 +119,7 @@ LTBOOL CMouseMenu::Init (ILTClient* pClientDE, CRiotMenu* pRiotMenu, CBaseMenu* 
 	{
 		m_nSecondColumn = 155;
 	}
+	FitSecondColumn();
 
 	return bSuccess;
 }
@@ -137,6 +140,20 @@ void CMouseMenu::ScreenDimsChanged (int nScreenWidth, int nScreenHeight)
 	{
 		m_nSecondColumn = 155;
 	}
+	FitSecondColumn();
+}
+
+void CMouseMenu::FitSecondColumn()
+{
+	const int nGap = 16;
+	int nWidest = 0;
+	for (int i = ID_MOUSELOOK; i <= ID_USEWHEEL; i++)
+	{
+		if ((int)m_GenericItem[i].szMenuItem.cx > nWidest)
+			nWidest = (int)m_GenericItem[i].szMenuItem.cx;
+	}
+	if (nWidest > 0 && m_nSecondColumn < nWidest + nGap)
+		m_nSecondColumn = nWidest + nGap;
 }
 
 void CMouseMenu::Reset()
@@ -210,6 +227,21 @@ void CMouseMenu::Left()
 		m_MouseSettings[ID_LOOKSPRING].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, nStringID);
 		m_MouseSettings[ID_LOOKSPRING].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, nStringID);
 	}
+	else if (m_nSelection == ID_USEWHEEL)
+	{
+		CBitmapFont* pFontNormal = m_pRiotMenu->GetFont12n();
+		CBitmapFont* pFontSelected = m_pRiotMenu->GetFont12s();
+
+		pSettings->Control[RS_CTRL_USEWHEEL].nValue = !pSettings->Control[RS_CTRL_USEWHEEL].nValue;
+		pSettings->ImplementUseWheel();
+
+		if (m_MouseSettings[ID_USEWHEEL].hMenuItem) m_pClientDE->DeleteSurface (m_MouseSettings[ID_USEWHEEL].hMenuItem);
+		if (m_MouseSettings[ID_USEWHEEL].hMenuItemSelected) m_pClientDE->DeleteSurface (m_MouseSettings[ID_USEWHEEL].hMenuItemSelected);
+
+		int nStringID = pSettings->UseWheel() ? IDS_ON : IDS_OFF;
+		m_MouseSettings[ID_USEWHEEL].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, nStringID);
+		m_MouseSettings[ID_USEWHEEL].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, nStringID);
+	}
 	else if (m_nSelection == ID_INVERTYAXIS)
 	{
 		CBitmapFont* pFontNormal = m_pRiotMenu->GetFont12n();
@@ -268,7 +300,7 @@ void CMouseMenu::Right()
 	CRiotSettings* pSettings = m_pRiotMenu->GetSettings();
 	if (!pSettings) return;
 
-	if (m_nSelection == ID_MOUSELOOK || m_nSelection == ID_LOOKSPRING || m_nSelection == ID_INVERTYAXIS)
+	if (m_nSelection == ID_MOUSELOOK || m_nSelection == ID_LOOKSPRING || m_nSelection == ID_INVERTYAXIS || m_nSelection == ID_USEWHEEL)
 	{
 		Left();
 		return;
@@ -353,7 +385,7 @@ void CMouseMenu::Draw (HSURFACE hScreen, int nScreenWidth, int nScreenHeight, in
 	CBaseMenu::Draw (hScreen, nScreenWidth, nScreenHeight, nTextOffset);
 
 	int y = m_nMenuY + m_szMenuTitle.cy + m_nMenuTitleSpacing;
-	for (int i = m_nTopItem; i < 9; i++)
+	for (int i = m_nTopItem; i < NUM_MOUSE_ITEMS; i++)
 	{
 		if (m_MouseSettings[i].hMenuItem)
 		{
@@ -397,6 +429,7 @@ LTBOOL CMouseMenu::LoadSurfaces()
 	m_GenericItem[ID_LEFTBUTTON].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_MOUSE_LEFTBUTTON);
 	m_GenericItem[ID_RIGHTBUTTON].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_MOUSE_RIGHTBUTTON);
 	m_GenericItem[ID_MIDDLEBUTTON].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_MOUSE_MIDDLEBUTTON);
+	m_GenericItem[ID_USEWHEEL].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_MOUSE_USEWHEEL);
 	m_GenericItem[ID_BACK].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_BACK);
 
 	m_GenericItem[ID_MOUSELOOK].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_MOUSE_MOUSELOOK);
@@ -407,6 +440,7 @@ LTBOOL CMouseMenu::LoadSurfaces()
 	m_GenericItem[ID_LEFTBUTTON].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_MOUSE_LEFTBUTTON);
 	m_GenericItem[ID_RIGHTBUTTON].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_MOUSE_RIGHTBUTTON);
 	m_GenericItem[ID_MIDDLEBUTTON].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_MOUSE_MIDDLEBUTTON);
+	m_GenericItem[ID_USEWHEEL].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_MOUSE_USEWHEEL);
 	m_GenericItem[ID_BACK].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_BACK);
 
 	// take care of the settings surfaces
@@ -427,6 +461,10 @@ LTBOOL CMouseMenu::LoadSurfaces()
 	m_MouseSettings[ID_INVERTYAXIS].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, nStringID);
 	m_MouseSettings[ID_INVERTYAXIS].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, nStringID);
 
+	nStringID = pSettings->UseWheel() ? IDS_ON : IDS_OFF;
+	m_MouseSettings[ID_USEWHEEL].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, nStringID);
+	m_MouseSettings[ID_USEWHEEL].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, nStringID);
+
 	// create button settings surfaces
 
 	m_MouseSettings[ID_LEFTBUTTON].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, g_CommandArray[m_nLeftButtonSelection].nStringID);
@@ -444,7 +482,7 @@ LTBOOL CMouseMenu::LoadSurfaces()
 	
 	// check to see that all the surfaces were created successfully
 
-	for (int i = 0; i < 9; i++)
+	for (int i = 0; i < NUM_MOUSE_ITEMS; i++)
 	{
 		if (!m_GenericItem[i].hMenuItem || !m_GenericItem[i].hMenuItemSelected)
 		{
@@ -463,7 +501,7 @@ LTBOOL CMouseMenu::LoadSurfaces()
 	
 	// get the main surface sizes
 
-	for (int i = 0; i < 9; i++)
+	for (int i = 0; i < NUM_MOUSE_ITEMS; i++)
 	{
 		m_pClientDE->GetSurfaceDims (m_GenericItem[i].hMenuItem, &m_GenericItem[i].szMenuItem.cx, &m_GenericItem[i].szMenuItem.cy);
 	}
@@ -475,7 +513,7 @@ void CMouseMenu::UnloadSurfaces()
 {
 	if (!m_pClientDE) return;
 
-	for (int i = 0; i < 9; i++)
+	for (int i = 0; i < NUM_MOUSE_ITEMS; i++)
 	{
 		if (m_GenericItem[i].hMenuItem) m_pClientDE->DeleteSurface (m_GenericItem[i].hMenuItem);
 		if (m_GenericItem[i].hMenuItemSelected) m_pClientDE->DeleteSurface (m_GenericItem[i].hMenuItemSelected);
@@ -499,11 +537,13 @@ void CMouseMenu::PostCalculateMenuDims()
 {
 	if (!m_pClientDE) return;
 
+	FitSecondColumn();
+
 	// get the maximum width of the menu
 
 	int nMenuMaxWidth = 0;
 	uint32 nSettingWidth, nSettingHeight;
-	for (int i = ID_MOUSELOOK; i <= ID_MIDDLEBUTTON; i++)
+	for (int i = ID_MOUSELOOK; i <= ID_USEWHEEL; i++)
 	{
 		if (i == ID_SENSITIVITY)
 		{

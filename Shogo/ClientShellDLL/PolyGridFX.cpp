@@ -9,12 +9,13 @@
 // ----------------------------------------------------------------------- //
 
 #include "PolyGridFX.h"
-#include "Plasma.h"
+#include "plasma.h"
 #include "clientheaders.h"
 #include "ClientServerShared.h"
 #include "RiotClientShell.h"
 #include "RiotSettings.h"
 #include "ltobjectcreate.h"
+#include "iltphysics.h"
 
 
 static LTFLOAT s_PolyGridYaw		= 0.0f;
@@ -143,7 +144,7 @@ LTBOOL CPolyGridFX::CreateObject(ILTClient *pClientDE)
 
 
 	m_hObject = m_pClientDE->CreateObject(&createStruct);
-	m_pClientDE->SetupPolyGrid(m_hObject, dwSize, dwSize, LTFALSE);
+	m_pClientDE->SetupPolyGrid(m_hObject, dwSize, dwSize, 0, LTNULL);
 	
 	// Set alpha value...
 
@@ -152,11 +153,6 @@ LTBOOL CPolyGridFX::CreateObject(ILTClient *pClientDE)
 	m_pClientDE->SetObjectColor(m_hObject, r, g, b, m_fAlpha);
 
 
-	LTVector vMin, vMax, vScale;
-	VEC_SUB(vMin, vPos, m_vDims);
-	VEC_ADD(vMax, vPos, m_vDims);
-
-	m_pClientDE->FitPolyGrid(m_hObject, &vMin, &vMax, &vPos, &vScale);
 
 	if (m_hstrSurfaceSprite)
 	{
@@ -164,12 +160,12 @@ LTBOOL CPolyGridFX::CreateObject(ILTClient *pClientDE)
 		if (pSpriteName && pSpriteName[0])
 		{
 			m_pClientDE->SetPolyGridTexture(m_hObject, pSpriteName);
-			m_pClientDE->SetPolyGridTextureInfo(m_hObject, m_fXPan, m_fYPan, m_fXScaleMin, m_fYScaleMin);
+			m_pClientDE->SetPolyGridTextureInfo(m_hObject, m_fXPan, m_fYPan, m_fXScaleMin, m_fYScaleMin, 0.0f, 1.0f);
 		}
 	}
 
 	m_pClientDE->SetObjectPos(m_hObject, &vPos);
-	m_pClientDE->SetObjectScale(m_hObject, &vScale);
+	m_pClientDE->Physics()->SetObjectDims(m_hObject, &m_vDims, 0);
 
 	SetPolyGridPalette(colorRamps, sizeof(colorRamps)/sizeof(colorRamps[0]));
 	PrecalculatePlasma();
@@ -287,8 +283,8 @@ void CPolyGridFX::UpdateSurface()
 {
 	if (!m_pClientDE || !m_hstrSurfaceSprite) return;
 
-	LTFLOAT fXPan, fYPan, fXScale, fYScale;
-	m_pClientDE->GetPolyGridTextureInfo(m_hObject, &fXPan, &fYPan, &fXScale, &fYScale);
+	LTFLOAT fXPan, fYPan, fXScale, fYScale, fBaseReflection, fVolumeIOR;
+	m_pClientDE->GetPolyGridTextureInfo(m_hObject, &fXPan, &fYPan, &fXScale, &fYScale, &fBaseReflection, &fVolumeIOR);
 
 	LTFLOAT fDeltaTime = m_pClientDE->GetFrameTime();
 
@@ -340,7 +336,7 @@ void CPolyGridFX::UpdateSurface()
 		}
 	}
 
-	m_pClientDE->SetPolyGridTextureInfo(m_hObject, m_fXPan, m_fYPan, fXScale, fYScale);
+	m_pClientDE->SetPolyGridTextureInfo(m_hObject, m_fXPan, m_fYPan, fXScale, fYScale, fBaseReflection, fVolumeIOR);
 }
 
 

@@ -57,7 +57,10 @@ public:
 
 protected:
 
-	void	DrawObjective (HSURFACE hScreen, OBJECTIVE* pObjective, LTRect* rcSrc, int x, int y);
+	void		DrawObjective (HSURFACE hScreen, OBJECTIVE* pObjective, LTRect* rcSrc, int x, int y);
+
+	HSURFACE	BuildObjectiveSurface (uint32 nID, LTFLOAT fScale);
+	void		UpdateTextScale();
 
 protected:
 	
@@ -69,6 +72,7 @@ protected:
 	HSURFACE	m_hSeparator;
 	uint32		m_cxSeparator;
 	uint32		m_cySeparator;
+	LTFLOAT		m_fTextScale; // the HUD scale every objective surface was built at
 	LTBOOL		m_bScrollable;
 	
 	LTBOOL		m_bOpenAnimating;

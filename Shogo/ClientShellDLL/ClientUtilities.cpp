@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include "ClientUtilities.h"
+#include "TextHelper.h"
 #include "RiotClientShell.h"
 #include "ClientRes.h"
 #include "iltclient.h"
@@ -345,3 +346,314 @@ HSURFACE CropSurface ( HSURFACE hSurf, HLTCOLOR hBorderColor )
 	return hCropped;
 }
 
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	GetHUDScale()
+//
+//	PURPOSE:	Read HUDScale, clamped to the Display screen's range (1.0 when absent)
+//
+// ----------------------------------------------------------------------- //
+
+LTFLOAT GetHUDScale()
+{
+	if (!g_pLTClient) return 1.0f;
+
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar ("HUDScale");
+	if (!hVar) return 1.0f;
+
+	LTFLOAT fScale = g_pLTClient->GetVarValueFloat (hVar);
+
+	if (fScale < HUDSCALE_MIN) fScale = HUDSCALE_MIN;
+	if (fScale > HUDSCALE_MAX) fScale = HUDSCALE_MAX;
+
+	return fScale;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	DrawHUDScaled()
+//
+//	PURPOSE:	Blit one ingame surface at the HUD scale
+//
+// ----------------------------------------------------------------------- //
+
+void DrawHUDScaled (HSURFACE hDest, HSURFACE hSrc, LTRect* pSrcRect, int x, int y,
+					LTFLOAT fScale, HLTCOLOR hTransColor)
+{
+	if (!g_pLTClient || !hDest || !hSrc) return;
+
+	if (fScale == 1.0f)
+	{
+		g_pLTClient->DrawSurfaceToSurfaceTransparent (hDest, hSrc, pSrcRect, x, y, hTransColor);
+		return;
+	}
+
+	uint32 cx = 0, cy = 0;
+
+	if (pSrcRect)
+	{
+		cx = (uint32)(pSrcRect->right - pSrcRect->left);
+		cy = (uint32)(pSrcRect->bottom - pSrcRect->top);
+	}
+	else
+	{
+		g_pLTClient->GetSurfaceDims (hSrc, &cx, &cy);
+	}
+
+	if (!cx || !cy) return;
+
+	LTRect rcDest;
+	rcDest.left   = x;
+	rcDest.top    = y;
+	rcDest.right  = x + (int)((LTFLOAT)cx * fScale);
+	rcDest.bottom = y + (int)((LTFLOAT)cy * fScale);
+
+	g_pLTClient->ScaleSurfaceToSurfaceTransparent (hDest, hSrc, &rcDest, pSrcRect, hTransColor);
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	HUDScaledDestRect()
+//
+//	PURPOSE:	The scaled destination rectangle. Pinned at (x, y)
+//
+// ----------------------------------------------------------------------- //
+
+// False when there's nothing to draw.
+static bool HUDScaledDestRect (HSURFACE hSrc, LTRect* pSrcRect, int x, int y,
+							   LTFLOAT fScale, LTRect* pOut)
+{
+	uint32 cx = 0, cy = 0;
+
+	if (pSrcRect)
+	{
+		cx = (uint32)(pSrcRect->right - pSrcRect->left);
+		cy = (uint32)(pSrcRect->bottom - pSrcRect->top);
+	}
+	else
+	{
+		g_pLTClient->GetSurfaceDims (hSrc, &cx, &cy);
+	}
+
+	if (!cx || !cy) return false;
+
+	pOut->left   = x;
+	pOut->top    = y;
+	pOut->right  = x + (int)((LTFLOAT)cx * fScale);
+	pOut->bottom = y + (int)((LTFLOAT)cy * fScale);
+	return true;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	DrawHUDScaledSolidColor()
+//
+//	PURPOSE:	DrawHUDScaled for surfaces drawn as a solid color silhouette
+//
+// ----------------------------------------------------------------------- //
+
+void DrawHUDScaledSolidColor (HSURFACE hDest, HSURFACE hSrc, LTRect* pSrcRect, int x, int y,
+							  LTFLOAT fScale, HLTCOLOR hTransColor, HLTCOLOR hFillColor)
+{
+	if (!g_pLTClient || !hDest || !hSrc) return;
+
+	if (fScale == 1.0f)
+	{
+		g_pLTClient->DrawSurfaceSolidColor (hDest, hSrc, pSrcRect, x, y, hTransColor, hFillColor);
+		return;
+	}
+
+	LTRect rcDest;
+	if (!HUDScaledDestRect (hSrc, pSrcRect, x, y, fScale, &rcDest)) return;
+
+	g_pLTClient->ScaleSurfaceToSurfaceSolidColor (hDest, hSrc, &rcDest, pSrcRect, hTransColor, hFillColor);
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	DrawHUDScaledOpaque()
+//
+//	PURPOSE:	DrawHUDScaled for art with no transparent key
+//
+// ----------------------------------------------------------------------- //
+
+void DrawHUDScaledOpaque (HSURFACE hDest, HSURFACE hSrc, LTRect* pSrcRect, int x, int y,
+						  LTFLOAT fScale)
+{
+	if (!g_pLTClient || !hDest || !hSrc) return;
+
+	if (fScale == 1.0f)
+	{
+		g_pLTClient->DrawSurfaceToSurface (hDest, hSrc, pSrcRect, x, y);
+		return;
+	}
+
+	LTRect rcDest;
+	if (!HUDScaledDestRect (hSrc, pSrcRect, x, y, fScale, &rcDest)) return;
+
+	g_pLTClient->ScaleSurfaceToSurface (hDest, hSrc, &rcDest, pSrcRect);
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	HUDScaled()
+//
+//	PURPOSE:	Scale a fixed pixel layout offset (truncating like every scaled coordinate here)
+//
+// ----------------------------------------------------------------------- //
+
+int HUDScaled (int n, LTFLOAT fScale)
+{
+	return (int)((LTFLOAT)n * fScale);
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	PlaceScaledPanel()
+//
+//	PURPOSE:	Place a popup panel by LT1's leftover space formula at the HUD scale
+//
+// ----------------------------------------------------------------------- //
+
+// The formula runs on the design size, since a scaled size can divide by zero.
+
+void PlaceScaledPanel (uint32 nScreenW, uint32 nScreenH,
+					   uint32 nPanelW, uint32 nPanelH,
+					   int nDesignX, int nDesignY,
+					   LTFLOAT fScale, int* pX, int* pY)
+{
+	if (!pX || !pY) return;
+
+	LTFLOAT fPanelW = (LTFLOAT)nPanelW;
+	LTFLOAT fPanelH = (LTFLOAT)nPanelH;
+
+	// The shipped placement.
+	// A panel as big as the design screen would divide by zero so those cases are named
+	int x = nDesignX;
+	int y = nDesignY;
+
+	if (fPanelW != 640.0f)
+		x = (int)((LTFLOAT)nDesignX * (((LTFLOAT)nScreenW - fPanelW) / (640.0f - fPanelW)));
+	if (fPanelH != 480.0f)
+		y = (int)((LTFLOAT)nDesignY * (((LTFLOAT)nScreenH - fPanelH) / (480.0f - fPanelH)));
+
+	// Then keep the scaled panel on screen (neither test fires at scale 1)
+	int nScaledW = HUDScaled ((int)nPanelW, fScale);
+	int nScaledH = HUDScaled ((int)nPanelH, fScale);
+
+	if (x + nScaledW > (int)nScreenW) x = (int)nScreenW - nScaledW;
+	if (y + nScaledH > (int)nScreenH) y = (int)nScreenH - nScaledH;
+
+	// A panel larger than the screen is anchored top left and overflows
+	if (x < 0) x = 0;
+	if (y < 0) y = 0;
+
+	*pX = x;
+	*pY = y;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ScaleFontDef()
+//
+//	PURPOSE:	Grow a FONT cell by the HUD scale, floored at one pixel
+//
+// ----------------------------------------------------------------------- //
+
+void ScaleFontDef (FONT* pFontDef, LTFLOAT fScale)
+{
+	if (!pFontDef) return;
+
+	pFontDef->nWidth  = (int)((LTFLOAT)pFontDef->nWidth  * fScale);
+	pFontDef->nHeight = (int)((LTFLOAT)pFontDef->nHeight * fScale);
+
+	if (pFontDef->nWidth  < 1) pFontDef->nWidth  = 1;
+	if (pFontDef->nHeight < 1) pFontDef->nHeight = 1;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	GetServerConVarFloat()
+//
+//	PURPOSE:	Read a float server console variable
+//
+// ----------------------------------------------------------------------- //
+
+LTFLOAT GetServerConVarFloat( const char *pName, LTFLOAT fDefault )
+{
+	if (!g_pLTClient || !pName) return fDefault;
+
+	float fValue = fDefault;
+	if (g_pLTClient->GetSConValueFloat(pName, fValue) != LT_OK) return fDefault;
+
+	return fValue;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	GetServerConVarString()
+//
+//	PURPOSE:	Read a string server console variable
+//
+// ----------------------------------------------------------------------- //
+
+// Returns LTNULL if it doesn't exist.
+// The pointer is a shared buffer, so copy it before the next call.
+char* GetServerConVarString( const char *pName )
+{
+	static char s_szValue[512];
+
+	if (!g_pLTClient || !pName) return LTNULL;
+
+	s_szValue[0] = '\0';
+	if (g_pLTClient->GetSConValueString(pName, s_szValue, sizeof(s_szValue)) != LT_OK) return LTNULL;
+
+	return s_szValue;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	PlaySoundInfoLocal()
+//
+//	PURPOSE:	Play an already filled out PlaySoundInfo
+//
+// ----------------------------------------------------------------------- //
+
+HLTSOUND PlaySoundInfoLocal( PlaySoundInfo *pPlaySoundInfo )
+{
+	if (!g_pLTClient || !pPlaySoundInfo) return LTNULL;
+
+	HLTSOUND hSnd = LTNULL;
+	g_pLTClient->SoundMgr()->PlaySound( pPlaySoundInfo, hSnd );
+
+	return hSnd;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	IsSoundFinished()
+//
+//	PURPOSE:	Has a sound finished playing?
+//
+// ----------------------------------------------------------------------- //
+
+// A sound that can't be queried counts as finished.
+bool IsSoundFinished( HLTSOUND hSound )
+{
+	if (!g_pLTClient || !hSound) return true;
+
+	bool bDone = true;
+	if (g_pLTClient->SoundMgr()->IsSoundDone( hSound, bDone ) != LT_OK) return true;
+
+	return bDone;
+}

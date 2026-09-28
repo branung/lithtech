@@ -200,10 +200,28 @@ void CPlayerStats::Draw (LTBOOL bStatsSizedOff, LTBOOL bDrawHud)
 
 	if (m_fAirPercent < 1.0f && m_nPlayerMode == PM_MODE_FOOT)
 	{
-		int x = nWidth - m_cxAirMeter - 10;
-		int y = nHeight - 150;
-		
-		m_pClientDE->DrawSurfaceToSurface (hScreen, m_hAirMeter, LTNULL, x, y);
+		LTFLOAT fHUDScale = GetHUDScale();
+
+		uint32 cxAir = 0, cyAir = 0;
+		m_pClientDE->GetSurfaceDims (m_hAirMeter, &cxAir, &cyAir);
+
+		int x = nWidth - (int)((LTFLOAT)m_cxAirMeter * fHUDScale) - (int)(10.0f * fHUDScale);
+		int y = nHeight - (int)(150.0f * fHUDScale);
+
+		if (fHUDScale == 1.0f)
+		{
+			m_pClientDE->DrawSurfaceToSurface (hScreen, m_hAirMeter, LTNULL, x, y);
+		}
+		else
+		{
+			LTRect rcDest;
+			rcDest.left   = x;
+			rcDest.top    = y;
+			rcDest.right  = x + (int)((LTFLOAT)cxAir * fHUDScale);
+			rcDest.bottom = y + (int)((LTFLOAT)cyAir * fHUDScale);
+
+			m_pClientDE->ScaleSurfaceToSurface (hScreen, m_hAirMeter, &rcDest, LTNULL);
+		}
 	}
 
 	// draw custom HUD for each mode
@@ -616,7 +634,6 @@ void CPlayerStats::DrawOnFoot (HSURFACE hScreen, int nLeft, int nTop, int nRight
 	int nScreenWidth		= nRight - nLeft;
 	int nScreenHeight		= nBottom - nTop;
 
-	LTBOOL bAdjustSizes		= nScreenWidth < 512;
 	LTFLOAT fAdjustment		= 1.0f;
 
 	if (nScreenWidth == 400)
@@ -628,24 +645,18 @@ void CPlayerStats::DrawOnFoot (HSURFACE hScreen, int nLeft, int nTop, int nRight
 		fAdjustment = 0.73f;
 	}
 
+	fAdjustment *= GetHUDScale();
+
 	LTBOOL bZoomed = m_pClientShell->IsZoomed();
 
-	int cxCrosshairMiddle	= bZoomed ? 256: 13;
+	int cxCrosshairMiddle	= (int)((LTFLOAT)(bZoomed ? 256: 13) * fAdjustment);
 	int cyCrosshairMiddle	= cxCrosshairMiddle;
 	
 	int xHUDLeft			= 0;
-	int yHUDLeft			= nBottom - (int)(bAdjustSizes ? 44.0f * fAdjustment : 44);
-	int xHUDRight			= nRight - (int)(bAdjustSizes ? 116.0f * fAdjustment : 116);
-	int yHUDRight			= nBottom - (int)(bAdjustSizes ? 44.0f * fAdjustment : 44);
+	int yHUDLeft			= nBottom - (int)(44.0f * fAdjustment);
+	int xHUDRight			= nRight - (int)(116.0f * fAdjustment);
+	int yHUDRight			= nBottom - (int)(44.0f * fAdjustment);
 
-	uint32 cxHUDLeft		= 0;
-	uint32 cyHUDLeft		= 0;
-	uint32 cxHUDRight		= 0;
-	uint32 cyHUDRight		= 0;
-
-	m_pClientDE->GetSurfaceDims (m_hHUDLeft, &cxHUDLeft, &cyHUDLeft);
-	m_pClientDE->GetSurfaceDims (m_hHUDRight, &cxHUDRight, &cyHUDRight);
-	
 	// set up the transparent color
 
 	HLTCOLOR hTransColor = LTNULL;
@@ -658,46 +669,20 @@ void CPlayerStats::DrawOnFoot (HSURFACE hScreen, int nLeft, int nTop, int nRight
 		int y = nTop + ((nScreenHeight - cyCrosshairMiddle) >> 1);
 
 		HSURFACE hCross = bZoomed ? m_hZoomCrosshair : m_hCrosshair2; 
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, hCross, NULL, x, y, hTransColor);
+		DrawHUDSurface (hScreen, hCross, x, y, fAdjustment, hTransColor);
 	}
 	
 	// draw the HUD
 
-	if (bAdjustSizes)
-	{
-		LTRect rcDest;
-		hTransColor = m_pClientDE->SetupColor1 (0.0f, 1.0f, 0.0f, LTFALSE);
-		if (!bStatsSizedOff && m_bDrawHud)
-		{
-			rcDest.left = xHUDLeft;
-			rcDest.top = yHUDLeft;
-			rcDest.right = xHUDLeft + (int)((LTFLOAT)cxHUDLeft * fAdjustment);
-			rcDest.bottom = yHUDLeft + (int)((LTFLOAT)cyHUDLeft * fAdjustment);
-			
-			m_pClientDE->ScaleSurfaceToSurfaceTransparent (hScreen, m_hHUDLeft, &rcDest, NULL, hTransColor);
+	hTransColor = m_pClientDE->SetupColor1 (0.0f, 1.0f, 0.0f, LTFALSE);
 
-			if (m_bDrawAmmo)
-			{
-				rcDest.left = xHUDRight;
-				rcDest.top = yHUDRight;
-				rcDest.right = xHUDRight + (int)((LTFLOAT)cxHUDRight * fAdjustment);
-				rcDest.bottom = yHUDRight + (int)((LTFLOAT)cyHUDRight * fAdjustment);
-				
-				m_pClientDE->ScaleSurfaceToSurfaceTransparent (hScreen, m_hHUDRight, &rcDest, NULL, hTransColor);
-			}
-		}
-	}
-	else
+	if (!bStatsSizedOff && m_bDrawHud)
 	{
-		hTransColor = m_pClientDE->SetupColor1 (0.0f, 1.0f, 0.0f, LTFALSE);
-		if (!bStatsSizedOff && m_bDrawHud)
-		{
-			m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hHUDLeft, NULL, xHUDLeft, yHUDLeft, hTransColor);
+		DrawHUDSurface (hScreen, m_hHUDLeft, xHUDLeft, yHUDLeft, fAdjustment, hTransColor);
 
-			if (m_bDrawAmmo)
-			{
-				m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hHUDRight, NULL, xHUDRight, yHUDRight, hTransColor);
-			}
+		if (m_bDrawAmmo)
+		{
+			DrawHUDSurface (hScreen, m_hHUDRight, xHUDRight, yHUDRight, fAdjustment, hTransColor);
 		}
 	}
 }
@@ -709,7 +694,6 @@ void CPlayerStats::DrawEnforcer (HSURFACE hScreen, int nLeft, int nTop, int nRig
 	int nScreenWidth		= nRight - nLeft;
 	int nScreenHeight		= nBottom - nTop;
 
-	LTBOOL bAdjustSizes		= nScreenWidth < 512;
 	LTFLOAT fAdjustment		= 1.0f;
 
 	if (nScreenWidth == 400)
@@ -721,34 +705,25 @@ void CPlayerStats::DrawEnforcer (HSURFACE hScreen, int nLeft, int nTop, int nRig
 		fAdjustment = 0.8f;
 	}
 
-	int cxCrosshairLeft		= 31;
-	int cyCrosshairLeft		= 69;
+	fAdjustment *= GetHUDScale();
+
+	int cxCrosshairLeft		= (int)(31.0f * fAdjustment);
+	int cyCrosshairLeft		= (int)(69.0f * fAdjustment);
 
 	LTBOOL bZoomed = m_pClientShell->IsZoomed();
 
-	int cxCrosshairMiddle	= bZoomed ? 256: 9;
+	int cxCrosshairMiddle	= (int)((LTFLOAT)(bZoomed ? 256: 9) * fAdjustment);
 	int cyCrosshairMiddle	= cxCrosshairMiddle;
 
-	int cxCrosshairRight	= 31;
-	int cyCrosshairRight	= 69;
-	int xHUDLeft			= (int) (bAdjustSizes ? 10.0f * fAdjustment : 10);
-	int yHUDLeft			= nBottom - (int) (bAdjustSizes ? 49.0f * fAdjustment : 49);
-	int xHUDMiddle			= (int) (bAdjustSizes ? 84.0f * fAdjustment : 84);
-	int yHUDMiddle			= nBottom - (int) (bAdjustSizes ? 49.0f * fAdjustment : 49);
-	int xHUDRight			= nRight - (int) (bAdjustSizes ? 110.0f * fAdjustment : 110);
-	int yHUDRight			= nBottom - (int) (bAdjustSizes ? 49.0f * fAdjustment : 49);
+	int cxCrosshairRight	= (int)(31.0f * fAdjustment);
+	int cyCrosshairRight	= (int)(69.0f * fAdjustment);
+	int xHUDLeft			= (int) (10.0f * fAdjustment);
+	int yHUDLeft			= nBottom - (int) (49.0f * fAdjustment);
+	int xHUDMiddle			= (int) (84.0f * fAdjustment);
+	int yHUDMiddle			= nBottom - (int) (49.0f * fAdjustment);
+	int xHUDRight			= nRight - (int) (110.0f * fAdjustment);
+	int yHUDRight			= nBottom - (int) (49.0f * fAdjustment);
 
-	uint32 cxHUDLeft		= 0;
-	uint32 cyHUDLeft		= 0;
-	uint32 cxHUDMiddle		= 0;
-	uint32 cyHUDMiddle		= 0;
-	uint32 cxHUDRight		= 0;
-	uint32 cyHUDRight		= 0;
-
-	m_pClientDE->GetSurfaceDims (m_hHUDLeft, &cxHUDLeft, &cyHUDLeft);
-	m_pClientDE->GetSurfaceDims (m_hHUDMiddle, &cxHUDMiddle, &cyHUDMiddle);
-	m_pClientDE->GetSurfaceDims (m_hHUDRight, &cxHUDRight, &cyHUDRight);
-	
 	// set up the transparent color
 
 	HLTCOLOR hTransColor = LTNULL;
@@ -762,25 +737,26 @@ void CPlayerStats::DrawEnforcer (HSURFACE hScreen, int nLeft, int nTop, int nRig
 			int x = nLeft + ((nScreenWidth - cxCrosshairMiddle) >> 1);
 			int y = nTop + ((nScreenHeight - cyCrosshairMiddle) >> 1);
 
-			m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hZoomCrosshair, NULL, x, y, hTransColor);
+			DrawHUDSurface (hScreen, m_hZoomCrosshair, x, y, fAdjustment, hTransColor);
 		}
 		else
 		{
 			if (m_nCrosshairLevel == 2)
 			{
-				int x = (nScreenWidth >> 1) - 68;
+				// -68 and +36 place the side brackets so they scale with them
+				int x = (nScreenWidth >> 1) - (int)(68.0f * fAdjustment);
 				int y = nTop + ((nScreenHeight - cyCrosshairLeft) >> 1);
-				m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hCrosshair1, NULL, x, y, hTransColor);
+				DrawHUDSurface (hScreen, m_hCrosshair1, x, y, fAdjustment, hTransColor);
 			
-				x = (nScreenWidth >> 1) + 36;
+				x = (nScreenWidth >> 1) + (int)(36.0f * fAdjustment);
 				y = nTop + ((nScreenHeight - cyCrosshairRight) >> 1);
-				m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hCrosshair3, NULL, x, y, hTransColor);
+				DrawHUDSurface (hScreen, m_hCrosshair3, x, y, fAdjustment, hTransColor);
 			}
 	
 			int x = nLeft + ((nScreenWidth - cxCrosshairMiddle) >> 1);
 			int y = nTop + ((nScreenHeight - cyCrosshairMiddle) >> 1);
 
-			m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hCrosshair2, NULL, x, y, hTransColor);
+			DrawHUDSurface (hScreen, m_hCrosshair2, x, y, fAdjustment, hTransColor);
 		}
 	}
 
@@ -790,45 +766,43 @@ void CPlayerStats::DrawEnforcer (HSURFACE hScreen, int nLeft, int nTop, int nRig
 	{
 		// draw the HUD
 
-		if (bAdjustSizes)
+		DrawHUDSurface (hScreen, m_hHUDLeft, xHUDLeft, yHUDLeft, fAdjustment, hTransColor);
+		DrawHUDSurface (hScreen, m_hHUDMiddle, xHUDMiddle, yHUDMiddle, fAdjustment, hTransColor);
+
+		if (m_bDrawAmmo)
 		{
-			LTRect rcDest;
-
-			rcDest.left = xHUDLeft;
-			rcDest.top = yHUDLeft;
-			rcDest.right = xHUDLeft + (int)((LTFLOAT)cxHUDLeft * fAdjustment);
-			rcDest.bottom = yHUDLeft + (int)((LTFLOAT)cyHUDLeft * fAdjustment);
-
-			m_pClientDE->ScaleSurfaceToSurfaceTransparent (hScreen, m_hHUDLeft, &rcDest, NULL, hTransColor);
-			
-			rcDest.left = xHUDMiddle;
-			rcDest.top = yHUDMiddle;
-			rcDest.right = xHUDMiddle + (int)((LTFLOAT)cxHUDMiddle * fAdjustment);
-			rcDest.bottom = yHUDMiddle + (int)((LTFLOAT)cyHUDMiddle * fAdjustment);
-
-			m_pClientDE->ScaleSurfaceToSurfaceTransparent (hScreen, m_hHUDMiddle, &rcDest, NULL, hTransColor);
-
-			if (m_bDrawAmmo)
-			{
-				rcDest.left = xHUDRight;
-				rcDest.top = yHUDRight;
-				rcDest.right = xHUDRight + (int)((LTFLOAT)cxHUDRight * fAdjustment);
-				rcDest.bottom = yHUDRight + (int)((LTFLOAT)cyHUDRight * fAdjustment);
-				
-				m_pClientDE->ScaleSurfaceToSurfaceTransparent (hScreen, m_hHUDRight, &rcDest, NULL, hTransColor);
-			}
-		}
-		else
-		{
-			m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hHUDLeft, NULL, xHUDLeft, yHUDLeft, hTransColor);
-			m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hHUDMiddle, NULL, xHUDMiddle, yHUDMiddle, hTransColor);
-
-			if (m_bDrawAmmo)
-			{
-				m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hHUDRight, NULL, xHUDRight, yHUDRight, hTransColor);
-			}
+			DrawHUDSurface (hScreen, m_hHUDRight, xHUDRight, yHUDRight, fAdjustment, hTransColor);
 		}
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerStats::DrawHUDSurface
+//
+//	PURPOSE:	Blit one HUD surface at the given scale
+//
+// ----------------------------------------------------------------------- //
+void CPlayerStats::DrawHUDSurface (HSURFACE hScreen, HSURFACE hSurf, int x, int y, LTFLOAT fScale, HLTCOLOR hTransColor)
+{
+	if (!m_pClientDE || !hSurf) return;
+
+	if (fScale == 1.0f)
+	{
+		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, hSurf, LTNULL, x, y, hTransColor);
+		return;
+	}
+
+	uint32 cx = 0, cy = 0;
+	m_pClientDE->GetSurfaceDims (hSurf, &cx, &cy);
+
+	LTRect rcDest;
+	rcDest.left   = x;
+	rcDest.top    = y;
+	rcDest.right  = x + (int)((LTFLOAT)cx * fScale);
+	rcDest.bottom = y + (int)((LTFLOAT)cy * fScale);
+
+	m_pClientDE->ScaleSurfaceToSurfaceTransparent (hScreen, hSurf, &rcDest, LTNULL, hTransColor);
 }
 
 void CPlayerStats::UpdateOnFootHealth()

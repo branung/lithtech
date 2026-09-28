@@ -15,7 +15,7 @@
 
 struct CLCREATESTRUCT : public SFXCREATESTRUCT
 {
-	CLCREATESTRUCT::CLCREATESTRUCT();
+	CLCREATESTRUCT();
 
 	LTVector vStartColor;
 	LTVector vEndColor;

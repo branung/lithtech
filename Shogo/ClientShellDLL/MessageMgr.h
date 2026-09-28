@@ -140,6 +140,9 @@ class CMessageMgr
 		CInputLine			m_InputLine;	// Current input message
 		HLTFONT				m_hFont;		// menu font
 
+		LTFLOAT				m_fFontScale;
+		void				UpdateFontScale();
+
 		LTBOOL				m_bEnabled;
 		LTBOOL				m_bEditing;
 

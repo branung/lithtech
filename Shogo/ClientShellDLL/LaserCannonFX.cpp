@@ -14,8 +14,12 @@
 #include "RiotClientShell.h"
 #include "WeaponModel.h"
 #include "DynamicLightFX.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "ltobjectcreate.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 #define MAX_RANGE	3000.0f
 
@@ -195,7 +199,7 @@ LTBOOL CLaserCannonFX::Update()
 		
 		m_fRotAmount += 360.0f/m_fRotPerSec * fDelta;
 
-		m_pClientDE->Math()->EulerRotateZ(rRot, m_fRotAmount);
+		pMath->EulerRotateZ(rRot, m_fRotAmount);
 		m_pClientDE->SetObjectRotation(m_hObject, &rRot);
 	}
 

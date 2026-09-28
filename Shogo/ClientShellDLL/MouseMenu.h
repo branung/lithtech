@@ -37,6 +37,8 @@ protected:
 
 	virtual void		PostCalculateMenuDims();
 	
+	void				FitSecondColumn(); // Puts the value column clear of the widest caption
+
 	LTBOOL				ChangeButtonSettingSurface (int nSelection, int* pSelection, int nChange);
 	LTBOOL				BindButtonToCommand (int nButton, int nSelection);
 
@@ -48,7 +50,7 @@ protected:
 	int					m_nRightButtonSelection;
 	int					m_nMiddleButtonSelection;
 
-	GENERIC_ITEM		m_MouseSettings[9];
+	GENERIC_ITEM		m_MouseSettings[10];
 	CSlider				m_sliderMouseSensitivity;
 	CSlider				m_sliderMouseInputRate;
 };

@@ -31,6 +31,7 @@ CMissionObjectives::CMissionObjectives()
 	m_hSeparator = LTNULL;
 	m_cxSeparator = 0;
 	m_cySeparator = 0;
+	m_fTextScale = 1.0f;
 	m_bScrollable = LTFALSE;
 
 	m_bOpenAnimating = LTFALSE;
@@ -64,6 +65,9 @@ void CMissionObjectives::Init (ILTClient* pClientDE, CRiotClientShell* pClientSh
 {
 	m_pClientDE = pClientDE;
 	m_pClientShell = pClientShell;
+
+	// The scale objectives are built at.
+	m_fTextScale = GetHUDScale();
 
 	// create display surface
 
@@ -133,11 +137,17 @@ void CMissionObjectives::Init (ILTClient* pClientDE, CRiotClientShell* pClientSh
 //	m_pClientDE->OptimizeSurface (m_hDisplay, hTransColor);
 }
 
-void CMissionObjectives::AddObjective (uint32 nID, LTBOOL bCompleted)
-{
-	if (!m_pClientDE) return;
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CMissionObjectives::BuildObjectiveSurface
+//
+//	PURPOSE:	Render one objective's text at the given HUD scale
+//
+// ----------------------------------------------------------------------- //
 
-	// create the surface from the string
+HSURFACE CMissionObjectives::BuildObjectiveSurface (uint32 nID, LTFLOAT fScale)
+{
+	if (!m_pClientDE) return LTNULL;
 
 	HSTRING hstrFont = m_pClientDE->FormatString (IDS_INGAMEFONT);
 	FONT fontdef (const_cast<char *>(m_pClientDE->GetStringData (hstrFont)), 
@@ -145,13 +155,57 @@ void CMissionObjectives::AddObjective (uint32 nID, LTBOOL bCompleted)
 				  TextHelperGetIntValFromStringID(m_pClientDE, IDS_MISSIONOBJECTIVETEXTHEIGHT, 13));
 
 	m_pClientDE->FreeString (hstrFont);
+	ScaleFontDef (&fontdef, fScale);
 
 	HLTCOLOR foreColor = m_pClientDE->SetupColor1 (1.0f, 1.0f, 1.0f, LTFALSE);
-	HSURFACE hSurf = CTextHelper::CreateWrappedStringSurface (m_pClientDE, TEXT_AREA_WIDTH, &fontdef, nID, foreColor);
-	
-	if (!hSurf) return;
+	HSURFACE hSurf = CTextHelper::CreateWrappedStringSurface (m_pClientDE, HUDScaled (TEXT_AREA_WIDTH, fScale), &fontdef, nID, foreColor);
 
-	hSurf = CropSurface (hSurf, LTNULL);
+	if (!hSurf) return LTNULL;
+
+	return CropSurface (hSurf, LTNULL);
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CMissionObjectives::UpdateTextScale
+//
+//	PURPOSE:	Rerender every objective when the slider has moved
+//
+// ----------------------------------------------------------------------- //
+
+void CMissionObjectives::UpdateTextScale()
+{
+	if (!m_pClientDE) return;
+
+	LTFLOAT fScale = GetHUDScale();
+	if (fScale == m_fTextScale) return;
+
+	OBJECTIVE* pObjective = m_pObjectives;
+	while (pObjective)
+	{
+		HSURFACE hNew = BuildObjectiveSurface (pObjective->nID, fScale);
+		if (hNew)
+		{
+			if (pObjective->hSurface) m_pClientDE->DeleteSurface (pObjective->hSurface);
+			pObjective->hSurface = hNew;
+		}
+		pObjective = pObjective->pNext;
+	}
+
+	m_fTextScale = fScale;
+}
+
+
+void CMissionObjectives::AddObjective (uint32 nID, LTBOOL bCompleted)
+{
+	if (!m_pClientDE) return;
+
+	// create the surface from the string
+
+	HSURFACE hSurf = BuildObjectiveSurface (nID, m_fTextScale);
+
+	if (!hSurf) return;
 
 //	HLTCOLOR hTransColor = m_pClientDE->SetupColor1(0.0f, 0.0f, 0.0f, LTTRUE);
 
@@ -239,7 +293,7 @@ void CMissionObjectives::ScrollUp()
 		uint32 nHeight = 0;
 		m_pClientDE->GetSurfaceDims (m_pTopObjective->pPrev->hSurface, &nWidth, &nHeight);
 		
-		m_fScrollOffset = (LTFLOAT) (-((int)nHeight) - (int)m_cySeparator);
+		m_fScrollOffset = (LTFLOAT) (-((int)nHeight) - HUDScaled ((int)m_cySeparator, m_fTextScale));
 		m_fScrollOffsetTarget = 0.0f;
 		
 		m_pTopObjective = m_pTopObjective->pPrev;
@@ -260,7 +314,7 @@ void CMissionObjectives::ScrollDown()
 		m_pClientDE->GetSurfaceDims (m_pTopObjective->hSurface, &nWidth, &nHeight);
 		
 		m_fScrollOffset = 0;
-		m_fScrollOffsetTarget = (LTFLOAT) (-((int)nHeight) - (int)m_cySeparator);
+		m_fScrollOffsetTarget = (LTFLOAT) (-((int)nHeight) - HUDScaled ((int)m_cySeparator, m_fTextScale));
 	}
 }
 
@@ -329,11 +383,22 @@ void CMissionObjectives::Draw()
 	uint32 nScreenWidth, nScreenHeight;
 	m_pClientDE->GetSurfaceDims (hScreen, &nScreenWidth, &nScreenHeight);
 	
+	// Rerender first if the slider moved so that everything below measures one size
+	UpdateTextScale();
+
+	LTFLOAT fScale = m_fTextScale;
+
 	uint32 nMOWidth, nMOHeight;
 	m_pClientDE->GetSurfaceDims (m_hDisplay, &nMOWidth, &nMOHeight);
 
-	int nOriginX = (int) ((LTFLOAT)X_LOCATION * (((LTFLOAT)nScreenWidth - (LTFLOAT)nMOWidth) / (640.0f - (LTFLOAT)nMOWidth)));
-	int nOriginY = (int) ((LTFLOAT)Y_LOCATION * (((LTFLOAT)nScreenHeight - (LTFLOAT)nMOHeight) / (480.0f - (LTFLOAT)nMOHeight)));;
+	int nOriginX = 0, nOriginY = 0;
+	PlaceScaledPanel (nScreenWidth, nScreenHeight, nMOWidth, nMOHeight,
+					  X_LOCATION, Y_LOCATION, fScale, &nOriginX, &nOriginY);
+
+	int nSeamY   = nOriginY + HUDScaled (119, fScale);
+	int nWinTop  = nOriginY + HUDScaled (74,  fScale);
+	int nWinBot  = nOriginY + HUDScaled (188, fScale);
+	int nSepH    = HUDScaled ((int)m_cySeparator, fScale);
 
 	// if we're doing the opening animation, draw it and increment the rectangles, then return
 
@@ -341,11 +406,11 @@ void CMissionObjectives::Draw()
 	{
 		LTFLOAT nFrameTime = m_pClientDE->GetFrameTime();
 
-		int y = nOriginY + 119 - (m_rcTop.bottom - m_rcTop.top);
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hDisplay, &m_rcTop, nOriginX, y, LTNULL);
+		int y = nSeamY - HUDScaled (m_rcTop.bottom - m_rcTop.top, fScale);
+		DrawHUDScaled (hScreen, m_hDisplay, &m_rcTop, nOriginX, y, fScale, LTNULL);
 
-		y = nOriginY + 119;
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hDisplay, &m_rcBottom, nOriginX, y, LTNULL);
+		y = nSeamY;
+		DrawHUDScaled (hScreen, m_hDisplay, &m_rcBottom, nOriginX, y, fScale, LTNULL);
 
 		m_rcTop.bottom += (int)(nFrameTime * (LTFLOAT)OPEN_ANIM_RATE);
 		m_rcBottom.top -= (int)(nFrameTime * (LTFLOAT)OPEN_ANIM_RATE);
@@ -362,11 +427,11 @@ void CMissionObjectives::Draw()
 
 		LTFLOAT nFrameTime = m_pClientDE->GetFrameTime();
 
-		int y = nOriginY + 119 - (m_rcTop.bottom - m_rcTop.top);
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hDisplay, &m_rcTop, nOriginX, y, LTNULL);
+		int y = nSeamY - HUDScaled (m_rcTop.bottom - m_rcTop.top, fScale);
+		DrawHUDScaled (hScreen, m_hDisplay, &m_rcTop, nOriginX, y, fScale, LTNULL);
 
-		y = nOriginY + 119;
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hDisplay, &m_rcBottom, nOriginX, y, LTNULL);
+		y = nSeamY;
+		DrawHUDScaled (hScreen, m_hDisplay, &m_rcBottom, nOriginX, y, fScale, LTNULL);
 
 		m_rcTop.bottom -= (int)(nFrameTime * (LTFLOAT)OPEN_ANIM_RATE);
 		m_rcBottom.top += (int)(nFrameTime * (LTFLOAT)OPEN_ANIM_RATE);
@@ -377,8 +442,8 @@ void CMissionObjectives::Draw()
 
 	// set the initial coordinates
 
-	int x = 15 + nOriginX;
-	int y = 76 + nOriginY;
+	int x = nOriginX + HUDScaled (15, fScale);
+	int y = nOriginY + HUDScaled (76, fScale);
 	
 	// adjust the coordinates if we are scrolling up or down
 
@@ -386,7 +451,7 @@ void CMissionObjectives::Draw()
 	{
 		LTFLOAT nFrameTime = m_pClientDE->GetFrameTime();
 
-		m_fScrollOffset += nFrameTime * SCROLL_SPEED;
+		m_fScrollOffset += nFrameTime * SCROLL_SPEED * fScale;
 		if (m_fScrollOffset > m_fScrollOffsetTarget)
 		{
 			m_fScrollOffset = 0.0f;
@@ -400,7 +465,7 @@ void CMissionObjectives::Draw()
 	{
 		LTFLOAT nFrameTime = m_pClientDE->GetFrameTime();
 
-		m_fScrollOffset -= nFrameTime * SCROLL_SPEED;
+		m_fScrollOffset -= nFrameTime * SCROLL_SPEED * fScale;
 		if (m_fScrollOffset < m_fScrollOffsetTarget)
 		{
 			m_fScrollOffset = 0.0f;
@@ -415,36 +480,36 @@ void CMissionObjectives::Draw()
 
 	// first draw the display to the screen
 
-	m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hDisplay, LTNULL, nOriginX, nOriginY, LTNULL);
+	DrawHUDScaled (hScreen, m_hDisplay, LTNULL, nOriginX, nOriginY, fScale, LTNULL);
 
 	// now draw the objectives to the screen
 
 	OBJECTIVE* pObjective = m_pTopObjective;
-	while (pObjective && y < 188 + nOriginY)
+	while (pObjective && y < nWinBot)
 	{
 		uint32 nWidth, nHeight;
 		m_pClientDE->GetSurfaceDims (pObjective->hSurface, &nWidth, &nHeight);
 
-		if (y < 74 + nOriginY)
+		if (y < nWinTop)
 		{
 			LTRect rcSrc;
 			rcSrc.left = 0;
-			rcSrc.top = (74 + nOriginY) - y;
+			rcSrc.top = nWinTop - y;
 			rcSrc.right = nWidth;
 			rcSrc.bottom = nHeight;
 
 			if (rcSrc.bottom >= rcSrc.top)
 			{
-				DrawObjective (hScreen, pObjective, &rcSrc, x, 74 + nOriginY);
+				DrawObjective (hScreen, pObjective, &rcSrc, x, nWinTop);
 			}
 		}
-		else if (y + (int)nHeight > 188 + nOriginY)
+		else if (y + (int)nHeight > nWinBot)
 		{
 			LTRect rcSrc;
 			rcSrc.left = 0;
 			rcSrc.top = 0;
 			rcSrc.right = nWidth;
-			rcSrc.bottom = nHeight - ((y + nHeight) - (188 + nOriginY));
+			rcSrc.bottom = nHeight - ((y + nHeight) - nWinBot);
 
 			DrawObjective (hScreen, pObjective, &rcSrc, x, y);
 		}
@@ -455,37 +520,37 @@ void CMissionObjectives::Draw()
 
 		y += nHeight;
 
-		if (pObjective->pNext && y < 188 + nOriginY)
+		if (pObjective->pNext && y < nWinBot)
 		{
-			if (y < 74 + nOriginY)
+			if (y < nWinTop)
 			{
 				LTRect rcSrc;
 				rcSrc.left = 0;
-				rcSrc.top = (74 + nOriginY) - y;
+				rcSrc.top = (int)((LTFLOAT)(nWinTop - y) / fScale);
 				rcSrc.right = m_cxSeparator;
 				rcSrc.bottom = m_cySeparator;
 
 				if (rcSrc.bottom >= rcSrc.top)
 				{
-					m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hSeparator, &rcSrc, 51, 74 + nOriginY, LTNULL);
+					DrawHUDScaled (hScreen, m_hSeparator, &rcSrc, HUDScaled (51, fScale), nWinTop, fScale, LTNULL);
 				}
 			}
-			else if (y + (int)m_cySeparator > 188 + nOriginY)
+			else if (y + nSepH > nWinBot)
 			{
 				LTRect rcSrc;
 				rcSrc.left = 0;
 				rcSrc.top = 0;
 				rcSrc.right = m_cxSeparator;
-				rcSrc.bottom = m_cySeparator - ((y + m_cySeparator) - (188 + nOriginY));
+				rcSrc.bottom = m_cySeparator - (int)((LTFLOAT)((y + nSepH) - nWinBot) / fScale);
 
-				m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hSeparator, &rcSrc, 51, y, LTNULL);
+				DrawHUDScaled (hScreen, m_hSeparator, &rcSrc, HUDScaled (51, fScale), y, fScale, LTNULL);
 			}
 			else
 			{
-				m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hSeparator, LTNULL, 51, y, LTNULL);
+				DrawHUDScaled (hScreen, m_hSeparator, LTNULL, HUDScaled (51, fScale), y, fScale, LTNULL);
 			}
 
-			y += m_cySeparator;
+			y += nSepH;
 		}
 
 		pObjective = pObjective->pNext;
@@ -509,12 +574,12 @@ void CMissionObjectives::DrawObjective (HSURFACE hScreen, OBJECTIVE* pObjective,
 
 	if (!pObjective->bCompleted)
 	{
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, pObjective->hSurface, rcSrc, x, y, LTNULL);
+		DrawHUDScaled (hScreen, pObjective->hSurface, rcSrc, x, y, 1.0f, LTNULL);
 	}
 	else
 	{
 		HLTCOLOR hFillColor = m_pClientDE->SetupColor1 (0.4f, 0.4f, 0.4f, LTFALSE);
-		m_pClientDE->DrawSurfaceSolidColor (hScreen, pObjective->hSurface, rcSrc, x, y, LTNULL, hFillColor);
+		DrawHUDScaledSolidColor (hScreen, pObjective->hSurface, rcSrc, x, y, 1.0f, LTNULL, hFillColor);
 	}
 }
 

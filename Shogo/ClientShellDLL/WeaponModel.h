@@ -42,7 +42,7 @@ class CWeaponModel
 		void SetZoom(LTBOOL b) { m_bZoomView = b; }
 
 		LTVector GetFlashPos() const { return m_vFlashPos; }
-		LTVector GetModelPos() const;
+		LTVector GetModelPos() const { return m_vModelPos; }
 
 		LTVector GetOffset()			const { return m_vOffset; }
 		void SetOffset(LTVector v)	{ VEC_COPY(m_vOffset, v); }
@@ -65,7 +65,8 @@ class CWeaponModel
 		WeaponState Fire();
 		WeaponState UpdateModelState(LTBOOL bFire);
 
-		void	SendFireMsg();
+		// Takes the camera rotation since the weapon's own is forced to identity
+		void	SendFireMsg(const LTRotation& rCameraRot);
 		void	UpdateFiring();
 		void	UpdateNonFiring();
 		LTBOOL	PlaySelectAnimation();
@@ -106,12 +107,14 @@ class CWeaponModel
 
 		RiotWeaponId m_nWeaponId;
 
-		LTVector		m_vOffset;
-		LTVector		m_vMuzzleOffset;
+		LTVector	m_vOffset;
+		LTVector	m_vMuzzleOffset;
 
-		LTVector		m_vFlashPos;
-		HLOCALOBJ	m_hFlashObject;		// Muzzle flash object
-		LTFLOAT		m_fFlashStartTime;	// When did flash start
+		LTVector	m_vFlashPos;			// World space: the fire position (sent to the server, tracer origin)
+		LTVector	m_vFlashLocalPos;		// Camera space: where the REALLYCLOSE flash sprite is drawn
+		LTVector	m_vModelPos;			// World space model pos (the object's own is camera-relative)
+		HLOCALOBJ	m_hFlashObject;			// Muzzle flash object
+		LTFLOAT		m_fFlashStartTime;		// When did flash start
 
 		// Bobbin' and Swayin' - Blood 2 style ;)
 		LTFLOAT		m_fBobHeight;

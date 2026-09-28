@@ -32,7 +32,7 @@ typedef struct ColorRamp_t
 
 struct PGCREATESTRUCT : public SFXCREATESTRUCT
 {
-	PGCREATESTRUCT::PGCREATESTRUCT();
+	PGCREATESTRUCT();
 
 	LTVector vDims;
 	LTVector vColor1;

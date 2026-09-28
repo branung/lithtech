@@ -116,7 +116,7 @@ SurfaceType GetSurfaceType(HLOCALOBJ hObj)
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL ObjListFilterFn(HLOCALOBJ hTest, void *pUserData)
+bool ObjListFilterFn(HLOCALOBJ hTest, void *pUserData)
 {
 	HOBJECT *hList;
 
@@ -141,7 +141,7 @@ LTBOOL ObjListFilterFn(HLOCALOBJ hTest, void *pUserData)
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL SpecificObjectFilterFn(HLOCALOBJ hObj, void *pUserData)
+bool SpecificObjectFilterFn(HLOCALOBJ hObj, void *pUserData)
 {
 	if (!hObj) return LTFALSE;
 
@@ -158,7 +158,7 @@ LTBOOL SpecificObjectFilterFn(HLOCALOBJ hObj, void *pUserData)
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL AttackerLiquidFilterFn(HLOCALOBJ hObj, void *pUserData)
+bool AttackerLiquidFilterFn(HLOCALOBJ hObj, void *pUserData)
 {
 	// We're not attacking our self...
 
@@ -208,7 +208,8 @@ void AddLocalImpactFX(HLOCALOBJ hObj, LTVector & vFirePos, LTVector & vImpactPoi
 	VEC_ADD(vPos, vPos, vTemp);
 
 	LTRotation rRot;
-	pMath->AlignRotation(rRot, vNormal, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(rRot, vNormal, vWorldUp);
 
 	uint32 dwId;
 	g_pClientDE->GetLocalClientID(&dwId);

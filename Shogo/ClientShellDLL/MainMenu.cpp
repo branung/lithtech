@@ -6,13 +6,13 @@
 #include "RiotMenu.h"
 #include "NetStart.h"
 
-extern void ExitGame (LTBOOL, uint32);
+extern void ExitGame (LTBOOL, uintptr_t);
 
 #define DEMO_VERSION	"DEMO VERSION 2.1"
 
 #define PATCH_VERSION	"v 2.2.15"
 
-void EndGameAndDoMultiplayer (LTBOOL bYes, uint32 nUserData)
+void EndGameAndDoMultiplayer (LTBOOL bYes, uintptr_t nUserData)
 {
 	if (bYes)
 	{
@@ -85,7 +85,7 @@ void CMainMenu::Return()
 //#else
 		if (m_pRiotMenu->InWorld())
 		{
-			pClientShell->DoYesNoMessageBox (IDS_ENDCURRENTGAME, EndGameAndDoMultiplayer, (uint32)this, TH_ALIGN_CENTER);
+			pClientShell->DoYesNoMessageBox (IDS_ENDCURRENTGAME, EndGameAndDoMultiplayer, (uintptr_t)this, TH_ALIGN_CENTER);
 		}
 		else
 		{
@@ -212,7 +212,7 @@ LTBOOL CMainMenu::DoMultiplayer(LTBOOL bMinimize)
 		HSURFACE hScreen = m_pClientDE->GetScreenSurface();
 		m_pClientDE->GetSurfaceDims (hScreen, &cxScreen, &cyScreen);
 
-		m_pClientDE->ClearScreen (LTNULL, CLEARSCREEN_SCREEN);
+		m_pClientDE->ClearScreen(LTNULL, CLEARSCREEN_SCREEN, 0);
 		m_pClientDE->Start3D();
 		m_pClientDE->StartOptimized2D();
 		m_pClientDE->DrawSurfaceToSurface (hScreen, hLoading, LTNULL, ((int)cxScreen - (int)cxLoading) / 2, ((int)cyScreen - (int)cyLoading) / 2);

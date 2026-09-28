@@ -43,7 +43,11 @@
 #include "AnimeLineFX.h"
 #include "WeaponSoundFX.h"
 #include "SFXReg.h"
+#include "iltmath.h"
 
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern CRiotClientShell* g_pRiotClientShell;
 
@@ -404,8 +408,8 @@ void CSFXMgr::HandleSFXMsg(HLOCALOBJ hObj, ILTMessage_Read* hMessage)
 			
 			theAngle = hMessage->Readuint8();
 			fAngle = ((LTFLOAT)theAngle / 255.0f) * MATH_CIRCLE;
-			m_pClientDE->Math()->SetupEuler(tempRot, 0.0f, fAngle, 0.0f);
-			m_pClientDE->Math()->GetRotationVectors(tempRot, up, right, cs.m_DirVec);
+			pMath->SetupEuler(tempRot, 0.0f, fAngle, 0.0f);
+			pMath->GetRotationVectors(tempRot, up, right, cs.m_DirVec);
 			CreateSFX(nId, &cs);
 		}
 		break;

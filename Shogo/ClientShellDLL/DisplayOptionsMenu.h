@@ -4,6 +4,7 @@
 #include "BaseMenu.h"
 #include "DisplayModeMenu.h"
 #include "DetailSettingsMenu.h"
+#include "Slider.h"
 
 class CDisplayOptionsMenu : public CBaseMenu
 {
@@ -15,7 +16,12 @@ public:
 	virtual void		ScreenDimsChanged (int nScreenWidth, int nScreenHeight);
 	virtual void		Reset();
 	
-	virtual LTBOOL		LoadAllSurfaces()		{ if (!m_DisplayModeMenu.LoadAllSurfaces() || !m_DetailSettingsMenu.LoadAllSurfaces()) return LTFALSE; return LoadSurfaces(); }
+	virtual LTBOOL		LoadAllSurfaces()		{ LTBOOL bAll = LTTRUE;
+											  LoadChildSurfaces (m_DisplayModeMenu,    "DisplayMode",    bAll);
+											  LoadChildSurfaces (m_DetailSettingsMenu, "DetailSettings", bAll);
+											  LTBOOL bMine = LoadSurfaces();
+											  if (!bMine && m_pClientDE) m_pClientDE->CPrint ("[D:MENU] DisplayOptions failed to load its own surfaces");
+											  return (bAll && bMine); }
 	virtual void		UnloadAllSurfaces()		{ m_DisplayModeMenu.UnloadAllSurfaces(); m_DetailSettingsMenu.UnloadAllSurfaces(); UnloadSurfaces(); }
 
 	virtual void		OnEnterWorld()		{ 
@@ -46,12 +52,22 @@ public:
 	void				SetGlobalDetail (int nSetting);
 	void				SetupCurrentRendererSurfaces();
 
+	// Frame rate cap, stored in MaxFPS
+	void				SaveFrameRateSetting();
+	void				RebuildFrameRateSurfaces();
+
+	// HUD scaling, stored in HUDScale.
+	// The slider's range must match HUDSCALE_MIN/MAX in ClientUtilities.h.
+	void				SaveHUDScaleSetting();
+
 protected:
 
 	virtual LTBOOL		LoadSurfaces();
 	virtual void		UnloadSurfaces();
 
 	virtual void		PostCalculateMenuDims();
+
+	virtual int			GetItemWidth (int nItem);
 
 	virtual void		DrawNoGoreVersion (HSURFACE hScreen, int nScreenWidth, int nScreenHeight, int nTextOffset = 0);
 
@@ -68,6 +84,11 @@ protected:
 	GENERIC_ITEM		m_GoreSetting;
 	GENERIC_ITEM		m_ScreenFlash;
 	GENERIC_ITEM		m_DetailSetting;
+	GENERIC_ITEM		m_FrameRateSetting;
+
+	int					m_nFrameRate;
+
+	CSlider				m_sliderHUDScale;	// Position, not percentage
 
 	LTFLOAT				m_fOriginalDetailLevel;
 

@@ -2,7 +2,7 @@
 #define __SLIDER_H
 
 #include "iltclient.h"
-#include "clientUtilities.h"
+#include "ClientUtilities.h"
 
 class ILTClient;
 

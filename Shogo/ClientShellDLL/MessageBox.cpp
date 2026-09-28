@@ -1,7 +1,7 @@
 #include "MessageBox.h"
 #include "clientheaders.h"
 #include "ClientRes.h"
-#include "font08.h"
+#include "Font08.h"
 
 #define TEXTRECT_LEFT		28
 #define TEXTRECT_RIGHT		234

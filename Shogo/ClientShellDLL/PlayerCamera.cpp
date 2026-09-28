@@ -12,6 +12,10 @@
 #include "clientheaders.h"
 #include <stdio.h>
 #include "iltcommon.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 // Camera's distance back from the player's position
 #define DEFAULT_CAMERA_DIST_BACK	110
@@ -864,7 +868,7 @@ void CPlayerCamera::CircleAroundTarget()
 	}
 
 	//m_Angles.y = m_SaveAnglesY + (MATH_CIRCLE*diff);
-	m_pClientDE->Math()->EulerRotateY(m_rRotation, (MATH_CIRCLE*diff));
+	pMath->EulerRotateY(m_rRotation, (MATH_CIRCLE*diff));
 
 	LTVector	up, right, forward;
 	m_pClientDE->Common()->GetRotationVectors(m_rRotation, up, right, forward);

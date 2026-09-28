@@ -3,6 +3,7 @@
 #include "PlayerInventory.h"
 #include "ClientRes.h"
 #include "TextHelper.h"
+#include "ClientUtilities.h"
 #include "PlayerStats.h"
 #include "WeaponStringDefs.h"
 #include "ClientServerShared.h"
@@ -42,6 +43,11 @@ CPlayerInventory::CPlayerInventory()
 
 	memset (m_hGunName, 0, GUN_MAX_NUMBER * sizeof (HSURFACE));
 	memset (m_hAmmoCount, 0, GUN_MAX_NUMBER * sizeof (HSURFACE));
+	memset (m_nAmmoCount, 0, GUN_MAX_NUMBER * sizeof (uint32));
+	memset (m_hInfinity, 0, sizeof (m_hInfinity));
+	m_cxInfinity = m_cyInfinity = 0;
+
+	m_fFontScale = 1.0f;
 }
 
 CPlayerInventory::~CPlayerInventory()
@@ -60,10 +66,12 @@ LTBOOL CPlayerInventory::Init (ILTClient* pClientDE, CRiotClientShell* pClientSh
 
 	// Set up the font...
 
+	m_fFontScale = GetHUDScale();
+
 	HSTRING hstrFont = m_pClientDE->FormatString (IDS_INGAMEFONT);
 	m_hAmmoCountFont = m_pClientDE->CreateFont (m_pClientDE->GetStringData(hstrFont),
-						TextHelperGetIntValFromStringID(m_pClientDE, IDS_ORDINANCETEXTWIDTH, 6),
-						TextHelperGetIntValFromStringID(m_pClientDE, IDS_ORDINANCETEXTHEIGHT, 13),
+						HUDScaled (TextHelperGetIntValFromStringID(m_pClientDE, IDS_ORDINANCETEXTWIDTH, 6), m_fFontScale),
+						HUDScaled (TextHelperGetIntValFromStringID(m_pClientDE, IDS_ORDINANCETEXTHEIGHT, 13), m_fFontScale),
 						LTFALSE, LTFALSE, LTTRUE);
 	m_pClientDE->FreeString (hstrFont);
 
@@ -136,6 +144,15 @@ void CPlayerInventory::Term()
 	
 	if (m_hCurrentMessage) m_pClientDE->DeleteSurface (m_hCurrentMessage);
 	if (m_hOrdinance) m_pClientDE->DeleteSurface (m_hOrdinance);
+
+	for (int nTint = 0; nTint < 2; ++nTint)
+	{
+		if (m_hInfinity[nTint])
+		{
+			m_pClientDE->DeleteSurface (m_hInfinity[nTint]);
+			m_hInfinity[nTint] = LTNULL;
+		}
+	}
 	
 	for (int i = GUN_FIRST_ID; i < GUN_MAX_NUMBER; i++)
 	{
@@ -206,6 +223,8 @@ void CPlayerInventory::Update()
 				m_hAmmoCount[m_nNewAmmoType] = LTNULL;
 			}
 
+			m_nAmmoCount[m_nNewAmmoType] = m_nNewAmmoAmount;
+
 			char str[16];
 			itoa (m_nNewAmmoAmount, str, 10);
 			m_hAmmoCount[m_nNewAmmoType] = CTextHelper::CreateSurfaceFromString (m_pClientDE, m_hAmmoCountFont, str, hOrangeColor);
@@ -242,16 +261,21 @@ void CPlayerInventory::GunPickup (uint8 nType, LTBOOL bDisplayMessage)
 	uint32 nPickupHeight = 0;
 	m_pClientDE->GetSurfaceDims (hPickup, &nPickupWidth, &nPickupHeight);
 
-	// now build the entire display surface
+	// Built at on-screen size. Text renders at the scaled font and the icon is maginified
+	uint32 nIconWidth  = (uint32)HUDScaled ((int)m_cxGunIcon[nType], m_fFontScale);
+	uint32 nIconHeight = (uint32)HUDScaled ((int)m_cyGunIcon[nType], m_fFontScale);
+	uint32 nGap        = (uint32)HUDScaled (3, m_fFontScale);
 
-	m_cxCurrentMessage = nPickupWidth > m_cxGunIcon[nType] ? nPickupWidth : m_cxGunIcon[nType];
-	m_cyCurrentMessage = nPickupHeight + m_cyGunIcon[nType] + 3;
+	m_cxCurrentMessage = nPickupWidth > nIconWidth ? nPickupWidth : nIconWidth;
+	m_cyCurrentMessage = nPickupHeight + nIconHeight + nGap;
 	m_hCurrentMessage = m_pClientDE->CreateSurface (m_cxCurrentMessage, m_cyCurrentMessage);
 	m_pClientDE->DrawSurfaceToSurface (m_hCurrentMessage, hPickup, LTNULL, 0, 0);
 	if (m_hGunIcon[nType])
 	{
 		HLTCOLOR hTrans = m_pClientDE->SetupColor1 (1.0f, 0.0f, 0.0f, LTFALSE);
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (m_hCurrentMessage, m_hGunIcon[nType], LTNULL, (nPickupWidth - m_cxGunIcon[nType]) >> 1, nPickupHeight + 3, hTrans);
+		DrawHUDScaled (m_hCurrentMessage, m_hGunIcon[nType], LTNULL,
+					   (int)(nPickupWidth - nIconWidth) >> 1, (int)(nPickupHeight + nGap),
+					   m_fFontScale, hTrans);
 	}	
 	m_pClientDE->DeleteSurface (hPickup);
 
@@ -279,6 +303,8 @@ void CPlayerInventory::UpdateAmmo (uint32 nType, uint32 nAmount)
 			m_pClientDE->DeleteSurface (m_hAmmoCount[nType]);
 			m_hAmmoCount[nType] = LTNULL;
 		}
+
+		m_nAmmoCount[nType] = nAmount;
 
 		char str[16];
 		itoa (nAmount, str, 10);
@@ -342,11 +368,19 @@ void CPlayerInventory::Draw (LTBOOL bDrawOrdinance)
 
 	// see if we're drawing a pickup message
 
+	UpdateFontScale();
+
+	LTFLOAT fScale = m_fFontScale;
+
 	if (m_hCurrentMessage)
 	{
 		// draw the display message
+		// Its cached size is onscreen so only the inset scales
 
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hCurrentMessage, LTNULL, (nScreenWidth - m_cxCurrentMessage) >> 1, nScreenHeight - m_cyCurrentMessage - 10, LTNULL);
+		int nMsgX = ((int)nScreenWidth - (int)m_cxCurrentMessage) >> 1;
+		int nMsgY = (int)nScreenHeight - (int)m_cyCurrentMessage - HUDScaled (10, fScale);
+
+		DrawHUDScaled (hScreen, m_hCurrentMessage, LTNULL, nMsgX, nMsgY, 1.0f, LTNULL);
 
 		// see if we should remove it now
 
@@ -367,10 +401,11 @@ void CPlayerInventory::Draw (LTBOOL bDrawOrdinance)
 		uint32 nOrdWidth, nOrdHeight;
 		m_pClientDE->GetSurfaceDims (m_hOrdinance, &nOrdWidth, &nOrdHeight);
 
-		int nOriginX = (int) ((LTFLOAT)ORDINANCE_X * (((LTFLOAT)nScreenWidth - (LTFLOAT)nOrdWidth) / (640.0f - (LTFLOAT)nOrdWidth)));
-		int nOriginY = (int) ((LTFLOAT)ORDINANCE_Y * (((LTFLOAT)nScreenHeight - (LTFLOAT)nOrdHeight) / (480.0f - (LTFLOAT)nOrdHeight)));;
+		int nOriginX = 0, nOriginY = 0;
+		PlaceScaledPanel (nScreenWidth, nScreenHeight, nOrdWidth, nOrdHeight,
+						  ORDINANCE_X, ORDINANCE_Y, fScale, &nOriginX, &nOriginY);
 
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hOrdinance, LTNULL, nOriginX, nOriginY, LTNULL);
+		DrawHUDScaled (hScreen, m_hOrdinance, LTNULL, nOriginX, nOriginY, fScale, LTNULL);
 
 		for (uint32 i = 0; i < 5; i++)
 		{
@@ -388,7 +423,9 @@ void CPlayerInventory::Draw (LTBOOL bDrawOrdinance)
 					case 4:		x = 251;	break;
 				}
 
-				m_pClientDE->DrawSurfaceToSurface (hScreen, m_hShogoLetter[i], LTNULL, nOriginX + x, nOriginY + 116);
+				DrawHUDScaledOpaque (hScreen, m_hShogoLetter[i], LTNULL,
+									 nOriginX + HUDScaled (x, fScale),
+									 nOriginY + HUDScaled (116, fScale), fScale);
 			}
 		}
 		
@@ -456,8 +493,47 @@ void CPlayerInventory::Draw (LTBOOL bDrawOrdinance)
 
 				int nAmmoX = m_pClientShell->IsOnFoot() ? 188 : 128;
 
-				m_pClientDE->DrawSurfaceSolidColor(hScreen, m_hGunName[i], LTNULL, 10 + nOriginX, y + 1 + nOriginY, LTNULL, bCurGun ? hWhiteColor : hOrangeColor);
-				m_pClientDE->DrawSurfaceSolidColor(hScreen, m_hAmmoCount[i], LTNULL, 310 - nCountWidth + nOriginX, y + nOriginY, LTNULL, bCurGun ? hWhiteColor : hOrangeColor);
+				// An infinite ammo weapon shows Infinity.pcx which scales at draw time
+				LTBOOL   bCountIsText = UsesAmmo((RiotWeaponId) i);
+				LTFLOAT  fCountScale  = bCountIsText ? 1.0f : fScale;
+				int      nCountDrawW  = bCountIsText ? (int)nCountWidth
+													 : HUDScaled ((int)nCountWidth, fScale);
+
+				// The count is right aligned to 310, so the column edge scales
+				int nNameX  = nOriginX + HUDScaled (10, fScale);
+				int nRowY   = nOriginY + HUDScaled (y, fScale);
+				int nCountX = nOriginX + HUDScaled (310, fScale) - nCountDrawW;
+
+				// Rendered at the scaled font. The tinted blit runs at scale 1
+				DrawHUDScaledSolidColor (hScreen, m_hGunName[i], LTNULL, nNameX, nRowY + HUDScaled (1, fScale),
+										 1.0f, LTNULL, bCurGun ? hWhiteColor : hOrangeColor);
+
+				if (bCountIsText)
+				{
+					// Also rendered at the scaled font
+					DrawHUDScaledSolidColor (hScreen, m_hAmmoCount[i], LTNULL, nCountX, nRowY,
+											 1.0f, LTNULL, bCurGun ? hWhiteColor : hOrangeColor);
+				}
+				else
+				{
+					HSURFACE hInf = m_hInfinity[bCurGun ? 1 : 0];
+					if (!hInf) hInf = m_hAmmoCount[i];		// untinted
+
+					// Magnified by a whole number since thin strokes double unevenly otherwise.
+					// Aligned bottom right to keep the digits' baseline
+					int nInfMul = (int)(fScale + 0.5f);
+					if (nInfMul < 1) nInfMul = 1;
+
+					int nIdealW = HUDScaled ((int)m_cxInfinity, fScale);
+					int nIdealH = HUDScaled ((int)m_cyInfinity, fScale);
+					int nDrawW  = (int)m_cxInfinity * nInfMul;
+					int nDrawH  = (int)m_cyInfinity * nInfMul;
+
+					DrawHUDScaled (hScreen, hInf, LTNULL,
+								   nCountX + nIdealW - nDrawW,
+								   nRowY   + nIdealH - nDrawH,
+								   (LTFLOAT)nInfMul, LTNULL);
+				}
 			}
 		}
 	}
@@ -503,6 +579,109 @@ LTBOOL CPlayerInventory::CanDrawGun(uint8 nWeaponId)
 
 	return LTTRUE;
 }
+
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerInventory::BuildAmmoCountSurface
+//
+//	PURPOSE:	Render one ammo count at the current font scale
+//
+// --------------------------------------------------------------------------- //
+
+HSURFACE CPlayerInventory::BuildAmmoCountSurface (uint32 nCount)
+{
+	if (!m_pClientDE || !m_hAmmoCountFont) return LTNULL;
+
+	HLTCOLOR hOrangeColor = m_pClientDE->SetupColor2 (0.98f, 0.317647f, 0.0f, LTFALSE);
+	HLTCOLOR hTransColor  = m_pClientDE->SetupColor2 (0.0f, 0.0f, 0.0f, LTTRUE);
+
+	char str[16];
+	itoa ((int)nCount, str, 10);
+
+	HSURFACE hSurf = CTextHelper::CreateSurfaceFromString (m_pClientDE, m_hAmmoCountFont, str, hOrangeColor);
+	if (hSurf) m_pClientDE->OptimizeSurface (hSurf, hTransColor);
+
+	return hSurf;
+}
+
+
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerInventory::UpdateFontScale
+//
+//	PURPOSE:	Rerender the ordinance text when the slider has moved
+//
+// --------------------------------------------------------------------------- //
+
+// Bitmap count slots are left alone, and anything that fails keeps its surface.
+void CPlayerInventory::UpdateFontScale()
+{
+	if (!m_pClientDE) return;
+
+	LTFLOAT fScale = GetHUDScale();
+	if (fScale == m_fFontScale) return;
+
+	HSTRING hstrFont = m_pClientDE->FormatString (IDS_INGAMEFONT);
+	HLTFONT hNewFont = m_pClientDE->CreateFont (m_pClientDE->GetStringData (hstrFont),
+						HUDScaled (TextHelperGetIntValFromStringID(m_pClientDE, IDS_ORDINANCETEXTWIDTH, 6), fScale),
+						HUDScaled (TextHelperGetIntValFromStringID(m_pClientDE, IDS_ORDINANCETEXTHEIGHT, 13), fScale),
+						LTFALSE, LTFALSE, LTTRUE);
+	m_pClientDE->FreeString (hstrFont);
+
+	if (!hNewFont) return;
+
+	if (m_hAmmoCountFont) m_pClientDE->DeleteFont (m_hAmmoCountFont);
+	m_hAmmoCountFont = hNewFont;
+	m_fFontScale = fScale;
+
+	RebuildScaledText();
+}
+
+
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerInventory::RebuildScaledText
+//
+//	PURPOSE:	Rerender the weapon names and ammo counts at m_fFontScale
+//
+// --------------------------------------------------------------------------- //
+
+void CPlayerInventory::RebuildScaledText()
+{
+	if (!m_pClientDE) return;
+
+	HSTRING hstrFont = m_pClientDE->FormatString (IDS_INGAMEFONT);
+	FONT fontdef (const_cast<char *>(m_pClientDE->GetStringData(hstrFont)), 6, 13, LTFALSE, LTFALSE, LTFALSE);
+	m_pClientDE->FreeString (hstrFont);
+	ScaleFontDef (&fontdef, m_fFontScale);
+
+	HLTCOLOR hWhiteColor = m_pClientDE->SetupColor2 (1.0f, 1.0f, 1.0f, LTFALSE);
+	HLTCOLOR hTransColor = m_pClientDE->SetupColor1 (0.0f, 0.0f, 0.0f, LTTRUE);
+
+	for (uint32 i = GUN_FIRST_ID; i < GUN_MAX_NUMBER; i++)
+	{
+		if (i == GUN_UNUSED1_ID || i == GUN_UNUSED2_ID) continue;
+
+		HSURFACE hNew = CTextHelper::CreateSurfaceFromString (m_pClientDE, &fontdef, GetWeaponString ((RiotWeaponId) i), hWhiteColor);
+		if (hNew)
+		{
+			m_pClientDE->OptimizeSurface (hNew, hTransColor);
+			if (m_hGunName[i]) m_pClientDE->DeleteSurface (m_hGunName[i]);
+			m_hGunName[i] = hNew;
+		}
+
+		if (UsesAmmo((RiotWeaponId) i))
+		{
+			HSURFACE hCount = BuildAmmoCountSurface (m_nAmmoCount[i]);
+			if (hCount)
+			{
+				if (m_hAmmoCount[i]) m_pClientDE->DeleteSurface (m_hAmmoCount[i]);
+				m_hAmmoCount[i] = hCount;
+			}
+		}
+	}
+}
+
 
 LTBOOL CPlayerInventory::InitSurfaces()
 {
@@ -566,9 +745,40 @@ LTBOOL CPlayerInventory::InitSurfaces()
 	HLTCOLOR hTransColor = m_pClientDE->SetupColor1(0.0f, 0.0f, 0.0f, LTTRUE);
 	m_pClientDE->OptimizeSurface (m_hOrdinance, hTransColor);
 
+	// The two tinted infinity symbols
+	{
+		HSURFACE hInfinitySrc = m_pClientDE->CreateSurfaceFromBitmap ("Interface/Infinity.pcx");
+		if (hInfinitySrc)
+		{
+			uint32 cxInf = 0, cyInf = 0;
+			m_pClientDE->GetSurfaceDims (hInfinitySrc, &cxInf, &cyInf);
+			m_cxInfinity = cxInf;
+			m_cyInfinity = cyInf;
+
+			HLTCOLOR hTints[2];
+			hTints[0] = m_pClientDE->SetupColor2 (0.98f, 0.317647f, 0.0f, LTFALSE);
+			hTints[1] = m_pClientDE->SetupColor2 (1.0f, 1.0f, 1.0f, LTFALSE);
+
+			for (int nTint = 0; nTint < 2; ++nTint)
+			{
+				m_hInfinity[nTint] = m_pClientDE->CreateSurface (cxInf, cyInf);
+				if (!m_hInfinity[nTint]) continue;
+
+				m_pClientDE->FillRect (m_hInfinity[nTint], LTNULL, hTransColor);
+				m_pClientDE->DrawSurfaceSolidColor (m_hInfinity[nTint], hInfinitySrc, LTNULL, 0, 0,
+													hTransColor, hTints[nTint]);
+				m_pClientDE->OptimizeSurface (m_hInfinity[nTint], hTransColor);
+			}
+
+			m_pClientDE->DeleteSurface (hInfinitySrc);
+		}
+	}
+
 	// init the weapon name surfaces
 
 	HLTCOLOR hWhiteColor = m_pClientDE->SetupColor2(1.0f, 1.0f, 1.0f, LTFALSE);
+
+	ScaleFontDef (&fontdef, m_fFontScale);
 
 	for (uint32 i = GUN_FIRST_ID; i < GUN_MAX_NUMBER; i++)
 	{
@@ -596,6 +806,7 @@ LTBOOL CPlayerInventory::InitSurfaces()
 		{
 			m_hAmmoCount[i] = CTextHelper::CreateSurfaceFromString (m_pClientDE, m_hAmmoCountFont, IDS_ZEROCOUNT, hOrangeColor);
 			if (!m_hAmmoCount[i]) return LTFALSE;
+			m_nAmmoCount[i] = 0;
 			m_pClientDE->OptimizeSurface (m_hAmmoCount[i], hTransColor);
 		}
 	}

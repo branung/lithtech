@@ -14,8 +14,12 @@
 #include "RiotClientShell.h"
 #include "WeaponModel.h"
 #include "DynamicLightFX.h"
-#include "RiotMsgIds.h"
+#include "RiotMsgIDs.h"
 #include "ltobjectcreate.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 #define MAX_RANGE	5000.0f
 
@@ -68,7 +72,8 @@ LTBOOL CJuggernautFX::CreateObject(ILTClient *pClientDE)
 	// VEC_MULSCALAR(vDir, vDir, -1.0f);
 
 	LTRotation rRot;
-	m_pClientDE->Math()->AlignRotation(rRot, vDir, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(rRot, vDir, vWorldUp);
 
 	// Setup the model...
 

@@ -1,7 +1,7 @@
 #ifndef __FONT08_H
 #define __FONT08_H
 
-#include "bitmapfont.h"
+#include "BitmapFont.h"
 
 class CFont08 : public CBitmapFont
 {

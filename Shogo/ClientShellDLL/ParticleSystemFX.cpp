@@ -12,7 +12,11 @@
 #include "clientheaders.h"
 #include "ClientUtilities.h"
 #include "ClientServerShared.h"
+#include "iltmath.h"
 
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 #define MAX_PS_TIME_DELTA 0.2f
 
@@ -201,7 +205,7 @@ LTBOOL CParticleSystemFX::Update()
 	{
 		LTRotation rRot;
 		m_pClientDE->GetObjectRotation(m_hObject, &rRot);
-		m_pClientDE->Math()->EulerRotateY(rRot, m_pClientDE->GetFrameTime() * m_cs.fRotationVelocity);
+		pMath->EulerRotateY(rRot, m_pClientDE->GetFrameTime() * m_cs.fRotationVelocity);
 		m_pClientDE->SetObjectRotation(m_hObject, &rRot);
 	}
 

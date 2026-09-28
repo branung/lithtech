@@ -1,7 +1,7 @@
 #ifndef __FONT12_H
 #define __FONT12_H
 
-#include "bitmapfont.h"
+#include "BitmapFont.h"
 
 class CFont12 : public CBitmapFont
 {

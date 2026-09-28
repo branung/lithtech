@@ -4,7 +4,7 @@
 #include "BaseMenu.h"
 #include "DetailSettingsMenu.h"
 
-#define MAX_RESOLUTIONS	12
+#define MAX_RESOLUTIONS	32
 #define	MAX_RENDERERS	4
 #define MAX_RENDERDLLS	8
 

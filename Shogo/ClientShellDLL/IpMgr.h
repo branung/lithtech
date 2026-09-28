@@ -21,6 +21,12 @@
 #define IPM_MAX_IPS			256
 
 
+#ifndef BOOL
+	typedef int		    BOOL;
+	#define FALSE		    0
+	#define TRUE		    1
+#endif
+
 // Externs...
 
 class ILTClient;
@@ -68,13 +74,15 @@ public:
 	BOOL				ExistIp(char* sIp);
 
 	BOOL				AddIp(char* sIp);
-	BOOL				AddIpFromEditControl(HWND hEdit, HWND hList = NULL);
 
 	BOOL				RemoveIp(char* sIp);
 	void				RemoveAll();
-	BOOL				RemoveSelectedIpFromListBox(HWND hList);
 
+#ifdef _WIN32
+	BOOL				AddIpFromEditControl(HWND hEdit, HWND hList = NULL);
+	BOOL				RemoveSelectedIpFromListBox(HWND hList);
 	int					FillListBox(HWND hList);
+#endif
 
 	int					ReadIps();
 	int					WriteIps();

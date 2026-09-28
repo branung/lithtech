@@ -124,6 +124,14 @@ void CSlider::UpdateSlider()
 	int xThumb = 0;
 	int yThumb = 0;
 	GetThumbPos (&xThumb, &yThumb);
+
+	HCONSOLEVAR hDiag = m_pClientDE->GetConsoleVar ("Diag");
+	if (hDiag && m_pClientDE->GetVarValueFloat (hDiag) > 0.0f)
+	{
+		m_pClientDE->CPrint ("[D:SLIDER] pos %d/%d  bar %dx%d  thumb %dx%d  xThumb %d  enabled %d selected %d",
+			m_nPos, m_nStops - 1, m_nWidth, m_nHeight,
+			m_szThumb.cx, m_szThumb.cy, xThumb, (int)m_bEnabled, (int)m_bSelected);
+	}
 	
 	// calculate rects for filling behind thumb
 

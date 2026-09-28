@@ -10,12 +10,16 @@
 
 
 #include "RiotClientShell.h"
-#include "RiotMsgIds.h"
-#include "RiotCommandIds.h"
+// ILTCursor and the CM_* modes for the menu cursor
+#include "iltcursor.h"
+#include "de_lt1defaults.h"
+#include "ShogoDiag.h"
+#include "RiotMsgIDs.h"
+#include "RiotCommandIDs.h"
 #include "WeaponModel.h"
 #include "WeaponDefs.h"
 #include "ClientUtilities.h"
-#include "vkdefs.h"
+#include "VKDefs.h"
 #include "ClientRes.h"
 #include "RiotSoundTypes.h"
 #include "Music.h"
@@ -34,12 +38,19 @@
 #include "VarTrack.h"
 #include "ClientWeaponUtils.h"
 #include "SFXReg.h"
+#ifdef _WIN32
 #include <mbstring.h>
+#endif
 #include "ltobjectcreate.h"
 #include "iltsoundmgr.h"
 
 #include <stdarg.h>
 #include <stdio.h>
+#include "iltmath.h"
+#include "AutoMessage.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 #define min(a,b)	(a < b ? a : b)
 #define max(a,b)	(a > b ? a : b)
@@ -104,9 +115,9 @@ VarTrack g_CV_CSendRate; // The SendRate console variable.
 
 LTFLOAT s_fDemoTime   = 0.0f;
 
-void IRModelHook (struct ModelHookData_t *pData, void *pUser);
-void NVModelHook (struct ModelHookData_t *pData, void *pUser);
-void DefaultModelHook (struct ModelHookData_t *pData, void *pUser);
+void IRModelHook (ModelHookData *pData, void *pUser);
+void NVModelHook (ModelHookData *pData, void *pUser);
+void DefaultModelHook (ModelHookData *pData, void *pUser);
 
 // Guids...
 
@@ -129,23 +140,14 @@ LTGUID SHOGOGUID = { /* 87EEDE80-0ED4-11d2-BA96-006008904776 */
 
 SETUP_CLIENTSHELL();
 
-ILTClient* CreateClientShell(ILTClient *pClientDE)
-{
-	g_pLTClient = pClientDE;
-	return (ILTClient*)(new CRiotClientShell);
-}
+ILTCommon*	g_pCommonLT = NULL;
+define_holder_to_instance(ILTCommon, g_pCommonLT, Client);
 
-void DeleteClientShell(ILTClient *pInputShell)
-{
-	if (pInputShell)
-	{
-		delete ((CRiotClientShell*)pInputShell);
-	}
-}
+define_interface(CRiotClientShell, IClientShell);
 
-static LTBOOL LoadLeakFile(ILTClient *pClientDE, char *pFilename);
+static LTBOOL LoadLeakFile(ILTClient *pClientDE, const char *pFilename);
 
-void LeakFileFn(int argc, char **argv)
+void LeakFileFn(int argc, const char **argv)
 {
 	if (argc < 0)
 	{
@@ -163,9 +165,9 @@ void LeakFileFn(int argc, char **argv)
 	}
 }
 
-LTBOOL ConnectToTcpIpAddress(ILTClient* pClientDE, char* sAddress);
+LTBOOL ConnectToTcpIpAddress(ILTClient* pClientDE, const char* sAddress);
 
-void ConnectFn(int argc, char **argv)
+void ConnectFn(int argc, const char **argv)
 {
 
 //#ifdef _DEMO
@@ -182,30 +184,31 @@ void ConnectFn(int argc, char **argv)
 	ConnectToTcpIpAddress(g_pLTClient, argv[0]);
 }
 
-void FragSelfFn(int argc, char **argv)
+void FragSelfFn(int argc, const char **argv)
 {
 	ILTClient *pClientDE;
 	ILTMessage_Write* hWrite;
 
-	hWrite = g_pLTClient->StartMessage(MID_FRAG_SELF);
-	pClientDE->EndMessage(hWrite);
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_FRAG_SELF);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 }
 
 
-void RecordFn(int argc, char **argv)
+void RecordFn(int argc, const char **argv)
 {
 	if(g_pRiotClientShell)
 		g_pRiotClientShell->HandleRecord(argc, argv);
 }
 
-void PlayDemoFn(int argc, char **argv)
+void PlayDemoFn(int argc, const char **argv)
 {
 	if(g_pRiotClientShell)
 		g_pRiotClientShell->HandlePlaydemo(argc, argv);
 }
 
 
-void ExitGame(LTBOOL bResponse, uint32 nUserData)
+void ExitGame(LTBOOL bResponse, uintptr_t nUserData)
 {
 	if (bResponse)
 	{
@@ -214,7 +217,7 @@ void ExitGame(LTBOOL bResponse, uint32 nUserData)
 }
 
 
-void InitSoundFn(int argc, char **argv)
+void InitSoundFn(int argc, const char **argv)
 {
 	if( g_pRiotClientShell )
 		g_pRiotClientShell->InitSound( );
@@ -231,6 +234,8 @@ void InitSoundFn(int argc, char **argv)
 CRiotClientShell::CRiotClientShell()
 {
 	g_pRiotClientShell = this;
+
+	m_bMenuCursorActive = LTFALSE;
 
 	m_MoveMgr = LTNULL;
 
@@ -290,6 +295,12 @@ CRiotClientShell::CRiotClientShell()
 	m_bRestoreOrientation		= LTFALSE;
 	m_bAllowPlayerMovement		= LTTRUE;
 	m_bLastAllowPlayerMovement	= LTTRUE;
+	m_bSkipKeyDown				= LTFALSE;
+	m_bSkipCameraWasLive		= LTFALSE;
+	m_fSkipArmTime				= 0.0f;
+	m_fSceneStartTime			= 0.0f;
+	m_bSkipAutoFired			= LTFALSE;
+	m_bLastInputState			= LTTRUE;
 	m_bWasUsingExternalCamera	= LTFALSE;
 	m_bUsingExternalCamera		= LTFALSE;
 	m_bMovieCameraRect			= LTFALSE;
@@ -304,6 +315,7 @@ CRiotClientShell::CRiotClientShell()
 	VEC_SET(m_vDefaultLightScale, 1.0f, 1.0f, 1.0f);
 
 	m_hMenuMusic		= LTNULL;
+	m_hVideo			= LTNULL;
 	
 	m_nPlayerInfoChangeFlags	= 0;
 	m_fPlayerInfoLastSendTime	= 0.0f;
@@ -322,6 +334,7 @@ CRiotClientShell::CRiotClientShell()
 	m_yTransmissionText = 0;
 	m_cxTransmissionText = 0;
 	m_cyTransmissionText = 0;
+	m_fTransmissionScale = 1.0f;
 	m_hPressAnyKey = LTNULL;
 	m_hLoadingWorld = LTNULL;
 	m_hWorldName	= LTNULL;
@@ -586,7 +599,7 @@ void CRiotClientShell::InitSound()
 	// See if the provider exists.
 	if( dwProviderID != SOUND3DPROVIDERID_NONE )
 	{
-		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->GetSound3DProviderLists( pSound3DProviderList, LTFALSE );
+		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->GetSound3DProviderLists( pSound3DProviderList, LTFALSE, 16 );
 		if( !pSound3DProviderList )
 		{
 			m_resSoundInit = LT_NO3DSOUNDPROVIDER;
@@ -743,27 +756,46 @@ void CRiotClientShell::ShowSplash()
 	uint32 nWidth = 0;
 	uint32 nHeight = 0;
 	
-	g_pLTClient->GetSurfaceDims (hScreen, &nWidth, &nHeight);
-	
-	LTRect rcDst;
-	rcDst.left = rcDst.top = 0;
-	rcDst.right = nWidth;
-	rcDst.bottom = nHeight;
+	uint32 nScreenW = 0, nScreenH = 0, nBmpW = 0, nBmpH = 0;
+	g_pLTClient->GetSurfaceDims (hScreen, &nScreenW, &nScreenH);
+	g_pLTClient->GetSurfaceDims (hSplash, &nBmpW, &nBmpH);
+	nWidth = nScreenW; nHeight = nScreenH;
 
-	g_pLTClient->GetSurfaceDims (hSplash, &nWidth, &nHeight);
 	LTRect rcSrc;
 	rcSrc.left = rcSrc.top = 0;
-	rcSrc.right = nWidth;
-	rcSrc.bottom = nHeight;
+	rcSrc.right = nBmpW;
+	rcSrc.bottom = nBmpH;
 
-	g_pLTClient->ClearScreen (LTNULL, CLEARSCREEN_SCREEN);
+	// Fit the bitmap without distorting it
+	uint32 nFitW = nScreenW, nFitH = nScreenH;
+	if (nBmpW > 0 && nBmpH > 0)
+	{
+		if (nScreenW * nBmpH > nScreenH * nBmpW)
+		{
+			nFitH = nScreenH;
+			nFitW = (nBmpW * nScreenH) / nBmpH;
+		}
+		else
+		{
+			nFitW = nScreenW;
+			nFitH = (nBmpH * nScreenW) / nBmpW;
+		}
+	}
+
+	LTRect rcDst;
+	rcDst.left   = (nScreenW - nFitW) / 2;
+	rcDst.top    = (nScreenH - nFitH) / 2;
+	rcDst.right  = rcDst.left + nFitW;
+	rcDst.bottom = rcDst.top  + nFitH;
+
+	g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN, 0);
 	g_pLTClient->Start3D();
-	g_pLTClient->RenderCamera (m_hCamera);
+	g_pLTClient->RenderCamera(m_hCamera, g_pLTClient->GetFrameTime());
 	g_pLTClient->StartOptimized2D();
 	g_pLTClient->ScaleSurfaceToSurface (hScreen, hSplash, &rcDst, &rcSrc);
 	g_pLTClient->EndOptimized2D();
-	g_pLTClient->End3D();
-	g_pLTClient->FlipScreen (FLIPSCREEN_CANDRAWCONSOLE);
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
+	g_pLTClient->FlipScreen(0);
 	AddToClearScreenCount();
 
 	g_pLTClient->DeleteSurface (hSplash);
@@ -810,6 +842,7 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 
 
 	m_MoveMgr->Init(g_pLTClient);
+	m_Diag.Init(g_pLTClient);
 
 	g_pLTClient->RegisterConsoleProgram("LeakFile", LeakFileFn);
 	g_pLTClient->RegisterConsoleProgram("Connect", ConnectFn);
@@ -1010,7 +1043,7 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 
 	// Initialize the renderer
 
-	LTRESULT hResult = g_pLTClient->SetRenderMode(pMode);
+	LTRESULT hResult = g_pLTClient->SetRenderMode(pMode, GAME_NAME);
 	if (hResult != LT_OK)
 	{
 		g_pLTClient->DebugOut("Shogo Error: Couldn't set render mode!\n");
@@ -1030,7 +1063,7 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 
 		g_pLTClient->DebugOut("Setting render mode to 640x480x16...\n");
 		
-		if (g_pLTClient->SetRenderMode(&rMode) != LT_OK)
+		if (g_pLTClient->SetRenderMode(&rMode, GAME_NAME) != LT_OK)
 		{
 			// Okay, that didn't work, looks like we're stuck with software...
 			/*
@@ -1042,7 +1075,7 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 
 			g_pLTClient->DebugOut("Setting render mode to software...\n");
 
-			if (g_pLTClient->SetRenderMode(&rMode) != LT_OK)
+			if (g_pLTClient->SetRenderMode(&rMode, GAME_NAME) != LT_OK)
 			{
 				g_pLTClient->DebugOut("Shogo Error: Couldn't set software render mode.\nShutting down Shogo...\n");
 				g_pLTClient->ShutdownWithMessage("Shogo Error: Couldn't set software render mode.\nShutting down Shogo...\n");
@@ -1074,10 +1107,71 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 	m_hCamera = g_pLTClient->CreateObject(&theStruct);
 	g_pLTClient->SetCameraRect(m_hCamera, LTFALSE, 0, 0, dwWidth, dwHeight);
 	
-	LTFLOAT y = (m_fCurrentFovX * dwHeight) / dwWidth;
+	// The vertical FOV uses a fixed 4:3 ratio everywhere in this file.
+	// Under WidescreenFOV the engine owns aspect, so it needs the same 4:3 pair at any resolution
+	LTFLOAT y = (m_fCurrentFovX * 3.0f) / 4.0f;
 	g_pLTClient->SetCameraFOV(m_hCamera, m_fCurrentFovX, y);
 
 	
+	// Room for the player view weapon.
+	// The engine's default far plane for REALLYCLOSE is 7.0 which clips most of Shogo's guns.
+	// '-' keeps it out of autoexec.cfg
+	g_pLTClient->RunConsoleString("-reallyclose_far 20.0");
+
+	// Draw the player view weapon with the scene's own projection as LT1 did (it had no separate one)
+	{
+		g_pLTClient->RunConsoleString("-PVModelSceneFOV 1");
+
+		// The fullbrite pass adds the masked texel over the lit result, as LT1 does
+		g_pLTClient->RunConsoleString("-LT1FullbriteAdd 1");
+
+		// Reads the object light grid with y the right way round.
+		// Jupiter's CLightTable::GetLightVal blends its rows backwards, which LT1's coarse grid shows
+		g_pLTClient->RunConsoleString("-LT1LightTableY 1");
+
+		// Sky world models draw through their object transform, so a rotated sky box faces right
+		g_pLTClient->RunConsoleString("-LT1SkyObjectTransform 1");
+
+		// Hor+ widescreen, since Shogo's fovY only matches the screen at 4:3.
+		// A 4:3 window is pixel identical
+		g_pLTClient->RunConsoleString("-WidescreenFOV 1");
+
+		// The shared LT1 engine defaults before the server creates its objects.
+		// DynamicLightWorld stays off as Shogo never had it
+		DECompat_ApplyLT1ClientDefaults(g_pLTClient);
+
+		// LT1's translucent WorldModel split, part 1: whether a brush is culled.
+		// Much of Shogo is a box textured on one face that a cull would hide
+		g_pLTClient->RunConsoleString("-LT1WorldCull 1");
+
+		// Part 2: when the brush draws.
+		// LT1 draws the translucent list last, where Jupiter would overdraw them in the solid pass
+		g_pLTClient->RunConsoleString("-LT1WorldSort 1");
+
+		// LT1 stair step and resting behavior.
+		// Without it, MoveToFrontside walks the player up hillsides
+		g_pLTClient->RunConsoleString("-LT1StairStep 1");
+
+		// Gravity stays on a standing object (both sides)
+		g_pLTClient->RunConsoleString("-LT1StandGravity 1");
+
+		// Keeps resolved progress when the strike or restart cap cancels (both sides)
+		g_pLTClient->RunConsoleString("-LT1StrikeKeep 1");
+
+		// Travels with LT1StrikeKeep (both sides)
+		g_pLTClient->RunConsoleString("-LT1WorldAfterObjects 1");
+
+		// The rest of LT1's contact stack (both sides)
+		g_pLTClient->RunConsoleString("-LT1IntersectPushback 1");
+		g_pLTClient->RunConsoleString("-LT1PlaneRecheck 1");
+		g_pLTClient->RunConsoleString("-LT1SweepRebuild 1");
+		g_pLTClient->RunConsoleString("-LT1PolyTest 1");
+
+		// LT1 picks the path that prevents tunneling by geometry, not FLAG2_PLAYERCOLLIDE (both sides)
+		g_pLTClient->RunConsoleString("-LT1TunnelPath 1");
+	}
+
+
 	// Attempt to find the movies path
 
 	CWinUtil::GetMoviesPath (m_strMoviesDir);
@@ -1322,7 +1416,6 @@ void CRiotClientShell::OnEngineTerm()
 
 void CRiotClientShell::OnEvent(uint32 dwEventID, uint32 dwParam)
 {
-	ILTClient *pClientDE;
 	uint32 cxLoading, cyLoading, cxScreen, cyScreen;
 	HSURFACE hLoading;
 	HSURFACE hScreen;
@@ -1342,7 +1435,7 @@ void CRiotClientShell::OnEvent(uint32 dwEventID, uint32 dwParam)
 			{
 				ClearAllScreenBuffers();
 				
-				hScreen = pClientDE->GetScreenSurface();
+				hScreen = g_pLTClient->GetScreenSurface();
 				g_pLTClient->GetSurfaceDims (hScreen, &cxScreen, &cyScreen);
 
 				g_pLTClient->Start3D();
@@ -1358,7 +1451,7 @@ void CRiotClientShell::OnEvent(uint32 dwEventID, uint32 dwParam)
 					pFont = m_menu.GetFont08n();
 					if(pFont)
 					{
-						hLoading = CTextHelper::CreateSurfaceFromString(pClientDE,
+						hLoading = CTextHelper::CreateSurfaceFromString(g_pLTClient,
 							pFont, IDS_REINITIALIZING_RENDERER);
 						if(hLoading)
 						{
@@ -1372,7 +1465,7 @@ void CRiotClientShell::OnEvent(uint32 dwEventID, uint32 dwParam)
 				}
 
 				g_pLTClient->EndOptimized2D();
-				g_pLTClient->End3D();
+				g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 				g_pLTClient->FlipScreen(0);
 			}
 		break;
@@ -1435,13 +1528,13 @@ void CRiotClientShell::OnEvent(uint32 dwEventID, uint32 dwParam)
 }
 
 
-LTRESULT CRiotClientShell::OnObjectMove(HOBJECT hObj, LTBOOL bTeleport, LTVector *pPos)
+LTRESULT CRiotClientShell::OnObjectMove(HLOCALOBJ hObj, bool bTeleport, LTVector *pPos)
 {
 	return m_MoveMgr->OnObjectMove(hObj, bTeleport, pPos);
 }
 
 
-LTRESULT CRiotClientShell::OnObjectRotate(HOBJECT hObj, LTBOOL bTeleport, LTRotation *pNewRot)
+LTRESULT CRiotClientShell::OnObjectRotate(HLOCALOBJ hObj, bool bTeleport, LTRotation *pNewRot)
 {
 	return m_MoveMgr->OnObjectRotate(hObj, bTeleport, pNewRot);
 }
@@ -1461,7 +1554,7 @@ LTRESULT	CRiotClientShell::OnTouchNotify(HOBJECT hMain, CollisionInfo *pInfo, LT
 //
 // ----------------------------------------------------------------------- //
 
-void CRiotClientShell::PreLoadWorld(char *pWorldName)
+void CRiotClientShell::PreLoadWorld(const char *pWorldName)
 {
 	if (!g_pLTClient) return;
 	
@@ -1471,7 +1564,7 @@ void CRiotClientShell::PreLoadWorld(char *pWorldName)
 		MainWindowRestored();
 	}
 
-	char* pStrWorldOnly = &pWorldName[strlen(pWorldName) - 1];
+	const char* pStrWorldOnly = &pWorldName[strlen(pWorldName) - 1];
 	while (*pStrWorldOnly != '\\' && pStrWorldOnly != pWorldName) pStrWorldOnly--;
 	if (pStrWorldOnly != pWorldName) pStrWorldOnly++;
 
@@ -1519,7 +1612,7 @@ void CRiotClientShell::OnEnterWorld()
 
 	AddToClearScreenCount();
 
-	pClientDE->ClearInput();
+	g_pLTClient->ClearInput();
 
 	m_bHandledStartup = LTFALSE;
 	m_bInWorld		  = LTTRUE;
@@ -1528,6 +1621,8 @@ void CRiotClientShell::OnEnterWorld()
 
 	m_stats.OnEnterWorld(m_bRestoringGame);
 	m_menu.OnEnterWorld();
+
+	m_Diag.OnEnterWorld(m_strCurrentWorldName);
 	m_menu.ExitMenu(LTTRUE);
 
 
@@ -1666,16 +1761,16 @@ void CRiotClientShell::PreUpdate()
 
 	if (m_bClearScreenAlways)
 	{
-		g_pLTClient->ClearScreen (LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER);
+		g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, 0);
 	}
 	else if (m_nClearScreenCount)
 	{
-		g_pLTClient->ClearScreen (LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER);
+		g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, 0);
 		m_nClearScreenCount--;
 	}
 	else
 	{
-		g_pLTClient->ClearScreen (LTNULL, CLEARSCREEN_RENDER);
+		g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_RENDER, 0);
 	}
 }
 
@@ -1766,56 +1861,74 @@ void CRiotClientShell::Update()
 
 		case GS_MOVIES:
 		{
+			// LT1 cleared the back buffer each frame and Jupiter doesn't
+			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateMoviesState();
+			// LT1's End3D() presented the frame, Jupiter's needs FlipScreen
+			g_pLTClient->FlipScreen(0);
 			return;
 		}
 		break;
 		
 		case GS_CREDITS :
 		{
+			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateCreditsState();
+			g_pLTClient->FlipScreen(0);
 			return;
 		}
 		break;
 
 		case GS_INTRO :
 		{
+			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateIntroState();
+			g_pLTClient->FlipScreen(0);
 			return;
 		}
 		break;
 
 		case GS_MENU :
 		{
+			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateMenuState();
+			g_pLTClient->FlipScreen(0);
 			return;
 		}
 		break;
 
 		case GS_BUMPER :
 		{
+			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateBumperState();
+			g_pLTClient->FlipScreen(0);
 			return;
 		}
 		break;
 
 		case GS_LOADINGLEVEL :
 		{
+			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateLoadingLevelState();
+			g_pLTClient->FlipScreen(0);
 			return;
 		}
 		break;
 
 		case GS_PAUSED:
 		{
+			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdatePausedState();
+			g_pLTClient->FlipScreen(0);
 			return;
 		}
 		break;
 
 		case GS_DEMO_MULTIPLAYER :
 		{
+			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateDemoMultiplayerState();
+			g_pLTClient->FlipScreen(0);
 			return;
 		}
 		break;
@@ -1837,6 +1950,9 @@ void CRiotClientShell::Update()
 
 
 	m_MoveMgr->Update();
+
+	// Sampled after movement so it logs what the frame ended with (off unless Diag is set)
+	m_Diag.Update(m_MoveMgr, &m_weaponModel);
 
 	UpdateSoundReverb( );
 	
@@ -1863,8 +1979,6 @@ void CRiotClientShell::Update()
 
 		m_fCurSkyXOffset += fFrameTime * m_fPanSkyOffsetX;
 		m_fCurSkyZOffset += fFrameTime * m_fPanSkyOffsetZ;
-
-		g_pLTClient->SetGlobalPanInfo(GLOBALPAN_SKYSHADOW, m_fCurSkyXOffset, m_fCurSkyZOffset, m_fPanSkyScaleX, m_fPanSkyScaleZ);
 	}
 
 
@@ -1947,6 +2061,23 @@ void CRiotClientShell::PostUpdate()
 {
 	if (!g_pLTClient) return;
 
+	// Free the cursor for the menu and take it back for aiming
+	LTBOOL bInMenu = (m_nGameState == GS_MENU) ? LTTRUE : LTFALSE;
+	if (bInMenu != m_bMenuCursorActive)
+	{
+		m_bMenuCursorActive = bInMenu;
+		if (bInMenu)
+		{
+			g_pLTClient->Cursor()->SetCursorMode (CM_Hardware);
+			g_pLTClient->RunConsoleString ("CursorCenter 0");
+		}
+		else
+		{
+			g_pLTClient->Cursor()->SetCursorMode (CM_None);
+			g_pLTClient->RunConsoleString ("CursorCenter 1");
+		}
+	}
+
 	if (m_bQuickSave)
 	{
 		SaveGame(QUICKSAVE_FILENAME);
@@ -1972,7 +2103,7 @@ void CRiotClientShell::PostUpdate()
 		UpdateGameOver();
 	}
 
-	g_pLTClient->FlipScreen (FLIPSCREEN_CANDRAWCONSOLE);
+	g_pLTClient->FlipScreen(0);
 
 	// Check to see if we should start the world...(do after flip)...
 
@@ -2154,7 +2285,7 @@ void CRiotClientShell::UpdateSoundReverb( )
 	// If in mech, then lengthen the decaytime
 	if( !((m_nPlayerMode == PM_MODE_FOOT) || (m_nPlayerMode == PM_MODE_KID)))
 		reverbProperties.m_fDecayTime *= 2;
-	g_pLTClient->SetReverbProperties( &reverbProperties );
+	((ILTClientSoundMgr *)g_pLTClient->SoundMgr())->SetReverbProperties( &reverbProperties );
 
 }
 
@@ -2245,9 +2376,9 @@ void CRiotClientShell::UpdateMoviesState()
 
 	// If we're playing movies, see if the current one is finished...
 	
-	g_pLTClient->UpdateVideo();
+	g_pLTClient->VideoMgr()->UpdateVideo(m_hVideo);
 	
-	if (g_pLTClient->IsVideoPlaying() != VIDEO_PLAYING)
+	if (g_pLTClient->VideoMgr()->GetVideoStatus(m_hVideo) != VIDEO_PLAYING)
 	{
 		PlayIntroMovies (g_pLTClient);
 	}
@@ -2282,7 +2413,7 @@ void CRiotClientShell::UpdateCreditsState()
 		g_pLTClient->Start3D();
 		UpdateMenuPolygrid();
 		m_credits.Update();
-		g_pLTClient->End3D();
+		g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 	}
 }
 
@@ -2342,7 +2473,7 @@ void CRiotClientShell::UpdateIntroState()
 		g_pLTClient->Start3D();
 		UpdateMenuPolygrid();
 		m_credits.Update();
-		g_pLTClient->End3D();
+		g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 	}
 }
 
@@ -2366,7 +2497,7 @@ void CRiotClientShell::UpdateMenuState()
 	m_menu.Draw();
 	g_pLTClient->EndOptimized2D();
 
-	g_pLTClient->End3D();
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 }
 
 
@@ -2413,7 +2544,7 @@ void CRiotClientShell::UpdateBumperState()
 	g_pLTClient->DrawSurfaceToSurfaceTransparent (hScreen, m_hPressAnyKey, LTNULL, ((int)nWidth - (int)m_cxPressAnyKey) / 2, (int)nHeight - (int)m_cyPressAnyKey, LTNULL);
 
 	g_pLTClient->EndOptimized2D();
-	g_pLTClient->End3D();
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 }
 
 
@@ -2438,7 +2569,7 @@ void CRiotClientShell::UpdateLoadingLevelState()
 	UpdateLoadingLevel();
 
 	g_pLTClient->EndOptimized2D();
-	g_pLTClient->End3D();
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 
 	HLOCALOBJ hPlayerObj = g_pLTClient->GetClientObject();
 	if (m_bInWorld && hPlayerObj)
@@ -2480,7 +2611,7 @@ void CRiotClientShell::UpdatePausedState()
 	}
 	g_pLTClient->EndOptimized2D();
 
-	g_pLTClient->End3D();
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 }
 
 
@@ -2506,7 +2637,7 @@ void CRiotClientShell::UpdateDemoMultiplayerState()
 		g_pLTClient->Start3D();
 		UpdateMenuPolygrid();
 		m_credits.Update();
-		g_pLTClient->End3D();
+		g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 	}
 }
 
@@ -2526,9 +2657,86 @@ void CRiotClientShell::UpdatePlayerInfo()
 
 	LTFLOAT sendRate;
 
-	if (m_bAllowPlayerMovement != m_bLastAllowPlayerMovement)
+	// Cutscene skipping, off unless SkipCutscenes is set.
+	// A cutscene turns input off which zeroes every command, so input stays on while skipping is enabled.
+	// The server still refuses movement through CLIENTUPDATE_ALLOWINPUT
+	LTBOOL bSkipEnabled = LTFALSE;
 	{
-		SetInputState(m_bAllowPlayerMovement);
+		HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("SkipCutscenes");
+		bSkipEnabled = (hVar && g_pLTClient->GetVarValueFloat(hVar) > 0.0f);
+	}
+
+	LTBOOL bWantInput = m_bAllowPlayerMovement;
+	if (bSkipEnabled && m_bUsingExternalCamera)
+	{
+		bWantInput = LTTRUE;
+	}
+
+	if (bWantInput != m_bLastInputState)
+	{
+		SetInputState(bWantInput);
+		m_bLastInputState = bWantInput;
+	}
+
+	// Ask the server to skip on the press
+	if (bSkipEnabled && m_bUsingExternalCamera)
+	{
+		if (!m_bSkipCameraWasLive)
+		{
+			m_bSkipCameraWasLive = LTTRUE;
+
+			LTFLOAT fDelay = 0.5f;
+			HCONSOLEVAR hDelayVar = g_pLTClient->GetConsoleVar("SkipCutsceneDelay");
+			if (hDelayVar) fDelay = g_pLTClient->GetVarValueFloat(hDelayVar);
+			if (fDelay < 0.0f) fDelay = 0.0f;
+
+			m_fSkipArmTime    = g_pLTClient->GetTime() + fDelay;
+			m_fSceneStartTime = g_pLTClient->GetTime();
+			m_bSkipAutoFired  = LTFALSE;
+
+			// Guard 1: carried over from the text screen
+			if (g_pLTClient->IsCommandOn(COMMAND_ID_JUMP))
+			{
+				m_bSkipKeyDown = LTTRUE;
+			}
+		}
+
+		if (g_pLTClient->IsCommandOn(COMMAND_ID_JUMP))
+		{
+			// Guard 2: a press inside the window is swallowed
+			if (!m_bSkipKeyDown && g_pLTClient->GetTime() >= m_fSkipArmTime)
+			{
+				m_nPlayerInfoChangeFlags |= CLIENTUPDATE_SKIPCUTSCENE;
+			}
+			m_bSkipKeyDown = LTTRUE;
+		}
+		else
+		{
+			m_bSkipKeyDown = LTFALSE;
+		}
+
+		if (!m_bSkipAutoFired)
+		{
+			HCONSOLEVAR hAtVar = g_pLTClient->GetConsoleVar("SkipCutsceneAt");
+			LTFLOAT fAt = hAtVar ? g_pLTClient->GetVarValueFloat(hAtVar) : 0.0f;
+
+			if (fAt > 0.0f && g_pLTClient->GetTime() >= (m_fSkipArmTime - 0.0f) &&
+				g_pLTClient->GetTime() >= (m_fSceneStartTime + fAt))
+			{
+				m_bSkipAutoFired = LTTRUE;
+				m_nPlayerInfoChangeFlags |= CLIENTUPDATE_SKIPCUTSCENE;
+			}
+		}
+	}
+	else if (!m_bUsingExternalCamera)
+	{
+		m_bSkipCameraWasLive = LTFALSE;
+
+		// Hold the latch until release to prevent it being read as a jump
+		if (m_bSkipKeyDown && !g_pLTClient->IsCommandOn(COMMAND_ID_JUMP))
+		{
+			m_bSkipKeyDown = LTFALSE;
+		}
 	}
 
 	HLOCALOBJ hPlayerObj = g_pLTClient->GetClientObject();
@@ -2557,7 +2765,7 @@ void CRiotClientShell::UpdatePlayerInfo()
 
 	// Set the player's rotation (don't allow model to rotate up/down).
 
-	g_pLTClient->Math()->SetupEuler(rPlayerRot, 0.0f, m_fYaw, m_fCamCant);
+	pMath->SetupEuler(rPlayerRot, 0.0f, m_fYaw, m_fCamCant);
 
 	if ( m_playerCamera.IsChaseView() != m_bLastSent3rdPerson )
 	{
@@ -2582,43 +2790,58 @@ void CRiotClientShell::UpdatePlayerInfo()
 		// Always send CLIENTUPDATE_ALLOWINPUT changes guaranteed.
 		if(m_nPlayerInfoChangeFlags & CLIENTUPDATE_ALLOWINPUT)
 		{
-			ILTMessage_Write* hMessage = pClientDE->StartMessage(MID_PLAYER_UPDATE);
-			pClientDE->WriteToMessageWord(hMessage, CLIENTUPDATE_ALLOWINPUT);
-			pClientDE->WriteToMessageByte(hMessage, (uint8)m_bAllowPlayerMovement);
-			pClientDE->EndMessage(hMessage);
+			CAutoMessage cMsg;
+			cMsg.Writeuint8(MID_PLAYER_UPDATE);
+			cMsg.Writeuint16(CLIENTUPDATE_ALLOWINPUT);
+			cMsg.Writeuint8((uint8)m_bAllowPlayerMovement);
+			g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 			m_nPlayerInfoChangeFlags &= ~CLIENTUPDATE_ALLOWINPUT;
 		}
 		
-		sendRate = 1.0f / g_CV_CSendRate.GetLTFLOAT(DEFAULT_CSENDRATE);
+		sendRate = 1.0f / g_CV_CSendRate.GetFloat(DEFAULT_CSENDRATE);
 
 		if(!IsMultiplayerGame() || 
 			(g_pLTClient->GetTime() - m_fPlayerInfoLastSendTime) > sendRate)
 		{
-			ILTMessage_Write* hMessage = g_pLTClient->StartMessage(MID_PLAYER_UPDATE);
+			CAutoMessage cMsg;
+			cMsg.Writeuint8(MID_PLAYER_UPDATE);
+
+			// Command state goes out with every update
+			m_nPlayerInfoChangeFlags |= CLIENTUPDATE_COMMANDS;
 
 			// Write rotation info.			
-			g_pLTClient->WriteToMessageWord(hMessage, m_nPlayerInfoChangeFlags);
+			cMsg.Writeuint16(m_nPlayerInfoChangeFlags);
 			if ( m_nPlayerInfoChangeFlags & CLIENTUPDATE_PLAYERROT )
 			{
-				//pClientDE->WriteToMessageRotation(hMessage, &rPlayerRot);
-				g_pLTClient->WriteToMessageByte(hMessage, CompressRotationByte(&rPlayerRot));
+				//cMsg.WriteLTRotation(rPlayerRot);
+				cMsg.Writeuint8(CompressRotationByte(&rPlayerRot));
 			}
 			
 			if ( m_nPlayerInfoChangeFlags & CLIENTUPDATE_WEAPONROT )
-				g_pLTClient->WriteToMessageRotation(hMessage, &m_rRotation);
+				cMsg.WriteLTRotation(m_rRotation);
 			
 			if ( m_nPlayerInfoChangeFlags & CLIENTUPDATE_EXTERNALCAMERA )
-				g_pLTClient->WriteToMessageVector(hMessage, &vCameraPos);
-			
+				cMsg.WriteLTVector(vCameraPos);
+
+			{
+				uint64 nCommands[2] = { 0, 0 };
+				for (int nCmd = 0; nCmd < PLAYER_COMMAND_BITS; ++nCmd)
+				{
+					if (g_pLTClient->IsCommandOn(nCmd))
+						nCommands[nCmd >> 6] |= ((uint64)1) << (nCmd & 63);
+				}
+				cMsg.Writeuint64(nCommands[0]);
+				cMsg.Writeuint64(nCommands[1]);
+			}
 
 			// Write position info.
-			m_MoveMgr->WritePositionInfo(hMessage);
+			m_MoveMgr->WritePositionInfo(cMsg);
 
-			g_pLTClient->EndMessage2(hMessage, 0); // Send unguaranteed.
+			g_pLTClient->SendToServer(cMsg.Read(), 0);
 			
 			m_fLastSentYaw	= m_fYaw;
 			m_fLastSentCamCant = m_fCamCant;
-			m_fPlayerInfoLastSendTime = pClientDE->GetTime();
+			m_fPlayerInfoLastSendTime = g_pLTClient->GetTime();
 			m_nPlayerInfoChangeFlags = 0;
 		}
 	}
@@ -2639,8 +2862,9 @@ void CRiotClientShell::StartLevel()
 {
 	if (!g_pLTClient || IsMultiplayerGame()) return;
 
-	ILTMessage_Write* hMessage = g_pLTClient->StartMessage(MID_SINGLEPLAYER_START);
-	g_pLTClient->EndMessage(hMessage);
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_SINGLEPLAYER_START);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 }
 
 
@@ -2782,7 +3006,7 @@ LTBOOL CRiotClientShell::UpdateAlternativeCamera()
 					
 					if (pCamFX->IsListener())
 					{
-						g_pLTClient->SetListener(LTFALSE, &vPos, &rRot);
+						((ILTClientSoundMgr *)g_pLTClient->SoundMgr())->SetListener(LTFALSE, &vPos, &rRot, false);
 					}
 
 					// Set to movie camera rect, if not already set...
@@ -2820,7 +3044,8 @@ LTBOOL CRiotClientShell::UpdateAlternativeCamera()
 
 						LTFLOAT y, x;
 						g_pLTClient->GetCameraFOV(m_hCamera, &x, &y);
-						y = (x * dwHeight * fVal2) / dwWidth;
+						// Fixed 4:3 ratio (see the camera creation comment)
+						y = (x * 3.0f * fVal2) / 4.0f;
 
 						g_pLTClient->SetCameraFOV(m_hCamera, x, y);
 					}
@@ -2861,7 +3086,7 @@ void CRiotClientShell::TurnOffAlternativeCamera()
 
 	// Set the listener back to the client...
 
-	g_pLTClient->SetListener(LTTRUE, LTNULL, LTNULL);
+	((ILTClientSoundMgr *)g_pLTClient->SoundMgr())->SetListener(LTTRUE, LTNULL, LTNULL, false);
 	
 	
 	// Force 1st person...
@@ -2879,10 +3104,10 @@ void CRiotClientShell::TurnOffAlternativeCamera()
 	uint32 dwWidth  = m_nOldCameraRight - m_nOldCameraLeft;
 	LTFLOAT y, x;
 
-	pClientDE->GetCameraFOV(m_hCamera, &x, &y);
-	y = (x * dwHeight) / dwWidth;
+	g_pLTClient->GetCameraFOV(m_hCamera, &x, &y);
+	y = (x * 3.0f) / 4.0f;
 
-	pClientDE->SetCameraFOV(m_hCamera, x, y);
+	g_pLTClient->SetCameraFOV(m_hCamera, x, y);
 }
 
 
@@ -2906,7 +3131,7 @@ void CRiotClientShell::UpdateCameraPosition()
 		vPos.y += m_fBobHeight + m_fCamDuck;
 
 		LTVector vU, vR, vF;
-		g_pLTClient->Math()->GetRotationVectors(m_rRotation, vU, vR, vF);
+		pMath->GetRotationVectors(m_rRotation, vU, vR, vF);
 
 		VEC_MULSCALAR(vR, vR, m_fBobWidth)
 		VEC_ADD(vPos, vPos, vR)
@@ -3061,14 +3286,19 @@ void CRiotClientShell::CalculateCameraRotation()
 			}
 		}
 
+		// Look rate per second
+		// 0.075 per frame at 30fps is kept visible and multiplied out
+		const LTFLOAT kLookRate = 0.075f * 30.0f;
+		const LTFLOAT fLookStep = kLookRate * g_pLTClient->GetFrameTime();
+
 		if (m_dwPlayerFlags & CS_MFLG_LOOKUP)
 		{
-			m_fPitch -= 0.075f;
+			m_fPitch -= fLookStep;
 		}
 
 		if (m_dwPlayerFlags & CS_MFLG_LOOKDOWN)
 		{
-			m_fPitch += 0.075f;
+			m_fPitch += fLookStep;
 		}
 
 		// Don't allow much movement up/down if 3rd person...
@@ -3113,11 +3343,11 @@ LTBOOL CRiotClientShell::UpdateCameraRotation()
 	{
 		// Just calculate the correct player rotation...
 
-		g_pLTClient->Math()->SetupEuler(m_rRotation, m_fPitch, m_fYaw, m_fCamCant);
+		pMath->SetupEuler(m_rRotation, m_fPitch, m_fYaw, m_fCamCant);
 	}
 	else if (m_playerCamera.IsFirstPerson())
 	{
-		g_pLTClient->Math()->SetupEuler(m_rRotation, m_fPitch, m_fYaw, m_fCamCant);
+		pMath->SetupEuler(m_rRotation, m_fPitch, m_fYaw, m_fCamCant);
 		g_pLTClient->SetObjectRotation(m_hCamera, &m_rRotation);
 	}
 	else
@@ -3126,12 +3356,12 @@ LTBOOL CRiotClientShell::UpdateCameraRotation()
 		// however we still need to calculate the correct rotation to be sent
 		// to the player...
 
-		g_pLTClient->Math()->EulerRotateX(m_rRotation, m_fPitch);
+		pMath->EulerRotateX(m_rRotation, m_fPitch);
 		g_pLTClient->SetObjectRotation(m_hCamera, &m_rRotation);
 
 		// Okay, now calculate the correct player rotation...
 
-		g_pLTClient->Math()->SetupEuler(m_rRotation, m_fPitch, m_fYaw, m_fCamCant);
+		pMath->SetupEuler(m_rRotation, m_fPitch, m_fYaw, m_fCamCant);
 	}
 
 	return LTTRUE;
@@ -3150,7 +3380,7 @@ void CRiotClientShell::UpdateCameraZoom()
 {
 	if (!g_pLTClient || !m_hCamera) return;
 
-	LTFLOAT zoomSpeed = 4 * pClientDE->GetFrameTime();
+	LTFLOAT zoomSpeed = 4 * g_pLTClient->GetFrameTime();
 
 	char strConsole[30];
 	LTFLOAT fovX, fovY, oldFovX;
@@ -3207,7 +3437,7 @@ void CRiotClientShell::UpdateCameraZoom()
 
 	if (oldFovX != fovX && dwWidth && dwHeight)
 	{
-		fovY = (fovX * dwHeight) / dwWidth;
+		fovY = (fovX * 3.0f) / 4.0f;
 
 		g_pLTClient->SetCameraFOV(m_hCamera, fovX, fovY);
 
@@ -3243,7 +3473,7 @@ void CRiotClientShell::UpdateCameraShake()
 
 	// Decay...
 
-	LTFLOAT fDecayAmount = 2.0f * pClientDE->GetFrameTime();
+	LTFLOAT fDecayAmount = 2.0f * g_pLTClient->GetFrameTime();
 
 	m_vShakeAmount.x -= fDecayAmount;
 	m_vShakeAmount.y -= fDecayAmount;
@@ -3274,10 +3504,22 @@ void CRiotClientShell::UpdateCameraShake()
 	HLOCALOBJ hWeapon = m_weaponModel.GetHandle();
 	if (!hWeapon) return;
 
-	g_pLTClient->GetObjectPos(hWeapon, &vPos);
+	LTRotation rCamRot;
+	g_pLTClient->GetObjectRotation(m_hCamera, &rCamRot);
 
-	VEC_MULSCALAR(vAdd, vAdd, 0.95f);
-	VEC_ADD(vPos, vPos, vAdd);
+	LTVector vCamU, vCamR, vCamF;
+	pMath->GetRotationVectors(rCamRot, vCamU, vCamR, vCamF);
+
+	LTVector vResidual;
+	VEC_MULSCALAR(vResidual, vAdd, -0.05f);
+
+	LTVector vLocalAdd;
+	VEC_SET(vLocalAdd, VEC_DOT(vResidual, vCamR),
+					   VEC_DOT(vResidual, vCamU),
+					   VEC_DOT(vResidual, vCamF));
+
+	g_pLTClient->GetObjectPos(hWeapon, &vPos);
+	VEC_ADD(vPos, vPos, vLocalAdd);
 	g_pLTClient->SetObjectPos(hWeapon, &vPos);
 }
 
@@ -3379,7 +3621,7 @@ void CRiotClientShell::UpdateWeaponModel()
 
 	if (m_fFireJitterPitch > 0.0f)
 	{
-		LTFLOAT fVal = (pClientDE->GetFrameTime() * FIRE_JITTER_DECAY_DELTA);
+		LTFLOAT fVal = (g_pLTClient->GetFrameTime() * FIRE_JITTER_DECAY_DELTA);
 
 		if (m_fFireJitterPitch - fVal < 0.0f)
 		{
@@ -3478,7 +3720,7 @@ void CRiotClientShell::Update3rdPersonCrossHair(LTFLOAT fDistance)
 {
 	if (!m_MoveMgr || !g_pLTClient || !m_playerCamera.IsChaseView()) return;
 
-	//HLOCALOBJ hPlayerObj = pClientDE->GetClientObject();
+	//HLOCALOBJ hPlayerObj = g_pLTClient->GetClientObject();
 	HLOCALOBJ hPlayerObj = m_MoveMgr->GetObject();
 	if (!hPlayerObj) return;
 
@@ -3516,7 +3758,7 @@ void CRiotClientShell::Update3rdPersonCrossHair(LTFLOAT fDistance)
 	}
 
 	LTVector vU, vR, vF;
-	g_pLTClient->Math()->GetRotationVectors(m_rRotation, vU, vR, vF);
+	pMath->GetRotationVectors(m_rRotation, vU, vR, vF);
 	VEC_NORM(vF);
 
 	LTVector vPos;
@@ -3616,7 +3858,7 @@ void CRiotClientShell::UpdateContainerFX()
 						g_pLTClient->RunConsoleString(buf);
 
 						sprintf(buf, "FogB %d", (int)vFogColor.z);
-						pClientDE->RunConsoleString(buf);
+						g_pLTClient->RunConsoleString(buf);
 					}
 				}				
 			}
@@ -3866,7 +4108,7 @@ void CRiotClientShell::UpdateUnderWaterFX(LTBOOL bUpdate)
 	// Initialize to default fov x and y...
 
 	LTFLOAT fFovX = m_fCurrentFovX;
-	LTFLOAT fFovY = (fFovX * dwHeight) / dwWidth;
+	LTFLOAT fFovY = (fFovX * 3.0f) / 4.0f;
 	
 	if (bUpdate)
 	{
@@ -3879,9 +4121,9 @@ void CRiotClientShell::UpdateUnderWaterFX(LTBOOL bUpdate)
 			fFovX -= fSpeed;
 			fFovY += fSpeed;
 
-			if (fFovY > (m_fCurrentFovX * dwHeight) / dwWidth)
+			if (fFovY > (m_fCurrentFovX * 3.0f) / 4.0f)
 			{
-				fFovY = (m_fCurrentFovX * dwHeight) / dwWidth;
+				fFovY = (m_fCurrentFovX * 3.0f) / 4.0f;
 				m_fFovXFXDir = -m_fFovXFXDir;
 			}
 		}
@@ -3921,7 +4163,7 @@ void CRiotClientShell::UpdateBreathingFX(LTBOOL bUpdate)
 	// Initialize to default fov x and y...
 
 	LTFLOAT fFovX = m_fCurrentFovX;
-	LTFLOAT fFovY = (fFovX * dwHeight) / dwWidth;
+	LTFLOAT fFovY = (fFovX * 3.0f) / 4.0f;
 	
 	if (bUpdate)
 	{
@@ -3946,9 +4188,9 @@ void CRiotClientShell::UpdateBreathingFX(LTBOOL bUpdate)
 			fFovX += fSpeed;
 			fFovY += fSpeed;
 
-			if (fFovY > (m_fCurrentFovX * dwHeight) / dwWidth)
+			if (fFovY > (m_fCurrentFovX * 3.0f) / 4.0f)
 			{
-				fFovY = (m_fCurrentFovX * dwHeight) / dwWidth;
+				fFovY = (m_fCurrentFovX * 3.0f) / 4.0f;
 				m_fFovXFXDir = -m_fFovXFXDir;
 			}
 
@@ -3999,7 +4241,7 @@ void CRiotClientShell::ChangeWeapon(ILTMessage_Read* hMessage)
 		HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("AutoWeaponSwitch");
 		if (hVar)
 		{
-			bChange = (LTBOOL) pClientDE->GetVarValueFloat(hVar);
+			bChange = (LTBOOL) g_pLTClient->GetVarValueFloat(hVar);
 		}
 	}
 
@@ -4033,6 +4275,7 @@ void CRiotClientShell::ChangeWeapon(uint8 nWeaponId, LTBOOL bZoom, uint32 dwAmmo
 	if (!m_weaponModel.GetHandle() || nWeaponId != m_weaponModel.GetId())
 	{
 		m_weaponModel.Create(g_pLTClient, nWeaponId);
+		m_Diag.OnWeaponCreated(&m_weaponModel);
 	}
 
 	// Update the ammo display...
@@ -4050,9 +4293,10 @@ void CRiotClientShell::ChangeWeapon(uint8 nWeaponId, LTBOOL bZoom, uint32 dwAmmo
 
 	// Tell the server to change weapons...
 
-	ILTMessage_Write* hMessage = g_pLTClient->StartMessage(MID_WEAPON_CHANGE);
-	pClientDE->WriteToMessageByte(hMessage, nWeaponId);
-	pClientDE->EndMessage(hMessage);
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_WEAPON_CHANGE);
+	cMsg.Writeuint8(nWeaponId);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 }
 
 
@@ -4072,13 +4316,13 @@ void CRiotClientShell::HandleZoomChange(uint8 nWeaponId)
 	{
 		// Play zoom in/out sounds...
 
-		char* pSound = (nWeaponId == GUN_SNIPERRIFLE_ID ? "Sounds\\Weapons\\SniperRifle\\zoomout.wav"
+		char* pSound = (char*)(nWeaponId == GUN_SNIPERRIFLE_ID ? "Sounds\\Weapons\\SniperRifle\\zoomout.wav"
 													    : "Sounds\\Weapons\\AssaultRifle\\zoomout.wav");
 		if (m_bZoomView)
 		{
 			m_bDrawHud = LTFALSE;
 
-			pSound = (nWeaponId == GUN_SNIPERRIFLE_ID ? "Sounds\\Weapons\\SniperRifle\\zoomin.wav"
+			pSound = (char*)(nWeaponId == GUN_SNIPERRIFLE_ID ? "Sounds\\Weapons\\SniperRifle\\zoomin.wav"
 													  : "Sounds\\Weapons\\AssaultRifle\\zoomin.wav");
 		}
 		else
@@ -4101,7 +4345,7 @@ void CRiotClientShell::HandleZoomChange(uint8 nWeaponId)
 
 void CRiotClientShell::OnCommandOn(int command)
 {
-	if (!pClientDE) return;
+	if (!g_pLTClient) return;
 
 	// only allow input if not editing and not drawing the mission log
 
@@ -4154,7 +4398,7 @@ void CRiotClientShell::OnCommandOn(int command)
 
 			uint32 nWidth = 0;
 			uint32 nHeight = 0;
-			HSURFACE hScreen = pClientDE->GetScreenSurface();
+			HSURFACE hScreen = g_pLTClient->GetScreenSurface();
 			g_pLTClient->GetSurfaceDims (hScreen, &nWidth, &nHeight);
 
 			int dx = (int)(((LTFLOAT)nWidth * 0.1f) / 2.0f);		// 5% of screen width on either side
@@ -4402,6 +4646,36 @@ void CRiotClientShell::OnCommandOff(int command)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CRiotClientShell::HandleEvent()
+//
+//	PURPOSE:	SDL events for the menu mouse (only in GS_MENU)
+//
+// ----------------------------------------------------------------------- //
+
+void CRiotClientShell::HandleEvent(SDL_Event e)
+{
+	if (m_nGameState != GS_MENU) return;
+
+	// A message box owns input while its up
+	if (m_pMessageBox) return;
+
+	switch (e.type)
+	{
+		case SDL_MOUSEMOTION:
+			m_menu.OnMouseMove (e.motion.x, e.motion.y);
+			break;
+
+		case SDL_MOUSEBUTTONDOWN:
+			if (e.button.button == SDL_BUTTON_LEFT)
+			{
+				m_menu.OnLButtonDown (e.button.x, e.button.y);
+			}
+			break;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CRiotClientShell::OnKeyDown(int key, int rep)
 //
 //	PURPOSE:	Handle key down notification
@@ -4415,8 +4689,8 @@ void CRiotClientShell::OnKeyDown(int key, int rep)
 	if (!g_pLTClient) return;
 
 	// get the vk codes for yes and no from cres.dll
-	int nYesVKCode = TextHelperGetIntValFromStringID(pClientDE, IDS_YES_VK_CODE, VK_Y);
-	int nNoVKCode = TextHelperGetIntValFromStringID(pClientDE, IDS_NO_VK_CODE, VK_N);
+	int nYesVKCode = TextHelperGetIntValFromStringID(g_pLTClient, IDS_YES_VK_CODE, VK_Y);
+	int nNoVKCode = TextHelperGetIntValFromStringID(g_pLTClient, IDS_NO_VK_CODE, VK_N);
 
 
 	//********  Are We Showing a MessageBox  ********//
@@ -4475,11 +4749,11 @@ void CRiotClientShell::OnKeyDown(int key, int rep)
 	
 	if (m_nGameState == GS_MOVIES)
 	{
-		if (key == VK_ESCAPE && pClientDE->IsVideoPlaying() == VIDEO_PLAYING)
+		if (key == VK_ESCAPE && g_pLTClient->VideoMgr()->GetVideoStatus(m_hVideo) == VIDEO_PLAYING)
 		{
-			if (pClientDE->StopVideo() == LT_OK)
+			if (g_pLTClient->VideoMgr()->StopVideo(m_hVideo) == LT_OK)
 			{
-				PlayIntroMovies (pClientDE);
+				PlayIntroMovies (g_pLTClient);
 			}
 		}
 		return;
@@ -4626,13 +4900,14 @@ void CRiotClientShell::OnKeyDown(int key, int rep)
 				delete m_pIngameDialog;
 				m_pIngameDialog = LTNULL;
 
-				ILTMessage_Write* hMessage = g_pLTClient->StartMessage(MID_DIALOG_CLOSE);
-				pClientDE->WriteToMessageLTFLOAT (hMessage, fSelection);
-				pClientDE->WriteToMessageByte (hMessage, (uint8) (nDlgObjHandle));
-				pClientDE->WriteToMessageByte (hMessage, (uint8) (nDlgObjHandle >> 8));
-				pClientDE->WriteToMessageByte (hMessage, (uint8) (nDlgObjHandle >> 16));
-				pClientDE->WriteToMessageByte (hMessage, (uint8) (nDlgObjHandle >> 24));
-				pClientDE->EndMessage(hMessage);
+				CAutoMessage cMsg;
+				cMsg.Writeuint8(MID_DIALOG_CLOSE);
+				cMsg.Writefloat(fSelection);
+				cMsg.Writeuint8((uint8) (nDlgObjHandle));
+				cMsg.Writeuint8((uint8) (nDlgObjHandle >> 8));
+				cMsg.Writeuint8((uint8) (nDlgObjHandle >> 16));
+				cMsg.Writeuint8((uint8) (nDlgObjHandle >> 24));
+				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 
 				// re-enable client-side input
 
@@ -4680,7 +4955,7 @@ void CRiotClientShell::OnKeyDown(int key, int rep)
 		{
 			m_nGameState = GS_PAUSED;
 
-			m_hGamePausedSurface = CTextHelper::CreateSurfaceFromString(pClientDE, m_menu.GetFont28n(), IDS_PAUSED);
+			m_hGamePausedSurface = CTextHelper::CreateSurfaceFromString(g_pLTClient, m_menu.GetFont28n(), IDS_PAUSED);
 		}
 
 		PauseGame (!m_bGamePaused, LTTRUE);
@@ -4906,6 +5181,14 @@ void CRiotClientShell::UpdatePlayerFlags()
 //	PURPOSE:	Handle client commands
 //
 // ----------------------------------------------------------------------- //
+
+void CRiotClientShell::OnMessage(ILTMessage_Read* pMessage)
+{
+	if (!pMessage) return;
+
+	uint8 messageID = pMessage->Readuint8();
+	OnMessage(messageID, pMessage);
+}
 
 void CRiotClientShell::OnMessage(uint8 messageID, ILTMessage_Read* hMessage)
 {
@@ -5257,16 +5540,20 @@ void CRiotClientShell::OnMessage(uint8 messageID, ILTMessage_Read* hMessage)
 		{
 			// retrieve the string from the message, play the chat sound, and display the message
 			
-			char *pMessage = pClientDE->ReadFromMessageString (hMessage);
+			char szMessage[256];
+			
+			hMessage->ReadString(szMessage, sizeof(szMessage));
+			
+			char *pMessage = szMessage;
 
-			HSTRING hstrChatSound = pClientDE->FormatString (IDS_CHATSOUND);
+			HSTRING hstrChatSound = g_pLTClient->FormatString (IDS_CHATSOUND);
 			PlaySoundInfo playSoundInfo;
 			PLAYSOUNDINFO_INIT(playSoundInfo);
 			playSoundInfo.m_dwFlags = PLAYSOUND_CLIENT | PLAYSOUND_LOCAL;
-			SAFE_STRCPY(playSoundInfo.m_szSoundName, pClientDE->GetStringData (hstrChatSound));
-			pClientDE->PlaySound(&playSoundInfo);
+			SAFE_STRCPY(playSoundInfo.m_szSoundName, g_pLTClient->GetStringData (hstrChatSound));
+			PlaySoundInfoLocal(&playSoundInfo);
 
-			pClientDE->FreeString(hstrChatSound);
+			g_pLTClient->FreeString(hstrChatSound);
 
 			CSPrint (pMessage);
 		}
@@ -5310,7 +5597,9 @@ void CRiotClientShell::OnMessage(uint8 messageID, ILTMessage_Read* hMessage)
 
 		case MID_COMMAND_SHOWGAMEMSG :
 		{
-			char* strMessage = pClientDE->ReadFromMessageString (hMessage);
+			char szMessage[256];
+			hMessage->ReadString(szMessage, sizeof(szMessage));
+			char* strMessage = szMessage;
 			ShowGameMessage (strMessage);
 		}
 		break;
@@ -5375,7 +5664,11 @@ void CRiotClientShell::OnMessage(uint8 messageID, ILTMessage_Read* hMessage)
 			char *pClassName;
 			uint32 id;
 
-			pClassName = pClientDE->ReadFromMessageString(hMessage);
+			char szClassName[256];
+
+			hMessage->ReadString(szClassName, sizeof(szClassName));
+
+			pClassName = szClassName;
 			id = hMessage->Readuint8(); 
 
 			if(pReg = FindSFXRegByName(pClassName))
@@ -5416,7 +5709,7 @@ void CRiotClientShell::ShakeScreen(LTVector vShake)
 // Console command handlers for recording and playing demos.
 // ----------------------------------------------------------------------- //
 
-void CRiotClientShell::HandleRecord(int argc, char **argv)
+void CRiotClientShell::HandleRecord(int argc, const char **argv)
 {
 	if(argc < 2)
 	{
@@ -5430,7 +5723,7 @@ void CRiotClientShell::HandleRecord(int argc, char **argv)
 	}
 }
 
-void CRiotClientShell::HandlePlaydemo(int argc, char **argv)
+void CRiotClientShell::HandlePlaydemo(int argc, const char **argv)
 {
 	if(argc < 1)
 	{
@@ -5479,7 +5772,7 @@ void CRiotClientShell::TintScreen(LTVector vTintColor, LTVector vPos, LTFLOAT fT
 	LTRotation rRot;
 	LTVector vU, vR, vF;
 	g_pLTClient->GetObjectRotation(m_hCamera, &rRot);
-	g_pLTClient->Math()->GetRotationVectors(rRot, vU, vR, vF);
+	pMath->GetRotationVectors(rRot, vU, vR, vF);
 
 	VEC_NORM(vDir);
 	VEC_NORM(vF);
@@ -5504,7 +5797,7 @@ void CRiotClientShell::TintScreen(LTVector vTintColor, LTVector vPos, LTFLOAT fT
 	fMul *= (fVal <= 1.0f ? fVal : 1.0f);
 
 	m_bTintScreen	= LTTRUE;
-	m_fTintStart	= pClientDE->GetTime();
+	m_fTintStart	= g_pLTClient->GetTime();
 	m_fTintTime		= fTime;
 	m_fTintRampUp	= fRampUp;
 	m_fTintRampDown	= fRampDown;
@@ -5827,7 +6120,7 @@ void CRiotClientShell::UpdatePlayerStats(uint8 nThing, uint8 nType, LTFLOAT fNew
 		{
 			// Play targeting sound..
 
-			char* pSound = (nType == 1 ? "Sounds\\Weapons\\lockedon.wav"
+			char* pSound = (char*)(nType == 1 ? "Sounds\\Weapons\\lockedon.wav"
 									   : "Sounds\\Weapons\\lockingon.wav");
 	
 			HSTRING hStr = g_pLTClient->FormatString (nType == 1 ? IDS_ROCKETLOCKON : IDS_ROCKETLOCKDETECTED);
@@ -6100,7 +6393,9 @@ void CRiotClientShell::HandleTransmission (ILTMessage_Read* hMessage)
 	char *pszImage;
 
 	uint32	nStringID = hMessage->Readuint32();
-	pszImage = pClientDE->ReadFromMessageString (hMessage);
+	char szImage[256];
+	hMessage->ReadString(szImage, sizeof(szImage));
+	pszImage = szImage;
 	
 	uint32 nScreenWidth, nScreenHeight;
 	HSURFACE hScreen = g_pLTClient->GetScreenSurface();
@@ -6117,14 +6412,24 @@ void CRiotClientShell::HandleTransmission (ILTMessage_Read* hMessage)
 	HLTCOLOR hTrans = g_pLTClient->SetupColor1 (0.0f, 0.0f, 1.0f, LTTRUE);
 	g_pLTClient->OptimizeSurface (m_hTransmissionImage, hTrans);
 
+	// HUD slider scales the transmission too
+	m_fTransmissionScale = GetHUDScale();
+
 	HSTRING hstrFont = g_pLTClient->FormatString (IDS_INGAMEFONT);
 	FONT fontdef (g_pLTClient->GetStringData (hstrFont), 
 					TextHelperGetIntValFromStringID(g_pLTClient, IDS_TRANSMISSIONTEXTWIDTH, 6),
 					TextHelperGetIntValFromStringID(g_pLTClient, IDS_TRANSMISSIONTEXTHEIGHT, 12));
 	g_pLTClient->FreeString (hstrFont);
+	ScaleFontDef (&fontdef, m_fTransmissionScale);
+
+	// The wrap width and margin scale with the font
+	int nWrapWidth = HUDScaled (256, m_fTransmissionScale);
+	int nMaxWidth  = (int)nScreenWidth - HUDScaled (90, m_fTransmissionScale);
+	if (nWrapWidth > nMaxWidth) nWrapWidth = nMaxWidth;
+	if (nWrapWidth < 1) nWrapWidth = 1;
 
 	HLTCOLOR foreColor = g_pLTClient->SetupColor1 (1.0f, 1.0f, 1.0f, LTFALSE);
-	m_hTransmissionText = CTextHelper::CreateWrappedStringSurface (g_pLTClient, min (256, nScreenWidth - 90), &fontdef, nStringID, foreColor);
+	m_hTransmissionText = CTextHelper::CreateWrappedStringSurface (g_pLTClient, nWrapWidth, &fontdef, nStringID, foreColor);
 	hTrans = g_pLTClient->SetupColor1(0.0f, 0.0f, 0.0f, LTTRUE);
 	g_pLTClient->OptimizeSurface (m_hTransmissionText, hTrans);
 
@@ -6142,12 +6447,13 @@ void CRiotClientShell::HandleTransmission (ILTMessage_Read* hMessage)
 
 	if (m_hTransmissionSound)
 	{
-		g_pLTClient->KillSound(m_hTransmissionSound);
+		g_pLTClient->SoundMgr()->KillSound(m_hTransmissionSound);
 		m_hTransmissionSound = LTNULL;
 
 		// Tell server the transmission ended.
-		hMsg = g_pLTClient->StartMessage( MID_TRANSMISSIONENDED );
-		g_pLTClient->EndMessage( hMsg );
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_TRANSMISSIONENDED);
+		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 	}
 
 	// Play the sound streamed...
@@ -6161,19 +6467,22 @@ void CRiotClientShell::HandleTransmission (ILTMessage_Read* hMessage)
 	PlaySoundInfo playSoundInfo;
 	PLAYSOUNDINFO_INIT( playSoundInfo );
 
-	playSoundInfo.m_dwFlags = PLAYSOUND_LOCAL | PLAYSOUND_FILESTREAM | PLAYSOUND_GETHANDLE;
+	playSoundInfo.m_dwFlags = PLAYSOUND_LOCAL | PLAYSOUND_GETHANDLE;
 	strncpy(playSoundInfo.m_szSoundName, strSoundFilename, _MAX_PATH);
 	playSoundInfo.m_nPriority = SOUNDPRIORITY_MISC_HIGH;
-	pClientDE->PlaySound(&playSoundInfo);
+	PlaySoundInfoLocal(&playSoundInfo);
 	m_hTransmissionSound = playSoundInfo.m_hSound;
 
 	// Make sure the sound played.
 	if( !m_hTransmissionSound )
 	{
 		// Tell server the transmission ended.
-		hMsg = g_pLTClient->StartMessage( MID_TRANSMISSIONENDED );
-		g_pLTClient->EndMessage( hMsg );
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_TRANSMISSIONENDED);
+		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 	}
+
+	m_Diag.OnTransmission(nStringID, pszImage, m_hTransmissionImage, m_hTransmissionText);
 
 	m_fTransmissionTimeLeft = 5.0f;
 	m_bAnimatingTransmissionOn = LTTRUE;
@@ -6183,16 +6492,16 @@ void CRiotClientShell::HandleTransmission (ILTMessage_Read* hMessage)
 	uint32 nHeight = 0;
 
 	g_pLTClient->GetSurfaceDims (m_hTransmissionImage, &nWidth, &nHeight);
-	m_xTransmissionImage = -(LTFLOAT)nWidth;
-	m_yTransmissionImage = 6;
-	m_cxTransmissionImage = (LTFLOAT)nWidth;
-	m_cyTransmissionImage = (LTFLOAT)nHeight;
+	m_cxTransmissionImage = (LTFLOAT)nWidth  * m_fTransmissionScale;
+	m_cyTransmissionImage = (LTFLOAT)nHeight * m_fTransmissionScale;
+	m_xTransmissionImage = -m_cxTransmissionImage;
+	m_yTransmissionImage = (LTFLOAT)HUDScaled (6, m_fTransmissionScale);
 	
 	g_pLTClient->GetSurfaceDims (m_hTransmissionText, &nWidth, &nHeight);
-	m_xTransmissionText = 80;
-	m_yTransmissionText = -(LTFLOAT)nHeight;
 	m_cxTransmissionText = (LTFLOAT)nWidth;
 	m_cyTransmissionText = (LTFLOAT)nHeight;
+	m_xTransmissionText = (LTFLOAT)HUDScaled (80, m_fTransmissionScale);
+	m_yTransmissionText = -m_cyTransmissionText;
 }
 
 
@@ -6238,7 +6547,7 @@ void CRiotClientShell::PlayIntroMovies (ILTClient* pClientDE)
 			if (CWinUtil::FileExist (strPath))
 			{
 				// attempt to play the movie
-				nResult = g_pLTClient->StartVideo (strPath, nFlags);
+				nResult = g_pLTClient->VideoMgr()->StartOnScreenVideo(strPath, nFlags, m_hVideo);
 			}
 
 			if (nResult != LT_OK)
@@ -6263,7 +6572,7 @@ void CRiotClientShell::PlayIntroMovies (ILTClient* pClientDE)
 			if (CWinUtil::FileExist (strPath))
 			{
 				// attempt to play the movie
-				nResult = g_pLTClient->StartVideo (strPath, nFlags);
+				nResult = g_pLTClient->VideoMgr()->StartOnScreenVideo(strPath, nFlags, m_hVideo);
 			}
 			
 			if (nResult != LT_OK)
@@ -6302,17 +6611,18 @@ void CRiotClientShell::PauseGame (LTBOOL bPause, LTBOOL bPauseSound)
 
 	if (!IsMultiplayerGame())
 	{
-		ILTMessage_Write* hMessage = pClientDE->StartMessage(bPause ? MID_GAME_PAUSE : MID_GAME_UNPAUSE);
-		pClientDE->EndMessage(hMessage);
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(bPause ? MID_GAME_PAUSE : MID_GAME_UNPAUSE);
+		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 	}
 
 	if (bPause && bPauseSound)
 	{
-		g_pLTClient->PauseSounds();
+		((ILTClientSoundMgr *)g_pLTClient->SoundMgr())->PauseSounds();
 	}
 	else
 	{
-		g_pLTClient->ResumeSounds();
+		((ILTClientSoundMgr *)g_pLTClient->SoundMgr())->ResumeSounds();
 	}
 
 	SetInputState (!bPause);
@@ -6481,7 +6791,7 @@ void CRiotClientShell::HandlePlayerDamage(ILTMessage_Read* hMessage)
 	g_pLTClient->GetObjectRotation(m_hCamera, &rRot);
 
 	LTVector vU, vR, vF;
-	g_pLTClient->Math()->GetRotationVectors(rRot, vU, vR, vF);
+	pMath->GetRotationVectors(rRot, vU, vR, vF);
 
 	VEC_MULSCALAR(vF, vF, 10.0f);
 	VEC_ADD(vCamPos, vCamPos, vF);
@@ -6863,15 +7173,15 @@ void CRiotClientShell::CreateBumperScreen(char* pPCXName, uint32 dwBumperTextID)
 	{
 		uint32 nWidth, nHeight;
 		HSURFACE hScreen = g_pLTClient->GetScreenSurface();
-		pClientDE->GetSurfaceDims(hScreen, &nWidth, &nHeight);
+		g_pLTClient->GetSurfaceDims(hScreen, &nWidth, &nHeight);
 	
 		if (nWidth < 640)
 		{
-			m_hBumperText = CTextHelper::CreateWrappedStringSurface(pClientDE, (min ((int)nWidth - 20, 600)), m_menu.GetFont08s(), dwBumperTextID);
+			m_hBumperText = CTextHelper::CreateWrappedStringSurface(g_pLTClient, (min ((int)nWidth - 20, 600)), m_menu.GetFont08s(), dwBumperTextID);
 		}
 		else
 		{
-			m_hBumperText = CTextHelper::CreateWrappedStringSurface(pClientDE, (min ((int)nWidth - 40, 600)), m_menu.GetFont12s(), dwBumperTextID);
+			m_hBumperText = CTextHelper::CreateWrappedStringSurface(g_pLTClient, (min ((int)nWidth - 40, 600)), m_menu.GetFont12s(), dwBumperTextID);
 		}
 	}
 }
@@ -7031,8 +7341,8 @@ void CRiotClientShell::SetSpectatorMode(LTBOOL bOn)
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CRiotClientShell::LoadWorld(char* pWorldFile, char* pCurWorldSaveFile,
-								  char* pRestoreObjectsFile, uint8 nFlags)
+LTBOOL CRiotClientShell::LoadWorld(const char* pWorldFile, const char* pCurWorldSaveFile,
+								  const char* pRestoreObjectsFile, uint8 nFlags)
 {
 	// Auto save the newly loaded level...
 
@@ -7048,9 +7358,9 @@ LTBOOL CRiotClientShell::LoadWorld(char* pWorldFile, char* pCurWorldSaveFile,
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CRiotClientShell::DoLoadWorld(char* pWorldFile, char* pCurWorldSaveFile,
-								    char* pRestoreObjectsFile, uint8 nFlags, 
-									char *pRecordFile, char *pPlaydemoFile)
+LTBOOL CRiotClientShell::DoLoadWorld(const char* pWorldFile, const char* pCurWorldSaveFile,
+								    const char* pRestoreObjectsFile, uint8 nFlags,
+									const char *pRecordFile, const char *pPlaydemoFile)
 {
 	if (!g_pLTClient || !pWorldFile) return LTFALSE;
 	
@@ -7060,13 +7370,13 @@ LTBOOL CRiotClientShell::DoLoadWorld(char* pWorldFile, char* pCurWorldSaveFile,
 	if (m_hCamera)
 	{
 		uint32 dwWidth = 640, dwHeight = 480;
-		g_pLTClient->GetSurfaceDims(pClientDE->GetScreenSurface(), &dwWidth, &dwHeight);
+		g_pLTClient->GetSurfaceDims(g_pLTClient->GetScreenSurface(), &dwWidth, &dwHeight);
 
 		g_pLTClient->SetCameraRect(m_hCamera, LTFALSE, 0, 0, dwWidth, dwHeight);
 		
 		m_fCurrentFovX = DEG2RAD(FOV_NORMAL);
 
-		LTFLOAT y = (m_fCurrentFovX * dwHeight) / dwWidth;
+		LTFLOAT y = (m_fCurrentFovX * 3.0f) / 4.0f;
 		g_pLTClient->SetCameraFOV(m_hCamera, m_fCurrentFovX, y);
 	}
 	
@@ -7116,7 +7426,7 @@ LTBOOL CRiotClientShell::DoLoadWorld(char* pWorldFile, char* pCurWorldSaveFile,
 	
 	// Bring up the loading screen...
 
-	g_pLTClient->ClearScreen (LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER);
+	g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, 0);
 	g_pLTClient->Start3D();
 
 	CreateMenuPolygrid();
@@ -7126,8 +7436,8 @@ LTBOOL CRiotClientShell::DoLoadWorld(char* pWorldFile, char* pCurWorldSaveFile,
 	UpdateLoadingLevel();
 	g_pLTClient->EndOptimized2D();
 
-	g_pLTClient->End3D();
-	g_pLTClient->FlipScreen (FLIPSCREEN_CANDRAWCONSOLE);
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
+	g_pLTClient->FlipScreen(0);
 
 	
 	// Check for special case of not being connected to a server or going to 
@@ -7157,7 +7467,7 @@ LTBOOL CRiotClientShell::DoLoadWorld(char* pWorldFile, char* pCurWorldSaveFile,
 			SAFE_STRCPY(request.m_PlaybackFilename, pPlaydemoFile);
 		}
 
-		LTRESULT dr = pClientDE->StartGame(&request);
+		LTRESULT dr = g_pLTClient->StartGame(&request);
 		if (dr != LT_OK)
 		{
 			return LTFALSE;
@@ -7186,16 +7496,17 @@ LTBOOL CRiotClientShell::DoLoadWorld(char* pWorldFile, char* pCurWorldSaveFile,
 	HSTRING hCurWorldSaveFile	= g_pLTClient->CreateString(pCurWorldSaveFile ? pCurWorldSaveFile : " ");
 	HSTRING hRestoreObjectsFile	= g_pLTClient->CreateString(pRestoreObjectsFile ? pRestoreObjectsFile : " ");
 
-	ILTMessage_Write* hMessage = g_pLTClient->StartMessage(MID_LOAD_GAME);
-	g_pLTClient->WriteToMessageByte(hMessage, nFlags);
-	g_pLTClient->WriteToMessageByte(hMessage, m_eDifficulty);
-	g_pLTClient->WriteToMessageHString(hMessage, hWorldFile);
-	g_pLTClient->WriteToMessageHString(hMessage, hCurWorldSaveFile);
-	g_pLTClient->WriteToMessageHString(hMessage, hRestoreObjectsFile);
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_LOAD_GAME);
+	cMsg.Writeuint8(nFlags);
+	cMsg.Writeuint8(m_eDifficulty);
+	cMsg.WriteHString(hWorldFile);
+	cMsg.WriteHString(hCurWorldSaveFile);
+	cMsg.WriteHString(hRestoreObjectsFile);
 
-	BuildClientSaveMsg(hMessage);
+	BuildClientSaveMsg(cMsg);
 
-	g_pLTClient->EndMessage(hMessage);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 
 	g_pLTClient->FreeString(hWorldFile);
 	g_pLTClient->FreeString(hCurWorldSaveFile);
@@ -7248,13 +7559,14 @@ LTBOOL CRiotClientShell::SaveGame(char* pObjectsFile)
 
 	HSTRING hSaveObjectsName = g_pLTClient->CreateString(pObjectsFile);
 
-	ILTMessage_Write* hMessage = g_pLTClient->StartMessage(MID_SAVE_GAME);
-	g_pLTClient->WriteToMessageByte(hMessage, nFlags);
-	g_pLTClient->WriteToMessageHString(hMessage, hSaveObjectsName);
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_SAVE_GAME);
+	cMsg.Writeuint8(nFlags);
+	cMsg.WriteHString(hSaveObjectsName);
 
-	BuildClientSaveMsg(hMessage);
+	BuildClientSaveMsg(cMsg);
 
-	g_pLTClient->EndMessage(hMessage);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 
 	g_pLTClient->FreeString(hSaveObjectsName);
 
@@ -7271,7 +7583,7 @@ void CRiotClientShell::ClearAllScreenBuffers()
 
 	for(i=0; i < 4; i++)
 	{
-		g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN);
+		g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN, 0);
 		g_pLTClient->FlipScreen(0);
 	}
 }
@@ -7305,7 +7617,9 @@ LTBOOL CRiotClientShell::SetMenuMode (LTBOOL bMenuUp, LTBOOL bLoadingLevel)
 		memset (&m_rcMenuRestoreCamera, 0, sizeof (LTRect));
 		if (m_hCamera && !m_bMovieCameraRect)
 		{
-			g_pLTClient->GetCameraRect (m_hCamera, &m_bMenuRestoreFullScreen, &m_rcMenuRestoreCamera.left, &m_rcMenuRestoreCamera.top, &m_rcMenuRestoreCamera.right, &m_rcMenuRestoreCamera.bottom);
+			bool bWasFullScreen = false;
+			g_pLTClient->GetCameraRect (m_hCamera, &bWasFullScreen, &m_rcMenuRestoreCamera.left, &m_rcMenuRestoreCamera.top, &m_rcMenuRestoreCamera.right, &m_rcMenuRestoreCamera.bottom);
+			m_bMenuRestoreFullScreen = bWasFullScreen ? LTTRUE : LTFALSE;
 			g_pLTClient->SetCameraRect (m_hCamera, LTTRUE, 0, 0, (int)nWidth, (int)nHeight);
 		}
 		
@@ -7402,7 +7716,7 @@ LTBOOL CRiotClientShell::SetMenuMusic(LTBOOL bMusicOn)
 
 			PlaySoundInfo psi;
 			PLAYSOUNDINFO_INIT (psi);
-			psi.m_dwFlags = PLAYSOUND_LOCAL | PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE | PLAYSOUND_CLIENT | PLAYSOUND_FILESTREAM;
+			psi.m_dwFlags = PLAYSOUND_LOCAL | PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE | PLAYSOUND_CLIENT;
 
 			char* s_pLoadingMusic[] = 
 			{
@@ -7423,7 +7737,7 @@ LTBOOL CRiotClientShell::SetMenuMusic(LTBOOL bMusicOn)
 
 			psi.m_nPriority  = SOUNDPRIORITY_MISC_HIGH;
 
-			g_pLTClient->PlaySound (&psi);
+			PlaySoundInfoLocal(&psi);
 			m_hMenuMusic = psi.m_hSound;
 		}
 
@@ -7439,7 +7753,7 @@ LTBOOL CRiotClientShell::SetMenuMusic(LTBOOL bMusicOn)
 
 		if (m_hMenuMusic) 
 		{
-			g_pLTClient->KillSound(m_hMenuMusic);
+			g_pLTClient->SoundMgr()->KillSound(m_hMenuMusic);
 			m_hMenuMusic = LTNULL;
 		}
 	}
@@ -7488,7 +7802,7 @@ LTBOOL CRiotClientShell::DoMessageBox (int nStringID, int nAlignment, LTBOOL bCr
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CRiotClientShell::DoYesNoMessageBox (int nStringID, YESNOPROC pYesNoProc, uint32 nUserData, int nAlignment, LTBOOL bCrop)
+LTBOOL CRiotClientShell::DoYesNoMessageBox (int nStringID, YESNOPROC pYesNoProc, uintptr_t nUserData, int nAlignment, LTBOOL bCrop)
 {
 	if (!g_pLTClient) return LTFALSE;
 
@@ -7735,12 +8049,13 @@ void CRiotClientShell::FirstUpdate()
 	
 	// Set up the panning sky values
 
-	m_bPanSky = (LTBOOL) g_pLTClient->GetServerConVarValueFloat("PanSky");
-	m_fPanSkyOffsetX = g_pLTClient->GetServerConVarValueFloat("PanSkyOffsetX");
-	m_fPanSkyOffsetZ = g_pLTClient->GetServerConVarValueFloat("PanSkyOffsetX");
-	m_fPanSkyScaleX = g_pLTClient->GetServerConVarValueFloat("PanSkyScaleX");
-	m_fPanSkyScaleZ = g_pLTClient->GetServerConVarValueFloat("PanSkyScaleZ");
-	char* pTexture  = g_pLTClient->GetServerConVarValueFloat("PanSkyTexture");
+	m_bPanSky = (LTBOOL) GetServerConVarFloat("PanSky");
+	m_fPanSkyOffsetX = GetServerConVarFloat("PanSkyOffsetX");
+	// "PanSkyOffsetX" on the Z line is how Monolith shipped it.. so both axes pan at the X rate
+	m_fPanSkyOffsetZ = GetServerConVarFloat("PanSkyOffsetX");
+	m_fPanSkyScaleX = GetServerConVarFloat("PanSkyScaleX");
+	m_fPanSkyScaleZ = GetServerConVarFloat("PanSkyScaleZ");
+	char* pTexture  = GetServerConVarString("PanSkyTexture");
 
 	if (m_bPanSky)
 	{
@@ -7750,10 +8065,10 @@ void CRiotClientShell::FirstUpdate()
 
 	// Set up the environment map (chrome) texture...
 
-	char* pEnvMap = g_pLTClient->GetServerConVarValueString("EnvironmentMap");
+	char* pEnvMap = GetServerConVarString("EnvironmentMap");
 	if (pEnvMap)
 	{
-		char* pVal = pEnvMap[0] == '0' ? "Textures\\Chrome.dtx" : pEnvMap;
+		const char* pVal = pEnvMap[0] == '0' ? "Textures\\Chrome.dtx" : pEnvMap;
 		sprintf(buf, "EnvMap %s", pVal);
 		g_pLTClient->RunConsoleString(buf);
 	}
@@ -7761,23 +8076,23 @@ void CRiotClientShell::FirstUpdate()
 
 	// Set up the global (per level) wind values...
 
-	g_vWorldWindVel.x = g_pLTClient->GetServerConVarValueFloat("WindX");
-	g_vWorldWindVel.y = g_pLTClient->GetServerConVarValueFloat("WindY");
-	g_vWorldWindVel.z = g_pLTClient->GetServerConVarValueFloat("WindZ");
+	g_vWorldWindVel.x = GetServerConVarFloat("WindX");
+	g_vWorldWindVel.y = GetServerConVarFloat("WindY");
+	g_vWorldWindVel.z = GetServerConVarFloat("WindZ");
 
 
 	// Set up the global (per level) light scale values...
 
-	m_vDefaultLightScale.x = g_pLTClient->GetServerConVarValueFloat("LightScaleR") / 255.0f;
-	m_vDefaultLightScale.y = g_pLTClient->GetServerConVarValueFloat("LightScaleG") / 255.0f;
-	m_vDefaultLightScale.z = g_pLTClient->GetServerConVarValueFloat("LightScaleB") / 255.0f;
+	m_vDefaultLightScale.x = GetServerConVarFloat("LightScaleR") / 255.0f;
+	m_vDefaultLightScale.y = GetServerConVarFloat("LightScaleG") / 255.0f;
+	m_vDefaultLightScale.z = GetServerConVarFloat("LightScaleB") / 255.0f;
 
 	m_LightScaleMgr.SetLightScale (&m_vDefaultLightScale, LightEffectWorld);
 
 	
 	// Set up the global (per level) far z value.
 
-	//LTFLOAT fVal = pClientDE->GetServerConVarValueLTFLOAT("FarZ");
+	//LTFLOAT fVal = GetServerConVarFloat("FarZ");
 
 	//if (fVal > 0.0f)
 	//{
@@ -7813,7 +8128,7 @@ void CRiotClientShell::FirstUpdate()
 
 	// Set up the soft renderer sky map...
 
-	char* pSoftSky = g_pLTClient->GetServerConVarValueString("SoftSky");
+	char* pSoftSky = GetServerConVarString("SoftSky");
 	if (pSoftSky)
 	{
 		sprintf(buf, "SoftSky %s", pSoftSky);
@@ -7842,7 +8157,7 @@ void CRiotClientShell::ResetGlobalFog()
 		return;
 	}
 
-	LTFLOAT fVal = g_pLTClient->GetServerConVarValueFloat("EnableFog");
+	LTFLOAT fVal = GetServerConVarFloat("EnableFog");
 	
 	char buf[30];
 	LTVector todScale;
@@ -7853,37 +8168,37 @@ void CRiotClientShell::ResetGlobalFog()
 	todScale = m_LightScaleMgr.GetTimeOfDayScale();
 	if (fVal)
 	{
-		fVal = g_pLTClient->GetServerConVarValueFloat("FogNearZ");
+		fVal = GetServerConVarFloat("FogNearZ");
 		sprintf(buf, "FogNearZ %d", (int)fVal);
 		g_pLTClient->RunConsoleString(buf);
 
-		fVal = g_pLTClient->GetServerConVarValueFloat("FogFarZ");
+		fVal = GetServerConVarFloat("FogFarZ");
 		sprintf(buf, "FogFarZ %d", (int)fVal);
 		g_pLTClient->RunConsoleString(buf);
 
-		fVal = g_pLTClient->GetServerConVarValueFloat("FogR") * todScale.x;
+		fVal = GetServerConVarFloat("FogR") * todScale.x;
 		sprintf(buf, "FogR %d", (int)fVal);
 		g_pLTClient->RunConsoleString(buf);
 
-		fVal = g_pLTClient->GetServerConVarValueFloat("FogG") * todScale.y;
+		fVal = GetServerConVarFloat("FogG") * todScale.y;
 		sprintf(buf, "FogG %d", (int)fVal);
 		g_pLTClient->RunConsoleString(buf);
 
-		fVal = g_pLTClient->GetServerConVarValueFloat("FogB") * todScale.z;
+		fVal = GetServerConVarFloat("FogB") * todScale.z;
 		sprintf(buf, "FogB %d", (int)fVal);
 		g_pLTClient->RunConsoleString(buf);
 
-		fVal = g_pLTClient->GetServerConVarValueFloat("SkyFog");
+		fVal = GetServerConVarFloat("SkyFog");
 		sprintf(buf, "SkyFog %d", (int)fVal);
 		g_pLTClient->RunConsoleString(buf);
 
 		if (fVal)
 		{
-			fVal = g_pLTClient->GetServerConVarValueFloat("SkyFogNearZ");
+			fVal = GetServerConVarFloat("SkyFogNearZ");
 			sprintf(buf, "SkyFogNearZ %d", (int)fVal);
 			g_pLTClient->RunConsoleString(buf);
 
-			fVal = g_pLTClient->GetServerConVarValueFloat("SkyFogFarZ");
+			fVal = GetServerConVarFloat("SkyFogFarZ");
 			sprintf(buf, "SkyFogFarZ %d", (int)fVal);
 			g_pLTClient->RunConsoleString(buf);
 		}
@@ -7942,7 +8257,7 @@ void CRiotClientShell::UpdateServerPlayerModel()
 	g_pLTClient->GetObjectPos(hRealObj, &myPos);
 	g_pLTClient->SetObjectPos(hClientObj, &myPos);
 
-	g_pLTClient->Math()->SetupEuler(myRot, m_fPitch*0.1f, m_fYaw, m_fCamCant);
+	pMath->SetupEuler(myRot, m_fPitch*0.1f, m_fYaw, m_fCamCant);
 	g_pLTClient->SetObjectRotation(hClientObj, &myRot);	
 }
 
@@ -7975,14 +8290,14 @@ void CRiotClientShell::RenderCamera (LTBOOL bDrawInterface)
 
 
 	g_pLTClient->Start3D();
-	g_pLTClient->RenderCamera (m_hCamera);
+	g_pLTClient->RenderCamera(m_hCamera, g_pLTClient->GetFrameTime());
 	if (bDrawInterface) 
 	{
 		g_pLTClient->StartOptimized2D();
 		DrawInterface();
 		g_pLTClient->EndOptimized2D();
 	}
-	g_pLTClient->End3D();
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -8041,7 +8356,11 @@ void CRiotClientShell::DrawInterface()
 		uint32 nNewObjectiveHeight = 0;
 		g_pLTClient->GetSurfaceDims (m_hNewObjective, &nNewObjectiveWidth, &nNewObjectiveHeight);
 
-		g_pLTClient->DrawSurfaceToSurface (hScreen, m_hNewObjective, LTNULL, nScreenWidth - nNewObjectiveWidth - 10, 25);
+		LTFLOAT fNOScale = GetHUDScale();
+
+		DrawHUDScaledOpaque (hScreen, m_hNewObjective, LTNULL,
+							 (int)nScreenWidth - HUDScaled ((int)nNewObjectiveWidth, fNOScale) - HUDScaled (10, fNOScale),
+							 HUDScaled (25, fNOScale), fNOScale);
 	}
 
 	// draw transmission if needed
@@ -8066,7 +8385,7 @@ void CRiotClientShell::DrawInterface()
 	}
 	
 	// get the camera dims
-	LTBOOL bFullScreen = LTFALSE;
+	bool bFullScreen = false;
 	int nCameraLeft = 0;
 	int nCameraTop = 0;
 	int nCameraRight = 0;
@@ -8084,12 +8403,17 @@ void CRiotClientShell::DrawInterface()
 		LTFLOAT nCurrentTime = g_pLTClient->GetTime();
 		if (nCurrentTime < m_nGameMessageRemoveTime)
 		{
-			int x = nCameraLeft + (((nCameraRight - nCameraLeft) - m_rcGameMessage.right) >> 1);
-			int y = nCameraBottom - (m_rcGameMessage.bottom << 1);
+			LTFLOAT fGMScale = GetHUDScale();
+			int nGMWidth  = HUDScaled (m_rcGameMessage.right,  fGMScale);
+			int nGMHeight = HUDScaled (m_rcGameMessage.bottom, fGMScale);
+			int nGMShadow = HUDScaled (3, fGMScale);
+
+			int x = nCameraLeft + (((nCameraRight - nCameraLeft) - nGMWidth) >> 1);
+			int y = nCameraBottom - (nGMHeight << 1);
 
 			HLTCOLOR hBlack = g_pLTClient->SetupColor1 (0.1f, 0.1f, 0.1f, LTFALSE);
-			g_pLTClient->DrawSurfaceSolidColor (hScreen, m_hGameMessage, &m_rcGameMessage, x+3, y+3, NULL, hBlack);
-			g_pLTClient->DrawSurfaceToSurfaceTransparent (hScreen, m_hGameMessage, &m_rcGameMessage, x, y, NULL);
+			DrawHUDScaledSolidColor (hScreen, m_hGameMessage, &m_rcGameMessage, x + nGMShadow, y + nGMShadow, fGMScale, NULL, hBlack);
+			DrawHUDScaled (hScreen, m_hGameMessage, &m_rcGameMessage, x, y, fGMScale, NULL);
 		}
 		else
 		{
@@ -8127,22 +8451,27 @@ void CRiotClientShell::DrawTransmission()
 		if (nFrameTime > 1.0f) nFrameTime = 1.0f;
 		m_fTransmissionTimeLeft -= nFrameTime;
 
+		// The slide rates and resting anchors scale, which keeps the original timing
+		LTFLOAT fTScale   = m_fTransmissionScale;
+		LTFLOAT fImageEnd = (LTFLOAT)HUDScaled (6, fTScale);
+		LTFLOAT fTextEnd  = (LTFLOAT)HUDScaled (32, fTScale);
+
 		if (m_bAnimatingTransmissionOn)
 		{
-			m_xTransmissionImage += nFrameTime * TRANSMISSION_IMAGE_ANIM_RATE;
-			m_yTransmissionText += nFrameTime * TRANSMISSION_TEXT_ANIM_RATE;
+			m_xTransmissionImage += nFrameTime * TRANSMISSION_IMAGE_ANIM_RATE * fTScale;
+			m_yTransmissionText += nFrameTime * TRANSMISSION_TEXT_ANIM_RATE * fTScale;
 
-			if (m_xTransmissionImage > 6.0f || m_yTransmissionText > 32.0f)
+			if (m_xTransmissionImage > fImageEnd || m_yTransmissionText > fTextEnd)
 			{
-				m_xTransmissionImage = 6.0f;
-				m_yTransmissionText = 32.0f;
+				m_xTransmissionImage = fImageEnd;
+				m_yTransmissionText = fTextEnd;
 				m_bAnimatingTransmissionOn = LTFALSE;
 			}
 		}
 		else if (m_bAnimatingTransmissionOff)
 		{
-			m_xTransmissionImage -= nFrameTime * TRANSMISSION_IMAGE_ANIM_RATE;
-			m_yTransmissionText -= nFrameTime * TRANSMISSION_TEXT_ANIM_RATE;
+			m_xTransmissionImage -= nFrameTime * TRANSMISSION_IMAGE_ANIM_RATE * fTScale;
+			m_yTransmissionText -= nFrameTime * TRANSMISSION_TEXT_ANIM_RATE * fTScale;
 
 			if (m_xTransmissionImage < -m_cxTransmissionImage && m_yTransmissionText < -m_cyTransmissionText)
 			{
@@ -8159,26 +8488,31 @@ void CRiotClientShell::DrawTransmission()
 		// Check if sound is done.
 		if( m_hTransmissionSound )
 		{
-			if( g_pLTClient->IsDone( m_hTransmissionSound ))
+			if( IsSoundFinished(m_hTransmissionSound))
 			{
-				g_pLTClient->KillSound( m_hTransmissionSound );
+				g_pLTClient->SoundMgr()->KillSound( m_hTransmissionSound );
 				m_hTransmissionSound = LTNULL;
 				
 				// Tell server the transmission ended.
-				hMsg = g_pLTClient->StartMessage( MID_TRANSMISSIONENDED );
-				g_pLTClient->EndMessage( hMsg );
+				CAutoMessage cMsg;
+				cMsg.Writeuint8(MID_TRANSMISSIONENDED);
+				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 			}
 		}
 
 		if (m_hTransmissionImage)
 		{
+			m_Diag.OnTransmissionDraw(m_xTransmissionImage, m_yTransmissionImage,
+				m_fTransmissionTimeLeft, m_bUsingExternalCamera ? true : false);
+
+			// The text blits 1:1 and the portrait takes the scaled blit
 			HLTCOLOR hTrans = g_pLTClient->SetupColor1 (0.0f, 0.0f, 1.0f, LTFALSE);
 			g_pLTClient->DrawSurfaceToSurfaceTransparent (g_pLTClient->GetScreenSurface(), m_hTransmissionText, LTNULL, (int)m_xTransmissionText, (int)m_yTransmissionText, LTNULL);
-			g_pLTClient->DrawSurfaceToSurfaceTransparent (g_pLTClient->GetScreenSurface(), m_hTransmissionImage, LTNULL, (int)m_xTransmissionImage, (int)m_yTransmissionImage, hTrans);
+			DrawHUDScaled (g_pLTClient->GetScreenSurface(), m_hTransmissionImage, LTNULL, (int)m_xTransmissionImage, (int)m_yTransmissionImage, fTScale, hTrans);
 
 			if (m_fTransmissionTimeLeft <= 0.0f)
 			{
-				if( m_hTransmissionSound && !pClientDE->IsDone( m_hTransmissionSound ))
+				if( m_hTransmissionSound && !IsSoundFinished(m_hTransmissionSound))
 				{
 					m_fTransmissionTimeLeft += nFrameTime;
 				}
@@ -8208,15 +8542,15 @@ void CRiotClientShell::DoRenderLoop (LTBOOL bDrawInterface)
 	
 	PreUpdate();
 	g_pLTClient->Start3D();
-	g_pLTClient->RenderCamera (m_hCamera);
+	g_pLTClient->RenderCamera(m_hCamera, g_pLTClient->GetFrameTime());
 	if (bDrawInterface) 
 	{
 		g_pLTClient->StartOptimized2D();
 		DrawInterface();
 		g_pLTClient->EndOptimized2D();
 	}
-	g_pLTClient->End3D();
-	g_pLTClient->FlipScreen (FLIPSCREEN_CANDRAWCONSOLE);
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
+	g_pLTClient->FlipScreen(0);
 }
 
 // ----------------------------------------------------------------------- //
@@ -8348,7 +8682,7 @@ void CRiotClientShell::Update3rdPersonInfo()
 	{
 		fCrosshairDist = GetWeaponRange(m_weaponModel.GetId());
 
-		g_pLTClient->Math()->GetRotationVectors(m_rRotation, vUp, vRight, vForward);
+		pMath->GetRotationVectors(m_rRotation, vUp, vRight, vForward);
 
 		// Determine where the cross hair should be...
 
@@ -8384,7 +8718,7 @@ void CRiotClientShell::Update3rdPersonInfo()
 
 	LTRotation rRot;
 	g_pLTClient->GetObjectRotation(hPlayerObj, &rRot);
-	g_pLTClient->Math()->GetRotationVectors(rRot, vUp, vRight, vForward);
+	pMath->GetRotationVectors(rRot, vUp, vRight, vForward);
 	VEC_NORM(vForward);
 
 	// Determine how far behind the player the camera can go...
@@ -8452,7 +8786,7 @@ void CRiotClientShell::CreateMenuPolygrid()
 
 	g_pLTClient->GetObjectPos(m_hCamera, &vPos);
 	g_pLTClient->GetObjectRotation(m_hCamera, &rRot);
-	g_pLTClient->Math()->GetRotationVectors(rRot, vU, vR, vF);
+	pMath->GetRotationVectors(rRot, vU, vR, vF);
 
 	// Put the polygrid a little in front of the camera...
 
@@ -8461,7 +8795,7 @@ void CRiotClientShell::CreateMenuPolygrid()
 
 	// Need to orient the polygrid correctly...
 
-	g_pLTClient->Math()->EulerRotateX(rRot, MATH_HALFPI);
+	pMath->EulerRotateX(rRot, MATH_HALFPI);
 
 	ObjectCreateStruct theStruct;
 	INIT_OBJECTCREATESTRUCT(theStruct);
@@ -8487,7 +8821,7 @@ void CRiotClientShell::CreateMenuPolygrid()
 	uint32 dwWidth = 640, dwHeight = 480;
 	g_pLTClient->GetSurfaceDims(g_pLTClient->GetScreenSurface(), &dwWidth, &dwHeight);
 
-	LTFLOAT y = (DEG2RAD(FOV_NORMAL) * dwHeight) / dwWidth;
+	LTFLOAT y = (DEG2RAD(FOV_NORMAL) * 3.0f) / 4.0f;
 	g_pLTClient->SetCameraFOV(m_hCamera, DEG2RAD(FOV_NORMAL), y);
 
 
@@ -8552,7 +8886,8 @@ void CRiotClientShell::RemoveMenuPolygrid()
 	// Hide our hand-held weapon...
 
 	HLOCALOBJ hWeapon = m_weaponModel.GetHandle();
-	if (hWeapon && m_playerCamera.IsFirstPerson())
+	if (hWeapon && m_playerCamera.IsFirstPerson() &&
+		!IsVehicleMode() && !m_bSpectatorMode)
 	{
 		uint32 dwFlags; 
 		g_pLTClient->Common()->GetObjectFlags(hWeapon, OFT_Flags, dwFlags);
@@ -8584,7 +8919,7 @@ void CRiotClientShell::UpdateMenuPolygrid()
 
 	HLOCALOBJ objs[1];
 	objs[0] = m_pMenuPolygrid->GetObject();
-	LTRESULT dRes = g_pLTClient->RenderObjects(m_hCamera, objs, 1);
+	LTRESULT dRes = g_pLTClient->RenderObjects(m_hCamera, objs, 1, g_pLTClient->GetFrameTime());
 }
 
 // --------------------------------------------------------------------------- //
@@ -8602,7 +8937,7 @@ void CRiotClientShell::UpdateModelGlow()
 	LTFLOAT fColor      = 0.0f;
 	LTFLOAT fColorRange = m_vMaxModelGlow.x - m_vMinModelGlow.x;
 
-	m_fModelGlowCycleTime += pClientDE->GetFrameTime();
+	m_fModelGlowCycleTime += g_pLTClient->GetFrameTime();
 
 	if (m_bModelGlowCycleUp)
 	{
@@ -8652,9 +8987,10 @@ void CRiotClientShell::InitSinglePlayer()
 
 	// init player variables on server...
 
-	ILTMessage_Write* hMessage = g_pLTClient->StartMessage(MID_PLAYER_INITVARS);
-	g_pLTClient->WriteToMessageByte(hMessage, (uint8)pSettings->RunLock());
-	g_pLTClient->EndMessage(hMessage);
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_PLAYER_INITVARS);
+	cMsg.Writeuint8((uint8)pSettings->RunLock());
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 }
 
 
@@ -8680,20 +9016,24 @@ void CRiotClientShell::InitMultiPlayer()
 
 	// Init multiplayer info on server...
 
-	ILTMessage_Write* hMessage = g_pLTClient->StartMessage(MID_PLAYER_MULTIPLAYER_INIT);
-	g_pLTClient->WriteToMessageByte(hMessage, pPlayerInfo->m_byMech);
-	g_pLTClient->WriteToMessageByte(hMessage, pPlayerInfo->m_byColor);
-	g_pLTClient->WriteToMessageHString(hMessage, hstrName);
-	g_pLTClient->EndMessage(hMessage);
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_PLAYER_MULTIPLAYER_INIT);
+	cMsg.Writeuint8(pPlayerInfo->m_byMech);
+	cMsg.Writeuint8(pPlayerInfo->m_byColor);
+	cMsg.WriteHString(hstrName);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 
 	// Init player settings...
 
 	CRiotSettings* pSettings = m_menu.GetSettings();
 	if (!pSettings) return;
 
-	hMessage = g_pLTClient->StartMessage(MID_PLAYER_INITVARS);
-	g_pLTClient->WriteToMessageByte(hMessage, (uint8)pSettings->RunLock());
-	g_pLTClient->EndMessage(hMessage);
+	{
+		CAutoMessage cVarsMsg;
+		cVarsMsg.Writeuint8(MID_PLAYER_INITVARS);
+		cVarsMsg.Writeuint8((uint8)pSettings->RunLock());
+		g_pLTClient->SendToServer(cVarsMsg.Read(), MESSAGE_GUARANTEED);
+	}
 }
 
 
@@ -8796,88 +9136,90 @@ void CRiotClientShell::BuildClientSaveMsg(ILTMessage_Write* hMessage)
 {
 	if (!g_pLTClient || !hMessage) return;
 
-	ILTMessage_Write* hData = pClientDE->StartILTMessage_Write();
+	CAutoMessage cData;
 	
 	// Save complex data members...
 
-	m_stats.Save(hData);
-	m_inventory.Save(hData);
-	m_objectives.Save(hData);
+	m_stats.Save(cData);
+	m_inventory.Save(cData);
+	m_objectives.Save(cData);
 
 
 	// Save all necessary data members...
 	LTRotation dummyRotation;
 	dummyRotation.Init();
 
-	hData->WriteLTRotation(m_rRotation);
-	hData->WriteLTRotation(dummyRotation);
-	hData->WriteLTVector(m_vTintColor);
-	hData->WriteLTVector(m_vLastSentFlashPos);
-	hData->WriteLTVector(m_vLastSentModelPos);
-	hData->WriteLTVector(m_vCameraOffset);
+	cData.WriteLTRotation(m_rRotation);
+	cData.WriteLTRotation(dummyRotation);
+	cData.WriteLTVector(m_vTintColor);
+	cData.WriteLTVector(m_vLastSentFlashPos);
+	cData.WriteLTVector(m_vLastSentModelPos);
+	cData.WriteLTVector(m_vCameraOffset);
 
-	hData->Writeuint8(m_eDifficulty);
-	hData->Writeuint8(m_nPlayerMode);
-	hData->Writeuint8(m_nLastSentCode);
-	hData->Writeuint8(m_bTintScreen);
-	hData->Writeuint8(m_bSpectatorMode);
-	hData->Writeuint8(m_bMoving);
-	hData->Writeuint8(m_bMovingSide);
-	hData->Writeuint8(m_bOnGround);
-	hData->Writeuint8(m_bLastSent3rdPerson);
-	hData->Writeuint8(m_bZoomView);
-	hData->Writeuint8(m_bOldZoomView);
-	hData->Writeuint8(m_bZooming);
-	hData->Writeuint8(m_bStartedDuckingDown);
-	hData->Writeuint8(m_bStartedDuckingUp);
-	hData->Writeuint8(m_bCenterView);
-	hData->Writeuint8(m_bAllowPlayerMovement);
-	hData->Writeuint8(m_bLastAllowPlayerMovement);
-	hData->Writeuint8(m_bWasUsingExternalCamera);
-	hData->Writeuint8(m_bUsingExternalCamera);
-	hData->Writeuint8(m_bUnderwater);
-	//hData->Writeuint8(m_bGameOver);
-	hData->Writeuint8(m_ePlayerState);
-	hData->Writeuint8(m_eMusicLevel);
+	cData.Writeuint8(m_eDifficulty);
+	cData.Writeuint8(m_nPlayerMode);
+	cData.Writeuint8(m_nLastSentCode);
+	cData.Writeuint8(m_bTintScreen);
+	cData.Writeuint8(m_bSpectatorMode);
+	cData.Writeuint8(m_bMoving);
+	cData.Writeuint8(m_bMovingSide);
+	cData.Writeuint8(m_bOnGround);
+	cData.Writeuint8(m_bLastSent3rdPerson);
+	cData.Writeuint8(m_bZoomView);
+	cData.Writeuint8(m_bOldZoomView);
+	cData.Writeuint8(m_bZooming);
+	cData.Writeuint8(m_bStartedDuckingDown);
+	cData.Writeuint8(m_bStartedDuckingUp);
+	cData.Writeuint8(m_bCenterView);
+	cData.Writeuint8(m_bAllowPlayerMovement);
+	cData.Writeuint8(m_bLastAllowPlayerMovement);
+	cData.Writeuint8(m_bWasUsingExternalCamera);
+	cData.Writeuint8(m_bUsingExternalCamera);
 
-	hData->Writeuint32(m_dwPlayerFlags);
-	hData->Writeuint32(m_nOldCameraLeft);
-	hData->Writeuint32(m_nOldCameraTop);
-	hData->Writeuint32(m_nOldCameraRight);
-	hData->Writeuint32(m_nOldCameraBottom);
+	cData.Writeuint8(m_bMovieCameraRect);
+	cData.Writeuint8(m_bUnderwater);
+	//cData.Writeuint8(m_bGameOver);
+	cData.Writeuint8(m_ePlayerState);
+	cData.Writeuint8(m_eMusicLevel);
 
-	hData->Writefloat(m_fTintTime);
-	hData->Writefloat(m_fTintStart);
-	hData->Writefloat(m_fTintRampUp);
-	hData->Writefloat(m_fTintRampDown);
-	hData->Writefloat(m_fYaw);
-	hData->Writefloat(m_fPitch);
-	hData->Writefloat(m_fLastSentYaw);
-	hData->Writefloat(m_fLastSentCamCant);
-	hData->Writefloat(m_fPitch);
-	hData->Writefloat(m_fYaw);
-	hData->Writefloat(m_fFireJitterPitch);
-	hData->Writefloat(m_fContainerStartTime);
-	hData->Writefloat(m_fFovXFXDir);
-	hData->Writefloat(m_fLastTime);
-	hData->Writefloat(m_fBobHeight);
-	hData->Writefloat(m_fBobWidth);
-	hData->Writefloat(m_fBobAmp);
-	hData->Writefloat(m_fBobPhase);
-	hData->Writefloat(m_fSwayPhase);
-	hData->Writefloat(m_fVelMagnitude);
-	hData->Writefloat(m_fCantIncrement);
-	hData->Writefloat(m_fCantMaxDist);
-	hData->Writefloat(m_fCamCant);
-	hData->Writefloat(m_fCurrentFovX);
-	hData->Writefloat(m_fSaveLODScale);
-	hData->Writefloat(m_fCamDuck);
-	hData->Writefloat(m_fDuckDownV);
-	hData->Writefloat(m_fDuckUpV);
-	hData->Writefloat(m_fMaxDuckDistance);
-	hData->Writefloat(m_fStartDuckTime);
+	cData.Writeuint32(m_dwPlayerFlags);
+	cData.Writeuint32(m_nOldCameraLeft);
+	cData.Writeuint32(m_nOldCameraTop);
+	cData.Writeuint32(m_nOldCameraRight);
+	cData.Writeuint32(m_nOldCameraBottom);
 
-	hMessage->WriteMessage(hData);
+	cData.Writefloat(m_fTintTime);
+	cData.Writefloat(m_fTintStart);
+	cData.Writefloat(m_fTintRampUp);
+	cData.Writefloat(m_fTintRampDown);
+	cData.Writefloat(m_fYaw);
+	cData.Writefloat(m_fPitch);
+	cData.Writefloat(m_fLastSentYaw);
+	cData.Writefloat(m_fLastSentCamCant);
+	cData.Writefloat(m_fPitch);
+	cData.Writefloat(m_fYaw);
+	cData.Writefloat(m_fFireJitterPitch);
+	cData.Writefloat(m_fContainerStartTime);
+	cData.Writefloat(m_fFovXFXDir);
+	cData.Writefloat(m_fLastTime);
+	cData.Writefloat(m_fBobHeight);
+	cData.Writefloat(m_fBobWidth);
+	cData.Writefloat(m_fBobAmp);
+	cData.Writefloat(m_fBobPhase);
+	cData.Writefloat(m_fSwayPhase);
+	cData.Writefloat(m_fVelMagnitude);
+	cData.Writefloat(m_fCantIncrement);
+	cData.Writefloat(m_fCantMaxDist);
+	cData.Writefloat(m_fCamCant);
+	cData.Writefloat(m_fCurrentFovX);
+	cData.Writefloat(m_fSaveLODScale);
+	cData.Writefloat(m_fCamDuck);
+	cData.Writefloat(m_fDuckDownV);
+	cData.Writefloat(m_fDuckUpV);
+	cData.Writefloat(m_fMaxDuckDistance);
+	cData.Writefloat(m_fStartDuckTime);
+
+	hMessage->WriteMessage(cData.Read());
 }
 
 
@@ -9026,8 +9368,9 @@ void CRiotClientShell::HandleRespawn()
 	{
 		// send a message to the server telling it that it's ok to respawn us now...
 
-		ILTMessage_Write* hMsg = pClientDE->StartMessage(MID_PLAYER_RESPAWN);
-		pClientDE->EndMessage(hMsg);
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_PLAYER_RESPAWN);
+		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 		return;
 	}
 	else  // Bring up load game menu...
@@ -9062,7 +9405,7 @@ void CRiotClientShell::HandleMPChangeLevel()
 	// Update the screen here with the current frag counts and no interface, and tell
 	// the game we want to ignore any future updates until OnEnterWorld() is called...
 
-	g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER);
+	g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, 0);
 	g_pLTClient->Start3D();
 
 	CreateMenuPolygrid();
@@ -9088,8 +9431,8 @@ void CRiotClientShell::HandleMPChangeLevel()
 	m_ClientInfo.Draw(LTFALSE, LTTRUE);
 	g_pLTClient->EndOptimized2D();
 
-	g_pLTClient->End3D();
-	g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
+	g_pLTClient->FlipScreen(0);
 
 	m_nGameState = GS_MPLOADINGLEVEL;
 }
@@ -9199,7 +9542,7 @@ LTBOOL CRiotClientShell::IsPlayerInWorld()
 {
 	if (!g_pLTClient ) return LTFALSE;
 
-	HLOCALOBJ hPlayerObj = pClientDE->GetClientObject();
+	HLOCALOBJ hPlayerObj = g_pLTClient->GetClientObject();
 
 	if (!m_bPlayerPosSet || !m_bInWorld || m_ePlayerState == PS_UNKNOWN || !hPlayerObj) return LTFALSE;
 
@@ -9209,7 +9552,7 @@ LTBOOL CRiotClientShell::IsPlayerInWorld()
 
 void CRiotClientShell::GetCameraRotation(LTRotation *pRot)
 {
-	g_pLTClient->Math()->SetupEuler(*pRot, m_fPitch, m_fYaw, m_fCamCant);
+	pMath->SetupEuler(*pRot, m_fPitch, m_fYaw, m_fCamCant);
 }
 
 
@@ -9263,55 +9606,9 @@ void CRiotClientShell::DoStartGame()
 //
 // --------------------------------------------------------------------------- //
 
-LTBOOL CRiotClientShell::GetNiceWorldName(char* pWorldFile, char* pRetName, int nRetLen)
+LTBOOL CRiotClientShell::GetNiceWorldName(const char* pWorldFile, char* pRetName, int nRetLen)
 {
-	if (!g_pLTClient || !pWorldFile || !pRetName || nRetLen < 2) return LTFALSE;
-
-	char buf[_MAX_PATH];
-	buf[0] = '\0';
-	DWORD len;
-
-	char buf2[_MAX_PATH];
-	sprintf(buf2, "%s.dat", pWorldFile);
-
-	LTRESULT dRes = g_pLTClient->GetWorldInfoString(buf2, buf, _MAX_PATH, &len);
-
-	if (dRes != LT_OK || !buf[0] || len < 1)
-	{
-		// try pre-pending "worlds\" to the filename to see if it will find it then...
-
-		sprintf (buf2, "worlds\\%s.dat", pWorldFile);
-		dRes = g_pLTClient->GetWorldInfoString(buf2, buf, _MAX_PATH, &len);
-
-		if (dRes != LT_OK || !buf[0] || len < 1)
-		{
-			return LTFALSE;
-		}
-	}
-	
-
-	char tokenSpace[5*(PARSE_MAXTOKENSIZE + 1)];
-	char *pTokens[5];
-	int nArgs;
-
-	char* pCurPos = buf;
-	char* pNextPos;
-
-	LTBOOL bMore = LTTRUE;
-	while (bMore)
-	{
-		bMore = g_pLTClient->Parse(pCurPos, &pNextPos, tokenSpace, pTokens, &nArgs);
-		if (nArgs < 2) break;
-
-		if (_stricmp(pTokens[0], "WORLDNAME") == 0)
-		{
-			strncpy(pRetName, pTokens[1], nRetLen);
-			return LTTRUE;
-		}
-
-		pCurPos = pNextPos;
-	}
-	
+	// Jupiter has no WORLDNAME property, and callers fall back to the filename
 	return LTFALSE;
 }
 
@@ -9517,7 +9814,7 @@ void CRiotClientShell::DoPickupItemScreenTint(PickupItemType eType)
 	g_pLTClient->GetObjectRotation(m_hCamera, &rRot);
 
 	LTVector vU, vR, vF;
-	g_pLTClient->Math()->GetRotationVectors(rRot, vU, vR, vF);
+	pMath->GetRotationVectors(rRot, vU, vR, vF);
 
 	VEC_MULSCALAR(vF, vF, 10.0f);
 	VEC_ADD(vCamPos, vCamPos, vF);
@@ -9565,7 +9862,7 @@ void CRiotClientShell::CreateBoundingBox()
 	SAFE_STRCPY(theStruct.m_Filename, "Models\\Props\\1x1_square.abc");
 	SAFE_STRCPY(theStruct.m_SkinName, "SpecialFX\\smoke.dtx");
 	theStruct.m_ObjectType = OT_MODEL;
-	theStruct.m_Flags = FLAG_VISIBLE | FLAG_MODELWIREFRAME;
+	theStruct.m_Flags = FLAG_VISIBLE;
 
 	m_hBoundingBox = g_pLTClient->CreateObject(&theStruct);
 
@@ -9684,7 +9981,7 @@ void CRiotClientShell::DemoSerialize(ILTStream *pStream, LTBOOL bLoad)
 //
 // --------------------------------------------------------------------------- //
 
-LTBOOL LoadLeakFile(ILTClient *pClientDE, char *pFilename)
+LTBOOL LoadLeakFile(ILTClient *pClientDE, const char *pFilename)
 {
 	FILE *fp;
 	char line[256];
@@ -9741,7 +10038,7 @@ LTBOOL LoadLeakFile(ILTClient *pClientDE, char *pFilename)
 //
 // --------------------------------------------------------------------------- //
 
-LTBOOL ConnectToTcpIpAddress(ILTClient* pClientDE, char* sAddress)
+LTBOOL ConnectToTcpIpAddress(ILTClient* pClientDE, const char* sAddress)
 {
 	// Sanity checks...
 
@@ -9751,7 +10048,10 @@ LTBOOL ConnectToTcpIpAddress(ILTClient* pClientDE, char* sAddress)
 
 	// Try to connect to the given address...
 
-	LTBOOL db = NetStart_DoConsoleConnect(pClientDE, sAddress);
+	char szAddress[256];
+	SAFE_STRCPY(szAddress, sAddress);
+
+	LTBOOL db = NetStart_DoConsoleConnect(pClientDE, szAddress);
 
 	if (!db)
 	{
@@ -9778,7 +10078,7 @@ LTBOOL ConnectToTcpIpAddress(ILTClient* pClientDE, char* sAddress)
 //
 // --------------------------------------------------------------------------- //
 
-void NVModelHook (struct ModelHookData_t *pData, void *pUser)
+void NVModelHook (ModelHookData *pData, void *pUser)
 {
 	CRiotClientShell* pShell = (CRiotClientShell*) pUser;
 	if (!pShell) return;
@@ -9786,13 +10086,12 @@ void NVModelHook (struct ModelHookData_t *pData, void *pUser)
 	if (!g_pLTClient) return;
 	
 	uint32 nUserFlags = 0;
-	g_pLTClient->Common()->GetObjectUserFlags (pData->m_hObject, OFT_User, nUserFlags);
+	g_pLTClient->Common()->GetObjectFlags(pData->m_hObject, OFT_User, nUserFlags);
 	if (nUserFlags & USRFLG_NIGHT_INFRARED)
 	{
-		pData->m_Flags &= ~MHF_USETEXTURE;
-		if (pData->m_LightAdd)
+		pData->m_HookFlags &= ~MHF_USETEXTURE;
 		{
-			VEC_SET (*pData->m_LightAdd, 0.0f, 255.0f, 0.0f);
+			VEC_SET (pData->m_LightAdd, 0.0f, 255.0f, 0.0f);
 		}
 	}
 	else
@@ -9809,7 +10108,7 @@ void NVModelHook (struct ModelHookData_t *pData, void *pUser)
 //
 // --------------------------------------------------------------------------- //
 
-void IRModelHook (struct ModelHookData_t *pData, void *pUser)
+void IRModelHook (ModelHookData *pData, void *pUser)
 {
 	CRiotClientShell* pShell = (CRiotClientShell*) pUser;
 	if (!pShell) return;
@@ -9817,13 +10116,12 @@ void IRModelHook (struct ModelHookData_t *pData, void *pUser)
 	if (!g_pLTClient) return;
 
 	uint32 nUserFlags = 0;
-	g_pLTClient->Common()->GetObjectUserFlags (pData->m_hObject, OFT_User, nUserFlags);
+	g_pLTClient->Common()->GetObjectFlags(pData->m_hObject, OFT_User, nUserFlags);
 	if (nUserFlags & USRFLG_NIGHT_INFRARED)
 	{
-		pData->m_Flags &= ~MHF_USETEXTURE;
-		if (pData->m_LightAdd)
+		pData->m_HookFlags &= ~MHF_USETEXTURE;
 		{
-			VEC_SET (*pData->m_LightAdd, 255.0f, 64.0f, 64.0f);
+			VEC_SET (pData->m_LightAdd, 255.0f, 64.0f, 64.0f);
 		}
 	}
 	else
@@ -9841,7 +10139,7 @@ void IRModelHook (struct ModelHookData_t *pData, void *pUser)
 //
 // --------------------------------------------------------------------------- //
 
-void DefaultModelHook (struct ModelHookData_t *pData, void *pUser)
+void DefaultModelHook (ModelHookData *pData, void *pUser)
 {
 	CRiotClientShell* pShell = (CRiotClientShell*) pUser;
 	if (!pShell) return;
@@ -9849,17 +10147,14 @@ void DefaultModelHook (struct ModelHookData_t *pData, void *pUser)
 	if (!g_pLTClient) return;
 
 	uint32 nUserFlags = 0;
-	g_pLTClient->Common()->GetObjectUserFlags (pData->m_hObject, OFT_User, nUserFlags);
+	g_pLTClient->Common()->GetObjectFlags(pData->m_hObject, OFT_User, nUserFlags);
 
 	if (nUserFlags & USRFLG_GLOW)
 	{
 		// MD {Updates model glow in Update}
 		//pShell->UpdateModelGlow(vColor);
 
-		if (pData->m_LightAdd)
-		{
-			*pData->m_LightAdd = pShell->GetModelGlow();
-		}
+		pData->m_LightAdd = pShell->GetModelGlow();
 	}
 	else if (nUserFlags & USRFLG_MODELADD)
 	{
@@ -9870,9 +10165,8 @@ void DefaultModelHook (struct ModelHookData_t *pData, void *pUser)
 		LTFLOAT g = (LTFLOAT)(nUserFlags>>16);
 		LTFLOAT b = (LTFLOAT)(nUserFlags>>8);
 
-		if (pData->m_LightAdd)
 		{
-			VEC_SET (*pData->m_LightAdd, r, g, b);
+			VEC_SET (pData->m_LightAdd, r, g, b);
 		}
 	}
 }

@@ -26,6 +26,10 @@
 #include "DebrisFX.h"
 #include "LineBallFX.h"
 #include "CMoveMgr.h"
+#include "iltmath.h"
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 extern CRiotClientShell* g_pRiotClientShell;
 
@@ -159,7 +163,8 @@ LTBOOL CWeaponFX::CreateObject(ILTClient* pClientDE)
 	VEC_NORM(m_vSurfaceNormal);
 
 	m_rSurfaceRot = m_rRotation;
-	m_pClientDE->Math()->AlignRotation(m_rDirRot, m_vDir, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(m_rDirRot, m_vDir, vWorldUp);
 
 	// Determine type of weapon...
 
@@ -2469,7 +2474,8 @@ void CWeaponFX::CreatePulseRifleFX()
 
 	// Rotate to be flat to direction fired...
 
-	m_pClientDE->Math()->AlignRotation(sc.rRot, m_vDir, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(sc.rRot, m_vDir, vWorldUp);
 
 	pFX = psfxMgr->CreateSFX(SFX_SPRITE_ID, &sc);
 	if (pFX) pFX->Update();
@@ -3233,7 +3239,8 @@ void CWeaponFX::CreateEnergyGrenadeFX()
 
 	LTVector vUp;
 	VEC_SET(vUp, 1.0f, 0.0f, 1.0f);
-	m_pClientDE->Math()->AlignRotation(ex.rRot, vUp, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(ex.rRot, vUp, vWorldUp);
 
 	ex.fInitialAlpha	= 0.9f;
 	ex.fFinalAlpha		= 0.2f;
@@ -3668,7 +3675,8 @@ void CWeaponFX::CreateVectorBloodFX(LTVector & vVelMin, LTVector & vVelMax, LTFL
 
 		SPRITECREATESTRUCT sc;
 
-		m_pClientDE->Math()->AlignRotation(sc.rRot, iInfo.m_Plane.m_Normal, LTVector(0, 1, 0));
+		LTVector vWorldUp(0, 1, 0);
+		pMath->AlignRotation(sc.rRot, iInfo.m_Plane.m_Normal, vWorldUp);
 
 		VEC_MULSCALAR(vTemp, m_vDir, -2.0f);
 		VEC_ADD(sc.vPos, iInfo.m_Point, vTemp);  // Off the wall a bit

@@ -27,6 +27,11 @@ public:
 
 	void				HandleInput (int vkey);
 
+	void				DiagArrow (const char* pszWhich);
+
+	void				OnMouseMove (int x, int y);
+	LTBOOL				OnLButtonDown (int x, int y);
+
 	CRiotClientShell*	GetClientShell()			{ return m_pClientShell; }
 	CRiotSettings*		GetSettings()				{ return &m_Settings; }
 	

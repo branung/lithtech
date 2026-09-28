@@ -16,6 +16,7 @@
 #include "RiotSoundTypes.h"
 #include "ClientRes.h"
 #include "AutoMessage.h"
+#include "ClientUtilities.h"
 
 #define FONT_HEIGHT 12
 #define FONT_WIDTH 6
@@ -118,6 +119,7 @@ CMessageMgr::CMessageMgr()
 	m_bEnabled = LTFALSE;
 
 	m_hFont = LTNULL;
+	m_fFontScale = 1.0f;
 }
 
 
@@ -137,11 +139,46 @@ LTBOOL CMessageMgr::Init (ILTClient* pClientDE, CRiotClientShell* pClientShell)
 	m_pClientShell = pClientShell;
 	if (!m_InputLine.Init(pClientDE, pClientShell)) return LTFALSE;
 
+	m_fFontScale = GetHUDScale();
+
 	HSTRING hstrFont = pClientDE->FormatString (IDS_INGAMEFONT);
-	m_hFont = m_pClientDE->CreateFont(pClientDE->GetStringData (hstrFont), FONT_WIDTH, FONT_HEIGHT, LTFALSE, LTFALSE, LTFALSE);
+	m_hFont = m_pClientDE->CreateFont(pClientDE->GetStringData (hstrFont),
+									  HUDScaled (FONT_WIDTH,  m_fFontScale),
+									  HUDScaled (FONT_HEIGHT, m_fFontScale),
+									  LTFALSE, LTFALSE, LTFALSE);
 	pClientDE->FreeString (hstrFont);
 
 	return LTTRUE;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CMessageMgr::UpdateFontScale
+//
+//	PURPOSE:	Recreate the message font when the HUD scale changes
+//
+// ----------------------------------------------------------------------- //
+
+void CMessageMgr::UpdateFontScale()
+{
+	if (!m_pClientDE) return;
+
+	LTFLOAT fScale = GetHUDScale();
+	if (fScale == m_fFontScale && m_hFont) return;
+
+	HSTRING hstrFont = m_pClientDE->FormatString (IDS_INGAMEFONT);
+	HLTFONT hNew = m_pClientDE->CreateFont (m_pClientDE->GetStringData (hstrFont),
+											HUDScaled (FONT_WIDTH,  fScale),
+											HUDScaled (FONT_HEIGHT, fScale),
+											LTFALSE, LTFALSE, LTFALSE);
+	m_pClientDE->FreeString (hstrFont);
+
+	if (!hNew) return; // Keep the font we have
+
+	if (m_hFont) m_pClientDE->DeleteFont (m_hFont);
+	m_hFont = hNew;
+	m_fFontScale = fScale;
 }
 
 
@@ -253,15 +290,20 @@ void CMessageMgr::Draw( void )
 //	int nShade = ClipHigh(nCount * 8, 48);
 //	g_pRiotClientShell->AddToClearScreenCount();
 
+	UpdateFontScale();
+
 	HSURFACE hScreen = m_pClientDE->GetScreenSurface();
 	uint32 nScreenHeight, nScreenWidth;
 	m_pClientDE->GetSurfaceDims (hScreen, &nScreenWidth, &nScreenHeight);
 
 	LTFLOAT xRatio			= (LTFLOAT)nScreenWidth / 640.0f;
 	LTFLOAT yRatio			= (LTFLOAT)nScreenHeight / 480.0f;
-	
+
+	// The line pitch and inset scale with the font or else lines overlap
+	int nLineHeight = HUDScaled (FONT_HEIGHT, m_fFontScale);
+
 	int y = 0;
-	int x = 3;
+	int x = HUDScaled (3, m_fFontScale);
 
 	for ( i = 0; i < nCount; i++)
 	{
@@ -281,9 +323,8 @@ void CMessageMgr::Draw( void )
 			continue;
 		}
 
-		// draw the text
 		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, pMsg->hSurface, NULL, x, y, NULL);
-		y += FONT_HEIGHT;
+		y += nLineHeight;
 	}
 
 	if (m_bEditing)
@@ -295,7 +336,7 @@ void CMessageMgr::Draw( void )
 		//m_InputLine.Draw(hScreen, m_hFont, hForeground, NULL, m_x, y - FONT_HEIGHT);
 		
 		// {MD 9/13/98}
-		m_InputLine.Draw(hScreen, m_hFont, hForeground, SETRGB_T(0,0,0), m_x, y - FONT_HEIGHT);
+		m_InputLine.Draw(hScreen, m_hFont, hForeground, SETRGB_T(0,0,0), HUDScaled (m_x, m_fFontScale), y - nLineHeight);
 	}
 }
 

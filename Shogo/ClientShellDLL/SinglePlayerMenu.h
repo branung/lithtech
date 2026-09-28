@@ -14,9 +14,14 @@ public:
 	virtual LTBOOL		Init (ILTClient* pClientDE, CRiotMenu* pRiotMenu, CBaseMenu* pParent, int nScreenWidth, int nScreenHeight);
 	virtual void		ScreenDimsChanged (int nScreenWidth, int nScreenHeight);
 	
-	virtual LTBOOL		LoadAllSurfaces()		{ if (!m_NewGameMenu.LoadAllSurfaces() || !m_LoadLevelMenu.LoadAllSurfaces() ||
-													  !m_LoadSavedLevelMenu.LoadAllSurfaces() || !m_SaveLevelMenu.LoadAllSurfaces()) return LTFALSE;
-												  return LoadSurfaces(); }
+	virtual LTBOOL		LoadAllSurfaces()		{ LTBOOL bAll = LTTRUE;
+											  LoadChildSurfaces (m_NewGameMenu,        "NewGame",        bAll);
+											  LoadChildSurfaces (m_LoadLevelMenu,      "LoadLevel",      bAll);
+											  LoadChildSurfaces (m_LoadSavedLevelMenu, "LoadSavedLevel", bAll);
+											  LoadChildSurfaces (m_SaveLevelMenu,      "SaveLevel",      bAll);
+											  LTBOOL bMine = LoadSurfaces();
+											  if (!bMine && m_pClientDE) m_pClientDE->CPrint ("[D:MENU] SinglePlayer failed to load its own surfaces");
+											  return (bAll && bMine); }
 	virtual void		UnloadAllSurfaces()		{ m_NewGameMenu.UnloadAllSurfaces(); m_LoadLevelMenu.UnloadAllSurfaces();
 												  m_LoadSavedLevelMenu.UnloadAllSurfaces(); m_SaveLevelMenu.UnloadAllSurfaces(); UnloadSurfaces(); }
 

@@ -11,7 +11,10 @@
 #ifndef __RIOTCLIENTSHELL_H__
 #define __RIOTCLIENTSHELL_H__
 
+#define GAME_NAME	"Shogo: Mobile Armor Division" // The render window name for SetRenderMode
+
 #include "clientheaders.h"
+#include "iltvideomgr.h" // HVIDEO / ILTVideoMgr (movies moved off ILTClient)
 #include "RiotMenu.h"
 #include "PlayerStats.h"
 #include "PlayerCamera.h"
@@ -26,7 +29,8 @@
 #include "MissionObjectives.h"
 #include "PlayerInventory.h"
 #include "WeaponModel.h"
-#include "PolygridFX.h"
+#include "ShogoDiag.h"
+#include "PolyGridFX.h"
 #include "Credits.h"
 #include "MessageBox.h"
 #include "TextHelper.h"
@@ -67,7 +71,8 @@
 #define ID_BASEWORLD			256
 #define ID_BASEWORLDMULTI		512
 
-typedef void (*YESNOPROC)(LTBOOL, uint32);
+// Pointer sized since the user data is always a pointer
+typedef void (*YESNOPROC)(LTBOOL, uintptr_t);
 
 class CSpecialFX;
 class CPopupMenu;
@@ -77,17 +82,19 @@ class CRiotClientShell : public IClientShellStub
 {
 	public:
 
+		declare_interface(CRiotClientShell);
+
 		CRiotClientShell();
 		~CRiotClientShell();
 
 		void  ProcessCheat(CheatCode nCode);
 		void  ShakeScreen(LTVector vAmount);
 
-		void  HandleRecord(int argc, char **argv);
-		void  HandlePlaydemo(int argc, char **argv);
+		void  HandleRecord(int argc, const char **argv);
+		void  HandlePlaydemo(int argc, const char **argv);
 
-		LTBOOL LoadWorld(char* pWorldFile, char* pCurWorldSaveFile=LTNULL,
-					    char* pRestoreWorldFile=LTNULL, uint8 nFlags=LOAD_NEW_GAME);
+		LTBOOL LoadWorld(const char* pWorldFile, const char* pCurWorldSaveFile=LTNULL,
+					    const char* pRestoreWorldFile=LTNULL, uint8 nFlags=LOAD_NEW_GAME);
 		LTBOOL LoadGame(char* pWorld, char* pObjectsFile);
 		LTBOOL SaveGame(char* pObjectsFile);
 
@@ -96,7 +103,7 @@ class CRiotClientShell : public IClientShellStub
 
 		LTBOOL IsAnime()	const { return m_bAnime; }
 
-		LTBOOL GetNiceWorldName(char* pWorldFile, char* pRetName, int nRetLen);
+		LTBOOL GetNiceWorldName(const char* pWorldFile, char* pRetName, int nRetLen);
 		LTBOOL StartGame(GameDifficulty eDifficulty);
 
 		void  SetDifficulty(GameDifficulty e) { m_eDifficulty = e; }
@@ -109,6 +116,7 @@ class CRiotClientShell : public IClientShellStub
 		LTBOOL		IsVehicleMode()			  { CRiotSettings* pSettings = m_menu.GetSettings(); if (pSettings) return pSettings->VehicleMode(); return LTFALSE; }
 		CRiotMenu*	GetMenu()				  { return &m_menu; }
 		HLOCALOBJ	GetCamera()			const { return m_hCamera; }
+		CShogoDiag&	GetDiag()			{ return m_Diag; }
 		LTBOOL		IsOnFoot()			const { return (m_nPlayerMode == PM_MODE_FOOT); }
 		uint8		GetPlayerMode()		const { return m_nPlayerMode; }
 		LTBOOL		IsUnderwater()		const { return m_bUnderwater; }
@@ -175,7 +183,7 @@ class CRiotClientShell : public IClientShellStub
 		LTBOOL		SetMenuMusic(LTBOOL bMusicOn);
 
 		LTBOOL		DoMessageBox (int nStringID, int nAlignment = TH_ALIGN_LEFT, LTBOOL bCrop = LTTRUE);
-		LTBOOL		DoYesNoMessageBox (int nStringID, YESNOPROC pYesNoProc, uint32 nUserData, int nAlignment = TH_ALIGN_LEFT, LTBOOL bCrop = LTTRUE);
+		LTBOOL		DoYesNoMessageBox (int nStringID, YESNOPROC pYesNoProc, uintptr_t nUserData, int nAlignment = TH_ALIGN_LEFT, LTBOOL bCrop = LTTRUE);
 
 		bool		IsJoystickEnabled();
 		bool		EnableJoystick();
@@ -213,26 +221,33 @@ class CRiotClientShell : public IClientShellStub
 
 		void		CSPrint (char* msg, ...);
 		void		ShowSplash();
-		uint32		OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGuid);
-		void		OnEngineTerm();
-		void		OnEvent(uint32 dwEventID, uint32 dwParam);
-		LTRESULT		OnObjectMove(HOBJECT hObj, LTBOOL bTeleport, LTVector *pPos);
-		LTRESULT		OnObjectRotate(HOBJECT hObj, LTBOOL bTeleport, LTRotation *pNewRot);
-		LTRESULT		OnTouchNotify(HOBJECT hMain, CollisionInfo *pInfo, LTFLOAT forceMag);
-		void		PreLoadWorld(char *pWorldName);
-		void		OnEnterWorld();
-		void		OnExitWorld();
-		void		PreUpdate();
-		void		Update();
-		void		PostUpdate();
-		void		OnCommandOn(int command);
-		void		OnCommandOff(int command);
-		void		OnKeyDown(int key, int rep);
-		void		OnKeyUp(int key);
-		void		SpecialEffectNotify(HLOCALOBJ hObj, ILTMessage_Read* hMessage);
-		void		OnObjectRemove(HLOCALOBJ hObj);
+
+		// Engine callbacks are marked override so a drifted signature won't compile
+		uint32		OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGuid) override;
+		void		OnEngineTerm() override;
+		void		OnEvent(uint32 dwEventID, uint32 dwParam) override;
+		LTRESULT	OnObjectMove(HLOCALOBJ hObj, bool bTeleport, LTVector *pPos) override;
+		LTRESULT	OnObjectRotate(HLOCALOBJ hObj, bool bTeleport, LTRotation *pNewRot) override;
+		LTRESULT	OnTouchNotify(HOBJECT hMain, CollisionInfo *pInfo, LTFLOAT forceMag) override;
+		void		PreLoadWorld(const char *pWorldName) override;
+		void		OnEnterWorld() override;
+		void		OnExitWorld() override;
+		void		PreUpdate() override;
+		void		Update() override;
+		void		PostUpdate() override;
+		void		OnCommandOn(int command) override;
+		void		OnCommandOff(int command) override;
+		void		OnKeyDown(int key, int rep) override;
+
+		// SDL events for the menu mouse, forwarded only while a menu is up
+		void		HandleEvent(SDL_Event e) override;
+		void		OnKeyUp(int key) override;
+		void		SpecialEffectNotify(HLOCALOBJ hObj, ILTMessage_Read* hMessage) override;
+		void		OnObjectRemove(HLOCALOBJ hObj) override;
+		// Reads the uint8 ID CServerDE::StartMessage writes and hands off to the LT1 handler
+		void		OnMessage(ILTMessage_Read* pMessage) override;
 		void		OnMessage(uint8 messageID, ILTMessage_Read* hMessage);
-		void		OnModelKey(HLOCALOBJ hObj, ArgList *pArgs);
+		void		OnModelKey(HLOCALOBJ hObj, ArgList *pArgs) override;
 		
 		CPopupMenu* CreateIngameDialog (ILTMessage_Read* hMessage);
 		void		HandleObjectives (ILTMessage_Read* hMessage);
@@ -255,6 +270,7 @@ class CRiotClientShell : public IClientShellStub
 	private :
 
 		CMoveMgr		*m_MoveMgr;			// Always around...
+		CShogoDiag		m_Diag;				// Runtime tracing (off unless Diag is set)
 
 		LTBOOL			m_bUseWorldFog;		// Tells if we should use global fog settings or
 											// let the container handling do it.
@@ -298,6 +314,21 @@ class CRiotClientShell : public IClientShellStub
 
 		LTBOOL			m_bAllowPlayerMovement;		// External camera stuff
 		LTBOOL			m_bLastAllowPlayerMovement;
+
+		// Cutscene skipping (SkipCutscenes)
+		LTBOOL			m_bSkipKeyDown;      // Latched skip key
+		LTBOOL			m_bLastInputState;   // Last value handed to SetInputState
+
+		// Was a cutscene camera live last frame?
+		LTBOOL			m_bSkipCameraWasLive;
+
+		// Earliest time a skip press counts.
+		// Needed so that a press that dismisses mission briefing text can't also skip a level intro cutscene
+		LTFLOAT			m_fSkipArmTime;
+
+		// SkipCutsceneAt: a scripted press
+		LTFLOAT			m_fSceneStartTime;
+		LTBOOL			m_bSkipAutoFired;
 		LTBOOL			m_bWasUsingExternalCamera;	// so we can detect when we start using it
 		LTBOOL			m_bUsingExternalCamera;
 
@@ -445,6 +476,9 @@ class CRiotClientShell : public IClientShellStub
 		CMessageMgr			m_messageMgr;		// message display/sending mgr
 		CCheatMgr			m_cheatMgr;			// cheat message mgr
 		CRiotMenu			m_menu;				// pretty self-explanatory isn't it?
+
+		// Whether the cursor is freed for the menu so the mode only changes on the transition
+		LTBOOL				m_bMenuCursorActive;
 		CClientInfoMgr		m_ClientInfo;		// info on all clients connected to server
 		CCredits			m_credits;			// class to display credits
 		CInfoDisplay		m_infoDisplay;		// temporary information display class
@@ -482,7 +516,7 @@ class CRiotClientShell : public IClientShellStub
 		CPopupMenu*		m_pIngameDialog;			// in-game dialog spawned by a CDialogTrigger
 		CMessageBox*	m_pMessageBox;
 		YESNOPROC		m_pYesNoProc;
-		uint32			m_nYesNoUserData;
+		uintptr_t		m_nYesNoUserData;
 
 		HSURFACE		m_hBumperText;				// bumper screen text 
 		char*			m_pPressAnyKeySound;		// Sound played when "press any key" text appears
@@ -502,6 +536,8 @@ class CRiotClientShell : public IClientShellStub
 
 		HLTSOUND		m_hMenuMusic;				// handle to music playing while menu is up
 
+		HVIDEO			m_hVideo;					// Currently playing movie (LT1 tracked this internally)
+
 		LTFLOAT			m_fTransmissionTimeLeft;		// time left to display transmission
 		HSURFACE		m_hTransmissionImage;			// image to display in transmission
 		HSURFACE		m_hTransmissionText;			// text surface for transmission
@@ -516,6 +552,7 @@ class CRiotClientShell : public IClientShellStub
 		LTFLOAT			m_yTransmissionText;
 		LTFLOAT			m_cxTransmissionText;
 		LTFLOAT			m_cyTransmissionText;
+		LTFLOAT			m_fTransmissionScale; // The HUD scale this transmission was built at
 
 		HSURFACE		m_hLoadingWorld;
 		HSURFACE		m_hPressAnyKey;
@@ -632,9 +669,9 @@ class CRiotClientShell : public IClientShellStub
 		void	InitSinglePlayer();
 
 		void	DoStartGame();
-		LTBOOL   DoLoadWorld(char* pWorldFile, char* pCurWorldSaveFile=LTNULL,
-					        char* pRestoreWorldFile=LTNULL, uint8 nFlags=LOAD_NEW_GAME,
-							char *pRecordFile=LTNULL, char *pPlaydemoFile=NULL);
+		LTBOOL   DoLoadWorld(const char* pWorldFile, const char* pCurWorldSaveFile=LTNULL,
+					        const char* pRestoreWorldFile=LTNULL, uint8 nFlags=LOAD_NEW_GAME,
+							const char *pRecordFile=LTNULL, const char *pPlaydemoFile=NULL);
 
 		void	AutoSave(ILTMessage_Read* hMessage);
 

@@ -49,7 +49,8 @@ struct Setting
 #define RS_CTRL_JOYINVERTY			5
 #define RS_CTRL_LOOKSPRING			6
 #define RS_CTRL_RUNLOCK				7
-#define RS_CTRL_LAST				7
+#define RS_CTRL_USEWHEEL			8
+#define RS_CTRL_LAST				8
 
 // SOUND SETTINGS...
 
@@ -124,7 +125,8 @@ public:
 	LTBOOL		JoyInvertY()						{ return (LTBOOL)Control[RS_CTRL_JOYINVERTY].nValue; }
 	LTBOOL		Lookspring()						{ return (LTBOOL)Control[RS_CTRL_LOOKSPRING].nValue; }
 	LTBOOL		RunLock()							{ return (LTBOOL)Control[RS_CTRL_RUNLOCK].nValue; }
-	
+	LTBOOL		UseWheel()							{ return (LTBOOL)Control[RS_CTRL_USEWHEEL].nValue; }
+
 	void		SetRunLock (LTBOOL bRunLock)			{ Control[RS_CTRL_RUNLOCK].nValue = bRunLock ? 1.0f : 0.0f; }
 
 	// sound access functions
@@ -209,6 +211,7 @@ public:
 	void		ImplementSoundQuality();
 	void		ImplementMouseSensitivity();
 	void		ImplementInputRate();
+	void		ImplementUseWheel(); // Binds or clears the wheel from UseWheel
 	void		ImplementDetailSetting (int nSetting);
 	void		ImplementBitDepth();
 

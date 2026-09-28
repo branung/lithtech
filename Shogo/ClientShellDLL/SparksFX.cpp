@@ -11,7 +11,11 @@
 #include "SparksFX.h"
 #include "clientheaders.h"
 #include "ClientUtilities.h"
+#include "iltmath.h"
 
+
+static ILTMath* pMath;
+define_holder(ILTMath, pMath);
 
 // ----------------------------------------------------------------------- //
 //
@@ -126,7 +130,8 @@ LTBOOL CSparksFX::AddSparks()
 	VEC_NORM(m_vDir);
 
 	LTRotation rRot;
-	m_pClientDE->Math()->AlignRotation(rRot, m_vDir, LTVector(0, 1, 0));
+	LTVector vWorldUp(0, 1, 0);
+	pMath->AlignRotation(rRot, m_vDir, vWorldUp);
 
 	LTVector vF, vU, vR;
 	m_pClientDE->Common()->GetRotationVectors(rRot, vU, vR, vF);

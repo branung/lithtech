@@ -37,11 +37,11 @@ public:
 	LTBOOL			AddInfo (HSURFACE hSurface, LTFLOAT nSeconds = 3.0f, uint32 nLocationFlags = DI_CENTER | DI_BOTTOM, LTBOOL bDeleteSurface = LTTRUE);
 	
 	// create an optimized surface using a bitmap font and add it to the draw list
-	LTBOOL			AddInfo (char* str, CBitmapFont* pFont, LTFLOAT nSeconds = 3.0f, uint32 nLocationFlags = DI_CENTER | DI_BOTTOM);
+	LTBOOL			AddInfo (const char* str, CBitmapFont* pFont, LTFLOAT nSeconds = 3.0f, uint32 nLocationFlags = DI_CENTER | DI_BOTTOM);
 	LTBOOL			AddInfo (int nStringID, CBitmapFont* pFont, LTFLOAT nSeconds = 3.0f, uint32 nLocationFlags = DI_CENTER | DI_BOTTOM);
 
 	// create an optimized surface using a truetype font and add it to the draw list
-	LTBOOL			AddInfo (char* str, FONT* pFontDef, HLTCOLOR hForeColor, LTFLOAT nSeconds = 3.0f, uint32 nLocationFlags = DI_CENTER | DI_BOTTOM);
+	LTBOOL			AddInfo (const char* str, FONT* pFontDef, HLTCOLOR hForeColor, LTFLOAT nSeconds = 3.0f, uint32 nLocationFlags = DI_CENTER | DI_BOTTOM);
 	LTBOOL			AddInfo (int nStringID, FONT* pFontDef, HLTCOLOR hForeColor, LTFLOAT nSeconds = 3.0f, uint32 nLocationFlags = DI_CENTER | DI_BOTTOM);
 
 	// draw all surfaces in the draw list

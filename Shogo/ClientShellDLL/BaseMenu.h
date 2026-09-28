@@ -2,10 +2,10 @@
 #define __BASEMENU_H
 
 #include "ClientUtilities.h"
-#include "font08.h"
-#include "font12.h"
-#include "font18.h"
-#include "font28.h"
+#include "Font08.h"
+#include "Font12.h"
+#include "Font18.h"
+#include "Font28.h"
 
 class CRiotMenu;
 class CBaseMenu;
@@ -36,6 +36,12 @@ public:
 	virtual LTBOOL		LoadAllSurfaces()					{ return LTTRUE; }
 	virtual void		UnloadAllSurfaces()					{}
 
+	// Loads one submenu's surfaces, folding the result into bAll without stopping the caller.
+	LTBOOL				LoadChildSurfaces (CBaseMenu& child, const char* pszName, LTBOOL& bAll);
+
+	// Which row is highlighted
+	int					GetSelection() const				{ return m_nSelection; }
+
 	virtual void		OnEnterWorld();
 	virtual void		OnExitWorld();
 
@@ -64,6 +70,27 @@ public:
 	virtual void		PlaySound (char* pSound)	{ PlaySoundLocal( pSound, SOUNDPRIORITY_MISC_MEDIUM); }
 
 	virtual void		Draw (HSURFACE hScreen, int nScreenWidth, int nScreenHeight, int nTextOffset = 0);
+
+	// Mouse
+
+	// These add hover to highlight and click to activate
+
+	virtual int			GetItemWidth (int nItem);
+
+	// Which item contains (x, y) in screen coordinates, or -1
+	virtual int			GetItemUnderPoint (int x, int y);
+
+	// Hover highlights what's under the cursor.
+	// Does nothing if that's already selected, so the sound isn't retriggered
+	virtual void		OnMouseMove (int x, int y);
+
+	// Click selects what's under the cursor and activates it.
+	// Returns LTFALSE when there was nothing there
+	virtual LTBOOL		OnLButtonDown (int x, int y);
+
+	// What a click does once an item is selected. Return() by default.
+	// An on/off row overrides this to call Left(), since Return() does nothing there
+	virtual void		Activate (int nItem);
 
 protected:
 

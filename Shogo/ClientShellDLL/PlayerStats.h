@@ -93,6 +93,8 @@ protected:
 
 	void		UpdateHUDEffect();
 
+	void		DrawHUDSurface (HSURFACE hScreen, HSURFACE hSurf, int x, int y, LTFLOAT fScale, HLTCOLOR hTransColor);
+
 		
 protected:
 
