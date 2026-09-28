@@ -39,6 +39,8 @@ define_holder(ILTClient, ilt_client);
 
 
 extern int32 g_CV_ForceClear;
+extern int32 g_CV_Show2DScale;
+static uint32 g_hUITransColor = 0;
 extern int32 g_nConsoleLines;
 
 // The screen surface.. treated specially.
@@ -92,6 +94,7 @@ typedef LTRESULT (*DrawPixelsFn)(bool bSameSurface, uint8 *pSrcData, uint8 *pDes
 
 inline void cis_SetTransparentColor(uint32 inColor)
 {
+	g_hUITransColor = inColor;
 	format_mgr->Mgr()->PValueToFormatColor(&g_ScreenFormat, inColor, g_TransparentColor);
 }
 
@@ -325,14 +328,25 @@ inline void cis_MaskedDrawLine(uint8 *pSrcLine, uint8 *pDestLine, uint32 width,
 // If the surface's contents are dirty, reoptimize the surface.
 static void cis_OptimizeDirty(CisSurface *pSurface)
 {
-	if(!pSurface)
+	if(!pSurface || !g_pCisRenderStruct)
 		return;
-	
-	if((pSurface->m_Flags & SURFFLAG_OPTIMIZED) && (pSurface->m_Flags & SURFFLAG_OPTIMIZEDIRTY))
+
+	if(!(pSurface->m_Flags & SURFFLAG_OPTIMIZEDIRTY))
+		return;
+
+	if(cis_IsScreenSurface(pSurface))
+		return;
+
+	if(pSurface->m_Flags & SURFFLAG_OPTIMIZED)
 	{
 		g_pCisRenderStruct->OptimizeSurface(pSurface->m_hBuffer, pSurface->m_OptimizedTransparentColor);
-		pSurface->m_Flags &= ~SURFFLAG_OPTIMIZEDIRTY;
 	}
+	else if(g_pCisRenderStruct->UnoptimizeSurface)
+	{
+		g_pCisRenderStruct->UnoptimizeSurface(pSurface->m_hBuffer);
+	}
+
+	pSurface->m_Flags &= ~SURFFLAG_OPTIMIZEDIRTY;
 }
 
 static LTRESULT cis_MaskedDraw(bool bSameSurface,
@@ -390,6 +404,67 @@ static LTRESULT cis_MaskedDraw(bool bSameSurface,
 }
 
 
+
+// The interface upscale
+// Applied at the public 2D entry points when drawing to the screen. Never in the helpers or else it would run twice
+extern float g_CV_UI2DScaleX, g_CV_UI2DScaleY, g_CV_UI2DOffsetX, g_CV_UI2DOffsetY;
+extern int32 g_CV_UI2DMarginColor;
+
+static int g_nUINoTransform = 0;
+struct UINoTransform
+{
+	UINoTransform()  { ++g_nUINoTransform; }
+	~UINoTransform() { --g_nUINoTransform; }
+};
+
+
+static inline bool cis_UIActive(CisSurface *pDest)
+{
+	if (pDest != &g_ScreenSurface || g_nUINoTransform > 0)
+		return false;
+	if (g_CV_UI2DScaleX <= 0.0f || g_CV_UI2DScaleY <= 0.0f)
+		return false;
+	return !(g_CV_UI2DScaleX == 1.0f && g_CV_UI2DScaleY == 1.0f &&
+	         g_CV_UI2DOffsetX == 0.0f && g_CV_UI2DOffsetY == 0.0f);
+}
+
+static inline int cis_UIMapX(int x) { return (int)floor(g_CV_UI2DOffsetX + (float)x * g_CV_UI2DScaleX + 0.5f); }
+static inline int cis_UIMapY(int y) { return (int)floor(g_CV_UI2DOffsetY + (float)y * g_CV_UI2DScaleY + 0.5f); }
+
+static inline void cis_UIMapRect(LTRect &r)
+{
+	r.left   = cis_UIMapX(r.left);
+	r.right  = cis_UIMapX(r.right);
+	r.top    = cis_UIMapY(r.top);
+	r.bottom = cis_UIMapY(r.bottom);
+}
+
+// A solid color draw can't be scaled on the hardware path as it falls to the software warp and gets truncated.
+// The tint is drawn at scale 1 into a scratch surface, and that copy is scaled
+static CisSurface *g_pUIScratch = LTNULL;
+static uint32 g_nUIScratchW = 0, g_nUIScratchH = 0;
+
+CisSurface* cis_InternalCreateSurface(uint32 width, uint32 height);
+LTRESULT cis_DeleteSurface(HSURFACE hSurface);
+static LTRESULT cis_FillRect(HSURFACE hDest, LTRect *pRect, HLTCOLOR hColor);
+static LTRESULT cis_InternalScaleSurfaceToSurface(HSURFACE hDest, HSURFACE hSrc, LTRect *pDestRect, LTRect *pSrcRect, int tType, HLTCOLOR tColor, HLTCOLOR fillColor);
+
+static CisSurface* cis_UIScratch(uint32 w, uint32 h)
+{
+	if (g_pUIScratch && (g_nUIScratchW < w || g_nUIScratchH < h))
+	{
+		cis_DeleteSurface((HSURFACE)g_pUIScratch);
+		g_pUIScratch = LTNULL;
+	}
+	if (!g_pUIScratch)
+	{
+		g_nUIScratchW = (w > 64) ? w : 64;
+		g_nUIScratchH = (h > 64) ? h : 64;
+		g_pUIScratch = cis_InternalCreateSurface(g_nUIScratchW, g_nUIScratchH);
+	}
+	return g_pUIScratch;
+}
+
 static LTRESULT cis_DoDrawSurfaceToSurface(HSURFACE hDest, HSURFACE hSrc, 
 	LTRect *pSrcRect, int destX, int destY, DrawPixelsFn fn)
 {
@@ -405,6 +480,31 @@ static LTRESULT cis_DoDrawSurfaceToSurface(HSURFACE hDest, HSURFACE hSrc,
 	bool bOk;
 
 	CHECK_PARAMS2(pSrc && pDest);
+
+	if(cis_UIActive(pDest) && (fn == cis_OpaqueDraw || fn == cis_TransparentDraw || fn == cis_SolidColorDraw))
+	{
+		LTRect uiSrc;
+		if(pSrcRect) uiSrc = *pSrcRect;
+		else { uiSrc.left = uiSrc.top = 0; uiSrc.right = pSrc->m_Width; uiSrc.bottom = pSrc->m_Height; }
+		const int nW = uiSrc.right - uiSrc.left, nH = uiSrc.bottom - uiSrc.top;
+		if(nW <= 0 || nH <= 0) return LT_OK;
+		LTRect uiDest;
+		uiDest.left = destX; uiDest.top = destY; uiDest.right = destX + nW; uiDest.bottom = destY + nH;
+		cis_UIMapRect(uiDest);
+		if(uiDest.right <= uiDest.left || uiDest.bottom <= uiDest.top) return LT_OK;
+
+		UINoTransform guard;
+		if(fn == cis_SolidColorDraw)
+		{
+			CisSurface *pScratch = cis_UIScratch((uint32)nW, (uint32)nH);
+			if(!pScratch) return LT_ERROR;
+			LTRect rcScratch; rcScratch.left = rcScratch.top = 0; rcScratch.right = nW; rcScratch.bottom = nH;
+			cis_FillRect((HSURFACE)pScratch, &rcScratch, (HLTCOLOR)g_hUITransColor);
+			cis_DoDrawSurfaceToSurface((HSURFACE)pScratch, hSrc, &uiSrc, 0, 0, cis_SolidColorDraw);
+			return cis_InternalScaleSurfaceToSurface(hDest, (HSURFACE)pScratch, &uiDest, &rcScratch, 0, (HLTCOLOR)g_hUITransColor, LTNULL);
+		}
+		return cis_InternalScaleSurfaceToSurface(hDest, hSrc, &uiDest, &uiSrc, (fn == cis_TransparentDraw) ? 0 : 1, (HLTCOLOR)g_hUITransColor, LTNULL);
+	}
 
 	if(pSrcRect)
 	{
@@ -538,13 +638,41 @@ static void cis_InternalBitmapToSurface(CisSurface *pDest, LoadedBitmap *pSrc,
 	cis_UnlockSurface(pDest);
 }
 
+// Scanline tables for the warp blit. One entry per destination row.
+// Grown on demand and kept since this path is single threaded
+static WarpCoords *g_pWarpLeftCoords = LTNULL;
+static WarpCoords *g_pWarpRightCoords = LTNULL;
+static uint32 g_nWarpCoordsAlloced = 0;
+
+static bool cis_EnsureWarpCoords(uint32 nNeeded)
+{
+	if(nNeeded <= g_nWarpCoordsAlloced)
+		return true;
+
+	uint32 nNew = (g_nWarpCoordsAlloced < 1024) ? 1024 : g_nWarpCoordsAlloced;
+	while(nNew < nNeeded)
+		nNew *= 2;
+
+	WarpCoords *pNew = LTNULL;
+	LT_MEM_TRACK_ALLOC(pNew = (WarpCoords*)dalloc(sizeof(WarpCoords) * nNew * 2), LT_MEM_TYPE_MISC);
+	if(!pNew)
+		return false;
+
+	if(g_pWarpLeftCoords)
+		dfree(g_pWarpLeftCoords);
+
+	g_pWarpLeftCoords    = pNew;
+	g_pWarpRightCoords   = pNew + nNew;
+	g_nWarpCoordsAlloced = nNew;
+	return true;
+}
+
 static LTRESULT cis_InternalWarpSurfaceToSurface(HSURFACE hDest, HSURFACE hSrc, 
 	LTWarpPt *pCoords, int nCoords, DrawWarpFn fn)
 {
 	CisSurface *pSrc, *pDest;
 	int i;
 	LTBOOL bIsVisible;
-	WarpCoords leftCoords[1024], rightCoords[1024];
 	uint32 minY, maxY;
 
 	
@@ -567,6 +695,14 @@ static LTRESULT cis_InternalWarpSurfaceToSurface(HSURFACE hDest, HSURFACE hSrc,
 		pCoords[i].source_y = LTCLAMP(pCoords[i].source_y, 0.0f, (float)(pSrc->m_Height-1));
 	}
 
+	// One entry per destination scanline
+	const uint32 nNeededCoords = (pDest->m_Height > 0) ? (uint32)pDest->m_Height : 1;
+	if(!cis_EnsureWarpCoords(nNeededCoords))
+		RETURN_ERROR(1, InternalWarpSurfaceToSurface, LT_ERROR);
+
+	WarpCoords *leftCoords  = g_pWarpLeftCoords;
+	WarpCoords *rightCoords = g_pWarpRightCoords;
+
 	// Clip the dest coordinates..
 	bIsVisible = cis_Clip2dPoly(pCoords, nCoords, 0.0f, 0.0f, 
 		(float)(pDest->m_Width-1), (float)(pDest->m_Height-1));
@@ -574,7 +710,8 @@ static LTRESULT cis_InternalWarpSurfaceToSurface(HSURFACE hDest, HSURFACE hSrc,
 		return LT_OK;
 
 	// Get the warp coordinates into the lookup tables.
-	cis_GetWarpCoordinates(leftCoords, rightCoords, pCoords, nCoords, minY, maxY);
+	cis_GetWarpCoordinates(leftCoords, rightCoords, pCoords, nCoords,
+		g_nWarpCoordsAlloced, minY, maxY);
 
 	// Draw it.
 	return fn(pDest, pSrc, leftCoords, rightCoords, minY, maxY);
@@ -738,6 +875,23 @@ static LTRESULT cis_InternalScaleSurfaceToSurface(HSURFACE hDest, HSURFACE hSrc,
 		srcRect.left = srcRect.top = 0;
 		srcRect.right = pSrc->m_Width;
 		srcRect.bottom = pSrc->m_Height;
+	}
+
+	// The interface upscale: the caller's destination is in interface space
+	if(cis_UIActive(pDest))
+		cis_UIMapRect(destRect);
+	// Everything below - the warp fallback included - is in screen space
+	UINoTransform uiGuard;
+
+	if(g_CV_Show2DScale)
+	{
+		dsi_ConsolePrint("2DSCALE: src %dx%d rect(%d,%d,%d,%d) -> dest %dx%d "
+			"rect(%d,%d,%d,%d) screen=%d type=%d",
+			(int)pSrc->m_Width, (int)pSrc->m_Height,
+			(int)srcRect.left, (int)srcRect.top, (int)srcRect.right, (int)srcRect.bottom,
+			(int)pDest->m_Width, (int)pDest->m_Height,
+			(int)destRect.left, (int)destRect.top, (int)destRect.right, (int)destRect.bottom,
+			(pDest == &g_ScreenSurface) ? 1 : 0, tType);
 	}
 
 	// Try to get the RenderStruct to do it.
@@ -1506,6 +1660,18 @@ static LTRESULT cis_WarpSurfaceToSurface(HSURFACE hDest, HSURFACE hSrc,
 	if(!g_pCisRenderStruct)
 		RETURN_ERROR(1, WarpSurfaceToSurface, LT_NOTINITIALIZED);
 
+	LTWarpPt uiPts[32];
+	if(cis_UIActive((CisSurface*)hDest) && nCoords > 0 && nCoords <= 32)
+	{
+		for(int i = 0; i < nCoords; i++)
+		{
+			uiPts[i] = pCoords[i];
+			uiPts[i].dest_x = g_CV_UI2DOffsetX + uiPts[i].dest_x * g_CV_UI2DScaleX;
+			uiPts[i].dest_y = g_CV_UI2DOffsetY + uiPts[i].dest_y * g_CV_UI2DScaleY;
+		}
+		pCoords = uiPts;
+	}
+	UINoTransform uiGuard;
 	return cis_InternalWarpSurfaceToSurface(hDest, hSrc, pCoords, nCoords, cis_DrawWarp);
 }
 
@@ -1517,6 +1683,18 @@ static LTRESULT cis_WarpSurfaceToSurfaceTransparent(HSURFACE hDest, HSURFACE hSr
 		RETURN_ERROR(1, WarpSurfaceToSurfaceTransparent, LT_NOTINITIALIZED);
 
 	cis_SetTransparentColor(hColor);
+	LTWarpPt uiPts[32];
+	if(cis_UIActive((CisSurface*)hDest) && nCoords > 0 && nCoords <= 32)
+	{
+		for(int i = 0; i < nCoords; i++)
+		{
+			uiPts[i] = pCoords[i];
+			uiPts[i].dest_x = g_CV_UI2DOffsetX + uiPts[i].dest_x * g_CV_UI2DScaleX;
+			uiPts[i].dest_y = g_CV_UI2DOffsetY + uiPts[i].dest_y * g_CV_UI2DScaleY;
+		}
+		pCoords = uiPts;
+	}
+	UINoTransform uiGuard;
 	return cis_InternalWarpSurfaceToSurface(hDest, hSrc, pCoords, nCoords, cis_DrawWarpTransparent);
 }
 
@@ -1529,6 +1707,18 @@ static LTRESULT cis_WarpSurfaceToSurfaceSolidColor(HSURFACE hDest, HSURFACE hSrc
 
 	cis_SetTransparentColor(hTransColor);
 	cis_SetSolidColor(hFillColor);
+	LTWarpPt uiPts[32];
+	if(cis_UIActive((CisSurface*)hDest) && nCoords > 0 && nCoords <= 32)
+	{
+		for(int i = 0; i < nCoords; i++)
+		{
+			uiPts[i] = pCoords[i];
+			uiPts[i].dest_x = g_CV_UI2DOffsetX + uiPts[i].dest_x * g_CV_UI2DScaleX;
+			uiPts[i].dest_y = g_CV_UI2DOffsetY + uiPts[i].dest_y * g_CV_UI2DScaleY;
+		}
+		pCoords = uiPts;
+	}
+	UINoTransform uiGuard;
 	return cis_InternalWarpSurfaceToSurface(hDest, hSrc, pCoords, nCoords, cis_DrawWarpSolidColor);
 }
 
@@ -1570,6 +1760,15 @@ static LTRESULT cis_FillRect(HSURFACE hDest, LTRect *pRect, HLTCOLOR hColor)
 	if(!pDest)
 		RETURN_ERROR(1, FillRect, LT_INVALIDPARAMS);
 
+	// The interface upscale: a rectangle for the screen is in interface space.
+	// No rectangle means the whole surface, which needs no mapping
+	LTRect uiRect;
+	if(pRect && cis_UIActive(pDest))
+	{
+		uiRect = *pRect;
+		cis_UIMapRect(uiRect);
+		pRect = &uiRect;
+	}
 	if(pRect)
 	{
 		tempRect.left = tempRect.top = 0;
@@ -1840,8 +2039,26 @@ static LTRESULT cis_StartOptimized2D()
 	++(pStruct->m_nInOptimized2D);
 
 	if (pStruct->m_nInOptimized2D == 1)
+		{
 		pStruct->StartOptimized2D();
 
+		// The interface upscale's margins, painted in the shell's color wherever the scaled 640x480 doesn't cover.
+		// Drawn first so the 2D lands on top
+		if (cis_UIActive(&g_ScreenSurface) && g_CV_UI2DMarginColor >= 0)
+		{
+			UINoTransform guard;
+			const int W = (int)g_ScreenSurface.m_Width, H = (int)g_ScreenSurface.m_Height;
+			const int L = (int)floor(g_CV_UI2DOffsetX + 0.5f), T = (int)floor(g_CV_UI2DOffsetY + 0.5f);
+			const HLTCOLOR hCol = (HLTCOLOR)g_CV_UI2DMarginColor;
+			LTRect rc;
+			if (T > 0) { rc.left = 0; rc.top = 0; rc.right = W; rc.bottom = T; cis_FillRect((HSURFACE)&g_ScreenSurface, &rc, hCol); }
+			if (L > 0) { rc.left = 0; rc.top = 0; rc.right = L; rc.bottom = H; cis_FillRect((HSURFACE)&g_ScreenSurface, &rc, hCol); }
+			// The far edges are where the scaled 640x480 ends
+			const int R = cis_UIMapX(640), B = cis_UIMapY(480);
+			if (R < W) { rc.left = R; rc.top = 0; rc.right = W; rc.bottom = H; cis_FillRect((HSURFACE)&g_ScreenSurface, &rc, hCol); }
+			if (B < H) { rc.left = 0; rc.top = B; rc.right = W; rc.bottom = H; cis_FillRect((HSURFACE)&g_ScreenSurface, &rc, hCol); }
+		}
+	}
 	return LT_OK;
 }
 
