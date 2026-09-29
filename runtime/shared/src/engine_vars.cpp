@@ -66,6 +66,20 @@ int32	g_CV_FullLightScale = LTFALSE;
 
 int32	g_CV_ForceClear = LTFALSE;	// Force the engine to clear the screen.
 
+int32	g_CV_Show2DScale = LTFALSE;
+
+// The interface upscale
+float	g_CV_UI2DScaleX = 0.0f;
+float	g_CV_UI2DScaleY = 0.0f;
+float	g_CV_UI2DOffsetX = 0.0f;
+float	g_CV_UI2DOffsetY = 0.0f;
+int32	g_CV_UI2DMarginColor = -1;
+
+// LT1 texture decoding. Doesn't touch any Jupiter textures as it's only read by dtxmgr_lt1.cpp
+int32	g_bLT1Fullbrite      = 2;
+int32	g_nLT1FullbriteIndex = 246;
+int32	g_bLT1PaletteAlpha   = 1;
+
 int32	g_CV_MasterPaletteMode = 2;
 
 int32	g_CV_ModelTransitionMS = 200;
@@ -278,6 +292,15 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("JoystickDisable", &g_CV_JoystickDisable),
 	EV_LONG("TraceConsole", &g_CV_TraceConsole),
 	EV_LONG("ShowFileAccess", &g_CV_ShowFileAccess),
+	EV_LONG("Show2DScale", &g_CV_Show2DScale),
+	EV_FLOAT("UI2DScaleX", &g_CV_UI2DScaleX),
+	EV_FLOAT("UI2DScaleY", &g_CV_UI2DScaleY),
+	EV_FLOAT("UI2DOffsetX", &g_CV_UI2DOffsetX),
+	EV_FLOAT("UI2DOffsetY", &g_CV_UI2DOffsetY),
+	EV_LONG("UI2DMarginColor", &g_CV_UI2DMarginColor),
+	EV_LONG("LT1Fullbrite", &g_bLT1Fullbrite),
+	EV_LONG("LT1FullbriteIndex", &g_nLT1FullbriteIndex),
+	EV_LONG("LT1PaletteAlpha", &g_bLT1PaletteAlpha),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),

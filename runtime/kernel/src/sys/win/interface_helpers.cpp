@@ -236,7 +236,7 @@ LTBOOL cis_ClipRectsNonScaled(
 
 
 void cis_GetWarpCoordinates(WarpCoords *pLeftCoords, WarpCoords *pRightCoords,
-	LTWarpPt *pCoords, int nCoords, uint32 &outputMinY, uint32 &outputMaxY)
+	LTWarpPt *pCoords, int nCoords, uint32 nMaxCoords, uint32 &outputMinY, uint32 &outputMaxY)
 {
 	int i;
 	LTWarpPt *pPrevPt, *pCurPt, *pMinPt, *pMaxPt;
@@ -300,6 +300,16 @@ void cis_GetWarpCoordinates(WarpCoords *pLeftCoords, WarpCoords *pRightCoords,
 			pMaxPt = pPrevPt;
 			pWarpCoordPos = bFlip ? &pRightCoords[minY] : &pLeftCoords[minY];
 		}
+
+		// A clamped minY also clamps maxY, therefore nothing is written through the stale pointer above
+		if(nMaxCoords == 0)
+			continue;
+		if(minY >= nMaxCoords)
+			minY = nMaxCoords - 1;
+		if(maxY >= nMaxCoords)
+			maxY = nMaxCoords - 1;
+		if(maxY < minY)
+			maxY = minY;
 
 		if(minY < outputMinY) outputMinY = minY;
 		if(maxY > outputMaxY) outputMaxY = maxY;

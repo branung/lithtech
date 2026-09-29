@@ -76,6 +76,7 @@ set(exec_src
 	src/debuggraphmgr.cpp
 	../shared/src/dhashtable.cpp
 	../shared/src/dtxmgr.cpp
+	../shared/src/dtxmgr_lt1.cpp
 	../shared/src/engine_vars.cpp
 	src/errorlog.cpp
 	../shared/src/findobj.cpp

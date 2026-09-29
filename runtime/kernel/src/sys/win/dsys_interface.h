@@ -76,7 +76,7 @@
 		int             m_SDLDowns[SDL_NUM_SCANCODES]; //sent to CClientMgr::ForwardMessagesToScript
 		int             m_SDLUps[SDL_NUM_SCANCODES]; //sent to CClientMgr::ForwardMessagesToScript
 		int             m_SDLInputs[SDL_NUM_SCANCODES]; //sent to CClientMgr::ProcessAllInput
-		int				m_mousedown[2];
+		int				m_mousedown[3];  // Left, right, middle
 		int				m_mouserel[2];
 		int				m_mousewheel;
         BOOL            m_KeyDownReps[MAX_KEYBUFFER];
@@ -150,6 +150,8 @@ uint32 dsi_GetKeyDownRep(uint32 i);
 uint32 dsi_GetKeyUp(uint32 i);
 int dsi_GetSDLDown(uint32 i);
 int dsi_GetSDLUp(uint32 i);
+int dsi_GetSDLInput(uint32 i);
+int dsi_GetSDLMouseDown(uint32 i);
 void dsi_ClearKeyDowns();
 void dsi_ClearKeyUps();
 void dsi_ClearKeyMessages();

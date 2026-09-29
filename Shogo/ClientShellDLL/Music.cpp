@@ -15,6 +15,7 @@
 #include "RiotMsgIDs.h"
 #include "iltcommon.h"
 #include "iltmessage.h"
+#include "ClientUtilities.h"
 
 // Transitions arrays are organized so index 0 is the intro from silence,
 // index 1 is the ending to silence, and the other indices are transitions
@@ -102,6 +103,52 @@ void CMusic::Term( )
 
 // ----------------------------------------------------------------------- //
 //
+//	[MUSIC] Why the playlists didn't build
+//	Turned on by 'MusicReport 1'
+//
+// ----------------------------------------------------------------------- //
+static int MusicReport( ILTClient *pClientDE )
+{
+	if( !pClientDE )
+		return 0;
+
+	HCONSOLEVAR hVar = pClientDE->GetConsoleVar( "MusicReport" );
+	return hVar ? (int)pClientDE->GetVarValueFloat( hVar ) : 0;
+}
+
+static LTBOOL MusicStop( ILTClient *pClientDE, int nReport, const char *pStep )
+{
+	if( nReport && pClientDE )
+		pClientDE->CPrint( "[MUSIC] stopped at %s", pStep );
+
+	return LTFALSE;
+}
+
+// The six world properties as the client sees them (ABSENT if never received)
+static void MusicDumpProperties( ILTClient *pClientDE )
+{
+	static const char *s_pProps[] =
+	{
+		"MusicDirectory", "InstrumentFiles", "AmbientList",
+		"CruisingList", "HarddrivingList", "CDTrack"
+	};
+
+	for( int i = 0; i < (int)( sizeof( s_pProps ) / sizeof( s_pProps[0] )); i++ )
+	{
+		char *pValue = GetServerConVarString( s_pProps[i] );
+		if( !pValue )
+		{
+			pClientDE->CPrint( "[MUSIC] %-16s ABSENT from the server console mirror", s_pProps[i] );
+			continue;
+		}
+
+		pClientDE->CPrint( "[MUSIC] %-16s len=%d '%.72s%s'", s_pProps[i],
+			(int)strlen( pValue ), pValue, strlen( pValue ) > 72 ? "..." : "" );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CMusic::Init
 //
 //	PURPOSE:	Initialize the music
@@ -113,51 +160,67 @@ LTBOOL CMusic::InitPlayLists( )
 	char *pTokens[PARSE_MAXTOKENS], *pCommandPos, *pCommand;
 	int nArgs;
 
+	int nReport = MusicReport( m_pClientDE );
+	if( nReport )
+	{
+		m_pClientDE->CPrint( "[MUSIC] InitPlayLists: initialised=%d useIma=%d",
+			(int)IsInitialized( ), (int)m_bUseIma );
+		MusicDumpProperties( m_pClientDE );
+	}
+
 	if( !IsInitialized( ))
-		return LTFALSE;
+		return MusicStop( m_pClientDE, nReport, "IsInitialized (CMusic::Init failed! InitMusic could not load the music DLL)" );
 
 	m_bPlayListInitialized = LTFALSE;
 	m_eMusicLevel = MUSICLEVEL_SILENCE;
 
 	if( m_bUseIma )
 	{
-		pTokens[0] = m_pClientDE->GetServerConVarValueString( "MusicDirectory" );
-		if( !pTokens[0] )
-			return LTFALSE;
-		if( !m_pClientDE->SetMusicDirectory( pTokens[0] ))
-			return LTFALSE;
+		// The IMA path through ILTClient.
+		// It can't fall through to CDTrack, which is empty in every level
+		char *pMusicDir = GetServerConVarString( "MusicDirectory" );
+		if( !pMusicDir )
+			return MusicStop( m_pClientDE, nReport, "MusicDirectory (property never reached the client)" );
+		if( !m_pClientDE->SetMusicDirectory( pMusicDir ))
+			return MusicStop( m_pClientDE, nReport, "SetMusicDirectory (the engine's music manager refused it)" );
 
-		pCommand = m_pClientDE->GetServerConVarValueString( "InstrumentFiles" );
-		if( !pCommand )
-			return LTFALSE;
-		m_pClientDE->Parse( pCommand, &pCommandPos, tokenSpace, pTokens, &nArgs );
-		if( nArgs != 2 )
-			return LTFALSE;
-		if( !m_pClientDE->Common()->InitInstruments( pTokens[0], pTokens[1] ))
-			return LTFALSE;
+		char *pInstruments = GetServerConVarString( "InstrumentFiles" );
+		if( !pInstruments )
+			return MusicStop( m_pClientDE, nReport, "InstrumentFiles (property never reached the client)" );
+
+		// LT1's Parse maps onto ConParse.
+		// InstrumentFiles is the .dls bank and the first .sty style
+		ConParse instParse( pInstruments );
+		if( m_pClientDE->Common()->Parse( &instParse ) != LT_OK || instParse.m_nArgs != 2 )
+			return MusicStop( m_pClientDE, nReport, "InstrumentFiles parse (expected exactly two tokens)" );
+		if( !m_pClientDE->InitInstruments( instParse.m_Args[0], instParse.m_Args[1] ))
+			return MusicStop( m_pClientDE, nReport, "InitInstruments" );
 
 		if( !InitTrans( g_szAmbientTrans ))
-			return LTFALSE;
+			return MusicStop( m_pClientDE, nReport, "InitTrans(ambient)" );
 		if( !InitTrans( g_szCruisingTrans ))
-			return LTFALSE;
+			return MusicStop( m_pClientDE, nReport, "InitTrans(cruising)" );
 		if( !InitTrans( g_szHarddrivingTrans ))
-			return LTFALSE;
+			return MusicStop( m_pClientDE, nReport, "InitTrans(harddriving)" );
 
 		if( !m_pClientDE->AddSongToPlayList( "SilenceList", "s.sec" ))
-			return LTFALSE;
+			return MusicStop( m_pClientDE, nReport, "AddSongToPlayList(SilenceList, s.sec)" );
 
 		if( !InitList( "AmbientList", tokenSpace, pTokens ))
-			return LTFALSE;
+			return MusicStop( m_pClientDE, nReport, "InitList(AmbientList)" );
 		if( !InitList( "CruisingList", tokenSpace, pTokens ))
-			return LTFALSE;
+			return MusicStop( m_pClientDE, nReport, "InitList(CruisingList)" );
 		if( !InitList( "HarddrivingList", tokenSpace, pTokens ))
-			return LTFALSE;
+			return MusicStop( m_pClientDE, nReport, "InitList(HarddrivingList)" );
 	}
 	else
 	{
 		if( !InitList( "CDTrack", tokenSpace, pTokens ))
-			return LTFALSE;
+			return MusicStop( m_pClientDE, nReport, "InitList(CDTrack)" );
 	}
+
+	if( nReport )
+		m_pClientDE->CPrint( "[MUSIC] InitPlayLists: all playlists built" );
 
 	m_bPlayListInitialized = LTTRUE;
 	return LTTRUE;
@@ -179,17 +242,20 @@ LTBOOL CMusic::InitTrans( char szTransitions[4][PARSE_MAXTOKENSIZE] )
 LTBOOL CMusic::InitList( char *szWorldProp,
 	char argBuffer[PARSE_MAXTOKENS*(PARSE_MAXTOKENSIZE+1)], char * argPointers[PARSE_MAXTOKENS] )
 {
-	char *pCommandPos, *pCommand;
-	int nArgs, i;
+	char *pCommand;
 
-	pCommand = m_pClientDE->Common()->GetServerConVarValueString( szWorldProp );
+	pCommand = GetServerConVarString( szWorldProp );
 	if( !pCommand )
 		return LTFALSE;
-	m_pClientDE->Common()->Parse( pCommand, &pCommandPos, argBuffer, argPointers, &nArgs );
-	for( i = 0; i < nArgs; i++ )
+
+	ConParse parse( pCommand );
+	while( m_pClientDE->Common()->Parse( &parse ) == LT_OK )
 	{
-		if( !m_pClientDE->AddSongToPlayList( szWorldProp, argPointers[i] ))
-			return LTFALSE;
+		for( int i = 0; i < parse.m_nArgs; i++ )
+		{
+			if( !m_pClientDE->AddSongToPlayList( szWorldProp, parse.m_Args[i] ))
+				return LTFALSE;
+		}
 	}
 
 	return LTTRUE;
@@ -227,6 +293,10 @@ LTBOOL CMusic::HandleMusicMessage( ILTMessage_Read* hMessage )
 	char msg[51];
 
 	uint8 nCommand = hMessage->Readuint8();
+
+	// One line per music message under 'MusicReport 1'
+	if( MusicReport( m_pClientDE ))
+		m_pClientDE->CPrint( "[MUSIC] message: command=%d", (int)nCommand );
 
 	switch( nCommand )
 	{

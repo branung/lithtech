@@ -2848,9 +2848,10 @@ InputMgr g_MainInputMgr =
 	input_ShowDeviceObjects,
 	input_ShowInputDevices
 };
+extern InputMgr g_InputSDL2Mgr; // From InputSDL2.cpp.
+
 #ifdef _DEBUG
     extern InputMgr g_InputSimMgr; // From InputSim.cpp.
-	extern InputMgr g_InputSDL2Mgr; // From InputSDL2.cpp.
 
     //command line argument mgr
     #include "icommandlineargs.h"

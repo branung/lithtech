@@ -3782,6 +3782,32 @@ Used for: Misc.
 */
     LTRESULT (*QueryGraphicDevice)(LTGraphicsCaps* pCaps);
 
+/*!
+Sets the sky shadow pan's cloud texture, projected onto SkyPan world surfaces.
+NULL turns it off.
+Only GLOBALPAN_SKYSHADOW is implemented, and GLOBALPAN_FOGLAYER is ignored as in LT1.
+*/
+    LTRESULT (*SetGlobalPanTexture)(uint32 index, const char *pFilename);
+
+/*!
+Sets the sky shadow pan's offset and scale in world units per texel. A zero scale is rejected.
+Games animate the clouds by calling this every frame with a moving offset.
+*/
+    LTRESULT (*SetGlobalPanInfo)(uint32 index, float xOffset, float zOffset,
+                                 float xScale, float zScale);
+
+/*!
+Points the music driver at a level's score directory. Restored from LT1's ClientDE.
+Required for IMA music as sections find their styles through iMusic.ini in this directory.
+*/
+    bool (*SetMusicDirectory)(const char *szDirectory);
+
+/*!
+Loads a level's DLS bank and initial style, both named within the SetMusicDirectory directory.
+Restored from LT1 and required for IMA music. False if the driver lacks MUSIC_INSTRUMENTSET.
+*/
+    bool (*InitInstruments)(const char *szDLSFile, const char *szStyleFile);
+
 protected:
     #ifdef LITHTECH_ESD
     ILTRealAudioMgr     *m_pRealAudioMgr;

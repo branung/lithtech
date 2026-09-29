@@ -165,7 +165,8 @@ LTBOOL cis_ClipRectsNonScaled(
     int destWidth, int destHeight, int dLeft, int dTop, LTRect *pSrcRect, LTRect *pDestRect);
 
 void cis_GetWarpCoordinates(WarpCoords *pLeftCoords, WarpCoords *pRightCoords,
-    LTWarpPt *pCoords, int nCoords, uint32 &outputMinY, uint32 &outputMaxY);
+    LTWarpPt *pCoords, int nCoords, uint32 nMaxCoords,
+    uint32 &outputMinY, uint32 &outputMaxY);
 
 LTBOOL cis_Clip2dPoly(LTWarpPt* &pCoords, int &nCoords, float rectLeft, float rectTop,
     float rectRight, float rectBottom);

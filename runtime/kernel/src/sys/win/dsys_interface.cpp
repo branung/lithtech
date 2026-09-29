@@ -462,6 +462,13 @@ LTRESULT GetOrCopyClientFile( char const* pszFilename,
     LTRESULT dResult;
 
 	bFileCopied = false;
+
+	if( GetFileAttributes( pszFilename ) != INVALID_FILE_ATTRIBUTES )
+	{
+		LTStrCpy( pszOutName, pszFilename, outNameLen );
+		return LT_OK;
+	}
+
     ref.m_FileType = FILE_ANYFILE;
     ref.m_pFilename = pszFilename;
     pIdent = client_file_mgr->GetFileIdentifier(&ref, TYPECODE_DLL);
@@ -636,6 +643,18 @@ int dsi_GetSDLUp(uint32 i)
 	return g_ClientGlob.m_SDLUps[i];
 }
 
+// Key state set synchronously by client_input() as each SDL event is polled,
+// ahead of ProcessAllInput()'s copy into InputSDL2's g_key_state
+int dsi_GetSDLInput(uint32 i)
+{
+	return g_ClientGlob.m_SDLInputs[i];
+}
+
+int dsi_GetSDLMouseDown(uint32 i)
+{
+	return g_ClientGlob.m_mousedown[i];
+}
+
 void dsi_ClearKeyDowns() {
 	size_t i;
     g_ClientGlob.m_nKeyDowns=0;
@@ -723,18 +742,21 @@ const char* dsi_GetDefaultWorld() {
 
 
 void dsi_PrintToConsole(const char *pMsg, ...) {
-    char msg[500];
+	// One byte of headroom for the newline appended below
+    char msg[500 + 1];
     va_list marker;
 
     va_start(marker, pMsg);
-    LTVSNPrintF(msg, sizeof(msg), pMsg, marker);
+    LTVSNPrintF(msg, 500, pMsg, marker);
     va_end(marker);
 
-	int32 len = (int32)strlen(msg);
-	if (msg[len-1] != '\n')
+	// Append a newline if there is none.
+    // The empty check comes first, which keeps msg[-1] from being read.
+	size_t len = strlen(msg);
+	if (len == 0 || msg[len - 1] != '\n')
 	{
 		msg[len] = '\n';
-		msg[len+1] = '\0';
+		msg[len + 1] = '\0';
 	}
 
     con_PrintString(CONRGB(255,255,0), 0, msg);
@@ -757,6 +779,13 @@ void* dsi_GetSDL2Window() {
 void dsi_SetSDL2Window(SDL_Window* window)
 {
 	g_ClientGlob.m_window = window;
+
+	SDL_SysWMinfo info;
+	SDL_VERSION(&info.version);
+	if (window && SDL_GetWindowWMInfo(window, &info))
+		g_ClientGlob.m_hMainWnd = info.info.win.window;
+	else
+		g_ClientGlob.m_hMainWnd = NULL;
 }
 
 LTRESULT dsi_DoErrorMessage(const char *pMessage) {
@@ -791,6 +820,16 @@ LTRESULT dsi_GetVersionInfo(LTVersionInfo &info) {
 #include "server_interface.h"
 
 extern CServerMgr *g_pServerMgr;
+
+// The client's GetOrCopyClientFile() resolves through the rez trees, 
+// which the standalone server has none of.. so resolve from the working directory
+LTRESULT GetOrCopyClientFile( char const* pszFilename, char* pszOutName,
+                              int outNameLen, bool& bFileCopied )
+{
+    bFileCopied = false;
+    LTStrCpy( pszOutName, pszFilename, outNameLen );
+    return LT_OK;
+}
 
 
 void dsi_PrintToConsole(const char *pMsg, ...) {
