@@ -464,12 +464,17 @@ void DoNonsolidCollision(MoveAbstract *pAbstract, LTObject *pObj1, LTObject *pOb
 	}
 
 	// Update area object touching.
-	if(pObj1->m_Flags & FLAG_CONTAINER)
+	// LT1 has no FLAG_CONTAINER and makes an object a container by its type.
+	// Under LT1ContainerType, the type decides too
+	extern int32 g_bLT1ContainerType;
+	const uint32 nContainerType = g_bLT1ContainerType ? OT_CONTAINER : 0xFFFFFFFF;
+
+	if((pObj1->m_Flags & FLAG_CONTAINER) || pObj1->m_ObjectType == nContainerType)
 	{
 		pAbstract->PutObjectInContainer(pObj2, pObj1);
 	}
-	
-	if(pObj2->m_Flags & FLAG_CONTAINER)
+
+	if((pObj2->m_Flags & FLAG_CONTAINER) || pObj2->m_ObjectType == nContainerType)
 	{
 		pAbstract->PutObjectInContainer(pObj1, pObj2);
 	}
@@ -1052,8 +1057,21 @@ inline LTBOOL MaybeCollide(MoveState *pState, LTObject *pTestObj)
 	bPushAway = IsSolid(pTestObj->m_Flags, pState->m_bServer) &&
 				IsSolid( pState->m_pObj->m_Flags, pState->m_bServer);
 
+	// LT1 takes this path whenever the move is bigger than the mover's dims on any axis.
+	// Jupiter only takes it for FLAG2_PLAYERCOLLIDE. No LT1 game sets that, so a fast object can pass through geometry
+	extern int32 g_bLT1TunnelPath;
+	LTBOOL bCouldTunnel = LTFALSE;
+	if (g_bLT1TunnelPath)
+	{
+		const LTVector vMoveDelta = pState->m_vDestPos - pState->m_vStartPos;
+		const LTVector &vMoverDims = pState->m_pObj->GetDims();
+		bCouldTunnel = (fabsf(vMoveDelta.x) > vMoverDims.x ||
+		                fabsf(vMoveDelta.y) > vMoverDims.y ||
+		                fabsf(vMoveDelta.z) > vMoverDims.z) ? LTTRUE : LTFALSE;
+	}
+
 	// [kef 02/21/99] Player collision (i.e. cylinder) physics can avoid tunneling on their own..
-	if(bPushAway && ((pState->m_pObj->m_Flags2 & FLAG2_PLAYERCOLLIDE) != 0) )
+	if(bPushAway && (((pState->m_pObj->m_Flags2 & FLAG2_PLAYERCOLLIDE) != 0) || bCouldTunnel) )
 	{
 		return CheckIntersectOnMovement(pState, pTestObj);
 	}
@@ -1073,7 +1091,13 @@ inline LTBOOL MaybeCollide(MoveState *pState, LTObject *pTestObj)
 			if(!bPushAway)
 			{
 				// [kls 9/2/99] if(pTestObj->IsMainWorldModel())
-				if(IsSolidWorld(pTestObj))
+				// ^ That's LT1's rule, only the main world pushes a nonsolid mover.
+				// The widened test below ejects a mover from any solid WorldModel it's meant to occupy, like a door's own trigger
+				extern int32 g_bLT1NonsolidNoDivert;
+				const LTBOOL bWorldPushes = g_bLT1NonsolidNoDivert
+					? (LTBOOL)pTestObj->IsMainWorldModel()
+					: (LTBOOL)IsSolidWorld(pTestObj);
+				if(bWorldPushes)
 					bPushAway = LTTRUE;
 			}
 			

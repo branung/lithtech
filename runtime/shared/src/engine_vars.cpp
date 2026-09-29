@@ -92,6 +92,9 @@ int32	g_bLT1IntersectPushback = 0; // Push an embedded box along the plane norma
 int32	g_bLT1PlaneRecheck = 0; // Push the box back out to 0.1 from every plane touched in one collide
 int32	g_bLT1SweepRebuild = 0; // Rebuild the swept box after each resolution
 int32	g_bLT1PolyTest = 0; // LT1's polygon against box clip test: a polygon exactly on a face is a miss
+int32	g_bLT1ContainerType = 0; // An object's type (OT_CONTAINER) makes it a container (LT1 had no FLAG_CONTAINER)
+int32	g_bLT1TunnelPath = 0; // Anti-tunnelling path for any move bigger than the mover's dims
+int32	g_bLT1NonsolidNoDivert = 0; // Only the main world pushes a nonsolid mover
 
 int32	g_CV_MasterPaletteMode = 2;
 
@@ -326,6 +329,9 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1PlaneRecheck", &g_bLT1PlaneRecheck),
 	EV_LONG("LT1SweepRebuild", &g_bLT1SweepRebuild),
 	EV_LONG("LT1PolyTest", &g_bLT1PolyTest),
+	EV_LONG("LT1ContainerType", &g_bLT1ContainerType),
+	EV_LONG("LT1TunnelPath", &g_bLT1TunnelPath),
+	EV_LONG("LT1NonsolidNoDivert", &g_bLT1NonsolidNoDivert),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),

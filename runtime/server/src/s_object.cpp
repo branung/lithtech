@@ -53,7 +53,12 @@ void GetPhysicsVector (LTObject *pObj, float dt, LTVector& dr)
 {
     //if the object is a container, find what other objects are in contact
     //with it and affect their physics
-    if (!(pObj->m_Flags & FLAG_CONTAINER)
+
+    // LT1 has no FLAG_CONTAINER and keys containment on the object type
+    extern int32 g_bLT1ContainerType;
+    const uint32 nContainerType = g_bLT1ContainerType ? OT_CONTAINER : 0xFFFFFFFF;
+
+    if (!((pObj->m_Flags & FLAG_CONTAINER) || pObj->m_ObjectType == nContainerType)
         &&
         pObj->sd->m_Links.m_pNext != &pObj->sd->m_Links)
     {
@@ -77,7 +82,8 @@ void GetPhysicsVector (LTObject *pObj, float dt, LTVector& dr)
 
             if (pLink->m_Type == LINKTYPE_CONTAINER
                 &&
-                (pLink->m_pOwner->m_Flags & FLAG_CONTAINER))
+                ((pLink->m_pOwner->m_Flags & FLAG_CONTAINER) ||
+                 pLink->m_pOwner->m_ObjectType == nContainerType))
             {
                 LTObject* pContainer = pLink->m_pOwner;
 
