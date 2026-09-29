@@ -76,6 +76,9 @@ void DECompat_ApplyLT1ServerDefaults(ILTServer *pServerDE)
     // Server physics runs the same collision sweep
     pServerDE->RunGameConString("LT1SetupBoxCheck 1");
 
+    // LT1 reserved client id 0 for 'no player' - ids are handed out on the server
+    pServerDE->RunGameConString("LT1ClientIDFromOne 1");
+
     s_bServerDefaultsApplied = true;
 
     DECompat_SetCommandEdgeReportSink(pServerDE);

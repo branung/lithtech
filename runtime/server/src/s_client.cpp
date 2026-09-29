@@ -158,9 +158,14 @@ bool Client::Init( CBaseConn *pBaseConn, bool bIsLocal )
 
 	// Find a free ID.
 	m_ClientID = 0;
-	
+
+	// LT1 never handed out client id 0, and its game code uses 0 to mean 'not a player',
+	// so id 0 checks like if(m_dwClientID) treat the local player as nobody.
+	// LT1ClientIDFromOne starts the search at 1 for the LT1 games only. Jupiter games keep 0
+	extern int32 g_bLT1ClientIDFromOne;
+
 	uint16 testID;
-	for (testID=0; testID < 30000; testID++) 
+	for (testID = g_bLT1ClientIDFromOne ? 1 : 0; testID < 30000; testID++)
 	{
 		bool bUnique = true;
 		

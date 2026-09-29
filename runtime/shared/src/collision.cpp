@@ -23,6 +23,10 @@
 #include "world_blocker_math.h"
 #include "iltphysics.h"
 
+// LT1 stair step and resting behavior (off for Jupiter games)
+extern int32 g_bLT1StairStep;
+extern int32 g_bLT1StairDamp;
+
 #ifndef __LINUX
 #define isnan _isnan
 #else
@@ -568,8 +572,17 @@ static void MoveToFrontside
 
 		if( pRootPlane->m_Normal.y > 0.01f )
 		{
-			if( !pInfo->m_pStandingOn || 
-				( pInfo->m_pStandingOn->GetPlane()->m_Normal.y > pRootPlane->m_Normal.y ))
+			// LT1 keeps the most upward facing candidate where Jupiter keeps the least.
+			// It decides what GetStandingOn reports
+			bool bTakeThisOne = true;
+			if( pInfo->m_pStandingOn )
+			{
+				const float fHave = pInfo->m_pStandingOn->GetPlane()->m_Normal.y;
+				bTakeThisOne = g_bLT1StairStep ? (fHave < pRootPlane->m_Normal.y)
+				                               : (fHave > pRootPlane->m_Normal.y);
+			}
+
+			if( bTakeThisOne )
 			{
 				pInfo->m_pStandingOn = pRoot;
 			}
@@ -1925,6 +1938,26 @@ static bool StairStep_Segment
 						request.m_pCollisionInfo->m_hObject	= request.m_pWorldObj;
 						request.m_pCollisionInfo->m_hPoly	= request.m_pWorld->MakeHPoly(pRoot);
 
+						// LT1 measures the intrusion as the deepest of the box's four bottom corners against the plane,
+						// and pushes along the normal by that depth. Meanwhile Jupiter lifts straight up
+						LTVector vLT1Push(0.0f, 0.0f, 0.0f);
+						if (g_bLT1StairStep)
+						{
+							float fDeepest = 500.0f;         // LT1's seed
+							for (int nCorner = 0; nCorner < 4; ++nCorner)
+							{
+								LTVector vCorner(((nCorner & 1) ? box.Max.x : box.Min.x),
+								                 box.Min.y,
+								                 ((nCorner & 2) ? box.Max.z : box.Min.z));
+								float fDist = root_plane.m_Normal.Dot(vCorner) - root_plane.m_Dist;
+								if (fDist < fDeepest)
+									fDeepest = fDist;
+							}
+							maxPushAmt = (fDeepest < 0.0f) ? -fDeepest : 0.0f;
+
+							vLT1Push = root_plane.m_Normal * maxPushAmt;
+						}
+
 						if( maxPushAmt > 0.0f )
 						{
 							// Add a little fudge
@@ -1932,29 +1965,61 @@ static bool StairStep_Segment
 
 							// Figure out how much we would need to move
 							LTVector toAdd(0.0f, maxPushAmt, 0.0f);
+							if (g_bLT1StairStep)
+								toAdd = vLT1Push;
 
 							// If we can step on this, or we're not stepping up to get on this...
-							if( (((pRoot->m_pPoly->GetSurface()->GetFlags() & SURF_NOTASTEP) == 0)
-								|| 
+							// LT1 has neither gate. Its v56 worlds have no SURF_NOTASTEP, and its stair walk accepts anything above normal.y 0.30
+							if( g_bLT1StairStep
+								||
+								((((pRoot->m_pPoly->GetSurface()->GetFlags() & SURF_NOTASTEP) == 0)
+								||
 								(fDownRemaining >= toAdd.y)) &&
-								(pRoot->GetPlane()->m_Normal.y > fAllowUpLimit)
+								(pRoot->GetPlane()->m_Normal.y > fAllowUpLimit))
 								)
 							{
 								// Register the hit.
 								++pInfo->m_nHits;
 
-								// Don't change the velocity offset
-								LTVector vSaveVel = pInfo->m_VelOffset;
+								if (g_bLT1StairStep)
+								{
+									// LT1 runs the collision response only above normal.y 0.9 and keeps its damping,
+									// while Jupiter restores m_VelOffset afterwards. LT1StairDamp 0 restores it here too
+									if (pRoot->GetPlane()->m_Normal.y > 0.9f)
+									{
+										LTVector vSaveVel = pInfo->m_VelOffset;
 
-								//NOTE:  this function overwrites the plane
-								DoObjectCollisionResponse(	request, pInfo, pRoot );
+										//NOTE:  this function overwrites the plane
+										DoObjectCollisionResponse( request, pInfo, pRoot );
 
-								pInfo->m_VelOffset = vSaveVel;
+										if (!g_bLT1StairDamp)
+											pInfo->m_VelOffset = vSaveVel;
+									}
+								}
+								else
+								{
+									// Don't change the velocity offset
+									LTVector vSaveVel = pInfo->m_VelOffset;
+
+									//NOTE:  this function overwrites the plane
+									DoObjectCollisionResponse(	request, pInfo, pRoot );
+
+									pInfo->m_VelOffset = vSaveVel;
+								}
 
 								// Add to P0 and P1 so we don't hit any more polies on
 								// the same plane again.
-								P1 += toAdd;
-								P0.y = P1.y;
+								// LT1 moves both endpoints by the same vector along the normal, while Jupiter raises P1 and drags P0 up to match
+								if (g_bLT1StairStep)
+								{
+									P0 += toAdd;
+									P1 += toAdd;
+								}
+								else
+								{
+									P1 += toAdd;
+									P0.y = P1.y;
+								}
 
 								// Adjust the location of the bounding box back to where it was & make it smaller
 								const LTVector new_offset( offset.x, offset.y - toAdd.y * 0.5f, offset.z );
@@ -2335,18 +2400,26 @@ void CollideWithWorld
 
 		const uint32 nPreStepHits = pInfo->m_nHits;
 
+		// LT1 restores the start point after the stair pass, so only the destination keeps the lift.
+		// Raising P0 puts the sweep's start inside the geometry and the move resolves to nothing
+		const LTVector vStairSaveP0 = P0;
+
 		//check for stair step
 		const bool bHitNonStep = StairStep( offset, pInfo, request, P0, P1 );
 
+		if( g_bLT1StairStep )
+			P0 = vStairSaveP0;
+
 		request.m_Dims = dims;//reset back to original value
 
-		if( bHitNonStep )
+		if( bHitNonStep && !g_bLT1StairStep )
 		{
 			// If we hit a poly w/ SURF_NOTASTEP set, then do a full height collision later
 			offset.y = 0;
 		}
 		else
 		{
+			// LT1 always keeps the stair band, as the stair pass owns the bottom quarter and the main pass the rest
 			offset.y = fStairHeight;
 			request.m_Dims.y -= fStairHeight;
 		}
