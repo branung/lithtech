@@ -29,6 +29,8 @@ void CalcMotion
 	float velocityMagSqr, accelMagSqr;
 	LTBOOL bFriction;
 
+	extern int32 g_bLT1StandGravity;
+
 	bFriction = LTFALSE;
 	timeIntegral = dt * dt * 0.5f;	
 	velocityMagSqr = v.MagSqr();
@@ -139,11 +141,20 @@ void CalcMotion
 
 						bFriction = LTTRUE;
 
+						// LT1 adds the force here too
+						if (g_bLT1StandGravity)
+							a += *n * n->Dot(vForce);
+
 						// dsi_ConsolePrint("Downhill");
 					}
 					else
 					{
 						bFriction = LTTRUE;
+
+						// LT1 keeps gravity on a standing object, while Jupiter drops it.
+						// Without it objects flicker on and off the ground
+						if (g_bLT1StandGravity)
+							a += *n * n->Dot(vForce);
 
 						// dsi_ConsolePrint("Walk");
 					}

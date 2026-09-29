@@ -34,6 +34,9 @@ void DECompat_ApplyLT1ClientDefaults(ILTClient *pClientDE)
     // LT1 only diverts a move when both objects are solid (both sides)
     pClientDE->RunConsoleString("-LT1NonsolidNoDivert 1");
 
+    // LT1 honors SetupBox's 'too short to sweep' answer (both sides)
+    pClientDE->RunConsoleString("-LT1SetupBoxCheck 1");
+
 
     // LT1StairStep (both sides) and DynamicLightWorld are set per game after this call
 }
@@ -69,6 +72,9 @@ void DECompat_ApplyLT1ServerDefaults(ILTServer *pServerDE)
 
     // The restore move after a load runs on the server, which matters for doors
     pServerDE->RunGameConString("LT1NonsolidNoDivert 1");
+
+    // Server physics runs the same collision sweep
+    pServerDE->RunGameConString("LT1SetupBoxCheck 1");
 
     s_bServerDefaultsApplied = true;
 

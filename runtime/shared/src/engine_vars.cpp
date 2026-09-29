@@ -83,6 +83,8 @@ int32	g_bLT1PaletteAlpha   = 1;
 int32	g_bLocalPreLoadWorld = 1; // PreLoadWorld for a local client too, not just a remote one
 int32	g_bLT1CreateInPlace = 0; // Placement move before InitialUpdate, so a new object isn't sent MID_TOUCHNOTIFY
 int32	g_bLT1ModelAnimNoRestart = 0; // Ignore a request for the animation already playing.
+int32	g_bLT1StandGravity = 0; // Keep gravity on a standing object, as LT1 did
+int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and rebuild the box during pushback like LT1
 
 int32	g_CV_MasterPaletteMode = 2;
 
@@ -308,6 +310,8 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LocalPreLoadWorld", &g_bLocalPreLoadWorld),
 	EV_LONG("LT1CreateInPlace", &g_bLT1CreateInPlace),
 	EV_LONG("LT1ModelAnimNoRestart", &g_bLT1ModelAnimNoRestart),
+	EV_LONG("LT1StandGravity", &g_bLT1StandGravity),
+	EV_LONG("LT1SetupBoxCheck", &g_bLT1SetupBoxCheck),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),

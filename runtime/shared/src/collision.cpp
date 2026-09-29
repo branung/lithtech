@@ -629,15 +629,24 @@ static bool ClipBoxIntoTree2
 	LTVector		move_pts[2][NUM_BOX_POINTS];
 
 	//swept aabb
-	SetupBox(	P0, P1,
-				request.m_Dims,
-				offset,
-				radius,
-				start_sphere,
-				end_sphere,
-				whole_sphere,
-				box,
-				move_pts );
+	// SetupBox returns false when the move is too short to sweep, before writing move_pts, the spheres or the box.
+	// LT1 stops there. Jupiter ignores the answer and classifies uninitialized stack, 
+	// and LT1SetupBoxCheck (set only by the LT1 games, through de_lt1defaults.cpp) restores the stop, 
+	// so Jupiter games keep the stock path
+	extern int32 g_bLT1SetupBoxCheck;
+	const bool bSwept = SetupBox(	P0, P1,
+									request.m_Dims,
+									offset,
+									radius,
+									start_sphere,
+									end_sphere,
+									whole_sphere,
+									box,
+									move_pts );
+	if( !bSwept && g_bLT1SetupBoxCheck )
+	{
+		return false;
+	}
 
 	cp[0].m_pPoints = move_pts[0];
 	cp[1].m_pPoints = move_pts[1];
@@ -720,11 +729,33 @@ static bool ClipBoxIntoTree2
 								P0 += moveDir;
 								P1 += moveDir;
 
-								const LTVector v = P1 - P0;//displacement
-
-								if( v.Dot(v) < 0.0001f )
+								if( g_bLT1SetupBoxCheck )
 								{
-									return false;
+									// LT1 sweeps again from the new position. 
+									// whole_sphere and box come from SetupBox, 
+									// so without the rebuild the intersect test above never changes.
+									// LT1 games only. Jupiter games take the stock test below
+									if( !SetupBox(	P0, P1,
+													request.m_Dims,
+													offset,
+													radius,
+													start_sphere,
+													end_sphere,
+													whole_sphere,
+													box,
+													move_pts ) )
+									{
+										return false;
+									}
+								}
+								else
+								{
+									const LTVector v = P1 - P0;//displacement
+
+									if( v.Dot(v) < 0.0001f )
+									{
+										return false;
+									}
 								}
 							}
 							else
