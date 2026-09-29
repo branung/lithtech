@@ -23,9 +23,18 @@
 #include "world_blocker_math.h"
 #include "iltphysics.h"
 
-// LT1 stair step and resting behavior (off for Jupiter games)
+
+// Note: LT1 compatibility variables below are off for all Juputer games
+
+// LT1 stair step and resting behavior
 extern int32 g_bLT1StairStep;
 extern int32 g_bLT1StairDamp;
+
+// LT1 collision behavior
+extern int32 g_bLT1IntersectPushback; // The pushback loop in ClipBoxIntoTree2
+extern int32 g_bLT1PlaneRecheck; // LT1RecheckAccumulatedPlanes
+extern int32 g_bLT1SweepRebuild; // The SetupBox call after MoveToFrontside
+extern int32 g_bLT1PolyTest; // WorldPolyIntersectsAABB
 
 #ifndef __LINUX
 #define isnan _isnan
@@ -399,6 +408,60 @@ bool WorldPolyIntersectsAABB
 	if( v.Dot(v) > (r_sum*r_sum) )
 		return false;
 
+	// LT1 clips the polygon against the box's six faces, counting a point inside only past 0.001.
+	// So a polygon lying exactly on a face is a miss, where the test below counts it as a hit
+	if (g_bLT1PolyTest)
+	{
+		// Each clip adds at most one vertex per crossing, and overflow answers "intersects", the safe side
+		LTVector aBufA[48], aBufB[48];
+		LTVector *pIn = aBufA, *pOut = aBufB;
+		uint32 nIn = poly.GetNumVertices();
+		if (nIn > 48)
+			return true;
+		for (uint32 nV = 0; nV < nIn; nV++)
+			pIn[nV] = poly.GetVertex(nV);
+
+		// Six half spaces, +x >= Min.x, -x >= -Max.x and so on, each with LT1's 0.001 inset
+		for (uint32 nPlane = 0; nPlane < 6; nPlane++)
+		{
+			const uint32 nAxis = nPlane >> 1;
+			const float fSign = (nPlane & 1) ? -1.0f : 1.0f;
+			const float fDist = (nPlane & 1) ? -( (nAxis == 0) ? box.Max.x : (nAxis == 1) ? box.Max.y : box.Max.z )
+			                                 :  ( (nAxis == 0) ? box.Min.x : (nAxis == 1) ? box.Min.y : box.Min.z );
+
+			uint32 nOut = 0;
+			for (uint32 nV = 0; nV < nIn; nV++)
+			{
+				const LTVector &vCur = pIn[nV];
+				const LTVector &vPrev = pIn[(nV + nIn - 1) % nIn];
+				const float fCur  = fSign * ((nAxis == 0) ? vCur.x  : (nAxis == 1) ? vCur.y  : vCur.z) - fDist;
+				const float fPrev = fSign * ((nAxis == 0) ? vPrev.x : (nAxis == 1) ? vPrev.y : vPrev.z) - fDist;
+				const bool bCurIn  = fCur  > 0.001f;
+				const bool bPrevIn = fPrev > 0.001f;
+
+				if (bCurIn != bPrevIn)
+				{
+					const float fT = fPrev / (fPrev - fCur);
+					if (nOut < 48)
+						pOut[nOut++] = vPrev + (vCur - vPrev) * fT;
+				}
+				if (bCurIn)
+				{
+					if (nOut < 48)
+						pOut[nOut++] = vCur;
+				}
+			}
+
+			if (nOut == 0)
+				return false; // Clipped away: no intersection
+
+			LTVector *pSwap = pIn; pIn = pOut; pOut = pSwap;
+			nIn = nOut;
+		}
+
+		return true; // Survived all six half spaces
+	}
+
 	//NOTE:  Building an AABB from the poly and doing a
 	//box-box check actually slows the algorithm down.
 
@@ -557,6 +620,84 @@ bool WorldPolyIntersectsAABB
 	return true;
 }
 
+// LT1's accumulated plane recheck (LT1PlaneRecheck)
+
+// The deepest of the box's eight corners is measured against every plane this call resolved against.
+// Anything closer than 0.09 is pushed out to 0.1 along that normal and the scan restarts, up to ten times.
+// Without it, resolving against one plane can push the box back into another
+static void LT1RecheckAccumulatedPlanes(CollideRequest &request, LTVector &P1)
+{
+	const uint32 nPlanes = *request.m_pnAccumPlanes;
+	if (nPlanes == 0)
+		return;
+
+	// The box's eight corners. Built once and moved along with P1
+	const LTVector vC = P1 + request.m_vAccumOffset;
+	const LTVector &d = request.m_Dims;
+	LTVector corner[8];
+	for (uint32 k = 0; k < 8; k++)
+	{
+		corner[k].x = vC.x + ((k & 1) ? -d.x : d.x);
+		corner[k].y = vC.y + ((k & 2) ? -d.y : d.y);
+		corner[k].z = vC.z + ((k & 4) ? -d.z : d.z);
+	}
+
+	uint32 nFixes = 0;
+	for (int32 i = 0; i < (int32)nPlanes; i++)
+	{
+		if (nFixes >= 10)
+			return;
+
+		const LTPlane &plane = request.m_pAccumPlanes[i].m_Plane;
+
+		float fMin = 1.0e37f; // LT1's sentinel
+		for (uint32 k = 0; k < 8; k++)
+		{
+			const float fDist = plane.m_Normal.Dot(corner[k]) - plane.m_Dist;
+			if (fDist < fMin)
+				fMin = fDist;
+		}
+
+		if (fMin < 0.09f)
+		{
+			const LTVector vDelta = plane.m_Normal * (0.1f - fMin);
+			P1 += vDelta;
+			for (uint32 k = 0; k < 8; k++)
+				corner[k] += vDelta;
+			++nFixes;
+			i = -1; // Restart the scan at plane 0
+		}
+	}
+}
+
+// Records a touched plane, at the end of MoveToFrontside since both slide and clip pass through it.
+// LT1's order is: capacity first, then the dupe check, and the recheck only once there are two planes
+static void LT1AccumulatePlane(CollideRequest &request, const Node *pRoot, LTVector &P1)
+{
+	if (!request.m_pAccumPlanes)
+		return;
+
+	uint32 &nPlanes = *request.m_pnAccumPlanes;
+	if (nPlanes >= LT1_MAX_ACCUM_PLANES)
+		return;
+
+	const LTPlane *pKey = pRoot->GetPlane();
+	for (uint32 k = 0; k < nPlanes; k++)
+	{
+		if (request.m_pAccumPlanes[k].m_pKey == pKey)
+			return;
+	}
+
+	request.m_pAccumPlanes[nPlanes].m_Plane = *pKey;
+	request.m_pAccumPlanes[nPlanes].m_pKey = pKey;
+	++nPlanes;
+
+	if (nPlanes <= 1)
+		return;
+
+	LT1RecheckAccumulatedPlanes(request, P1);
+}
+
 //--------------------------------------------------------------------------//
 static void MoveToFrontside
 (
@@ -612,6 +753,9 @@ static void MoveToFrontside
 
 				P1 = P0 + v * ( -dot1 / ( dot2 - dot1 ));
 		}
+
+		// LT1 records the touched plane and runs the recheck here in both branches.
+		LT1AccumulatePlane( request, pRoot, P1 );
 }
 
 
@@ -728,6 +872,10 @@ static bool ClipBoxIntoTree2
 						moveDir = P0 - P1;
 						moveDir.Norm();
 
+						LTVector vPushStep = moveDir;
+						if (g_bLT1IntersectPushback)
+							vPushStep += pRoot->GetPlane()->m_Normal;
+
 						DoObjectCollisionResponse( request, pInfo, pRoot );
 						++pInfo->m_nHits;
 						
@@ -739,8 +887,9 @@ static bool ClipBoxIntoTree2
 						{
 							if( WorldPolyIntersectsAABB( whole_sphere, *pRoot->m_pPoly, box ) )
 							{
-								P0 += moveDir;
-								P1 += moveDir;
+								if (!g_bLT1IntersectPushback)
+									P0 += moveDir;
+								P1 += vPushStep;
 
 								if( g_bLT1SetupBoxCheck )
 								{
@@ -823,6 +972,24 @@ static bool ClipBoxIntoTree2
 			if( (state1 == FrontSide) && WorldPolyIntersectsAABB( whole_sphere, *pRoot->m_pPoly, box ) )
 			{
 				MoveToFrontside( P0, pRoot, pInfo, cp, request, P1 );
+
+				// LT1 rebuilds the swept volume after every resolution and stops if the move collapsed.
+				// Without it, move_pts keeps the old corners and contacts already cleared are found again
+				if (g_bLT1SweepRebuild)
+				{
+					if( !SetupBox(	P0, P1,
+									request.m_Dims,
+									offset,
+									radius,
+									start_sphere,
+									end_sphere,
+									whole_sphere,
+									box,
+									move_pts ) )
+					{
+						return false;
+					}
+				}
 
 				const LTVector v = P1 - P0;//displacement
 
@@ -2345,6 +2512,14 @@ void CollideWithWorld
 	pInfo->m_VelOffset.Init();
 	pInfo->m_nHits = 0;
 
+	// LT1's accumulated plane table
+	// It's on the stack so a nested call gets it's own
+	LT1AccumPlane accumPlanes[LT1_MAX_ACCUM_PLANES];
+	uint32 nAccumPlanes = 0;
+	request.m_pAccumPlanes = g_bLT1PlaneRecheck ? accumPlanes : (LT1AccumPlane*)LTNULL;
+	request.m_pnAccumPlanes = &nAccumPlanes;
+	request.m_vAccumOffset.Init();
+
 	// Do point collisions?
 	if( request.m_pObject->m_Flags & FLAG_POINTCOLLIDE )
 	{
@@ -2430,6 +2605,9 @@ void CollideWithWorld
 	}
 
 	const float radius = request.m_Dims.Mag() + 0.01f;
+
+	// The stair section may have shrunk and raised the box
+	request.m_vAccumOffset = offset;
 
 	// Loop around, testing for collisions with anything.
 	for( i=0 ; i < MAX_PHYSICS_ITERATIONS ; i++ )

@@ -82,10 +82,19 @@ struct AABB
 };
 
 
+// One entry of LT1's accumulated plane table (LT1PlaneRecheck).
+struct LT1AccumPlane
+{
+	LTPlane			m_Plane;
+	const LTPlane	*m_pKey;
+};
+
+#define LT1_MAX_ACCUM_PLANES 20
+
 struct CollideRequest
 {
 	// Constructor
-	CollideRequest() : m_nRestart(0) {};
+	CollideRequest() : m_nRestart(0), m_pAccumPlanes(0), m_pnAccumPlanes(0) {};
 
 	// Abstraction layer.
 	MoveAbstract	*m_pAbstract;
@@ -112,6 +121,11 @@ struct CollideRequest
 	// Iteration count
 	int				m_nRestart;
 
+	// LT1's accumulated plane table (NULL when LT1PlaneRecheck is off),
+	// and the stair band offset the resolved box is centered at
+	LT1AccumPlane	*m_pAccumPlanes;
+	uint32			*m_pnAccumPlanes;
+	LTVector		m_vAccumOffset;
 };
 
 struct CollideInfo

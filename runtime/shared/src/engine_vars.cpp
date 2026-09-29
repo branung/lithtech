@@ -88,6 +88,10 @@ int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and r
 int32	g_bLT1ClientIDFromOne = 0; // Hand out client ids from 1 (LT1 reserved 0 for 'no player')
 int32	g_bLT1StairStep = 0; // LT1's stair step: floor choice, push along the normal, no SURF_NOTASTEP gate
 int32	g_bLT1StairDamp = 1; // Keep the stair step's velocity damping as LT1 did
+int32	g_bLT1IntersectPushback = 0; // Push an embedded box along the plane normal as well as back, leaving P0 in place.
+int32	g_bLT1PlaneRecheck = 0; // Push the box back out to 0.1 from every plane touched in one collide
+int32	g_bLT1SweepRebuild = 0; // Rebuild the swept box after each resolution
+int32	g_bLT1PolyTest = 0; // LT1's polygon against box clip test: a polygon exactly on a face is a miss
 
 int32	g_CV_MasterPaletteMode = 2;
 
@@ -318,6 +322,10 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1ClientIDFromOne", &g_bLT1ClientIDFromOne),
 	EV_LONG("LT1StairStep", &g_bLT1StairStep),
 	EV_LONG("LT1StairDamp", &g_bLT1StairDamp),
+	EV_LONG("LT1IntersectPushback", &g_bLT1IntersectPushback),
+	EV_LONG("LT1PlaneRecheck", &g_bLT1PlaneRecheck),
+	EV_LONG("LT1SweepRebuild", &g_bLT1SweepRebuild),
+	EV_LONG("LT1PolyTest", &g_bLT1PolyTest),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),
