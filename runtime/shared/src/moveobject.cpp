@@ -1217,18 +1217,48 @@ static void DetectAndProcessCollisions
 
 	pHitObjects[0] = pHitObjects[1] = LTNULL;
 
+	// LT1 collides with the objects and then the world
+	extern int32 g_bLT1WorldAfterObjects;
+	extern int32 g_bLT1StrikeKeep;
+	LTObject *pMainWorldCand = LTNULL;
+	LTBOOL bWorldWalked = LTFALSE;
+	if (g_bLT1WorldAfterObjects)
+	{
+		for (i = 0; i < objectArray.m_nObjects; ++i)
+		{
+			if (objectArray.m_pObjects[i]->IsMainWorldModel())
+			{
+				pMainWorldCand = objectArray.m_pObjects[i];
+				break;
+			}
+		}
+	}
+
 	for( i = objectArray.m_nObjects - 1, nRestarts = 0; i >= 0 && nRestarts < 10; i-- )
 	{
 		pTestObj = objectArray.m_pObjects[i];
+		if (pTestObj->IsMainWorldModel())
+			bWorldWalked = LTTRUE;
 
 		// Keep track of whether or not this is a re-iteration hit of the same object for stairstepping support
 		pState->m_nRestart = ((pTestObj == pHitObjects[0]) || (pTestObj == pHitObjects[1])) ? nRestarts : 0;
 
 		if( MaybeCollide( pState, pTestObj ) )
 		{
+			// Another object just moved the box, so any world walk this pass was at the old position
+			if (!pTestObj->IsMainWorldModel())
+				bWorldWalked = LTFALSE;
+
 			// If we hit this guy last time or the time before, then stop the madness...
-			if( (nRestarts >= 2) && ((pTestObj == pHitObjects[0]) || (pTestObj == pHitObjects[1])) )
+			// LT1 stops at the first repeat hit and keeps the valid position the collision just found
+			// Jupiter waits for two restarts and then throws the whole move away
+			const LTBOOL bStruck = ((pTestObj == pHitObjects[0]) || (pTestObj == pHitObjects[1])) &&
+			                       (g_bLT1StrikeKeep || (nRestarts >= 2));
+			if( bStruck )
 			{
+				if (g_bLT1StrikeKeep)
+					break;
+
 				pState->m_vDestPos = pState->m_vStartPos;
 				pState->m_pObj->SetPos(pState->m_vStartPos);
 				break;
@@ -1241,14 +1271,28 @@ static void DetectAndProcessCollisions
 
 			i = objectArray.m_nObjects;
 			nRestarts++;
+			bWorldWalked = LTFALSE;
 
 			// Reset some info...
 			pState->m_vDestPos = pState->m_pObj->GetPos();
 			pState->m_vDeltaPos = pState->m_vDestPos - startPos;
 		}
 	}
+
+	// The loop ended after an object moved the box and before the main world was reached again.
+	// LT1 always tests the main world after the objects. This is that test
+	if (g_bLT1WorldAfterObjects && pMainWorldCand && !bWorldWalked)
+	{
+		pState->m_nRestart = 0;
+		MaybeCollide(pState, pMainWorldCand);
+		SetObjectBoundingBox(pState->m_pObj, LTTRUE);
+		pState->m_vDestPos = pState->m_pObj->GetPos();
+		pState->m_vDeltaPos = pState->m_vDestPos - startPos;
+	}
+
 	// If we didn't find someplace to go, then go back to the beginning
-	if (nRestarts >= 10)
+	// ...Unless it's LT1. Its restart cap keeps the last resolved position like the repeat hit rule
+	if (nRestarts >= 10 && !g_bLT1StrikeKeep)
 	{
 		pState->m_vDestPos = pState->m_vStartPos;
 		pState->m_pObj->SetPos(pState->m_vStartPos);

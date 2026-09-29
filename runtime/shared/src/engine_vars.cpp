@@ -95,6 +95,8 @@ int32	g_bLT1PolyTest = 0; // LT1's polygon against box clip test: a polygon exac
 int32	g_bLT1ContainerType = 0; // An object's type (OT_CONTAINER) makes it a container (LT1 had no FLAG_CONTAINER)
 int32	g_bLT1TunnelPath = 0; // Anti-tunnelling path for any move bigger than the mover's dims
 int32	g_bLT1NonsolidNoDivert = 0; // Only the main world pushes a nonsolid mover
+int32	g_bLT1StrikeKeep = 0; // Stop at the first repeat hit and keep the resolved position
+int32	g_bLT1WorldAfterObjects = 0; // Test the main world after the object loop if the loop skipped it
 
 int32	g_CV_MasterPaletteMode = 2;
 
@@ -332,6 +334,8 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1ContainerType", &g_bLT1ContainerType),
 	EV_LONG("LT1TunnelPath", &g_bLT1TunnelPath),
 	EV_LONG("LT1NonsolidNoDivert", &g_bLT1NonsolidNoDivert),
+	EV_LONG("LT1StrikeKeep", &g_bLT1StrikeKeep),
+	EV_LONG("LT1WorldAfterObjects", &g_bLT1WorldAfterObjects),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),
