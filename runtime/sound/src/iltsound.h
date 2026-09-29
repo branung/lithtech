@@ -430,7 +430,7 @@ public:
 	virtual void		Get3DPosition( LH3DPOBJECT hObj, float* pfX, float* pfY, float* pfZ) = 0;
 	virtual void		Get3DVelocity( LH3DPOBJECT hObj, float* pfDX_per_ms, float* pfDY_per_ms, float* pfDZ_per_ms ) = 0;
 	virtual void		Get3DOrientation( LH3DPOBJECT hObj, float* pfX_face, float* pfY_face, float* pfZ_face, float* pfX_up, float* pfY_up, float* pfZ_up ) = 0;
-	virtual sint32		Get3DUserData( LH3DPOBJECT hObj, uint32 uiIndex) = 0;
+	virtual uintptr_t		Get3DUserData( LH3DPOBJECT hObj, uint32 uiIndex) = 0;
 
 	// 3d sound sample functions
 	virtual LH3DSAMPLE	Allocate3DSampleHandle( LHPROVIDER hLib ) = 0;
@@ -483,7 +483,7 @@ public:
 	virtual void		SetSampleLoopBlock( LHSAMPLE hS, sint32 siLoop_start_offset, sint32 siLoop_end_offset, bool bEnable ) = 0;
 	virtual void		SetSampleLoop( LHSAMPLE hS, bool bLoop ) = 0;
 	virtual void		SetSampleMsPosition( LHSAMPLE hS, sint32 siMilliseconds ) = 0;
-	virtual sint32		GetSampleUserData( LHSAMPLE hS, uint32 uiIndex ) = 0;
+	virtual uintptr_t		GetSampleUserData( LHSAMPLE hS, uint32 uiIndex ) = 0;
 	virtual uint32		GetSampleStatus( LHSAMPLE hS ) = 0;
 
 	// old 2d sound stream functions

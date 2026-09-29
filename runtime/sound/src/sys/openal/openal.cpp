@@ -345,7 +345,7 @@ public:
 	ALuint					buffer;
 	char*					m_pSoundData;
 	uint32					m_uiSoundDataLen;
-	S32						m_userData[ MAX_USER_DATA_INDEX + 1 ];
+	uintptr_t						m_userData[ MAX_USER_DATA_INDEX + 1 ];
 	bool					m_bAllocatedSoundData;
 	S32						m_nLoopStart;
 	S32						m_nLoopEnd;
@@ -634,7 +634,7 @@ public:
 	LTVector	m_velocity;
 	LTVector	m_up;
 	LTVector	m_face;
-	S32			m_userData[ MAX_USER_DATA_INDEX + 1 ];
+	uintptr_t			m_userData[ MAX_USER_DATA_INDEX + 1 ];
 };
 
 I3DObject::I3DObject( )
@@ -1198,7 +1198,7 @@ public:
 	virtual void		Get3DPosition( LH3DPOBJECT hObj, float* pfX, float* pfY, float* pfZ);
 	virtual void		Get3DVelocity( LH3DPOBJECT hObj, float* pfDX_per_ms, float* pfDY_per_ms, float* pfDZ_per_ms );
 	virtual void		Get3DOrientation( LH3DPOBJECT hObj, float* pfX_face, float* pfY_face, float* pfZ_face, float* pfX_up, float* pfY_up, float* pfZ_up );
-	virtual S32			Get3DUserData( LH3DPOBJECT hObj, U32 uiIndex);
+	virtual uintptr_t			Get3DUserData( LH3DPOBJECT hObj, U32 uiIndex);
 
 	// 3d sound sample functions
 	virtual LH3DSAMPLE	Allocate3DSampleHandle( LHPROVIDER hLib );
@@ -1250,7 +1250,7 @@ public:
 	virtual void		SetSampleLoopBlock( LHSAMPLE hS, S32 siLoop_start_offset, S32 siLoop_end_offset, bool bEnable);
 	virtual void		SetSampleLoop( LHSAMPLE hS, bool bLoop );
 	virtual void		SetSampleMsPosition( LHSAMPLE hS, S32 siMilliseconds );
-	virtual sint32		GetSampleUserData( LHSAMPLE hS, U32 uiIndex );
+	virtual uintptr_t		GetSampleUserData( LHSAMPLE hS, U32 uiIndex );
 	virtual uint32		GetSampleStatus( LHSAMPLE hS );
 
 	// old 2d sound stream functions
@@ -1582,7 +1582,7 @@ void COpenALSoundSys::Get3DOrientation( LH3DPOBJECT hObj, float* pfX_face, float
 {
 }
 
-S32	COpenALSoundSys::Get3DUserData( LH3DPOBJECT hObj, U32 uiIndex)
+uintptr_t	COpenALSoundSys::Get3DUserData( LH3DPOBJECT hObj, U32 uiIndex)
 {
 	if( hObj == NULL || uiIndex > MAX_USER_DATA_INDEX )
 		return 0;
@@ -2203,7 +2203,7 @@ void COpenALSoundSys::SetSampleMsPosition( LHSAMPLE hS, S32 siMilliseconds )
 	char* m_pcLastError = LastError( );
 }
 
-S32	COpenALSoundSys::GetSampleUserData( LHSAMPLE hS, U32 uiIndex )
+uintptr_t	COpenALSoundSys::GetSampleUserData( LHSAMPLE hS, U32 uiIndex )
 {
 	if( hS == NULL || uiIndex > MAX_USER_DATA_INDEX )
 		return 0;

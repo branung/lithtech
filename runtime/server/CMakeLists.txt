@@ -14,6 +14,7 @@ set(libsources
 	src/server_iltphysics.cpp
 	../shared/src/shared_iltphysics.cpp
 	src/server_iltsoundmgr.cpp
+	../shared/src/mathlt_impl.cpp
 	../shared/src/transformlt_impl.cpp
 	src/world_server_bsp.cpp
 	../world/src/world_shared_bsp.cpp

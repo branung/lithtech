@@ -2538,7 +2538,7 @@ static bool HasFormat( HACMDRIVERID hDriverId, WORD nFormatTag )
     formatEnumProcData.m_pcmDestWaveFormat.nAvgBytesPerSec = formatEnumProcData.m_pcmDestWaveFormat.nSamplesPerSec
 		* formatEnumProcData.m_pcmDestWaveFormat.nBlockAlign;
 
-    bool bResult = ( acmFormatEnum( hDriver, &fd, FormatEnumProc, ( DWORD )&formatEnumProcData, ACM_FORMATENUMF_WFORMATTAG ) == 0 );
+    bool bResult = ( acmFormatEnum( hDriver, &fd, FormatEnumProc, ( DWORD_PTR )&formatEnumProcData, ACM_FORMATENUMF_WFORMATTAG ) == 0 );
 	acmDriverClose( hDriver, 0 );
 
 	delete [] pwf;
@@ -2911,7 +2911,7 @@ S32	CDx8SoundSys::Startup( void )
 		m_hAcmMP3DriverId == NULL ||
 		m_hAcmPCMDriverId == NULL )
 	{
-		mmResult = acmDriverEnum( AcmDriverEnumProc, ( uint32 )&sEnumResults, 0 );
+		mmResult = acmDriverEnum( AcmDriverEnumProc, ( DWORD_PTR )&sEnumResults, 0 );
 		if( mmResult != 0 )
 			return LS_ERROR;
 
@@ -3597,7 +3597,7 @@ void CDx8SoundSys::Get3DOrientation( LH3DPOBJECT hObj, float* pfX_face, float* p
 	*pfZ_face = p3DObject->m_face.z;
 }
 
-S32	CDx8SoundSys::Get3DUserData( LH3DPOBJECT hObj, U32 uiIndex )
+uintptr_t	CDx8SoundSys::Get3DUserData( LH3DPOBJECT hObj, U32 uiIndex )
 {
 	if( hObj == NULL || uiIndex > MAX_USER_DATA_INDEX )
 		return 0;
@@ -4698,7 +4698,7 @@ void CDx8SoundSys::SetSampleMsPosition( LHSAMPLE hS, S32 siMilliseconds )
 	char* m_pcLastError = LastError( );
 }
 
-S32	CDx8SoundSys::GetSampleUserData( LHSAMPLE hS, U32 uiIndex )
+uintptr_t	CDx8SoundSys::GetSampleUserData( LHSAMPLE hS, U32 uiIndex )
 {
 //	LOG_WRITE( g_pLogFile, "GetSampleUserData( %x, %d )\n", hS, uiIndex );
 

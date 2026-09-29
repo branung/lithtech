@@ -34,6 +34,7 @@ set(exec_src
 	../shared/src/shared_iltphysics.cpp
 	../server/src/server_iltsoundmgr.cpp
 	../sound/src/soundmgr.cpp
+	../shared/src/mathlt_impl.cpp
 	../shared/src/transformlt_impl.cpp
 	src/client_iltvideomgr.cpp
 	../shared/src/interface_linkage.cpp

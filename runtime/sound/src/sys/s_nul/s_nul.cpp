@@ -65,7 +65,7 @@ public:
 	virtual void		Get3DPosition( LH3DPOBJECT hObj, float* pfX, float* pfY, float* pfZ);
 	virtual void		Get3DVelocity( LH3DPOBJECT hObj, float* pfDX_per_ms, float* pfDY_per_ms, float* pfDZ_per_ms );
 	virtual void		Get3DOrientation( LH3DPOBJECT hObj, float* pfX_face, float* pfY_face, float* pfZ_face, float* pfX_up, float* pfY_up, float* pfZ_up );
-	virtual S32			Get3DUserData( LH3DPOBJECT hObj, U32 uiIndex);
+	virtual uintptr_t			Get3DUserData( LH3DPOBJECT hObj, U32 uiIndex);
 
 	// 3d sound sample functions
 	virtual LH3DSAMPLE	Allocate3DSampleHandle( LHPROVIDER hLib );
@@ -110,7 +110,7 @@ public:
 	virtual void		SetSampleLoopBlock( LHSAMPLE hS, S32 siLoop_start_offset, S32 siLoop_end_offset );
 	virtual void		SetSampleLoopCount( LHSAMPLE hS, S32 siLoop_count );
 	virtual void		SetSampleMsPosition( LHSAMPLE hS, S32 siMilliseconds );
-	virtual S32			GetSampleUserData( LHSAMPLE hS, U32 uiIndex );
+	virtual uintptr_t			GetSampleUserData( LHSAMPLE hS, U32 uiIndex );
 
 	// old 2d sound stream functions
 	virtual LHSTREAM	OpenStream( char* sFilename, uint32 nOffset, LHDIGDRIVER hDig, char* sStream, S32 siStream_mem );
@@ -313,7 +313,7 @@ void CNulSoundSys::Get3DOrientation( LH3DPOBJECT hObj, float* pfX_face, float* p
 { 
 }
 
-S32	CNulSoundSys::Get3DUserData( LH3DPOBJECT hObj, U32 uiIndex) 
+uintptr_t	CNulSoundSys::Get3DUserData( LH3DPOBJECT hObj, U32 uiIndex) 
 { 
 	return 0; 
 }
@@ -489,7 +489,7 @@ void CNulSoundSys::SetSampleMsPosition( LHSAMPLE hS, S32 siMilliseconds )
 { 
 }
 
-S32	CNulSoundSys::GetSampleUserData( LHSAMPLE hS, U32 uiIndex ) 
+uintptr_t	CNulSoundSys::GetSampleUserData( LHSAMPLE hS, U32 uiIndex ) 
 { 
 	return 0; 
 }
