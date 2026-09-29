@@ -92,18 +92,7 @@ static bool StartClient(ClientGlob *pGlob)
 
     // Find all the res trees.
     nResTrees = 0;
-#if 0
-    for (uint32 i = 0; i < command_line_args->Argc() - 1; i++) {
-        //check if this argument is -rez
-        if (stricmp(command_line_args->Argv(i), "-rez") == 0) {
-            //save this parameter.
-            resTrees[nResTrees++] = command_line_args->Argv(i + 1);
-            if (nResTrees+1 >= MAX_RESTREES) {
-                break;
-            }
-        }
-    }
-#endif
+
     // Add the default engine resource...
     if (!g_CV_NoDefaultEngineRez) 
 	{
@@ -113,6 +102,14 @@ static bool StartClient(ClientGlob *pGlob)
 	resTrees[nResTrees++] = "game.rez";
 	resTrees[nResTrees++] = "game2.rez";
 	resTrees[nResTrees++] = "sound.rez";
+
+    // Additional rez trees and directories from the command line
+	// Note: '-rez' passed after the others overrides the base game data
+    for (uint32 i = 0; i + 1 < command_line_args->Argc() && nResTrees < MAX_RESTREES; i++) {
+        if (stricmp(command_line_args->Argv(i), "-rez") == 0) {
+            resTrees[nResTrees++] = command_line_args->Argv(i + 1);
+        }
+    }
 
     if (command_line_args->FindArgDash("noinput")) 
 	{
@@ -593,8 +590,16 @@ int RunClientApp(HINSTANCE hInstance) {
                 dsi_PrintToConsole("Running for %.1f seconds", (float)(timeGetTime() - g_EngineStartMS) / 1000.0f);
             }
 
+            SDL_Window* pFocusWindow = (SDL_Window*)dsi_GetSDL2Window();
+            bool bFocusNow = pFocusWindow &&
+                ((SDL_GetWindowFlags(pFocusWindow) & SDL_WINDOW_INPUT_FOCUS) != 0);
+
+            const bool bOSFocus = pGlob->m_hMainWnd &&
+                                  (GetForegroundWindow() == pGlob->m_hMainWnd);
+            bool bAllowCapture = bFocusNow || bOSFocus;
+
             // Center the mouse in the window.
-            if (g_CV_CursorCenter && !g_ClientGlob.m_bLostFocus) {
+            if (g_CV_CursorCenter && bAllowCapture && !g_ClientGlob.m_bLostFocus) {
                 GetWindowRect(pGlob->m_hMainWnd, &wndRect);
                 // [BL 2/2/2000] - center the cursor in the SCREEN, not the window -- otherwise it breaks
                 // when you play in a small window on a big screen
@@ -677,7 +682,7 @@ END_MAINLOOP:;
 //a string delimiter.
 //
 //If an odd number of backslashes is followed by a double quotation mark, one backslash is placed 
-//in the argv array for every pair of backslashes, and the double quotation mark is “escaped” by the 
+//in the argv array for every pair of backslashes, and the double quotation mark is ï¿½escapedï¿½ by the 
 //remaining backslash, causing a literal double quotation mark (") to be placed in argv. 
 //
 

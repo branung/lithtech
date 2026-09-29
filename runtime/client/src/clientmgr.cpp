@@ -43,6 +43,11 @@
 #include "ltbenchmark_impl.h"
 #include "sprite.h"
 #include "cmoveabstract.h"
+
+#ifndef _WIN32
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
 #include "ltmessage_client.h"
 #include "stringmgr.h"
 #include "debuggeometry.h"
@@ -128,6 +133,7 @@ extern int32    g_CV_BitDepth;
 extern int32    g_ClientSleepMS;
 extern int32    g_bShowMemStats;
 extern int32    g_nConsoleLines;
+extern LTBOOL   g_bConsoleEnable;
 extern int32 g_CV_ShowFrameRate;
 extern int32 g_ScreenWidth, g_ScreenHeight;
 extern int32 g_CV_FullLightScale;
@@ -212,6 +218,13 @@ CClientMgr::CClientMgr()
 	//initialize member variables
 	m_pVideoMgr = nullptr;
 
+	// The sky shadow pan group
+	m_pGlobalPanTexture = NULL;
+	m_fGlobalPanOffsetX = m_fGlobalPanOffsetZ = 0.0f;
+	m_fGlobalPanScaleX  = m_fGlobalPanScaleZ  = 1.0f;
+
+	// No environment map, as LT1 booted
+	m_pEnvMapTexture = NULL;
 }
 
 LTRESULT CClientMgr::Init(const char **resTrees, uint32 nResTrees, uint32 nNumConfigs, const char **ppConfigFileName)
@@ -780,32 +793,149 @@ void cm_HandleMaxFPS(uint32 frameTicks)
     }
 }
 
+// Everything above SDL still speaks Win32 virtual key codes
 uint32 sdl2_keycode_to_vkey(SDL_Keycode key)
 {
+	// Letters and digits: the VK code is the uppercase ASCII value
+	if (key >= SDLK_a && key <= SDLK_z)
+		return (uint32)('A' + (key - SDLK_a));
+	if (key >= SDLK_0 && key <= SDLK_9)
+		return (uint32)('0' + (key - SDLK_0));
+	if (key >= SDLK_F1 && key <= SDLK_F12)
+		return (uint32)(VK_F1 + (key - SDLK_F1));
+
 	switch (key)
 	{
-	case SDLK_UP:
-		return VK_UP;
-	case SDLK_DOWN:
-		return VK_DOWN;
-	case SDLK_LEFT:
-		return VK_LEFT;
-	case SDLK_RIGHT:
-		return VK_RIGHT;
-	case SDLK_SPACE:
-		return VK_SPACE;
-	case SDLK_RETURN:
-		return VK_RETURN;
-	case SDLK_ESCAPE:
-		return VK_ESCAPE;
-	case SDLK_F6:
-		return VK_F6;
-	case SDLK_F9:
-		return VK_F9;
+	case SDLK_UP:			return VK_UP;
+	case SDLK_DOWN:			return VK_DOWN;
+	case SDLK_LEFT:			return VK_LEFT;
+	case SDLK_RIGHT:		return VK_RIGHT;
+	case SDLK_SPACE:		return VK_SPACE;
+	case SDLK_RETURN:		return VK_RETURN;
+	case SDLK_ESCAPE:		return VK_ESCAPE;
+	case SDLK_BACKSPACE:	return VK_BACK;
+	case SDLK_TAB:			return VK_TAB;
+	case SDLK_DELETE:		return VK_DELETE;
+	case SDLK_INSERT:		return VK_INSERT;
+	case SDLK_HOME:			return VK_HOME;
+	case SDLK_END:			return VK_END;
+	case SDLK_PAGEUP:		return VK_PRIOR;
+	case SDLK_PAGEDOWN:		return VK_NEXT;
+	case SDLK_PAUSE:		return VK_PAUSE;
+	case SDLK_CAPSLOCK:		return VK_CAPITAL;
+	case SDLK_NUMLOCKCLEAR:	return VK_NUMLOCK;
+	case SDLK_SCROLLLOCK:	return VK_SCROLL;
+	case SDLK_PRINTSCREEN:	return VK_SNAPSHOT;
+
+	case SDLK_LSHIFT:		return VK_LSHIFT;
+	case SDLK_RSHIFT:		return VK_RSHIFT;
+	case SDLK_LCTRL:		return VK_LCONTROL;
+	case SDLK_RCTRL:		return VK_RCONTROL;
+	case SDLK_LALT:			return VK_LMENU;
+	case SDLK_RALT:			return VK_RMENU;
+
+	// OEM keys (which the console runs back through ToAscii())
+	case SDLK_SEMICOLON:	return VK_OEM_1;
+	case SDLK_EQUALS:		return VK_OEM_PLUS;
+	case SDLK_COMMA:		return VK_OEM_COMMA;
+	case SDLK_MINUS:		return VK_OEM_MINUS;
+	case SDLK_PERIOD:		return VK_OEM_PERIOD;
+	case SDLK_SLASH:		return VK_OEM_2;
+	case SDLK_BACKQUOTE:	return VK_OEM_3;
+	case SDLK_LEFTBRACKET:	return VK_OEM_4;
+	case SDLK_BACKSLASH:	return VK_OEM_5;
+	case SDLK_RIGHTBRACKET:	return VK_OEM_6;
+	case SDLK_QUOTE:		return VK_OEM_7;
+
+	case SDLK_KP_0:			return VK_NUMPAD0;
+	case SDLK_KP_1:			return VK_NUMPAD1;
+	case SDLK_KP_2:			return VK_NUMPAD2;
+	case SDLK_KP_3:			return VK_NUMPAD3;
+	case SDLK_KP_4:			return VK_NUMPAD4;
+	case SDLK_KP_5:			return VK_NUMPAD5;
+	case SDLK_KP_6:			return VK_NUMPAD6;
+	case SDLK_KP_7:			return VK_NUMPAD7;
+	case SDLK_KP_8:			return VK_NUMPAD8;
+	case SDLK_KP_9:			return VK_NUMPAD9;
+	case SDLK_KP_MULTIPLY:	return VK_MULTIPLY;
+	case SDLK_KP_PLUS:		return VK_ADD;
+	case SDLK_KP_MINUS:		return VK_SUBTRACT;
+	case SDLK_KP_PERIOD:	return VK_DECIMAL;
+	case SDLK_KP_DIVIDE:	return VK_DIVIDE;
+	case SDLK_KP_ENTER:		return VK_RETURN;
 	}
 
 	return 0;
 }
+
+#ifndef _FINAL
+// The tilde console toggle, moved from MainWndProc now that SDL owns the window
+static void ConsoleToggleKey()
+{
+	const SDL_Keymod mods = SDL_GetModState();
+	const bool bShift = (mods & KMOD_SHIFT) != 0;
+	const bool bCtrl  = (mods & KMOD_CTRL) != 0;
+
+	if (bShift && bCtrl)
+	{
+		g_nConsoleLines = 0;
+	}
+	else if (bShift)
+	{
+		++g_nConsoleLines;
+	}
+	else if (bCtrl)
+	{
+		--g_nConsoleLines;
+	}
+	else if (g_bConsoleEnable || dsi_IsConsoleUp())
+	{
+		dsi_SetConsoleUp(!dsi_IsConsoleUp());
+		if (!dsi_IsConsoleUp() && g_pClientMgr && g_pClientMgr->m_InputMgr)
+		{
+			g_pClientMgr->m_InputMgr->FlushInputBuffers(g_pClientMgr->m_InputMgr);
+		}
+	}
+
+	g_nConsoleLines = LTCLAMP(g_nConsoleLines, 0, 90);
+}
+#endif // !_FINAL
+
+// Writes the next unused Screenshots/shot#.bmp and returns true if it did.
+static void client_TakeScreenShot()
+{
+	RenderStruct *pStruct = r_GetRenderStruct();
+	if (!pStruct || !pStruct->MakeScreenShot)
+		return;
+
+	// Kept out of the game directory
+	const char *pszDir = "Screenshots";
+#ifdef _WIN32
+	CreateDirectoryA(pszDir, NULL);
+#else
+	mkdir(pszDir, 0755);
+#endif
+
+	char szFile[_MAX_PATH + 1];
+	for (uint32 i = 0; i < 10000; i++)
+	{
+		LTSNPrintF(szFile, sizeof(szFile), "%s/shot%04d.bmp", pszDir, i);
+
+		FILE *fp = fopen(szFile, "rb");
+		if (fp)
+		{
+			fclose(fp);
+			continue;
+		}
+
+		pStruct->MakeScreenShot(szFile);
+		dsi_ConsolePrint("Screenshot: %s", szFile);
+		return;
+	}
+
+	dsi_ConsolePrint("Screenshot: Screenshots/ already holds 10000 shots");
+}
+
 
 void client_input(SDL_Event e)
 {
@@ -814,6 +944,19 @@ void client_input(SDL_Event e)
 
 	if( e.type == SDL_KEYDOWN )
 	{
+		if( e.key.keysym.sym == SDLK_F12 && e.key.repeat == 0 )
+		{
+			client_TakeScreenShot();
+			return;
+		}
+#ifndef _FINAL
+		// Tilde belongs to the console
+		if( e.key.keysym.sym == SDLK_BACKQUOTE && dsi_IsConsoleEnabled() )
+		{
+			ConsoleToggleKey();
+			return;
+		}
+#endif
 		vkey = sdl2_keycode_to_vkey(e.key.keysym.sym);
 		scancode = SDL_GetScancodeFromKey(e.key.keysym.sym);
 		g_ClientGlob.m_SDLDowns[scancode] = 1;
@@ -841,8 +984,8 @@ void client_input(SDL_Event e)
 	}
 	else if( e.type == SDL_MOUSEMOTION )
 	{
-		g_ClientGlob.m_mouserel[0] = e.motion.xrel;
-		g_ClientGlob.m_mouserel[1] = e.motion.yrel;
+		g_ClientGlob.m_mouserel[0] += e.motion.xrel;
+		g_ClientGlob.m_mouserel[1] += e.motion.yrel;
 	}
 	else if( e.type == SDL_MOUSEBUTTONDOWN)
 	{
@@ -853,6 +996,10 @@ void client_input(SDL_Event e)
 		if (e.button.button == SDL_BUTTON_RIGHT)
 		{
 			g_ClientGlob.m_mousedown[1] = 1;
+		}
+		if (e.button.button == SDL_BUTTON_MIDDLE)
+		{
+			g_ClientGlob.m_mousedown[2] = 1;
 		}
 	}
 	else if( e.type == SDL_MOUSEBUTTONUP)
@@ -865,10 +1012,14 @@ void client_input(SDL_Event e)
 		{
 			g_ClientGlob.m_mousedown[1] = 0;
 		}
+		if (e.button.button == SDL_BUTTON_MIDDLE)
+		{
+			g_ClientGlob.m_mousedown[2] = 0;
+		}
 	}
 	else if (e.type == SDL_MOUSEWHEEL)
 	{
-		g_ClientGlob.m_mousewheel = e.wheel.y;
+		g_ClientGlob.m_mousewheel += e.wheel.y;
 	}
 }
 
@@ -911,6 +1062,10 @@ LTRESULT CClientMgr::Update()
     if (g_CV_FullLightScale)
 	{
         VEC_SET(m_GlobalLightScale, 1, 1, 1);
+
+        m_pGlobalPanTexture = NULL;
+        m_fGlobalPanOffsetX = m_fGlobalPanOffsetZ = 0.0f;
+        m_fGlobalPanScaleX  = m_fGlobalPanScaleZ  = 1.0f;
 	}
 
     // Update framerate (don't want to update it if the client's not active).

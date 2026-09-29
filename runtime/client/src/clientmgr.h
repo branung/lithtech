@@ -280,6 +280,14 @@ class CClientMgr {
         // Global lighting (values 0-1).
         LTVector                m_GlobalLightScale;
 
+        // LT1's sky shadow pan
+        SharedTexture          *m_pGlobalPanTexture;
+        float                   m_fGlobalPanOffsetX, m_fGlobalPanOffsetZ;
+        float                   m_fGlobalPanScaleX,  m_fGlobalPanScaleZ;
+
+        // LT1's model environment map
+        SharedTexture          *m_pEnvMapTexture;
+
 
     // Sound stuff...
     public:

@@ -1861,6 +1861,31 @@ bool ci_InitMusic(const char *szMusicDLL)
 	return g_pClientMgr->AppInitMusic(szMusicDLL) == LT_OK;
 }
 
+/*
+    ILTClient's calls into SMusicMgr's SetDataDirectory and InitInstruments
+
+    Both answer false when no driver is loaded.
+*/
+bool ci_SetMusicDirectory(const char *szDirectory)
+{
+	if (!GetMusicMgr()->m_bValid || !szDirectory)
+		return false;
+
+	return GetMusicMgr()->SetDataDirectory(szDirectory);
+}
+
+bool ci_InitInstruments(const char *szDLSFile, const char *szStyleFile)
+{
+	if (!GetMusicMgr()->m_bValid || !szDLSFile || !szStyleFile)
+		return false;
+
+    // Checks the MUSIC_INSTRUMENTSET caps bit as a driver may lack it.
+	if (!(GetMusicMgr()->m_ulCaps & MUSIC_INSTRUMENTSET))
+		return false;
+
+	return GetMusicMgr()->InitInstruments(szDLSFile, szStyleFile);
+}
+
 bool ci_LoadSong(const char *szSong)
 {
 	void *pSong;
@@ -2522,6 +2547,56 @@ void ci_OffsetGlobalLightScale(const LTVector *pOffset)
 	g_pClientMgr->m_GlobalLightScale.x = LTCLAMP(g_pClientMgr->m_GlobalLightScale.x, 0.0f, 2.0f);
 	g_pClientMgr->m_GlobalLightScale.y = LTCLAMP(g_pClientMgr->m_GlobalLightScale.y, 0.0f, 2.0f);
 	g_pClientMgr->m_GlobalLightScale.z = LTCLAMP(g_pClientMgr->m_GlobalLightScale.z, 0.0f, 2.0f);
+}
+
+// The sky shadow pan, the producer side of the SkyPan world shader.
+LTRESULT ci_SetGlobalPanTexture(uint32 index, const char *pFilename)
+{
+	if (index >= NUM_GLOBALPAN_TYPES)
+		RETURN_ERROR(0, SetGlobalPanTexture, LT_INVALIDPARAMS);
+
+	if (index != GLOBALPAN_SKYSHADOW)
+		return LT_OK;
+
+	// A NULL filename disables the effect
+	if (!pFilename)
+	{
+		g_pClientMgr->m_pGlobalPanTexture = NULL;
+		return LT_OK;
+	}
+
+	FileRef ref;
+	ref.m_FileType = FILE_CLIENTFILE;
+	ref.m_pFilename = pFilename;
+
+	SharedTexture *pTexture = g_pClientMgr->AddSharedTexture(&ref);
+	if (!pTexture)
+	{
+		// A failed load leaves the previous texture in place
+		RETURN_ERROR(1, SetGlobalPanTexture, LT_NOTFOUND);
+	}
+
+	g_pClientMgr->m_pGlobalPanTexture = pTexture;
+	return LT_OK;
+}
+
+LTRESULT ci_SetGlobalPanInfo(uint32 index, float xOffset, float zOffset,
+							 float xScale, float zScale)
+{
+	if (index >= NUM_GLOBALPAN_TYPES)
+		RETURN_ERROR(0, SetGlobalPanInfo, LT_INVALIDPARAMS);
+
+	if (index != GLOBALPAN_SKYSHADOW)
+		return LT_OK;
+
+	if ((xScale == 0.0f) || (zScale == 0.0f))
+		RETURN_ERROR(1, SetGlobalPanInfo, LT_INVALIDPARAMS);
+
+	g_pClientMgr->m_fGlobalPanOffsetX = xOffset;
+	g_pClientMgr->m_fGlobalPanOffsetZ = zOffset;
+	g_pClientMgr->m_fGlobalPanScaleX  = xScale;
+	g_pClientMgr->m_fGlobalPanScaleZ  = zScale;
+	return LT_OK;
 }
 
 HLOCALOBJ ci_CreateObject(ObjectCreateStruct *pStruct)
@@ -3285,6 +3360,8 @@ void CLTClient::InitFunctionPointers()
 	PlayJoystickEffect = ci_PlayJoystickEffect;
 
 	InitMusic = ci_InitMusic;
+	SetMusicDirectory = ci_SetMusicDirectory;
+	InitInstruments = ci_InitInstruments;
 	LoadSong = ci_LoadSong;
 	DestroyAllSongs = ci_DestroyAllSongs;
 	StopMusic = ci_StopMusic;
@@ -3347,6 +3424,9 @@ void CLTClient::InitFunctionPointers()
 	GetGlobalLightScale = ci_GetGlobalLightScale;
 	SetGlobalLightScale = ci_SetGlobalLightScale;
 	OffsetGlobalLightScale = ci_OffsetGlobalLightScale;
+
+	SetGlobalPanTexture = ci_SetGlobalPanTexture;
+	SetGlobalPanInfo = ci_SetGlobalPanInfo;
 
 	CreateObject = ci_CreateObject;
 
