@@ -72,6 +72,9 @@ define_holder(IWorldBlindObjectData, g_iWorldBlindObjectData);
 extern LTBOOL g_bUpdateServer;
 extern int32 g_CV_MasterPaletteMode, g_bForceRemote;
 
+// Call PreLoadWorld for a local client too (on by default)
+extern int32 g_bLocalPreLoadWorld;
+
 CClientShell *g_pClientShell;
 
 
@@ -778,6 +781,13 @@ LTRESULT CClientShell::DoLoadWorld(const CPacket_Read &cPacket, bool bLocal)
 		}
 	}
 
+	// Tell the client shell a world is about to load.
+	// Called for a local client too, as Shogo sets m_strCurrentWorldName here and nowhere else
+	if (i_client_shell != NULL && (!m_bLocal || g_bLocalPreLoadWorld))
+	{
+		i_client_shell->PreLoadWorld(pWorldName);
+	}
+
 	//check if we have a local server.
     if (m_bLocal)
 	{
@@ -795,11 +805,6 @@ LTRESULT CClientShell::DoLoadWorld(const CPacket_Read &cPacket, bool bLocal)
     }
     else
     {
-        // Notify the client shell and show the draw surface so they can put up a bitmap.
-        if (i_client_shell != NULL) {
-            i_client_shell->PreLoadWorld(pWorldName);
-        }
-
         con_Printf(CONRGB(100,100,250), 1, "Entering world %s", client_file_mgr->GetFilename(&ref));
         
         loadStatus = world_bsp_client->Load(pStream);

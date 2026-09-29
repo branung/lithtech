@@ -279,6 +279,12 @@ uint32 sm_GetNewObjectChangeFlags(LTObject *pObject)
                     break;
                 }
             }
+
+            // ...Or hidden nodes, which travel in the same block
+            if(ToModel(pObject)->HasHiddenNodes())
+            {
+                changeFlags |= CF_ATTACHMENTS;
+            }
         }
     }
 

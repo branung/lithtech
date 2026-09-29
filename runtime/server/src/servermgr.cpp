@@ -2425,17 +2425,30 @@ LTRESULT sm_AddObjectToWorld( LPBASECLASS pBaseClass, ClassDef *pClass,
 	// Add it to the bsp...
 	sm_UpdateInBspStatus(pObject);
 
-	// Call its initial update!
-//	pBaseClass->EngineMessageFn(MID_OBJECTCREATED, pStruct, initialUpdateReason);
-	pBaseClass->OnObjectCreated( initialUpdateReason );
+	// LT1CreateInPlace runs the placement move before the initial update
+	// LT1 never scanned a new object for touches, as it has no flags until InitialUpdate.
+	// So Jupiter's order dispatches MID_TOUCHNOTIFY to a half built object
+	extern int32 g_bLT1CreateInPlace;
+	if (g_bLT1CreateInPlace)
+	{
+		LTVector vPos = pObject->m_Pos;
+		FullMoveObject(pObject, &vPos, MO_SETCHANGEFLAG|MO_TELEPORT);
+		pBaseClass->OnObjectCreated( initialUpdateReason );
+	}
+	else
+	{
+		// Call its initial update!
+		// pBaseClass->EngineMessageFn(MID_OBJECTCREATED, pStruct, initialUpdateReason);
+		pBaseClass->OnObjectCreated( initialUpdateReason );
 
-	// Force collisions to set up some links (Fixes container links)
-	// We need to make a copy of our position before calling in instead of passing
-	// the address of pObject->m_Pos.  If we don't sometimes objects will be moved
-	// when the level loads causing the game to be unplayable.  This is an attempt
-	// to fix the MOVING OBJECTS BUG.
-	LTVector vPos = pObject->m_Pos;
-	FullMoveObject(pObject, &vPos, MO_SETCHANGEFLAG|MO_TELEPORT);
+		// Force collisions to set up some links (Fixes container links)
+		// We need to make a copy of our position before calling in instead of passing
+		// the address of pObject->m_Pos.  If we don't sometimes objects will be moved
+		// when the level loads causing the game to be unplayable.  This is an attempt
+		// to fix the MOVING OBJECTS BUG.
+		LTVector vPos = pObject->m_Pos;
+		FullMoveObject(pObject, &vPos, MO_SETCHANGEFLAG|MO_TELEPORT);
+	}
 
 	// Set its initial change flags..
 	SetObjectChangeFlags(pObject, sm_GetNewObjectChangeFlags(pObject));

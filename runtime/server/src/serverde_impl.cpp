@@ -769,8 +769,19 @@ LTRESULT CLTServer::CopyFile(const char *pszSourceFile, const char *pszDestFile)
 	return server_filemgr->CopyFile(pszSourceFile, pszDestFile);
 }
 
+extern int32 g_bLT1ModelAnimNoRestart;
+
 void CLTServer::SetModelAnimation(HOBJECT hObj, HMODELANIM hAnim)
 {
+	// LT1 ignored a request for the animation already playing.
+	// Guarded here, as SetModelAnimation is virtual on ILTCSBase and a DECompat override would land in an unused vtable
+	if (g_bLT1ModelAnimNoRestart)
+	{
+		HMODELANIM hCur = 0;
+		if (ilt_model_server->GetCurAnim(hObj, MAIN_TRACKER, hCur) == LT_OK && hCur == hAnim)
+			return;
+	}
+
 	ilt_model_server->SetCurAnim(hObj, MAIN_TRACKER, hAnim);
 }
 
@@ -2870,6 +2881,64 @@ bool si_GetModelPlaying(HOBJECT hObj)
 }
 
 
+// LT1 let game code hide individual model nodes, all unhidden by default.
+// Shogo's CProjectile::DoLocationBasedImpact skips hidden nodes when picking the body part a shot hit
+LTRESULT si_GetModelNodeHideStatus(HOBJECT hObj, char *pNodeName, bool *bHidden)
+{
+	// Written before any early return as Shogo's caller never resets it between nodes
+	if (!bHidden)
+		return LT_ERROR;
+	*bHidden = false;
+
+	if (!hObj || !pNodeName)
+		return LT_ERROR;
+
+	LTObject *pObj = HandleToServerObj(hObj);
+	if (!pObj || pObj->m_ObjectType != OT_MODEL)
+		return LT_ERROR;
+
+	ModelInstance *pInst = ToModel(pObj);
+	Model *pModelDB = pInst->GetModelDB();
+	if (!pModelDB)
+		return LT_ERROR;
+
+	uint32 nNodeIndex;
+	if (!pModelDB->FindNode(pNodeName, &nNodeIndex))
+		return LT_NOTFOUND;
+
+	*bHidden = pInst->IsNodeHidden(nNodeIndex);
+	return LT_OK;
+}
+
+// Hides one skeleton node's geometry. The bit lives on the ModelInstance and reaches the client under CF_ATTACHMENTS.
+// LT1 game code builds gibs and severed limbs by hiding every other node of a whole character
+LTRESULT si_SetModelNodeHideStatus(HOBJECT hObj, char *pNodeName, bool bHidden)
+{
+	if (!hObj || !pNodeName)
+		return LT_ERROR;
+
+	LTObject *pObj = HandleToServerObj(hObj);
+	if (!pObj || pObj->m_ObjectType != OT_MODEL)
+		return LT_ERROR;
+
+	ModelInstance *pInst = ToModel(pObj);
+	Model *pModelDB = pInst->GetModelDB();
+	if (!pModelDB)
+		return LT_ERROR;
+
+	uint32 nNodeIndex;
+	if (!pModelDB->FindNode(pNodeName, &nNodeIndex))
+		return LT_NODENOTFOUND;
+
+	if (pInst->IsNodeHidden(nNodeIndex) == bHidden)
+		return LT_NOCHANGE;
+
+	pInst->SetNodeHidden(nNodeIndex, bHidden);
+	SetObjectChangeFlags(pObj, CF_ATTACHMENTS);
+	return LT_OK;
+}
+
+
 bool si_GetModelFilenames(HOBJECT hObj, char *pFilename, int fileBufLen, char *pSkinName, int skinBufLen) 
 {
 	if (!hObj) return 
@@ -3140,6 +3209,9 @@ void CLTServer::SetupFunctionPointers()
 	GetAnimName = ic_GetAnimName;
 	SetModelPlaying = si_SetModelPlaying;
 	GetModelPlaying = si_GetModelPlaying;
+
+	GetModelNodeHideStatus = si_GetModelNodeHideStatus;
+	SetModelNodeHideStatus = si_SetModelNodeHideStatus;
 
 	GetModelFilenames = si_GetModelFilenames;
 	Parse = si_Parse;

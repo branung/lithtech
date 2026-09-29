@@ -392,6 +392,9 @@ ModelInstance::ModelInstance()
 		m_HiddenPieces[nCurrPiece] = 0;
 	}
 
+	for (uint32 nCurrNodeWord = 0; nCurrNodeWord < MAX_HIDEABLE_MODEL_NODES / 32; nCurrNodeWord++)
+		m_HiddenNodes[nCurrNodeWord] = 0;
+
 	// animations
     m_AnimTrackers = &m_AnimTracker;
     m_AnimTracker.m_Link.m_pNext = NULL;
