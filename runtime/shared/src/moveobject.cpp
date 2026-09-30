@@ -1300,6 +1300,65 @@ static void DetectAndProcessCollisions
 }
 
 
+// LT1 dimension change behavior
+extern int32 g_bLT1ObjectDims;
+
+// Is the box inside the solid main world?
+struct EmbedCheckState
+{
+	MoveState	*m_pState;
+	LTVector	m_vMin, m_vMax;
+	LTBOOL		m_bEmbedded;
+};
+
+// The point is in solid when the BSP test lands on NODE_OUT, as SolidBoxBSPIntersect has it
+static LTBOOL EmbedPointInSolid(const Node *pRoot, const LTVector &vPt)
+{
+	while (pRoot != NODE_IN && pRoot != NODE_OUT)
+	{
+		pRoot = pRoot->m_Sides[(pRoot->GetPlane()->DistTo(vPt) > 0.0f) ? FrontSide : BackSide];
+	}
+	return (pRoot == NODE_OUT) ? LTTRUE : LTFALSE;
+}
+
+static void EmbedCheckCB(WorldTreeObj *pTreeObj, void *pUser)
+{
+	EmbedCheckState *pCheck = (EmbedCheckState*)pUser;
+
+	if (pCheck->m_bEmbedded || pTreeObj->GetObjType() != WTObj_DObject)
+		return;
+
+	LTObject *pObject = (LTObject*)pTreeObj;
+	if (pObject == pCheck->m_pState->m_pObj)
+		return;
+
+	if (!IsSolidWorld(pObject) || !HasWorldModel(pObject))
+		return;
+
+	WorldModelInstance *pInst = pObject->ToWorldModel();
+	if (!pInst->m_pValidBsp)
+		return;
+
+	const LTVector vCenter = (pCheck->m_vMin + pCheck->m_vMax) * 0.5f;
+	if (EmbedPointInSolid(pInst->m_pValidBsp->GetRootNode(), vCenter))
+		pCheck->m_bEmbedded = LTTRUE;
+}
+
+static LTBOOL IsBoxEmbeddedInWorld(MoveState *pState, const LTVector &vMin, const LTVector &vMax)
+{
+	EmbedCheckState check;
+	check.m_pState = pState;
+	check.m_vMin = vMin;
+	check.m_vMax = vMax;
+	check.m_bEmbedded = LTFALSE;
+
+	LTVector vQueryMin = vMin, vQueryMax = vMax;
+	pState->m_pWorldTree->FindObjectsInBox(&vQueryMin, &vQueryMax, EmbedCheckCB, &check);
+
+	return check.m_bEmbedded;
+}
+
+
 static void GrowDim(MoveState *pState, int32 nDim, float &newDim)
 {
 	MoveState moveState;
@@ -1329,11 +1388,22 @@ static void GrowDim(MoveState *pState, int32 nDim, float &newDim)
 	// Remember where we ended up
 	float fHigh = pObj->GetPos()[nDim];
 
+	// Under LT1ObjectDims, a grow never comes out smaller than it went in.
+	// Starting against a ceiling can leave the up probe below the down probe.. so no space found means no change
+	if (g_bLT1ObjectDims && fHigh < fLow)
+		fHigh = fLow;
+
 	// Figure out how much space we have
 	float fHalf = ( fHigh - fLow ) / 2.0f + fOldDim;
 	// Center object...
 	vNewPos[nDim] = (fHigh + fLow) / 2.0f;
-	MoveObject(&moveState, vNewPos, MO_MOVESTANDINGONS|MO_NOSLIDING|MO_TELEPORT);
+
+	// LT1 places the result with a swept move where Jupiter teleports.
+	// A teleported box inside geometry has to be pushed out from a standstill, which often fails
+	if (g_bLT1ObjectDims)
+		MoveObject(&moveState, vNewPos, MO_DETACHSTANDING|MO_SETCHANGEFLAG|MO_MOVESTANDINGONS);
+	else
+		MoveObject(&moveState, vNewPos, MO_MOVESTANDINGONS|MO_NOSLIDING|MO_TELEPORT);
 
 	// Set the dim...
 	LTVector vNewDims = pObj->GetDims();
@@ -1715,6 +1785,16 @@ LTBOOL ChangeObjectDimensions(MoveState *pState, LTVector &newDims, LTBOOL bColl
 		LTVector vOldPos = pObj->GetPos();
 		LTVector vOldDims = pObj->GetDims();
 
+		// Was the box already in solid before this resize?
+		LTBOOL bWasEmbedded = LTFALSE;
+		if (g_bLT1ObjectDims)
+		{
+			const LTVector vPreInset(0.05f, 0.05f, 0.05f);
+			bWasEmbedded = IsBoxEmbeddedInWorld(pState,
+				vOldPos - vOldDims + vPreInset,
+				vOldPos + vOldDims - vPreInset);
+		}
+
 		// Note : X/Z dim changing is incompatible with player collision physics
 		uint32 nOldPlayerFlag = pObj->m_Flags2 & FLAG2_PLAYERCOLLIDE;
 		pObj->m_Flags2 &= ~FLAG2_PLAYERCOLLIDE;
@@ -1740,7 +1820,28 @@ LTBOOL ChangeObjectDimensions(MoveState *pState, LTVector &newDims, LTBOOL bColl
 		vDiff = vDims - pObj->GetDims();
 		bRet = ( vDiff.MagSqr() < 0.001f );
 		newDims = pObj->GetDims();
-		if (!bRet)
+
+		// Under LT1ObjectDims, a resize can't leave the box newly embedded in the world.
+		// LT1's probes are pushed out of anything they start inside, where as Jupiter's can sweep through a plane.
+		// The grown box is tested with a 0.05 inset so a contact isn't counted as an embed
+		if (g_bLT1ObjectDims)
+		{
+			const LTVector vInset(0.05f, 0.05f, 0.05f);
+			const LTVector vTestMin = pObj->GetPos() - pObj->GetDims() + vInset;
+			const LTVector vTestMax = pObj->GetPos() + pObj->GetDims() - vInset;
+			if (!bWasEmbedded &&
+			    (pObj->GetDims() - vOldDims).MagSqr() > 0.0001f &&
+			    IsBoxEmbeddedInWorld(pState, vTestMin, vTestMax))
+			{
+				pObj->SetDims(vOldDims);
+				MoveObject(pState, vOldPos, MO_SETCHANGEFLAG|MO_MOVESTANDINGONS|MO_NOSLIDING|MO_TELEPORT);
+				bRet = LTFALSE;
+				newDims = pObj->GetDims();
+			}
+		}
+
+		// LT1 keeps a partial result
+		if (!bRet && !g_bLT1ObjectDims)
 		{
 			pObj->SetDims(vOldDims);
 			MoveObject(pState, vOldPos, MO_SETCHANGEFLAG|MO_MOVESTANDINGONS|MO_NOSLIDING|MO_TELEPORT);

@@ -97,6 +97,7 @@ int32	g_bLT1TunnelPath = 0; // Anti-tunnelling path for any move bigger than the
 int32	g_bLT1NonsolidNoDivert = 0; // Only the main world pushes a nonsolid mover
 int32	g_bLT1StrikeKeep = 0; // Stop at the first repeat hit and keep the resolved position
 int32	g_bLT1WorldAfterObjects = 0; // Test the main world after the object loop if the loop skipped it
+int32	g_bLT1ObjectDims = 0; // Keep a partial resize and place it with a swept move
 
 int32	g_CV_MasterPaletteMode = 2;
 
@@ -336,6 +337,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1NonsolidNoDivert", &g_bLT1NonsolidNoDivert),
 	EV_LONG("LT1StrikeKeep", &g_bLT1StrikeKeep),
 	EV_LONG("LT1WorldAfterObjects", &g_bLT1WorldAfterObjects),
+	EV_LONG("LT1ObjectDims", &g_bLT1ObjectDims),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),
