@@ -22,6 +22,9 @@ define_holder(IClientShell, i_client_shell);
 #include "rendererconsolevars.h"
 #include <algorithm>
 
+// LT1 object color semantics
+extern int32 g_bLT1ObjectColor;
+
 
 
 //---------------------------------------------------------------------------------
@@ -435,6 +438,31 @@ void CRenderModelPieceList::RenderPieceList(float fAlpha)
 			}
 		}
 
+		// The alpha above only shows if the style blends.
+		// In LT1, alpha alone made a model translucent,
+		// so under LT1ObjectColor a non-blending, single pass render style blends and skips Z writes for this object
+		RenderPassOp OriginalRenderPass;
+		bool bOverrodeBlend = false;
+		if (g_bLT1ObjectColor && fAlpha < 0.99f &&
+			pCurrRenderStyle->GetRenderPassCount() == 1 &&
+			pCurrRenderStyle->GetRenderPass(0, &OriginalRenderPass) &&
+			OriginalRenderPass.BlendMode == RENDERSTYLE_NOBLEND)
+		{
+
+			const uint32 nFlags2 = m_cPieceList[nStartPiece].m_pInstance->m_Flags2;
+			RenderPassOp OverrideRenderPass = OriginalRenderPass;
+
+			if (nFlags2 & FLAG2_ADDITIVE)
+				OverrideRenderPass.BlendMode = RENDERSTYLE_BLEND_ADD;
+			else if (nFlags2 & FLAG2_MULTIPLY)
+				OverrideRenderPass.BlendMode = RENDERSTYLE_BLEND_MUL_DSTCOL_ZERO;
+			else
+				OverrideRenderPass.BlendMode = RENDERSTYLE_BLEND_MOD_SRCALPHA;
+
+			OverrideRenderPass.ZBufferMode = RENDERSTYLE_ZRO;
+			bOverrodeBlend = pCurrRenderStyle->SetRenderPass(0, OverrideRenderPass);
+		}
+
 		RSD3DOptions rsD3DOptions;
 		pCurrRenderStyle->GetDirect3D_Options(&rsD3DOptions);
 		if(rsD3DOptions.bUseEffectShader)
@@ -678,7 +706,12 @@ void CRenderModelPieceList::RenderPieceList(float fAlpha)
 		{
 			pCurrRenderStyle->SetLightingMaterial(OriginalLightMaterial); 
 		}
-		
+
+		if (bOverrodeBlend)
+		{
+			pCurrRenderStyle->SetRenderPass(0, OriginalRenderPass);
+		}
+
 	}
 
 	//we need to unset really close if we entered it

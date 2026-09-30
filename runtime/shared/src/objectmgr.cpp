@@ -29,6 +29,8 @@ define_holder_to_instance(ILTModel, ilt_model_server, Server);
 static ILTTransform *ilt_transform;
 define_holder(ILTTransform, ilt_transform);
 
+// LT1 object color semantics
+extern int32 g_bLT1ObjectColor;
 
 // Used for the global frame code.. when it wraps around, all object managers
 // have their objects reset.
@@ -153,6 +155,11 @@ void LTObject::Init(ObjectMgr *pMgr, ObjectCreateStruct *pStruct)
     m_ObjectType			= (uint8)pStruct->m_ObjectType;
     m_pObjectMgr			= pMgr;
 	m_nRenderGroup			= pStruct->m_nRenderGroup;
+
+	if (g_bLT1ObjectColor && m_ObjectType == OT_MODEL)
+	{
+		m_ColorR = m_ColorG = m_ColorB = 0;
+	}
 }
 
 void LTObject::Clear()

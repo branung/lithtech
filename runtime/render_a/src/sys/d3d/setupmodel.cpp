@@ -50,6 +50,9 @@ define_holder(IFindObj, g_pIFindObj);
 // The model drawer..
 ModelDraw g_ModelDraw;
 
+// LT1 object color semantics
+extern int32 g_bLT1ObjectColor;
+
 // --------------------------------------------------------------- //
 // Callback data structures
 // --------------------------------------------------------------- //
@@ -104,6 +107,15 @@ void ModelDraw::CallModelHook(ModelInstance* pInstance, ModelHookData& HookData)
 	if(g_pSceneDesc->m_ModelHookFn)
 	{
 		g_pSceneDesc->m_ModelHookFn(&HookData, g_pSceneDesc->m_ModelHookUser);
+	}
+
+	// LT1 treats a model's object color as a brightining term rather than the light scale Jupiter makes of it.
+	// Under LT1ObjectColor, it's folded into the light add and the scale is left at 255.
+	// Doing this, LT1's default tint of (0,0,0) adds nothing rather than drawing the model black
+	if(g_bLT1ObjectColor)
+	{
+		HookData.m_LightAdd += HookData.m_ObjectColor;
+		HookData.m_ObjectColor.Init(255.0f, 255.0f, 255.0f);
 	}
 
 	//add in the saturation from the console variable

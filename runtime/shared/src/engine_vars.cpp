@@ -98,6 +98,7 @@ int32	g_bLT1NonsolidNoDivert = 0; // Only the main world pushes a nonsolid mover
 int32	g_bLT1StrikeKeep = 0; // Stop at the first repeat hit and keep the resolved position
 int32	g_bLT1WorldAfterObjects = 0; // Test the main world after the object loop if the loop skipped it
 int32	g_bLT1ObjectDims = 0; // Keep a partial resize and place it with a swept move
+int32	g_bLT1ObjectColor = 0; // A model's object color brightens it from a (0,0,0) default rather than scaling its light
 
 int32	g_CV_MasterPaletteMode = 2;
 
@@ -338,6 +339,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1StrikeKeep", &g_bLT1StrikeKeep),
 	EV_LONG("LT1WorldAfterObjects", &g_bLT1WorldAfterObjects),
 	EV_LONG("LT1ObjectDims", &g_bLT1ObjectDims),
+	EV_LONG("LT1ObjectColor", &g_bLT1ObjectColor),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),
