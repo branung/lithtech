@@ -19,26 +19,36 @@ extern void d3d_DrawSprite(const ViewParams &Params, LTObject *pObj);
 
 void d3d_DrawSkyObjects(const ViewParams& SkyParams)
 {
-/* JJH - this viewport was calculated assuming a screen resolution render target.
-		 second camera viewports need different settings, so this was
-		 causing the skybox to draw incorrectly in alternate cameras.
-		 if you uncomment this, make sure to also uncomment the setviewport at
-		 the end.
-
-	//preserve our old viewport
+	// Narrow the viewport to the sky rectangle or else D3D stretches the sky across the whole screen.
+	// Clamped to the current viewport
 	D3DVIEWPORT9 cOldViewport;
-	PD3DDEVICE->GetViewport(&cOldViewport);
+	bool bViewportSet = false;
 
-	//setup our new viewport that matches our sky dimensions
-	D3DVIEWPORT9 cViewPort;
-	cViewPort.X			= SkyParams.m_Rect.left;
-	cViewPort.Y			= SkyParams.m_Rect.top;
-	cViewPort.Width		= SkyParams.m_Rect.right - SkyParams.m_Rect.left;
-	cViewPort.Height	= SkyParams.m_Rect.bottom - SkyParams.m_Rect.top;
-	cViewPort.MinZ		= 0.0f;
-	cViewPort.MaxZ		= 1.0f;
-	PD3DDEVICE->SetViewport(&cViewPort);*/
-	
+	if (g_CV_SkyViewport.m_Val)
+	{
+		PD3DDEVICE->GetViewport(&cOldViewport);
+
+		int32 nLeft   = LTMAX((int32)SkyParams.m_Rect.left,   (int32)cOldViewport.X);
+		int32 nTop    = LTMAX((int32)SkyParams.m_Rect.top,    (int32)cOldViewport.Y);
+		int32 nRight  = LTMIN((int32)SkyParams.m_Rect.right,  (int32)(cOldViewport.X + cOldViewport.Width));
+		int32 nBottom = LTMIN((int32)SkyParams.m_Rect.bottom, (int32)(cOldViewport.Y + cOldViewport.Height));
+
+		// Nothing of the sky rectangle is on the target
+		if ((nRight <= nLeft) || (nBottom <= nTop))
+			return;
+
+		D3DVIEWPORT9 cViewPort;
+		cViewPort.X      = (DWORD)nLeft;
+		cViewPort.Y      = (DWORD)nTop;
+		cViewPort.Width  = (DWORD)(nRight - nLeft);
+		cViewPort.Height = (DWORD)(nBottom - nTop);
+		cViewPort.MinZ   = cOldViewport.MinZ;
+		cViewPort.MaxZ   = cOldViewport.MaxZ;
+
+		if (SUCCEEDED(PD3DDEVICE->SetViewport(&cViewPort)))
+			bViewportSet = true;
+	}
+
 	//disable reading/writing to the Z buffer
 	StateSet ssZWrite(D3DRS_ZWRITEENABLE, 0);
 	StateSet ssZRead(D3DRS_ZENABLE, D3DZB_FALSE);
@@ -82,7 +92,27 @@ void d3d_DrawSkyObjects(const ViewParams& SkyParams)
 					CD3D_RenderWorld *pWorldModel = g_Device.m_pRenderWorld->FindWorldModel(pInstance->m_pOriginalBsp->m_WorldName);
 					if (pWorldModel)
 					{
-						pWorldModel->Draw(SkyParams, true);
+						// LT1 transforms each sky polygon by the object's own matrix before drawing it.
+						// A sky WorldModel with a Rotation property draws unrotated without this
+						extern int32 g_bLT1SkyObjectTransform;
+						if (g_bLT1SkyObjectTransform)
+						{
+							// Set explicitly as CD3D_RenderWorld::Draw only forces a cull mode for the main world,
+							// so a sky WorldModel would inherit whatever drew last
+							StateSet ssCull(D3DRS_CULLMODE, D3DCULL_CCW);
+
+							ViewParams ModelParams = SkyParams;
+							MatMul(&ModelParams.m_FullTransform,
+								&SkyParams.m_FullTransform, &pInstance->m_Transform);
+							ModelParams.m_mInvWorld = pInstance->m_BackTransform;
+							d3d_SetD3DMat(D3DTS_WORLD, &pInstance->m_Transform);
+							pWorldModel->Draw(ModelParams, true);
+							d3d_SetD3DMat(D3DTS_WORLD, &SkyParams.m_mIdentity);
+						}
+						else
+						{
+							pWorldModel->Draw(SkyParams, true);
+						}
 					}
 				}
 
@@ -113,6 +143,8 @@ void d3d_DrawSkyObjects(const ViewParams& SkyParams)
 	// Unset translucent stuff.
 	d3d_UnsetTranslucentObjectStates(0);
 
-//	PD3DDEVICE->SetViewport(&cOldViewport);
+	// Put back what was there so CD3D_Device's cached viewport still describes the device
+	if (bViewportSet)
+		PD3DDEVICE->SetViewport(&cOldViewport);
 }
 

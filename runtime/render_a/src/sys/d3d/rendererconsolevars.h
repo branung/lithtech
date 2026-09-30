@@ -57,6 +57,11 @@ RCONVAR(g_CV_FogFarZ, "FogFarZ", float, 2000.0f);
 RCONVAR(g_CV_SkyFogNearZ, "SkyFogNearZ", float, 0.0f);
 RCONVAR(g_CV_SkyFogFarZ, "SkyFogFarZ", float, 2000.0f);
 
+// Narrows the viewport to the sky rectangle while the sky draws
+// Currently defaulted to on for everything as this should resolve issues beyond LT1 games
+// To disable, set to 0
+RCONVAR(g_CV_SkyViewport, "SkyViewport", int, 1);
+
 //------------------------------
 // Detail Textures
 RCONVAR(g_CV_DetailTextures, "DetailTextures", int, 1);
