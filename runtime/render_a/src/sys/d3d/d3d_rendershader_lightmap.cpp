@@ -552,7 +552,7 @@ void CRenderShader_Lightmap_Texture::PostFlushBlock(CInternalSection &cSection,
 	if (cSection.m_bFullbright)
 	{
 		PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		// Draw it
 		uint32 nNumTris = (nEndIndex - nStartIndex) / 3;
@@ -871,7 +871,7 @@ void CRenderShader_Lightmap_Texture_Detail::PostFlushBlock(CInternalSection &cSe
 	if (cSection.m_bFullbright)
 	{
 		PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		// Draw it
 		uint32 nNumTris = (nEndIndex - nStartIndex) / 3;
@@ -1085,7 +1085,7 @@ void CRenderShader_Lightmap_Texture_EnvMap::PostFlushBlock(CInternalSection &cSe
 	if (cSection.m_bFullbright)
 	{
 		PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		// Draw it
 		uint32 nNumTris = (nEndIndex - nStartIndex) / 3;
@@ -1387,7 +1387,7 @@ void CRenderShader_Lightmap_Texture_EnvBumpMap::PostFlushBlock(CInternalSection 
 	if (cSection.m_bFullbright)
 	{
 		PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		// Draw it
 		uint32 nNumTris = (nEndIndex - nStartIndex) / 3;
@@ -1860,7 +1860,7 @@ void CRenderShader_Lightmap_Texture_DOT3BumpMap::PostFlushBlock(CInternalSection
 	{
 
 		PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		// Draw it
 		uint32 nNumTris = (nEndIndex - nStartIndex) / 3;
@@ -2199,7 +2199,7 @@ void CRenderShader_Lightmap_Texture_DOT3EnvBumpMap::PostFlushBlock(CInternalSect
 	if (cSection.m_bFullbright)
 	{
 		PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		// Draw it
 		uint32 nNumTris = (nEndIndex - nStartIndex) / 3;

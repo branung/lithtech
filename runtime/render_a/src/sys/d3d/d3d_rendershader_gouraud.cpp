@@ -364,7 +364,7 @@ void CRenderShader_Gouraud_Texture::PostFlushBlock(CInternalSection &cSection,
 	{
 		StateSet ssAlpha(D3DRS_ALPHABLENDENABLE, 1);
 		StateSet ssSrcBlend(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
- 		StateSet ssDestBlend(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+ 		StateSet ssDestBlend(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		StageStateSet state2over(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
 
@@ -721,7 +721,7 @@ void CRenderShader_Gouraud_Detail::PostFlushBlock(CInternalSection &cSection,
 	{
 		StateSet ssAlpha(D3DRS_ALPHABLENDENABLE, 1);
 		StateSet ssSrcBlend(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		StateSet ssDestBlend(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		StateSet ssDestBlend(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		StageStateSet state12over(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		StageStateSet state15over(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
@@ -1128,7 +1128,7 @@ void CRenderShader_Gouraud_EnvMap::PostFlushBlock(CInternalSection &cSection,
 	{
 		StateSet ssAlpha(D3DRS_ALPHABLENDENABLE, 1);
 		StateSet ssSrcBlend(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
- 		StateSet ssDestBlend(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+ 		StateSet ssDestBlend(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		StageStateSet state12over(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		StageStateSet state15over(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
@@ -1559,7 +1559,7 @@ void CRenderShader_Gouraud_EnvBumpMap::PostFlushBlock(CInternalSection &cSection
 	{
 		StateSet ssAlpha(D3DRS_ALPHABLENDENABLE, 1);
 		StateSet ssSrcBlend(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
- 		StateSet ssDestBlend(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+ 		StateSet ssDestBlend(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		StageStateSet state12over(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		StageStateSet state15over(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
@@ -2286,7 +2286,7 @@ void CRenderShader_Gouraud_DOT3BumpMap::PostFlushBlock(CInternalSection &cSectio
 	{
 		StateSet ssAlpha(D3DRS_ALPHABLENDENABLE, 1);
 		StateSet ssSrcBlend(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
- 		StateSet ssDestBlend(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+ 		StateSet ssDestBlend(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		StageStateSet state12over(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		StageStateSet state15over(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
@@ -2775,7 +2775,7 @@ void CRenderShader_Gouraud_DOT3EnvBumpMap::PostFlushBlock(CInternalSection &cSec
 	{
 		StateSet ssAlpha(D3DRS_ALPHABLENDENABLE, 1);
 		StateSet ssSrcBlend(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
- 		StateSet ssDestBlend(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+ 		StateSet ssDestBlend(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		StageStateSet state12over(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		StageStateSet state15over(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
@@ -3143,7 +3143,7 @@ void CRenderShader_Gouraud_Effect::PostFlushBlock(CInternalSection &cSection,
 	{
 		StateSet ssAlpha(D3DRS_ALPHABLENDENABLE, 1);
 		StateSet ssSrcBlend(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		StateSet ssDestBlend(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		StateSet ssDestBlend(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 		StageStateSet state2over(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
 

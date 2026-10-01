@@ -136,7 +136,7 @@ void CRenderShader_Gouraud_Texture_Fullbright::DrawNormal(const DrawState &cStat
 
 				// Draw the fullbright
 				PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-				PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+				PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 				PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 
 					0, cSection.m_nStartVertex, cSection.m_nVertexCount,
@@ -388,7 +388,7 @@ void CRenderShader_Gouraud_Detail_Fullbright::DrawNormal(const DrawState &cState
 				if (pRTexture && pRTexture->IsFullbrite())
 				{
 					PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-					PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+					PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 					// Draw it
 					PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 
@@ -675,7 +675,7 @@ void CRenderShader_Gouraud_EnvMap_Fullbright::DrawNormal(const DrawState &cState
 				if (pRTexture && pRTexture->IsFullbrite())
 				{
 					PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-					PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+					PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, d3d_FullbriteDestBlend());
 
 					// Draw it
 					PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 

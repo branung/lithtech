@@ -168,6 +168,15 @@ void d3d_DrawWireframeBox(const LTVector& Min, const LTVector& Max, uint32 nColo
 
 void d3d_SetD3DMat(D3DTRANSFORMSTATETYPE iTransform, const LTMatrix *pMat);
 
+// The world fullbright pass's destination blend
+// Jupiter blends the texel over the lit result (INVSRCALPHA)
+// LT1 adds it under LT1FullbriteAdd
+extern int32 g_bLT1FullbriteAdd;
+inline D3DBLEND d3d_FullbriteDestBlend()
+{
+	return g_bLT1FullbriteAdd ? D3DBLEND_ONE : D3DBLEND_INVSRCALPHA;
+}
+
 // Change the gamma ramps
 void d3d_SetGamma(const LTVector &vGamma);
 

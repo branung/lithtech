@@ -159,12 +159,25 @@ void CLightTable::GetLightVal(const LTVector& vWorldPos,bool bFilter,LTRGB* pRGB
 
 	AddLightGroupSamples(samples, gridCoords);
 
+	extern int32 g_bLT1LightTableY;
+	if (g_bLT1LightTableY)
+	{
+		VEC_LERP(ySamples[0], samples[2], samples[0], fSamplePt.y);
+		VEC_LERP(ySamples[1], samples[3], samples[1], fSamplePt.y);
+		VEC_LERP(xySamples[0], ySamples[0], ySamples[1], fSamplePt.x);
+		VEC_LERP(ySamples[0], samples[6], samples[4], fSamplePt.y);
+		VEC_LERP(ySamples[1], samples[7], samples[5], fSamplePt.y);
+		VEC_LERP(xySamples[1], ySamples[0], ySamples[1], fSamplePt.x);
+	}
+	else
+	{
 	VEC_LERP(ySamples[0], samples[0], samples[2], fSamplePt.y);
     VEC_LERP(ySamples[1], samples[1], samples[3], fSamplePt.y);
     VEC_LERP(xySamples[0], ySamples[0], ySamples[1], fSamplePt.x);
     VEC_LERP(ySamples[0], samples[4], samples[6], fSamplePt.y);
     VEC_LERP(ySamples[1], samples[5], samples[7], fSamplePt.y);
     VEC_LERP(xySamples[1], ySamples[0], ySamples[1], fSamplePt.x);
+	}
     VEC_LERP(finalColor, xySamples[0], xySamples[1], fSamplePt.z);
 
     pRGB->r = (uint8)ltfptoui(LTCLAMP(finalColor.x, 0, 255.0f));
