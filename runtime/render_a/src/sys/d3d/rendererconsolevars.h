@@ -195,6 +195,7 @@ RCONVAR(g_CV_ModelLightingSkipRootNode, "ModelLightingSkipRootNode", int, 0);
 //------------------------------
 // Model Render Controls
 RCONVAR(g_CV_ModelLODOffset, "ModelLODOffset", int, 0);
+RCONVAR(g_CV_VAMeshDynamicVB, "VAMeshDynamicVB", int, 0); // Vertex animated streams are dynamic and DISCARD locked. Read at stream creation and each frame
 RCONVAR(g_CV_TextureModels, "TextureModels", int, 1);
 RCONVAR(g_CV_ZBiasModelRSPasses, "ZBiasModelRSPasses", int, 1);
 

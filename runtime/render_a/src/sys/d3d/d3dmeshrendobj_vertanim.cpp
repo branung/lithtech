@@ -141,7 +141,9 @@ void CD3DVAMesh::ReCreateObject()
 	{
 		if (!m_VertStreamFlags[i])
 			continue;
-		if (!m_VBController.CreateStream(i,m_iVertCount,m_VertStreamFlags[i],eNO_WORLD_BLENDS,false,true,m_bSWVertProcessing))
+		// Only stream 0 is made dynamic since it's rewritten every frame
+		bool bDynamic = (i == 0) && (g_CV_VAMeshDynamicVB.m_Val != 0);
+		if (!m_VBController.CreateStream(i,m_iVertCount,m_VertStreamFlags[i],eNO_WORLD_BLENDS,bDynamic,true,m_bSWVertProcessing))
 		{
 			FreeAll(); return;
 		}
@@ -200,14 +202,18 @@ void CD3DVAMesh::UpdateVA(Model* pModel, AnimTimeRef* pAnimTimeRef)
 	}
 
 	// Get the vertex animation  multiply it by current transforms
-	if (!m_VBController.Lock(VertexBufferController::eVERTSTREAM0,false))
+	// VAMeshDynamicVB builds the frame in the system memory copy and hands it over with one DISCARD lock.
+	// It has to be the whole copy as DISCARD drops the old contents.
+	const bool bDiscardPath = (g_CV_VAMeshDynamicVB.m_Val != 0) && (m_pVertData[0] != NULL);
+
+	if (!bDiscardPath && !m_VBController.Lock(VertexBufferController::eVERTSTREAM0,false))
 	{
 		assert(0);
 		return;
 	}
 
-	uint8* pVertData		= (uint8*)m_VBController.getVertexData(0);
-	uint32 Vertex_Size		= m_VBController.getVertexSize(0);
+	uint32 Vertex_Size = m_VBController.getVertexSize(0);
+	uint8* pVertData = bDiscardPath ? m_pVertData[0] : (uint8*)m_VBController.getVertexData(0);
 	//uint32 NormalOffset		= m_VBController.getXYZSize();
 	for (int i = 0; i < (int)m_iUnDupVertCount ; ++i)
 	{
@@ -224,12 +230,23 @@ void CD3DVAMesh::UpdateVA(Model* pModel, AnimTimeRef* pAnimTimeRef)
 	}
 
 	// Copy the DupVerts...
-	pVertData		= (uint8*)m_VBController.getVertexData(0);
+	pVertData		= bDiscardPath ? m_pVertData[0]
+								   : (uint8*)m_VBController.getVertexData(0);
 	for (int i = 0;i < (int)m_iDupMapListCount; ++i)
 	{
 		D3DVECTOR* pDstVert = (D3DVECTOR*)(pVertData + ((uint32)m_pDupMapList[i].iDstVert * Vertex_Size));
 		D3DVECTOR* pSrcVert = (D3DVECTOR*)(pVertData + ((uint32)m_pDupMapList[i].iSrcVert * Vertex_Size));
 		pDstVert->x = pSrcVert->x; pDstVert->y = pSrcVert->y; pDstVert->z = pSrcVert->z;
+	}
+
+	if (bDiscardPath)
+	{
+		if (!m_VBController.Lock(VertexBufferController::eVERTSTREAM0,true))
+		{
+			assert(0);
+			return;
+		}
+		memcpy(m_VBController.getVertexData(0), m_pVertData[0], Vertex_Size * m_iVertCount);
 	}
 
 	if (!m_VBController.UnLock(VertexBufferController::eVERTSTREAM0))

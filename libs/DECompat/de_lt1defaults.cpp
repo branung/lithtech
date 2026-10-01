@@ -17,6 +17,9 @@ void DECompat_ApplyLT1ClientDefaults(ILTClient *pClientDE)
     pClientDE->RunConsoleString("-LT1PolyGridCull 1");
     pClientDE->RunConsoleString("-LT1PolyGridTexCoords 1");
 
+    // LT1 vertex animated model nodes rewrite their stream every frame, and a static stream stalls on the GPU
+    pClientDE->RunConsoleString("-VAMeshDynamicVB 1");
+
     // Without it d3d_BlitToScreen can't scale, and the splash draws 640x480 in the corner
     pClientDE->RunConsoleString("-OptimizeSurfaces 1");
 

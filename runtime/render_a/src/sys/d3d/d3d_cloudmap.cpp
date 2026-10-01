@@ -57,7 +57,7 @@ static bool BuildGrid(SharedTexture *pTexture)
 	if (!cMip.m_Data || !cMip.m_Width || !cMip.m_Height)
 		return false;
 
-	// Power of two only to prevent tilting
+	// Power of two only to prevent aliasing of the bit mask wrap
 	// Every SkyPan texture inspected in LT1 games are either 256x256 or 128x128, so this is fine
 	if ((cMip.m_Width  & (cMip.m_Width - 1)) ||
 		(cMip.m_Height & (cMip.m_Height - 1)))
