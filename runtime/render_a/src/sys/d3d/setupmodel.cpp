@@ -51,8 +51,9 @@ define_holder(IFindObj, g_pIFindObj);
 // The model drawer..
 ModelDraw g_ModelDraw;
 
-// LT1 object color semantics
+// LT1 object color and model shading semantics
 extern int32 g_bLT1ObjectColor;
+extern int32 g_bLT1ModelShading;
 
 // --------------------------------------------------------------- //
 // Callback data structures
@@ -400,7 +401,24 @@ void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& H
 		if(d3d_GetCloudMapShade(vInstancePosition, fCloudShade))
 			vAmbientLight *= fCloudShade;
 
-		LightList.AddAmbient(vAmbientLight);
+		if(g_bLT1ModelShading)
+		{
+			// LT1 shades models along a fixed direction
+			// Approximated here as 7/16 ambient plus 1/2 directional
+			LightList.AddAmbient(vAmbientLight * (7.0f / 16.0f));
+
+			LTVector vDirLightDir(0.0f, -2.0f, -1.0f);
+			vDirLightDir.Normalize();
+			if(bReallyClose)
+				g_ViewParams.m_mView.Apply3x3(vDirLightDir);
+
+			RenderLight.SetupDirLight(vDirLightDir, vAmbientLight * 0.5f, 0); // No shadow, LT1 projects its own
+			LightList.InsertLight(RenderLight, 0.0f);
+		}
+		else
+		{
+			LightList.AddAmbient(vAmbientLight);
+		}
 	}
 
 
