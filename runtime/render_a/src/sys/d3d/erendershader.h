@@ -29,6 +29,7 @@ enum ERenderShader {
 	eShader_Gouraud_DOT3EnvBumpMap,
 	eShader_Gouraud_Effect,
 	eShader_Lightmap,
+	eShader_SkyPan,
 	eShader_Lightmap_Texture,
 	eShader_Lightmap_Texture_Detail,
 	eShader_Lightmap_Texture_EnvMap,

@@ -11,6 +11,7 @@
 
 #include "d3d_renderworld.h"
 #include "d3d_renderstatemgr.h"
+#include "d3d_cloudmap.h"
 
 #include "counter.h"
 #include "animtracker.h"
@@ -392,6 +393,12 @@ void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& H
 		vAmbientLight.x = ambientColor.rgb.r;
 		vAmbientLight.y = ambientColor.rgb.g;
 		vAmbientLight.z = ambientColor.rgb.b;
+
+		// Darken a model standing in a cloud shadow to match the ground under it.
+		// LT1 applies the factor to the light grid sample and leaves the object color alone
+		float fCloudShade;
+		if(d3d_GetCloudMapShade(vInstancePosition, fCloudShade))
+			vAmbientLight *= fCloudShade;
 
 		LightList.AddAmbient(vAmbientLight);
 	}

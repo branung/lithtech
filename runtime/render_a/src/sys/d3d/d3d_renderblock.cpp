@@ -1375,6 +1375,8 @@ ERenderShader CD3D_RenderBlock::TranslatePCShaderCode(uint32 nCode)
 			return eShader_Lightmap;
 		case ePCShader_Lightmap_Texture :
 			return eShader_Lightmap_Texture;
+		case ePCShader_Skypan :
+			return eShader_SkyPan;
 		case ePCShader_DualTexture:
 			return eShader_Gouraud_DualTexture;
 		case ePCShader_Lightmap_DualTexture:

@@ -231,6 +231,8 @@ RCONVAR(g_CV_ShowTextureMemory, "ShowTextureMemory", int, 0);
 RCONVAR(g_CV_Wireframe, "Wireframe", int, 0);
 RCONVAR(g_CV_WireframeModels, "WireframeModels", int, 0);
 RCONVAR(g_CV_LightMap, "LightMap", int, 1);
+RCONVAR(g_CV_SkyPan, "SkyPan", int, 1); // LT1's sky shadow pan
+RCONVAR(g_CV_CloudMapLight, "CloudMapLight", int, 1); // The sky shadow pan model half
 RCONVAR(g_CV_DrawFlat, "DrawFlat", int, 0);
 RCONVAR(g_CV_LightmapsOnly, "LightmapsOnly", int, 0);
 RCONVAR(g_CV_DrawSorted, "DrawSorted", int, 1);

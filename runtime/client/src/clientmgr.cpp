@@ -2127,6 +2127,13 @@ bool CClientMgr::Render(CameraInstance *pCamera, int drawMode, LTObject **pObjec
     }
 
     pDesc->m_GlobalLightScale = m_GlobalLightScale;
+
+    // LT1's sky shadow pan
+    pDesc->m_pGlobalPanTexture = m_pGlobalPanTexture;
+    pDesc->m_fGlobalPanOffsetX = m_fGlobalPanOffsetX;
+    pDesc->m_fGlobalPanOffsetZ = m_fGlobalPanOffsetZ;
+    pDesc->m_fGlobalPanScaleX  = m_fGlobalPanScaleX;
+    pDesc->m_fGlobalPanScaleZ  = m_fGlobalPanScaleZ;
     pDesc->m_GlobalLightAdd = pCamera->m_LightAdd;
 
     pDesc->m_GlobalModelLightAdd = g_ConsoleModelAdd;
@@ -2237,6 +2244,13 @@ bool CClientMgr::MakeCubicEnvMap(CameraInstance *pCamera, uint32 nSize, const ch
     Desc.m_Rect.bottom = Desc.m_Rect.top + height;
 
     Desc.m_GlobalLightScale = m_GlobalLightScale;
+
+    // LT1's sky shadow pan
+    Desc.m_pGlobalPanTexture = m_pGlobalPanTexture;
+    Desc.m_fGlobalPanOffsetX = m_fGlobalPanOffsetX;
+    Desc.m_fGlobalPanOffsetZ = m_fGlobalPanOffsetZ;
+    Desc.m_fGlobalPanScaleX  = m_fGlobalPanScaleX;
+    Desc.m_fGlobalPanScaleZ  = m_fGlobalPanScaleZ;
     Desc.m_GlobalLightAdd = pCamera->m_LightAdd;
 
     Desc.m_GlobalModelLightAdd = g_ConsoleModelAdd;

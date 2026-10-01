@@ -26,6 +26,8 @@ add_library(${PROJECT_NAME} STATIC
 	d3d_rendershader_gouraud.cpp
 	d3d_rendershader_gouraud_fullbright.cpp
 	d3d_rendershader_lightmap.cpp
+	d3d_rendershader_skypan.cpp
+	d3d_cloudmap.cpp
 	d3d_renderstatemgr.cpp
 	d3d_renderstyle.cpp
 	d3d_renderstyleinterface.cpp

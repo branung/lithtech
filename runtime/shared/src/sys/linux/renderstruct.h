@@ -55,6 +55,9 @@ struct SceneDesc
     LTVector        m_GlobalLightAdd;       // RGB 0-1, add / brighten the light.  This
                                             // draws a poly over the screen if one of these
                                             // is nonzero (so it's slower than scale).
+    SharedTexture  *m_pGlobalPanTexture;    // LT1's sky shadow pan texture
+    float           m_fGlobalPanOffsetX, m_fGlobalPanOffsetZ; // World units (added before scaling)
+    float           m_fGlobalPanScaleX,  m_fGlobalPanScaleZ;  // World units per texel
     float           m_FrameTime;            // Used for updating things like sprites and texture scripts
     float           m_fActualFrameTime;             // The actual elapsed time. Used for performance measurement.
     // Sky definition and objects.

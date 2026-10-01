@@ -250,6 +250,9 @@ SharedTexture* CClientMgr::AddSharedTexture(FileRef *pRef) {
 
 void CClientMgr::FreeSharedTexture(SharedTexture *pTexture) 
 {
+    if (m_pGlobalPanTexture == pTexture)
+        m_pGlobalPanTexture = NULL;
+
     dl_RemoveAt(&m_SharedTextures, &pTexture->m_Link);
 
     if (pTexture->m_pFile)
@@ -264,6 +267,8 @@ void CClientMgr::FreeSharedTexture(SharedTexture *pTexture)
 
 void CClientMgr::FreeSharedTextures() {
     LTLink *pCur, *pNext, *pListHead;
+
+    m_pGlobalPanTexture = NULL;
 
     pListHead = &m_SharedTextures.m_Head;
     pCur = pListHead->m_pNext;

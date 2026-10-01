@@ -11,6 +11,7 @@
 #include "d3d_rendershader_gouraud.h"
 #include "d3d_rendershader_gouraud_fullbright.h"
 #include "d3d_rendershader_lightmap.h"
+#include "d3d_rendershader_skypan.h"
 #include "modelshadowshader.h"
 #include "d3d_viewparams.h"
 #include "common_draw.h"
@@ -1053,6 +1054,13 @@ CRenderShader *CD3D_RenderWorld::AllocShader(const CRBSection &cSection)
 			else
 				eResult = eShader_Lightmap;
 			break;
+		// The cloud pass drops out under DrawFlat like the lightmap one as both put lighting onto a surface
+		case eShader_SkyPan:
+			if (g_CV_DrawFlat)
+				return 0;
+			else
+				eResult = eShader_SkyPan;
+			break;
 		// Skip invalid shaders
 		case eShader_Invalid :
 			return 0;
@@ -1113,6 +1121,9 @@ CRenderShader *CD3D_RenderWorld::AllocShader(const CRBSection &cSection)
 				case eShader_Lightmap :
 					LT_MEM_TRACK_ALLOC(pShader = new CRenderShader_Lightmap,LT_MEM_TYPE_RENDER_SHADER);
 					break;
+				case eShader_SkyPan :
+					LT_MEM_TRACK_ALLOC(pShader = new CRenderShader_SkyPan,LT_MEM_TYPE_RENDER_SHADER);
+					break;
 				case eShader_Lightmap_Texture :
 					LT_MEM_TRACK_ALLOC(pShader = new CRenderShader_Lightmap_Texture,LT_MEM_TYPE_RENDER_SHADER);
 					break;
@@ -1156,6 +1167,9 @@ CRenderShader *CD3D_RenderWorld::AllocShader(const CRBSection &cSection)
 				case eShader_Lightmap :
 					eResult = eShader_Gouraud;
 					break;
+				case eShader_SkyPan :
+					// The texture pass multiplies over this one, a subsitute here would draw the geometry twice
+					return 0;
 				case eShader_Gouraud_Detail :
 				case eShader_Gouraud_EnvMap :
 				case eShader_Gouraud_Alpha_EnvMap:
