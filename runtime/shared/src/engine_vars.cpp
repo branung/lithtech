@@ -104,6 +104,8 @@ int32	g_bLT1LightTableY = 0; // Read the object light grid's y rows the right wa
 int32	g_bLT1FullbriteAdd = 0; // Add the fullbright texel to the lit world rather than blend it over
 int32	g_bLT1WorldSort = 0; // A WorldModel whose polygon 0 is SURF_TRANSPARENT sorts as translucent
 int32	g_bLT1WorldCull = 0; // Those translucent WorldModels draw without backface culling
+int32	g_bLT1PolyGridCull = 0; // Draw polygrids without backface culling
+int32	g_bLT1PolyGridTexCoords = 0; // Polygrid scale is world units per texel and its pan is in texels
 
 int32	g_CV_MasterPaletteMode = 2;
 
@@ -350,6 +352,8 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1FullbriteAdd", &g_bLT1FullbriteAdd),
 	EV_LONG("LT1WorldSort", &g_bLT1WorldSort),
 	EV_LONG("LT1WorldCull", &g_bLT1WorldCull),
+	EV_LONG("LT1PolyGridCull", &g_bLT1PolyGridCull),
+	EV_LONG("LT1PolyGridTexCoords", &g_bLT1PolyGridTexCoords),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),

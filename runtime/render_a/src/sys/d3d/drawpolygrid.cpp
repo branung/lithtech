@@ -913,17 +913,51 @@ void d3d_DrawPolyGrid(const ViewParams &Params, LTObject *pObj)
 
 	uint32* pColor		= nColorTable + 128;
 
+	// Jupiter reads the scale as the fraction of the texture across the whole grid.
+	// LT1 reads it as world units per texel, with the pan in texels
+	extern int32 g_bLT1PolyGridTexCoords;
+
 	float fXScale		= pGrid->m_xScale / ((pGrid->m_Width - 1) * fXInc);
 	float fZScale		= pGrid->m_yScale / ((pGrid->m_Height - 1) * fZInc);
+	float fLT1PanU		= 0.0f;
+	float fLT1PanV		= 0.0f;
 
-	float fStartU		= (float)fmod(pGrid->m_xPan * fPGUScale, 1.0f);
-	float fStartV		= (float)fmod(pGrid->m_yPan * fPGVScale, 1.0f);
+	if(g_bLT1PolyGridTexCoords)
+	{
+		// The authored size, as GetBaseWidth() is after TextureMipMapOffset drops levels
+		uint32 nTexW = 0, nTexH = 0;
+		SharedTexture* pUVTex = (pGrid->m_pSprite && pGrid->m_SpriteTracker.m_pCurFrame)
+								? pGrid->m_SpriteTracker.m_pCurFrame->m_pTex : NULL;
+		if(pUVTex && (pUVTex->GetFlags() & ST_VALIDTEXTUREINFO))
+		{
+			PFormat UVFormat;
+			pUVTex->GetTextureInfo(nTexW, nTexH, UVFormat);
+		}
 
-	float fCurrU		= fStartU;
-	float fCurrV		= fStartV;
+		// A zero scale keeps Jupiter's value rather than dividing by zero and causing chaos
+		if(nTexW && (pGrid->m_xScale != 0.0f))
+		{
+			fXScale  = 1.0f / ((float)nTexW * pGrid->m_xScale);
+			fLT1PanU = pGrid->m_xPan / (float)nTexW;
+		}
+		if(nTexH && (pGrid->m_yScale != 0.0f))
+		{
+			fZScale  = 1.0f / ((float)nTexH * pGrid->m_yScale);
+			fLT1PanV = pGrid->m_yPan / (float)nTexH;
+		}
+	}
 
 	float fUInc			= fXInc * fXScale * fPGUScale;
 	float fVInc			= fZInc * fZScale * fPGVScale;
+
+	// LT1 scales the pan by the increment
+	float fStartU		= g_bLT1PolyGridTexCoords ? (fLT1PanU * fUInc)
+							: (float)fmod(pGrid->m_xPan * fPGUScale, 1.0f);
+	float fStartV		= g_bLT1PolyGridTexCoords ? (fLT1PanV * fVInc)
+							: (float)fmod(pGrid->m_yPan * fPGVScale, 1.0f);
+
+	float fCurrU		= fStartU;
+	float fCurrV		= fStartV;
 
 	int32 nWidth		= pGrid->m_Width;
 	float fSpacingX		= fXInc * 2.0f;
@@ -1314,8 +1348,11 @@ void d3d_DrawPolyGrid(const ViewParams &Params, LTObject *pObj)
 		GeneratePolyGridFresnelAlpha(Params.m_Pos, (CPolyGridVertex*)g_TriVertList, pGrid, nNumVerts);
 	}
 
-	//make the backfacing polygons cull
-	StateSet ssCullMode(D3DRS_CULLMODE, (pGrid->m_nPGFlags & PG_NOBACKFACECULL) ? D3DCULL_NONE : D3DCULL_CCW);
+	// Cull backfaces unless LT1PolyGridCull is set.
+	// LT1 never culled polygrids, and its game code can't set PG_NOBACKFACECULL
+	extern int32 g_bLT1PolyGridCull;
+	StateSet ssCullMode(D3DRS_CULLMODE,
+		(g_bLT1PolyGridCull || (pGrid->m_nPGFlags & PG_NOBACKFACECULL)) ? D3DCULL_NONE : D3DCULL_CCW);
 
 	//setup the pixel shader if we are bumpmapping
 	if(bBumpMap)
