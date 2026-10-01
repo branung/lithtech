@@ -38,6 +38,7 @@ enum ERenderShader {
 	eShader_Lightmap_DualTexture,
 	eShader_Lightmap_Texture_DOT3BumpMap,
 	eShader_Lightmap_Texture_DOT3EnvBumpMap,
+	eShader_Gouraud_Texture_Translucent,
 	k_eShader_Num, // Number of valid shaders
 	eShader_Invalid, // Invalid shader ID
 	k_eShader_Force_uint32 = 0xFFFFFFFF // Force to 32-bit storage

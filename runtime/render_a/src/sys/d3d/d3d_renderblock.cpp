@@ -45,7 +45,8 @@ enum EPCShaderType {
 	ePCShader_Occluder = 7,
 	ePCShader_DualTexture = 8,	// Gouraud shaded dual texture
 	ePCShader_Lightmap_DualTexture = 9, //Texture stage of lightmap shaded dual texture
-	ePCShader_Unknown = 10 // Unknown - draw something to make it obvious there's a problem
+	ePCShader_Unknown = 10, // Unknown - draw something to make it obvious there's a problem
+	ePCShader_GouraudTranslucent = 12 // Alpha blended world geometry. Emitted by the v56 world loader for LT1's SURF_TRANSPARENT surfaces.
 };
 
 ILTStream &operator>>(ILTStream &stream, SRBVertex &sVert)
@@ -1381,6 +1382,8 @@ ERenderShader CD3D_RenderBlock::TranslatePCShaderCode(uint32 nCode)
 			return eShader_Gouraud_DualTexture;
 		case ePCShader_Lightmap_DualTexture:
 			return eShader_Lightmap_DualTexture;
+		case ePCShader_GouraudTranslucent:
+			return eShader_Gouraud_Texture_Translucent;
 		default :
 			return eShader_Invalid;
 	}

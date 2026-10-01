@@ -666,7 +666,9 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 		StageStateSet state10(1, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_PASSTHRU | 1);
 		StageStateSet state20(2, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_PASSTHRU | 2);
 
-		PD3DDEVICE->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+		extern int32 g_bLT1WorldCull;
+		if (!bTransformed || !g_bLT1WorldCull)
+			PD3DDEVICE->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 		PD3DDEVICE->SetSoftwareVertexProcessing(((g_Device.GetDeviceCaps()->DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT) == 0) ? 1 : 0);
 		PD3DDEVICE->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
 
@@ -827,6 +829,12 @@ CRenderShader *CD3D_RenderWorld::AllocShader(const CRBSection &cSection)
 	ERenderShader eResult;
 	switch (cSection.m_eShader)
 	{
+		case eShader_Gouraud_Texture_Translucent :
+			if (g_CV_DrawFlat || !pBaseTexture)
+				eResult = eShader_Gouraud;
+			else
+				eResult = eShader_Gouraud_Texture_Translucent;
+			break;
 		case eShader_Gouraud_DualTexture :
 			eResult = eShader_Gouraud_DualTexture;
 			break;
@@ -1084,6 +1092,9 @@ CRenderShader *CD3D_RenderWorld::AllocShader(const CRBSection &cSection)
 				case eShader_Gouraud_Texture :
 					LT_MEM_TRACK_ALLOC(pShader = new CRenderShader_Gouraud_Texture,LT_MEM_TYPE_RENDER_SHADER);
 					break;
+				case eShader_Gouraud_Texture_Translucent :
+					LT_MEM_TRACK_ALLOC(pShader = new CRenderShader_Gouraud_Texture_Translucent,LT_MEM_TYPE_RENDER_SHADER);
+					break;
 				case eShader_Gouraud_Detail :
 					LT_MEM_TRACK_ALLOC(pShader = new CRenderShader_Gouraud_Detail,LT_MEM_TYPE_RENDER_SHADER);
 					break;
@@ -1178,6 +1189,7 @@ CRenderShader *CD3D_RenderWorld::AllocShader(const CRBSection &cSection)
 				case eShader_Gouraud_EnvBumpMap_NoFallback :
 				case eShader_Gouraud_DOT3BumpMap :
 				case eShader_Gouraud_Effect :
+				case eShader_Gouraud_Texture_Translucent :
 					eResult = eShader_Gouraud_Texture;
 					break;
 				case eShader_Gouraud_Detail_Fullbright :

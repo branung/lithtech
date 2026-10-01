@@ -412,6 +412,36 @@ void CRenderShader_Gouraud_Texture::GetMemStats(CMemStats_World &cMemStats) cons
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// CRenderShader_Gouraud_Texture_Translucent implementation
+
+void CRenderShader_Gouraud_Texture_Translucent::PreFlush()
+{
+	// The parent modulates texture by diffuse for color and alpha, so vertex alpha scales texture alpha
+	CRenderShader_Gouraud_Texture::PreFlush();
+
+	PD3DDEVICE->GetRenderState(D3DRS_ALPHABLENDENABLE, (DWORD*)&m_nOldAlphaBlend);
+	PD3DDEVICE->GetRenderState(D3DRS_SRCBLEND, (DWORD*)&m_nOldSrcBlend);
+	PD3DDEVICE->GetRenderState(D3DRS_DESTBLEND, (DWORD*)&m_nOldDestBlend);
+	PD3DDEVICE->GetRenderState(D3DRS_ZWRITEENABLE, (DWORD*)&m_nOldZWrite);
+
+	PD3DDEVICE->SetRenderState(D3DRS_ALPHABLENDENABLE, 1);
+	PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+
+	PD3DDEVICE->SetRenderState(D3DRS_ZWRITEENABLE, 0);
+}
+
+void CRenderShader_Gouraud_Texture_Translucent::PostFlush()
+{
+	PD3DDEVICE->SetRenderState(D3DRS_ALPHABLENDENABLE, m_nOldAlphaBlend);
+	PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, m_nOldSrcBlend);
+	PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, m_nOldDestBlend);
+	PD3DDEVICE->SetRenderState(D3DRS_ZWRITEENABLE, m_nOldZWrite);
+
+	CRenderShader_Gouraud_Texture::PostFlush();
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // CRenderShader_Gouraud_Detail implementation
 
 bool CRenderShader_Gouraud_Detail::s_bValidateRequired = true;

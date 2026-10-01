@@ -139,6 +139,23 @@ private:
 	static bool s_bValidateRequired, s_bValidateResult;
 };
 
+// Alpha blended textured gouraud shader for LT1's SURF_TRANSPARENT world geometry
+class CRenderShader_Gouraud_Texture_Translucent :
+	public CRenderShader_Gouraud_Texture
+{
+public:
+	virtual ERenderShader GetShaderID() const { return eShader_Gouraud_Texture_Translucent; }
+
+	virtual void Draw(const DrawState &cState, uint32 nRenderBlock) { QueueRenderBlock(nRenderBlock); }
+
+protected:
+	virtual void PreFlush();
+	virtual void PostFlush();
+
+	// States saved across the flush
+	uint32 m_nOldAlphaBlend, m_nOldSrcBlend, m_nOldDestBlend, m_nOldZWrite;
+};
+
 // Textured+detail gouraud shader
 struct SVertex_Gouraud_Detail
 {

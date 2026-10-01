@@ -17,12 +17,28 @@
 // External functions.
 // ---------------------------------------------------------------- //
 
+// LT1 sorts a WorldModel as translucent when its polygon 0 is SURF_TRANSPARENT, and tests the two lists with different code
+static bool d3d_IsLT1TranslucentWorldModel(const LTObject *pObj)
+{
+	const WorldModelInstance *pInstance = (const WorldModelInstance*)pObj;
+	const WorldBsp *pBsp = pInstance->GetOriginalBsp();
+	if (!pBsp || !pBsp->m_nPolies || !pBsp->m_Polies || !pBsp->m_Polies[0])
+		return false;
+
+	const Surface *pSurface = pBsp->m_Polies[0]->GetSurface();
+	return pSurface && ((pSurface->GetFlags() & SURF_TRANSPARENT) != 0);
+}
+
 void d3d_ProcessWorldModel(LTObject *pObject)
 {
 	if(!g_CV_DrawWorldModels.m_Val)
 		return;
 
-	if (pObject->IsTranslucent())
+	// Jupiter's IsTranslucent() tests object alpha and Jupiter era flags, never surface flags.
+	// No LT1 content passes it as a result. LT1WorldSort adds LT1's own test
+	extern int32 g_bLT1WorldSort;
+	if (pObject->IsTranslucent() ||
+	    (g_bLT1WorldSort && d3d_IsLT1TranslucentWorldModel(pObject)))
 	{
 		d3d_GetVisibleSet()->m_TranslucentWorldModels.Add(pObject);
 	}
@@ -41,7 +57,17 @@ void d3d_DrawSolidWorldModel(const ViewParams& Params, LTObject *pObj)
 	uint32 oldFog;
 
 	pInstance = (WorldModelInstance*)pObj;
-	
+
+	// Every WorldModel draws through here, so this is where LT1WorldCull decides its cull mode.
+	extern int32 g_bLT1WorldCull;
+	uint32 nOldCull = 0;
+	if (g_bLT1WorldCull)
+	{
+		PD3DDEVICE->GetRenderState(D3DRS_CULLMODE, (DWORD *)&nOldCull);
+		PD3DDEVICE->SetRenderState(D3DRS_CULLMODE,
+			d3d_IsLT1TranslucentWorldModel(pObj) ? D3DCULL_NONE : D3DCULL_CCW);
+	}
+
 	// Maybe disable fog.
 	D3D_CALL(PD3DDEVICE->GetRenderState(D3DRS_FOGENABLE, (DWORD *)&oldFog));
 	if(oldFog)
@@ -77,6 +103,9 @@ void d3d_DrawSolidWorldModel(const ViewParams& Params, LTObject *pObj)
 		NewParams.m_FullTransform = tempFull;
 
 	D3D_CALL(PD3DDEVICE->SetRenderState(D3DRS_FOGENABLE, oldFog));
+
+	if (g_bLT1WorldCull)
+		PD3DDEVICE->SetRenderState(D3DRS_CULLMODE, nOldCull);
 }
 
 static void d3d_DrawTranslucentWorldModel(const ViewParams& Params, LTObject *pObj)

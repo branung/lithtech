@@ -102,6 +102,8 @@ int32	g_bLT1ObjectColor = 0; // A model's object color brightens it from a (0,0,
 int32	g_bLT1SkyObjectTransform = 0; // Draw a sky WorldModel through its own transform so that its rotation applies
 int32	g_bLT1LightTableY = 0; // Read the object light grid's y rows the right way round
 int32	g_bLT1FullbriteAdd = 0; // Add the fullbright texel to the lit world rather than blend it over
+int32	g_bLT1WorldSort = 0; // A WorldModel whose polygon 0 is SURF_TRANSPARENT sorts as translucent
+int32	g_bLT1WorldCull = 0; // Those translucent WorldModels draw without backface culling
 
 int32	g_CV_MasterPaletteMode = 2;
 
@@ -346,6 +348,8 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1SkyObjectTransform", &g_bLT1SkyObjectTransform),
 	EV_LONG("LT1LightTableY", &g_bLT1LightTableY),
 	EV_LONG("LT1FullbriteAdd", &g_bLT1FullbriteAdd),
+	EV_LONG("LT1WorldSort", &g_bLT1WorldSort),
+	EV_LONG("LT1WorldCull", &g_bLT1WorldCull),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),
