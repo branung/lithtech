@@ -2329,6 +2329,27 @@ bool CDx8SoundSys::SetSampleNotify( CSample* pSample, bool bEnable )
 #define TIME_DELAY			10
 #define TIME_RESOLUTION		0
 
+// The first visible top level window this process owns, which DirectSound binds the game's sound to
+static BOOL CALLBACK SndDrv_EnumOwnWindow(HWND hWnd, LPARAM lParam)
+{
+	DWORD nPid = 0;
+	GetWindowThreadProcessId(hWnd, &nPid);
+
+	if (nPid == GetCurrentProcessId() && IsWindowVisible(hWnd) && GetWindow(hWnd, GW_OWNER) == NULL)
+	{
+		*(HWND *)lParam = hWnd;
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static HWND SndDrv_FindOwnTopLevelWindow()
+{
+	HWND hFound = NULL;
+	EnumWindows(SndDrv_EnumOwnWindow, (LPARAM)&hFound);
+	return hFound;
+}
+
 bool CDx8SoundSys::Init( )
 {
 	LOG_OPEN;
@@ -2355,12 +2376,14 @@ bool CDx8SoundSys::Init( )
 	m_pcLastError = LastError( );
 	DS_CHECK
 
-  	// set the cooperative level
+	// Set the cooperative level on this process's own window, as DSSCL_PRIORITY only plays while it's in the foreground.
+	// The SDL window's class isn't "LithTech", so the foreground window is now only the last resort
 	HWND hWnd = FindWindow("LithTech", NULL);
-	if(hWnd)
-		m_hResult = m_pDirectSound->SetCooperativeLevel( hWnd, DSSCL_PRIORITY );
-	else
-		m_hResult = m_pDirectSound->SetCooperativeLevel( GetForegroundWindow( ), DSSCL_PRIORITY );
+	if (!hWnd)
+		hWnd = SndDrv_FindOwnTopLevelWindow();
+	if (!hWnd)
+		hWnd = GetForegroundWindow();
+	m_hResult = m_pDirectSound->SetCooperativeLevel( hWnd, DSSCL_PRIORITY );
 	m_pcLastError = LastError( );
 	DS_CHECK
 

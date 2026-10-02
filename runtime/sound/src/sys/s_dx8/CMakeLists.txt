@@ -2,9 +2,9 @@ project(DLL_SndDrvDX8)
 
 if(WIN32)
 if(CMAKE_CL_64)
-	link_directories("C:\\Program Files (x86)\\Microsoft DirectX SDK (August 2007)\\Lib\\x64")
+	link_directories("${DXSDK_DIR}/Lib/x64")
 else(CMAKE_CL_64)
-	link_directories("C:\\Program Files (x86)\\Microsoft DirectX SDK (August 2007)\\Lib\\x86")
+	link_directories("${DXSDK_DIR}/Lib/x86")
 endif(CMAKE_CL_64)
 
 add_library(${PROJECT_NAME} SHARED
