@@ -1979,6 +1979,10 @@ void CRiotClientShell::Update()
 
 		m_fCurSkyXOffset += fFrameTime * m_fPanSkyOffsetX;
 		m_fCurSkyZOffset += fFrameTime * m_fPanSkyOffsetZ;
+
+		g_pLTClient->SetGlobalPanInfo(GLOBALPAN_SKYSHADOW,
+			m_fCurSkyXOffset, m_fCurSkyZOffset,
+			m_fPanSkyScaleX, m_fPanSkyScaleZ);
 	}
 
 

@@ -168,6 +168,38 @@ void CD3DRigidMesh::FreeDeviceObjects()
 	m_VBController.FreeAll();									// Free our VB...
 }
 
+// Skinned from the system memory copies by the effector bone
+uint32 CD3DRigidMesh::GetLT1ShadowVerts(DDMatrix* pTransforms, LTVector* pOut, uint32 nMaxVerts) const
+{
+	if (!m_pVertData[0] || !m_pIndexData || !pTransforms)
+		return 0;
+
+	uint32 iVertexSize = 0, iVertFlags = 0, iUVSets = 0;
+	bool bNonFixPipe = false;
+	GetVertexFlags_and_Size(eNO_WORLD_BLENDS, m_VertStreamFlags[0], iVertFlags, iVertexSize, iUVSets, bNonFixPipe);
+	if (iVertexSize < 12)
+		return 0;
+
+	const DDMatrix& m = pTransforms[m_iBoneEffector];
+	const uint16* pIdx = (const uint16*)m_pIndexData;
+	uint32 nOut = 0;
+	for (uint32 i = 0; i + 2 < m_iPolyCount * 3; i += 3)
+	{
+		if (nOut + 3 > nMaxVerts)
+			return nOut;
+		for (uint32 c = 0; c < 3; ++c)
+		{
+			uint32 iv = pIdx[i + c];
+			if (iv >= m_iVertCount) { pOut[nOut++].Init(); continue; }
+			const float* p = (const float*)(m_pVertData[0] + iv * iVertexSize);
+			pOut[nOut++].Init(p[0] * m._11 + p[1] * m._21 + p[2] * m._31 + m._41,
+							  p[0] * m._12 + p[1] * m._22 + p[2] * m._32 + m._42,
+							  p[0] * m._13 + p[1] * m._23 + p[2] * m._33 + m._43);
+		}
+	}
+	return nOut;
+}
+
 // NOTE: The texture list needs to change to be device independent...
 void CD3DRigidMesh::Render(ModelInstance *pInstance, DDMatrix& WorldTransform,CD3DRenderStyle* pRenderStyle, uint32 iRenderPass)
 {

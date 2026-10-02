@@ -8,6 +8,7 @@
 #include "rendershadowlist.h"
 #include "rendermodelinfolist.h"
 #include "screenglowmgr.h"
+#include "lt1modelshadow.h"
 
 // ---------------------------------------------------------------- //
 // External functions.
@@ -70,6 +71,9 @@ void d3d_DrawSolidModels(const ViewParams& Params)
 	pSet->Draw(Params, d3d_QueueModel);
 
 	CRenderModelPieceList::GetSingleton().RenderPieceList(1.0f);
+
+	// LT1 draws each model's shadow right after the model
+	d3d_DrawLT1ModelShadows(Params, pSet);
 }
 
 void d3d_DrawGlowModels(const ViewParams& Params)
@@ -94,6 +98,13 @@ static void d3d_DrawTranslucentModel(const ViewParams& Params, LTObject *pObject
 {
 	d3d_QueueModel(Params, pObject);
 	CRenderModelPieceList::GetSingleton().RenderPieceList(pObject->m_ColorA * MATH_ONE_OVER_255);
+
+	// LT1 draws each model's shadow right after the model, translucent ones included
+	{
+		ObjectSet<1> set;
+		set.Add(pObject);
+		d3d_DrawLT1ModelShadows(Params, &set);
+	}
 
 	//in addition, we need to disable the writing to the Z buffer again. This can be
 	//turned on by a render style (and often is), but since we are rendering translucent

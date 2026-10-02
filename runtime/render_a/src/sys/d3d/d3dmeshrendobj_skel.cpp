@@ -343,6 +343,44 @@ void CD3DSkelMesh::FreeDeviceObjects()
 	m_VBController.FreeAll();										// Free our VB...
 }
 
+// Skinned from the system memory copies, each bone set by its first bone
+uint32 CD3DSkelMesh::GetLT1ShadowVerts(DDMatrix* pTransforms, LTVector* pOut, uint32 nMaxVerts) const
+{
+	if (!m_pVertData[0] || !m_pIndexData || !m_pBoneSetArray || !pTransforms)
+		return 0;
+
+	uint32 iVertexSize = 0, iVertFlags = 0, iUVSets = 0;
+	bool bNonFixPipe = false;
+	GetVertexFlags_and_Size(m_VertType, m_VertStreamFlags[0], iVertFlags, iVertexSize, iUVSets, bNonFixPipe);
+	if (iVertexSize < 12)
+		return 0;
+
+	const uint16* pIdx = (const uint16*)m_pIndexData;
+	uint32 nOut = 0;
+	uint32 iCurrentPolyIndex = 0;
+	for (uint32 iBoneSet = 0; iBoneSet < m_iBoneSetCount; ++iBoneSet)
+	{
+		const BoneSetListItem& set = m_pBoneSetArray[iBoneSet];
+		const DDMatrix& m = pTransforms[set.BoneSetArray[0]];
+		for (uint32 i = iCurrentPolyIndex; i + 2 < set.iIndexIntoIndexBuff; i += 3)
+		{
+			if (nOut + 3 > nMaxVerts)
+				return nOut;
+			for (uint32 c = 0; c < 3; ++c)
+			{
+				uint32 iv = pIdx[i + c];
+				if (iv >= m_iVertCount) { pOut[nOut++].Init(); continue; }
+				const float* p = (const float*)(m_pVertData[0] + iv * iVertexSize);
+				pOut[nOut++].Init(p[0] * m._11 + p[1] * m._21 + p[2] * m._31 + m._41,
+								  p[0] * m._12 + p[1] * m._22 + p[2] * m._32 + m._42,
+								  p[0] * m._13 + p[1] * m._23 + p[2] * m._33 + m._43);
+			}
+		}
+		iCurrentPolyIndex = set.iIndexIntoIndexBuff;
+	}
+	return nOut;
+}
+
 inline int32 CD3DSkelMesh::SetTransformsToBoneSet(BoneSetListItem* pBoneSet,DDMatrix* pTransforms, int32 nNumMatrices)
 {
 	int32 iCurrBone;

@@ -10,7 +10,13 @@ The engine code is from the apparent GPL release of the Jupiter Ex engine before
 
 Goal
 ----
-I found the GPL release of the Jupiter Engine and couldn't find anyone else who had really seemed to do anything with it. I wanted to see how hard it would be to adapt it into a modern, multi-platform source port. I also wanted to see if it would be possible to port the other Lithtech release game code to the GPL release of the engine. Both have turned out to be much more work than I originally envisioned. Even though the effort is initially *extremely* rough, I thought I would put it up on GitHub so that I have a backup of my work and that no matter how far (or not) I get, my work will not disappear with me.
+*For this fork specifically: LithTech 1 compatibility
+
+This is an attempt to build support for LithTech 1.0 games like Shogo and Blood 2 by introducing a compatibility library that lets LT1 game code build and run within Jupiter. It also adds support for LT1 textures, models and worlds by converting them over to Jupiter's equivalents in memory. This has been a continuous effort that's managed to see good results with Shogo recently, so I'm now bringing it over to this more updated repo of Jupiter and both cleaning it up and adapting it accordingly. Many tweaks are being made at Jupiter's logic level to handle LT1's differences when needed, but part of this porting has been ensuring that Jupiter games themselves aren't affected in any major way.
+
+I've added several compatibility variables to enable LithTech 1 behaviors, and these are all gating those differences at the engine level. Only a select few of these have been defaulted to on as they actually serve as decent engine fixes for all games, but these can be easily toggled off and applied to specific games if needed. These variables are made separate rather than one overarching 'LithTech 1.0 enable' var for possible future proofing. My limited look at LT2 games indicates that certain behaviors are still retained from 1.0, allowing these vars to be easily used in possible porting efforts down the road.
+
+Credit to the LithTech 1 Renderer prototype by Five-Damned-Dollarz, as well as the Lith tools and fixes developed by haekb. These were invaluable when initially researching this.
 
 Status
 ------

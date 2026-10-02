@@ -45,6 +45,9 @@ public:
 	uint32					GetPolyCount()			{ return m_iPolyCount; }
 	uint32					GetBoneEffector()		{ return m_iBoneEffector; }
 
+	// World space positions of every triangle's three vertices for LT1 shadows (returns the count written)
+	uint32					GetLT1ShadowVerts(DDMatrix* pTransforms, LTVector* pOut, uint32 nMaxVerts) const;
+
 	// t.f tmp
 	void					CalcUsedNodes( Model * );
 

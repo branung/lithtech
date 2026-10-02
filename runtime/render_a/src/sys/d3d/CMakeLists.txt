@@ -41,6 +41,7 @@ add_library(${PROJECT_NAME} STATIC
 	d3d_viewparams.cpp
 	d3dmeshrendobj_rigid.cpp
 	d3dmeshrendobj_skel.cpp
+	lt1modelshadow.cpp
 	d3dmeshrendobj_vertanim.cpp
 	devicelightlist.cpp
 	dirtyrect.cpp

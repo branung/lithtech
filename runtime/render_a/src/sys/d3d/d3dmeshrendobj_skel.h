@@ -79,6 +79,9 @@ public:
 		m_VBController.UnLock((VertexBufferController::VB_TYPE)(VertexBufferController::eVERTSTREAM0));
 	}
 
+	// World space positions of every triangle's three vertices for LT1 shadows (returns the count written)
+	uint32				GetLT1ShadowVerts(DDMatrix* pTransforms, LTVector* pOut, uint32 nMaxVerts) const;
+
 private:
 
 	inline int32		SetTransformsToBoneSet(BoneSetListItem* pBoneSet,DDMatrix* pTransforms, int32 nNumMatrices);
