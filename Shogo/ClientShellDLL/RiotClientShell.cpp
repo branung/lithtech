@@ -8065,6 +8065,11 @@ void CRiotClientShell::FirstUpdate()
 	{
 		g_pLTClient->SetGlobalPanTexture(GLOBALPAN_SKYSHADOW, pTexture);
 	}
+	else
+	{
+		// Cleared explicitly, because Jupiter frees shared textures between worlds
+		g_pLTClient->SetGlobalPanTexture(GLOBALPAN_SKYSHADOW, LTNULL);
+	}
 
 
 	// Set up the environment map (chrome) texture...
