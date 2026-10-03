@@ -55,6 +55,7 @@ define_holder(IClientShell, i_client_shell);
 
 extern int32 g_CV_TraceConsole;
 extern const char* g_CV_Console_FontTexFile;
+extern const char* g_CV_Console_FontFace;
 	
 // The global console variable	
 CConsole g_Console;
@@ -644,6 +645,7 @@ CConsole::CConsole()
 
 	m_Tex = NULL;
 	m_Font = NULL;
+	m_bFontCreateFailed = false;
 }
 
 CConsole::~CConsole()
@@ -1234,7 +1236,7 @@ void CConsole::DrawTextLine(const char *pText, const LTRect *pRect, COLORREF tex
 	if ((m_Rect.right > 0) && (pRect->left > m_Rect.right)) return;
 
 	// If we haven't create it yet, create the Font we're going to use for the Debug Text...
-	if (!m_Font) 
+	if (!m_Font && !m_bFontCreateFailed) 
 	{
 		if (g_IFontManager && g_ITexInterface) 
 		{
@@ -1255,6 +1257,21 @@ void CConsole::DrawTextLine(const char *pText, const LTRect *pRect, COLORREF tex
 				m_Font = g_IFontManager->CreateFont(m_Tex,9,9);
 				m_Font->SetDefCharWidth(iCharWidth); m_Font->SetDefCharHeight(9); 
 			} 
+			else
+			{
+				// The console font texture ships within a Jupiter game's engine archive, which an LT1 game won't have.
+				// This falls back to an installed face for these cases, monospaced as the fixed character width below assumes
+				const char* pszFace = g_CV_Console_FontFace ? g_CV_Console_FontFace : "Courier New";
+				m_Font = g_IFontManager->CreateFont(LTNULL, pszFace, m_FontHeight, 32, 127);
+				if (m_Font)
+				{
+					m_Font->SetDefCharWidth(iCharWidth); m_Font->SetDefCharHeight(9);
+				}
+			}
+
+			// Only latched once the font and texture managers exist as the console can draw before they do
+			if (!m_Font)
+				m_bFontCreateFailed = true;
 		} 
 	}
 

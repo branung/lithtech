@@ -301,6 +301,7 @@ protected:
 	CConIterator	*m_pCompletionIterator;
 
 	CUIFont*		m_Font;		// Using the CUI font mgr for printing text...
+	bool			m_bFontCreateFailed;
 	SharedTexture*	m_Tex;
 
 public:

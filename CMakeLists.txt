@@ -34,6 +34,7 @@ option(ENABLE_DXVK "Enable DXVK" ${VK})
 option(ENABLE_OPENAL "Use OpenAL as audio backend" ON)
 option(ENABLE_DIRECTMUSIC OFF)
 endif(WIN32)
+option(FINAL_BUILD "Strip the developer console, counters and diagnostics" OFF)
 option(USE_INTERNAL_ZLIB "Use bundled zlib" ON)			# eventually want default to be OFF
 option(USE_INTERNAL_FREETYPE "Use bundled freetype" ON)	# eventually want default to be OFF
 
@@ -70,9 +71,9 @@ endif(MSVC)
 
 if(DEBUG)
     add_definitions(-D_DEBUG)
-else(DEBUG)
+elseif(FINAL_BUILD)
     add_definitions(-D_FINAL)
-endif(DEBUG)
+endif()
 
 
 if(USE_INTERNAL_ZLIB)

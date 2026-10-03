@@ -39,6 +39,7 @@ const char	*g_CV_BindIP = LTNULL;
 const char	*g_CV_IP = LTNULL;
 
 const char*	g_CV_Console_FontTexFile = NULL;
+const char*	g_CV_Console_FontFace = NULL; // System font face the console falls back to without a console font texture
 int32	g_CV_NoDefaultEngineRez = 0;
 
 int32	g_CV_ForceConsole = 0;
@@ -260,6 +261,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_STRING("IP", &g_CV_IP),
 
 	EV_STRING("Console_FontTexFile", &g_CV_Console_FontTexFile),
+	EV_STRING("Console_FontFace", &g_CV_Console_FontFace),
 	EV_LONG("NoDefaultEngineRez", &g_CV_NoDefaultEngineRez),
 
 	EV_LONG("RenderEnable", &g_CV_RenderEnable),
