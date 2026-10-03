@@ -47,6 +47,7 @@ define_holder_to_instance(ILTCommon, ilt_common_client, Client);
 SysCache g_SysCache;
 
 extern int32	g_CV_CursorCenter;
+extern int32	g_CV_BorderlessWindow;
 
 RMode g_RMode;
 
@@ -623,11 +624,15 @@ LTRESULT r_InitRender(RMode *pMode, const char* window_name)
 #else
 	window = (SDL_Window*)dsi_GetSDL2Window();
 #endif
+	// No frame when asked
+	// Read on every window creation so it holds across a mode change
+	if (g_CV_BorderlessWindow)
+		flags |= SDL_WINDOW_BORDERLESS;
 	SDL_DestroyWindow(window);
 	window = SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED,
 		SDL_WINDOWPOS_UNDEFINED, pMode->m_Width, pMode->m_Height, flags);
 #ifdef USE_DXVK
-	g_ClientGlob.m_window = window;
+	dsi_SetSDL2Window(window);
 #else
 	dsi_SetSDL2Window(window);
 #endif

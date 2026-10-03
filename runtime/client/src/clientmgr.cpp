@@ -1954,8 +1954,10 @@ void CClientMgr::RunAutoConfig(const char *pFilename, uint32 flags) {
 }
 
 
+extern int32 g_CV_NoSaveConfig;
+
 void CClientMgr::SaveAutoConfig(const char *pFilename) {
-    if (m_bCanSaveConfigFile)
+    if (m_bCanSaveConfigFile && !g_CV_NoSaveConfig)
     {
         cc_SaveConfigFile(&g_ClientConsoleState, pFilename);
     }

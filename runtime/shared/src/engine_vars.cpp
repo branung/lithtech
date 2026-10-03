@@ -18,6 +18,8 @@ int32	g_CV_RenderEnable = LTTRUE;
 int32	g_CV_PlayDemoReps = 0;	// How many times to repeat the PlayDemo.
 
 int32	g_CV_ForceNoSound = LTFALSE;
+int32	g_CV_BorderlessWindow = LTFALSE; // Create the game window without a frame (fullscreen at desktop resolution)
+int32	g_CV_NoSaveConfig = LTFALSE; // Skip rewriting autoexec.cfg on exit
 
 int32	g_CV_CursorCenter = LTTRUE;	// Automatically resets the cursor to the center 
 									// of the window/screen each frame
@@ -265,6 +267,8 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("ForceNoSound", &g_CV_ForceNoSound),
 	
 	EV_LONG("CursorCenter", &g_CV_CursorCenter),
+	EV_LONG("BorderlessWindow", &g_CV_BorderlessWindow),
+	EV_LONG("NoSaveConfig", &g_CV_NoSaveConfig),
 	
 
 	EV_LONG("VideoDebug", &g_CV_VideoDebug),
