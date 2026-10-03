@@ -40,7 +40,9 @@ void DECompat_ApplyLT1ClientDefaults(ILTClient *pClientDE)
     // LT1 honors SetupBox's 'too short to sweep' answer (both sides)
     pClientDE->RunConsoleString("-LT1SetupBoxCheck 1");
 
-
+    // Optimized 2D draws over the whole target, not clipped to the last camera's rect
+    pClientDE->RunConsoleString("-Optimized2DFullViewport 1");
+    
     // LT1StairStep (both sides) and DynamicLightWorld are set per game after this call
 }
 

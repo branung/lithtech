@@ -34,6 +34,7 @@ extern FormatMgr g_FormatMgr;
 extern void d3d_DestroyTiles(RSurface *pSurface);
 extern void d3d_BlitToScreen3D(BlitRequest *pRequest);
 extern void d3d_BlitToScreen3D_Old(BlitRequest *pRequest);
+extern void d3d_BlitToScreen3D_ScaledSub(BlitRequest *pRequest);
 extern void d3d_WarpToScreen3D(BlitRequest *pRequest);
 extern int  d3d_RenderScene(SceneDesc* pDesc);
 
@@ -293,7 +294,18 @@ void d3d_BlitToScreen(BlitRequest *pRequest)
 	if (pRSurface->m_pTiles && g_bInOptimized2D && g_Device.IsIn3D())
 	{
 		if (pRequest->m_bUseOld)
-			d3d_BlitToScreen3D_Old(pRequest);
+		{
+			// The old scaled path draws whole tiles, so it only fits when the source rectangle covers the surface
+			const LTRect *pSrc = pRequest->m_pSrcRect;
+			const bool bWhole = !pSrc ||
+				(pSrc->left <= 0 && pSrc->top <= 0 &&
+				 pSrc->right >= (int)pRSurface->m_Desc.Width &&
+				 pSrc->bottom >= (int)pRSurface->m_Desc.Height);
+			if (bWhole)
+				d3d_BlitToScreen3D_Old(pRequest);
+			else
+				d3d_BlitToScreen3D_ScaledSub(pRequest);
+		}
 		else
 			d3d_BlitToScreen3D(pRequest);
 	}

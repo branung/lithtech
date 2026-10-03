@@ -131,6 +131,7 @@ RCONVAR(g_CV_MaxTextureSize, "MaxTextureSize", int, 16*1024);
 RCONVAR(g_CV_Saturate, "Saturate", int, 0);
 RCONVAR(g_CV_Bilinear, "Bilinear", int, 1);
 RCONVAR(g_CV_2DBilinear, "2DBilinear", int, 1);
+RCONVAR(g_CV_Optimized2DFullViewport, "Optimized2DFullViewport", int, 0); // Optimized 2D draws over the whole target, not clipped to the last camera's rect
 RCONVAR(g_CV_OptimizeSurfaces, "OptimizeSurfaces", int, 0);
 RCONVAR(g_CV_CullWorldTree, "CullWorldTree", int, 0);
 RCONVAR(g_CV_FarZ, "FarZ", float, 10000.0f);

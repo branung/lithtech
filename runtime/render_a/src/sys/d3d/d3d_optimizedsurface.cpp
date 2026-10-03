@@ -32,6 +32,13 @@ extern FormatMgr g_FormatMgr; // d3d_texture.cpp.
 static uint32 g_OldFogEnable;
 
 static LTSurfaceBlend g_Optimized2DBlend(LTSURFACEBLEND_ALPHA);
+
+// True for the ADD and MASK modes, which only draw correctly with blending on.
+// The blits otherwise turn blending on only for a transparent surface or one drawn with partial alpha
+static inline bool d3d_Optimized2DBlendNeedsBlend()
+{
+	return (g_Optimized2DBlend != LTSURFACEBLEND_ALPHA) && (g_Optimized2DBlend != LTSURFACEBLEND_SOLID);
+}
 static HLTCOLOR g_Optimized2DColor(0xFFFFFFFF);
 static DWORD g_minFilter[4] = { D3DTEXF_LINEAR,D3DTEXF_LINEAR,D3DTEXF_LINEAR,D3DTEXF_LINEAR};
 static DWORD g_magFilter[4] = { D3DTEXF_LINEAR,D3DTEXF_LINEAR,D3DTEXF_LINEAR,D3DTEXF_LINEAR};
@@ -371,10 +378,31 @@ inline LTBOOL GetRectIntersection(LTRect *pDest, LTRect *pRect1, LTRect *pRect2)
 }
 
 
+// The viewport in force when optimized 2D started, so it can be put back
+static D3DVIEWPORT9 g_Optimized2DOldViewport;
+static bool g_bOptimized2DViewportSet = false;
+
 bool d3d_StartOptimized2D()
 {
 	if (!PD3DDEVICE || !g_Device.IsIn3D()) return false;
 	if (g_bInOptimized2D) return true;
+
+	// d3d_InitFrame sets the viewport from the camera's rect, so a letterboxed camera would clip the 2D
+	g_bOptimized2DViewportSet = false;
+	if (g_CV_Optimized2DFullViewport.m_Val)
+	{
+		if (SUCCEEDED(PD3DDEVICE->GetViewport(&g_Optimized2DOldViewport)))
+		{
+			D3DVIEWPORT9 cFull = g_Optimized2DOldViewport;
+			cFull.X = 0;
+			cFull.Y = 0;
+			cFull.Width = g_ScreenWidth;
+			cFull.Height = g_ScreenHeight;
+
+			if (SUCCEEDED(PD3DDEVICE->SetViewport(&cFull)))
+				g_bOptimized2DViewportSet = true;
+		}
+	}
 
 	// Set states...
 	PD3DDEVICE->GetRenderState(D3DRS_FOGENABLE, (DWORD *)&g_OldFogEnable);
@@ -425,6 +453,13 @@ void d3d_EndOptimized2D()
 {
 	if (!PD3DDEVICE || !g_Device.IsIn3D()) return;
 	if (!g_bInOptimized2D) return;
+
+	// Restored with the raw call so CD3D_Device's cached viewport still describes the device
+	if (g_bOptimized2DViewportSet)
+	{
+		PD3DDEVICE->SetViewport(&g_Optimized2DOldViewport);
+		g_bOptimized2DViewportSet = false;
+	}
 
 	PD3DDEVICE->SetRenderState(D3DRS_ZENABLE, 1);
 	PD3DDEVICE->SetRenderState(D3DRS_ZWRITEENABLE, 1);
@@ -538,14 +573,18 @@ void d3d_BlitToScreen3D(BlitRequest *pRequest)
 	assert(pTiles);
 	if (!pTiles) return;
 
-	StateSet ssAlphaBlendEnable(D3DRS_ALPHABLENDENABLE, pRSurface->m_bTilesTransparent || (pRequest->m_Alpha != 1.0f));
+	StateSet ssAlphaBlendEnable(D3DRS_ALPHABLENDENABLE, pRSurface->m_bTilesTransparent || (pRequest->m_Alpha != 1.0f) || d3d_Optimized2DBlendNeedsBlend());
 
 	// Make sure the states we want are set!
 	VERIFY_RENDERSTATE(D3DRS_FOGENABLE, FALSE);
 	VERIFY_RENDERSTATE(D3DRS_ZENABLE, FALSE);
 	VERIFY_RENDERSTATE(D3DRS_ZWRITEENABLE, FALSE);
-	VERIFY_RENDERSTATE(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	VERIFY_RENDERSTATE(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	// Debug check of the alpha mode blend factors, skipped for ADD and MASK as they set their own
+	if (!d3d_Optimized2DBlendNeedsBlend())
+	{
+		VERIFY_RENDERSTATE(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		VERIFY_RENDERSTATE(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	}
 
 	LTRect* pSrcRect		= pRequest->m_pSrcRect;
 	float	srcRectWidth	= (float)(pSrcRect->right - pSrcRect->left);
@@ -622,6 +661,89 @@ void d3d_BlitToScreen3D(BlitRequest *pRequest)
 	InvalidateRect(pDestRect);
 }
 
+// A scaled blit of part of an optimized surface.
+// Each tile is clipped to the source rectangle and mapped through destSize/srcSize
+void d3d_BlitToScreen3D_ScaledSub(BlitRequest *pRequest)
+{
+	RSurface*		pRSurface	= (RSurface*)pRequest->m_hBuffer;
+	SurfaceTiles*	pTiles		= pRSurface->m_pTiles;
+	assert(pTiles);
+	if (!pTiles) return;
+
+	StateSet ssAlphaBlendEnable(D3DRS_ALPHABLENDENABLE, pRSurface->m_bTilesTransparent || (pRequest->m_Alpha != 1.0f) || d3d_Optimized2DBlendNeedsBlend());
+
+	VERIFY_RENDERSTATE(D3DRS_FOGENABLE, FALSE);
+	VERIFY_RENDERSTATE(D3DRS_ZENABLE, FALSE);
+	VERIFY_RENDERSTATE(D3DRS_ZWRITEENABLE, FALSE);
+	// Debug check of the alpha mode blend factors, skipped for ADD and MASK as they set their own
+	if (!d3d_Optimized2DBlendNeedsBlend())
+	{
+		VERIFY_RENDERSTATE(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		VERIFY_RENDERSTATE(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	}
+
+	LTRect* pSrcRect = pRequest->m_pSrcRect;
+	LTRect* pDestRect = pRequest->m_pDestRect;
+	const float srcW = (float)(pSrcRect->right - pSrcRect->left);
+	const float srcH = (float)(pSrcRect->bottom - pSrcRect->top);
+	if (srcW <= 0.0f || srcH <= 0.0f) return;
+	const float kX = (float)(pDestRect->right - pDestRect->left) / srcW;
+	const float kY = (float)(pDestRect->bottom - pDestRect->top) / srcH;
+
+	TLVertex verts[4];
+	verts[0].color = verts[1].color = verts[2].color = verts[3].color = g_Optimized2DColor;
+	verts[0].rgb.a = verts[1].rgb.a = verts[2].rgb.a = verts[3].rgb.a = (uint8)(pRequest->m_Alpha * 255.0f);
+	verts[0].rhw = verts[1].rhw = verts[2].rhw = verts[3].rhw = 1.0f;
+
+	LPDIRECT3DBASETEXTURE9 pOldTexture = NULL;
+	D3D_CALL(PD3DDEVICE->GetTexture(0, &pOldTexture));
+
+	LTRect rcIntersection;
+	for(uint32 nXTile = 0; nXTile < pTiles->m_nTilesX; nXTile++)
+	{
+		for(uint32 nYTile = 0; nYTile < pTiles->m_nTilesY; nYTile++)
+		{
+			SurfaceTile* pTile = &pTiles->m_Tiles[nYTile * pTiles->m_nTilesX + nXTile];
+			if (!GetRectIntersection(&rcIntersection, pSrcRect, &pTile->m_SrcImageRect))
+				continue;
+
+			// The intersection, mapped through the scale
+			float destLeft   = (float)pDestRect->left + (float)(rcIntersection.left   - pSrcRect->left) * kX;
+			float destRight  = (float)pDestRect->left + (float)(rcIntersection.right  - pSrcRect->left) * kX;
+			float destTop    = (float)pDestRect->top  + (float)(rcIntersection.top    - pSrcRect->top)  * kY;
+			float destBottom = (float)pDestRect->top  + (float)(rcIntersection.bottom - pSrcRect->top)  * kY;
+
+			// The intersection's texture coordinates within the tile, worked out as the unscaled path does
+			float tDestLeft   = (float)(rcIntersection.left   - pTile->m_SrcImageRect.left) / (float)pTile->m_nTileWidth;
+			float tDestRight  = (float)(rcIntersection.right  - pTile->m_SrcImageRect.left) / (float)pTile->m_nTileWidth;
+			float tDestTop    = (float)(rcIntersection.top    - pTile->m_SrcImageRect.top)  / (float)pTile->m_nTileHeight;
+			float tDestBottom = (float)(rcIntersection.bottom - pTile->m_SrcImageRect.top)  / (float)pTile->m_nTileHeight;
+
+			destLeft   = LTMAX(0.0f, destLeft - fSub);
+			destTop    = LTMAX(0.0f, destTop - fSub);
+			destRight  = LTMAX(0.0f, destRight - fSub);
+			destBottom = LTMAX(0.0f, destBottom - fSub);
+
+			verts[0].m_Vec.Init(destLeft, destTop, 1.0f);
+			verts[1].m_Vec.Init(destRight, destTop, 1.0f);
+			verts[2].m_Vec.Init(destRight, destBottom, 1.0f);
+			verts[3].m_Vec.Init(destLeft, destBottom, 1.0f);
+			verts[0].SetTCoords(tDestLeft, tDestTop);
+			verts[1].SetTCoords(tDestRight, tDestTop);
+			verts[2].SetTCoords(tDestRight, tDestBottom);
+			verts[3].SetTCoords(tDestLeft, tDestBottom);
+
+			d3d_SetTextureDirect(pTile->m_pTexture, 0);
+			D3D_CALL(PD3DDEVICE->SetVertexShader(NULL));
+			D3D_CALL(PD3DDEVICE->SetFVF(TLVERTEX_FORMAT));
+			D3D_CALL(PD3DDEVICE->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, verts, sizeof(TLVertex)));
+		}
+	}
+
+	d3d_SetTextureDirect(pOldTexture, 0);
+	InvalidateRect(pDestRect);
+}
+
 void d3d_BlitToScreen3D_Old(BlitRequest *pRequest)
 {
 	RSurface*		pRSurface	= (RSurface*)pRequest->m_hBuffer;
@@ -630,14 +752,18 @@ void d3d_BlitToScreen3D_Old(BlitRequest *pRequest)
 	assert(pTiles);
 	if (!pTiles) return;
 
-	StateSet ssAlphaBlendEnable(D3DRS_ALPHABLENDENABLE, pRSurface->m_bTilesTransparent || (pRequest->m_Alpha != 1.0f));
+	StateSet ssAlphaBlendEnable(D3DRS_ALPHABLENDENABLE, pRSurface->m_bTilesTransparent || (pRequest->m_Alpha != 1.0f) || d3d_Optimized2DBlendNeedsBlend());
 
 	// Make sure the states we want are set!
 	VERIFY_RENDERSTATE(D3DRS_FOGENABLE, FALSE);
 	VERIFY_RENDERSTATE(D3DRS_ZENABLE, FALSE);
 	VERIFY_RENDERSTATE(D3DRS_ZWRITEENABLE, FALSE);
-	VERIFY_RENDERSTATE(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	VERIFY_RENDERSTATE(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	// Debug check of the alpha mode blend factors, skipped for ADD and MASK as they set their own
+	if (!d3d_Optimized2DBlendNeedsBlend())
+	{
+		VERIFY_RENDERSTATE(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		VERIFY_RENDERSTATE(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	}
 
 	LTRect* pSrcRect		= pRequest->m_pSrcRect;
 	float	srcRectWidth	= (float)(pSrcRect->right - pSrcRect->left);
@@ -731,8 +857,12 @@ void d3d_WarpToScreen3D(BlitRequest *pRequest)
 	VERIFY_RENDERSTATE(D3DRS_FOGENABLE, FALSE);		// Make sure the states we want are set!
 	VERIFY_RENDERSTATE(D3DRS_ZENABLE, FALSE);
 	VERIFY_RENDERSTATE(D3DRS_ZWRITEENABLE, FALSE);
-	VERIFY_RENDERSTATE(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	VERIFY_RENDERSTATE(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	// Debug check of the alpha mode blend factors, skipped for ADD and MASK as they set their own
+	if (!d3d_Optimized2DBlendNeedsBlend())
+	{
+		VERIFY_RENDERSTATE(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		VERIFY_RENDERSTATE(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	}
 
 	LPDIRECT3DBASETEXTURE9 pOldTexture = NULL;		// Remember the previous texture so we can reset it at the end
 	D3D_CALL(PD3DDEVICE->GetTexture(0, &pOldTexture));
