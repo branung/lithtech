@@ -42,27 +42,27 @@ static bool IntersectSegment_R(WorldTreeNode *pNode, ISInfo *pInfo);
 inline void FilterBox(	const LTVector *pMin, const LTVector *pMax, 
 						WorldTreeNode *pNode, FilterFn_R fn, void *pFnData)
 {
-	if(pMin->x < pNode->GetCenterX())
+	if(pMin->x <= pNode->GetCenterX())
 	{
-		if(pMin->z < pNode->GetCenterZ())
+		if(pMin->z <= pNode->GetCenterZ())
 		{
 			fn(pNode->GetChild(0, 0), pFnData);
 		}
 
-		if(pMax->z > pNode->GetCenterZ())
+		if(pMax->z >= pNode->GetCenterZ())
 		{
 			fn(pNode->GetChild(0, 1), pFnData);
 		}
 	}
 
-	if(pMax->x > pNode->GetCenterX())
+	if(pMax->x >= pNode->GetCenterX())
 	{
-		if(pMin->z < pNode->GetCenterZ())
+		if(pMin->z <= pNode->GetCenterZ())
 		{
 			fn(pNode->GetChild(1, 0), pFnData);
 		}
 
-		if(pMax->z > pNode->GetCenterZ())
+		if(pMax->z >= pNode->GetCenterZ())
 		{
 			fn(pNode->GetChild(1, 1), pFnData);
 		}
