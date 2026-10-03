@@ -22,6 +22,9 @@ class ViewParams;
 #define MAX_VISIBLE_CANVASES		32
 #define MAX_VISIBLE_VOLUMEEFFECTS	128
 
+// Ceiling for a growable set
+#define MAX_ALLOCSET_OBJECTS		8192
+
 class VisibleSet;
 class ObjectDrawList;
 
@@ -46,17 +49,18 @@ public:
 
 	inline bool	IsEmpty()	{return m_nObjects == 0;}
 
+	// A full set grows rather than dropping whatever the world tree happened to queue last,
+	// which only reported at RenderDebug 1 and made objects vanish depending on where the camera stood
 	void		Add(LTObject *pObject)
 	{
-		if(m_nObjects < m_nMaxObjects)
+		if((m_nObjects >= m_nMaxObjects) && !Grow())
 		{
-			m_pObjects[m_nObjects] = pObject;
-			m_nObjects++;
+			AddDebugMessage(1, "Set '%s' overflowed at %d", m_pSetName, m_nMaxObjects);
+			return;
 		}
-		else
-		{
-			AddDebugMessage(1, "Set '%s' overflowed", m_pSetName);
-		}
+
+		m_pObjects[m_nObjects] = pObject;
+		m_nObjects++;
 	}
 
 	void		ClearSet()
@@ -66,6 +70,13 @@ public:
 
 	void		Draw(const ViewParams& Params, DrawObjectFn fn);
 	void		Queue(ObjectDrawList& DrawList, const ViewParams& Params, DrawObjectFn DrawFn);
+
+	virtual		~BaseObjectSet() {}
+
+protected:
+	// Makes room for one more where the set can.
+	// A fixed array can't and keeps dropping with a warning
+	virtual bool Grow() { return false; }
 
 public:
 
@@ -110,6 +121,8 @@ public:
 
 	LTObject		**m_pArray;
 
+protected:
+	virtual bool Grow();
 };
 
 class VisibleSet

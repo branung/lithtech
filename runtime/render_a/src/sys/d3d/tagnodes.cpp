@@ -206,6 +206,34 @@ bool AllocSet::Init(VisibleSet *pVisibleSet, const char *pSetName, uint32 defaul
 	return true;
 }
 
+// Doubles the storage
+// The grown array is kept between frames rather than freed,
+// so that it only reallocates the first time a view needs more room
+bool AllocSet::Grow()
+{
+	if(m_nMaxObjects >= MAX_ALLOCSET_OBJECTS)
+		return false;
+
+	uint32 nNewMax = (m_nMaxObjects < 16) ? 16 : (m_nMaxObjects * 2);
+	if(nNewMax > MAX_ALLOCSET_OBJECTS)
+		nNewMax = MAX_ALLOCSET_OBJECTS;
+
+	LTObject **pNew;
+	LT_MEM_TRACK_ALLOC(pNew = new LTObject*[nNewMax], LT_MEM_TYPE_RENDERER);
+	if(!pNew)
+		return false;
+
+	if(m_pObjects && m_nObjects)
+		memcpy(pNew, m_pObjects, sizeof(LTObject*) * m_nObjects);
+
+	delete [] m_pObjects;
+
+	m_pObjects = pNew;
+	m_nMaxObjects = nNewMax;
+
+	AddDebugMessage(1, "Set '%s' grew to %d", m_pSetName, nNewMax);
+	return true;
+}
 
 void AllocSet::Term()
 {
