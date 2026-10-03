@@ -62,6 +62,33 @@ CTextureScriptMgr& CTextureScriptMgr::GetSingleton()
 	return g_TextureScriptMgrSingleton;
 }
 
+// LT1's scrolling textures
+static const char * const kLT1PanPrefix = "@LT1Pan ";
+
+class CLT1PanEvaluator : public ITextureScriptEvaluator
+{
+public:
+	CLT1PanEvaluator(float fPanU, float fPanV) : m_fPanU(fPanU), m_fPanV(fPanV) {}
+
+	virtual void Evaluate(const CTextureScriptEvaluateVars& Vars, LTMatrix& mMat)
+	{
+		const float u = m_fPanU * Vars.m_fTime;
+		const float v = m_fPanV * Vars.m_fTime;
+		mMat.Init(1.0f, 0.0f, u,    0.0f,
+				  0.0f, 1.0f, v,    0.0f,
+				  0.0f, 0.0f, 1.0f, 0.0f,
+				  0.0f, 0.0f, 0.0f, 1.0f);
+	}
+
+	virtual uint32 GetFlags() const	{ return FLAG_DIRTYONFRAME | FLAG_COORD2; }
+
+	// Translates the section's own UVs rather than replacing its mapping
+	virtual EInputType GetInputType() const	{ return INPUT_UV; }
+
+private:
+	float m_fPanU, m_fPanV;
+};
+
 //creates a script instance. Note that the returned pointer must be released
 //with the function ReleaseInstance, and cannot be deleted
 CTextureScriptInstance* CTextureScriptMgr::GetInstance(const char* pszGroupName)
@@ -84,6 +111,42 @@ CTextureScriptInstance* CTextureScriptMgr::GetInstance(const char* pszGroupName)
 
 	if(!pInst || !pNode)
 		return NULL;
+
+	// An LT1 Pan carries its rates in the name and needs no file
+	if(strncmp(pszGroupName, kLT1PanPrefix, strlen(kLT1PanPrefix)) == 0)
+	{
+		float fPanU = 0.0f, fPanV = 0.0f;
+		sscanf(pszGroupName + strlen(kLT1PanPrefix), "%f %f", &fPanU, &fPanV);
+
+		ITextureScriptEvaluator* pEval;
+		LT_MEM_TRACK_ALLOC(pEval = new CLT1PanEvaluator(fPanU, fPanV),LT_MEM_TYPE_RENDER_TEXTURESCRIPT);
+		if(!pEval)
+		{
+			delete pInst;
+			delete pNode;
+			return NULL;
+		}
+
+		// Held in the script list like any other evaluator, so it's found by name again and released with the rest
+		CTextureScriptNode* pScriptNode;
+		LT_MEM_TRACK_ALLOC(pScriptNode = new CTextureScriptNode,LT_MEM_TYPE_RENDER_TEXTURESCRIPT);
+		LTStrCpy(pScriptNode->m_pszName, pszGroupName, sizeof(pScriptNode->m_pszName));
+		pScriptNode->m_pEvaluator = pEval;
+		pEval->AddRef();
+		m_cScripts.push_back(pScriptNode);
+
+		// No user variables as the rates are baked into the evaluator
+		uint32 nVarID = CTextureScriptVarMgr::GetID(pszGroupName, 0);
+		CTextureScriptVarMgr::GetSingleton().CreateVars(nVarID, 0, NULL);
+		pInst->SetupStage(0, nVarID, TSChannel_Base, pEval);
+
+		LTStrCpy(pNode->m_pszName, pszGroupName, sizeof(pNode->m_pszName));
+		pNode->m_pInstance = pInst;
+		m_cInstances.push_back(pNode);
+
+		pInst->AddRef();
+		return pInst;
+	}
 
 	//build up the filename for the group
 	char pszFileName[MAX_PATH + 1];
