@@ -38,7 +38,8 @@ RCONVAR(g_CV_CacheTextures, "CacheTextures", int, 0);
 RCONVAR(g_CV_ModelNear, "reallyclose_near", float, 0.1f);
 RCONVAR(g_CV_ModelFar, "reallyclose_far", float, 7.0f);
 RCONVAR(g_CV_PVModelFOV, "PVModelFOV", float, 75.0f);
-RCONVAR(g_CV_PVModelAspect, "PVModelAspect", float, 1.0f);
+RCONVAR(g_CV_PVModelAspect, "PVModelAspect", float, 0.0f);
+RCONVAR(g_CV_PVModelSceneFOV, "PVModelSceneFOV", int, 0); // Project really close models through the scene's own projection as LT1 does, with only near and far changed
 RCONVAR(g_CV_PVModelEnvmapVelocity, "PVModelEnvmapVelocity", float, 128.0f);
 RCONVAR(g_CV_PVModelEnvmapScale, "PVModelEnvmapScale", float, 0.4f);
 RCONVAR(g_CV_PVModelEnvMapCampRange, "PVModelEnvmapClampRange", float, 5.0f);

@@ -46,6 +46,9 @@ extern uint32 g_nNumObjectDynamicLights;
 
 bool d3d_InitFrame(ViewParams* pParams, SceneDesc *pDesc);
 
+// The perspective (depth) matrix with no FOV, exposed so the really close pass can use its own near and far
+void d3d_SetupPerspectiveMatrix(LTMatrix *pMatrix, float nearZ, float farZ);
+
 // Init the view box.
 void d3d_InitViewBox(ViewBoxDef *pDef,
 	float nearZ, float  farZ, float xFov, float yFov);

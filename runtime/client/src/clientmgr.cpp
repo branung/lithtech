@@ -2077,6 +2077,32 @@ void CClientMgr::RemoveClientObject(LTObject *pObj)
 	}
 }
 
+// Widens the horizontal FOV by aspect/4:3 and leaves the vertical alone, so a 4:3 window renders pixel identical.
+// Uses the narrower of the target's and the camera rect's aspect, so a letterbox is a crop and a 4:3 inset is left alone
+static void wide_CorrectSceneFOV(float &xFov, uint32 nTargetW, uint32 nTargetH,
+                                 uint32 nRectW, uint32 nRectH)
+{
+	extern int32 g_bWidescreenFOV;
+	if (!g_bWidescreenFOV || nTargetW == 0 || nTargetH == 0)
+		return;
+
+	float fAspect = (float)nTargetW / (float)nTargetH;
+
+	// A zero rect leaves the target's aspect standing
+	if (nRectW != 0 && nRectH != 0)
+	{
+		const float fRectAspect = (float)nRectW / (float)nRectH;
+		if (fRectAspect < fAspect)
+			fAspect = fRectAspect;
+	}
+
+	const float fBase = 4.0f / 3.0f;
+	if (fAspect <= fBase + 0.001f)
+		return;
+
+	xFov = 2.0f * (float)atan(tan(xFov * 0.5f) * (fAspect / fBase));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // BSP world rep functionality
 bool CClientMgr::Render(CameraInstance *pCamera, int drawMode, LTObject **pObjects, int nObjects, float fFrameTime)
@@ -2125,6 +2151,10 @@ bool CClientMgr::Render(CameraInstance *pCamera, int drawMode, LTObject **pObjec
         pDesc->m_Rect.right = pCamera->m_Right;
         pDesc->m_Rect.bottom = pCamera->m_Bottom;
     }
+
+    wide_CorrectSceneFOV(pDesc->m_xFov, width, height,
+                         (uint32)(pDesc->m_Rect.right - pDesc->m_Rect.left),
+                         (uint32)(pDesc->m_Rect.bottom - pDesc->m_Rect.top));
 
     pDesc->m_GlobalLightScale = m_GlobalLightScale;
 

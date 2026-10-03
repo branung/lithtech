@@ -67,7 +67,57 @@ void d3d_SetReallyClose(CReallyCloseData* pData)
 
 	PD3DDEVICE->SetViewport(&ViewportData);
 
-	float aspect = g_ViewParams.m_fScreenWidth / g_ViewParams.m_fScreenHeight;
+	//save the old transforms
+	PD3DDEVICE->GetTransform(D3DTS_PROJECTION, &pData->m_OldProj);
+	PD3DDEVICE->GetTransform(D3DTS_VIEW, &pData->m_OldView);
+
+	// PVModelSceneFOV uses the scene's world to clip scales and center of projection, with only the depth planes changed.
+	// This rebuilds what d3d_InitFrustum2 builds for the world from the view box
+	if(g_CV_PVModelSceneFOV.m_Val)
+	{
+		const ViewBoxDef& vb = g_ViewParams.m_ViewBox;
+
+		LTMatrix mShear;
+		mShear.Init(
+			1.0f, 0.0f, -vb.m_COP.x / vb.m_COP.z, 0.0f,
+			0.0f, 1.0f, -vb.m_COP.y / vb.m_COP.z, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f);
+
+		LTMatrix mFOVScale;
+		mFOVScale.Init(
+			vb.m_COP.z / vb.m_WindowSize[0], 0.0f, 0.0f, 0.0f,
+			0.0f, vb.m_COP.z / vb.m_WindowSize[1], 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f);
+
+		LTMatrix mPerspective;
+		d3d_SetupPerspectiveMatrix(&mPerspective, g_CV_ModelNear.m_Val, g_CV_ModelFar.m_Val);
+
+		LTMatrix mProj = mPerspective * mFOVScale * mShear;
+
+		d3d_SetD3DMat(D3DTS_PROJECTION, &mProj);
+		PD3DDEVICE->SetTransform(D3DTS_VIEW, &mIdentity);
+		return;
+	}
+
+	// 0 uses the screen's aspect
+	float aspect = (g_CV_PVModelAspect.m_Val > 0.0f)
+		? (float)g_CV_PVModelAspect.m_Val
+		: g_ViewParams.m_fScreenWidth / g_ViewParams.m_fScreenHeight;
+
+	// Under WidescreenFOV, a fixed aspect only keeps its shape on a 4:3 screen, so scale it by screen aspect/4:3
+	{
+		extern int32 g_bWidescreenFOV;
+		if (g_bWidescreenFOV && g_CV_PVModelAspect.m_Val > 0.0f &&
+		    g_ViewParams.m_fScreenHeight > 0.0f)
+		{
+			const float fScreenAspect = g_ViewParams.m_fScreenWidth / g_ViewParams.m_fScreenHeight;
+			const float fBase = 4.0f / 3.0f;
+			if (fScreenAspect > fBase + 0.001f)
+				aspect *= fScreenAspect / fBase;
+		}
+	}
 
 	// Setup the projection transform by using the power of D3D.
 	D3DMATRIX NewProj;
@@ -77,10 +127,6 @@ void d3d_SetReallyClose(CReallyCloseData* pData)
 							   aspect,
 							   g_CV_ModelNear.m_Val,
 							   g_CV_ModelFar.m_Val);
-
-	//save the old transforms
-	PD3DDEVICE->GetTransform(D3DTS_PROJECTION, &pData->m_OldProj);
-	PD3DDEVICE->GetTransform(D3DTS_VIEW, &pData->m_OldView);
 
 	//setup the new matrices
 	PD3DDEVICE->SetTransform(D3DTS_PROJECTION, &NewProj);

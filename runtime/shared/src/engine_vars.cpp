@@ -107,6 +107,7 @@ int32	g_bLT1WorldCull = 0; // Those translucent WorldModels draw without backfac
 int32	g_bLT1PolyGridCull = 0; // Draw polygrids without backface culling
 int32	g_bLT1PolyGridTexCoords = 0; // Polygrid scale is world units per texel and its pan is in texels
 int32	g_bLT1ModelShading = 0; // Shade models with LT1's fixed direction ramp rather than flat ambient
+int32	g_bWidescreenFOV = 0; // Horizontal widescreen - widens the horizontal FOV by aspect/4:3 at render time
 
 int32	g_CV_MasterPaletteMode = 2;
 
@@ -356,6 +357,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1PolyGridCull", &g_bLT1PolyGridCull),
 	EV_LONG("LT1PolyGridTexCoords", &g_bLT1PolyGridTexCoords),
 	EV_LONG("LT1ModelShading", &g_bLT1ModelShading),
+	EV_LONG("WidescreenFOV", &g_bWidescreenFOV),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),
