@@ -88,6 +88,7 @@ int32	g_bLT1CreateInPlace = 0; // Placement move before InitialUpdate, so a new 
 int32	g_bLT1ModelAnimNoRestart = 0; // Ignore a request for the animation already playing.
 int32	g_bLT1StandGravity = 0; // Keep gravity on a standing object, as LT1 did
 int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and rebuild the box during pushback like LT1
+int32	g_bLT1RaySolidOnly = 0; // Only solid polys stop a ray, so LT1 doorway polys pass shots and sight
 int32	g_bLT1ClientIDFromOne = 0; // Hand out client ids from 1 (LT1 reserved 0 for 'no player')
 int32	g_bLT1StairStep = 0; // LT1's stair step: floor choice, push along the normal, no SURF_NOTASTEP gate
 int32	g_bLT1StairDamp = 1; // Keep the stair step's velocity damping as LT1 did
@@ -341,6 +342,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1ModelAnimNoRestart", &g_bLT1ModelAnimNoRestart),
 	EV_LONG("LT1StandGravity", &g_bLT1StandGravity),
 	EV_LONG("LT1SetupBoxCheck", &g_bLT1SetupBoxCheck),
+	EV_LONG("LT1RaySolidOnly", &g_bLT1RaySolidOnly),
 	EV_LONG("LT1ClientIDFromOne", &g_bLT1ClientIDFromOne),
 	EV_LONG("LT1StairStep", &g_bLT1StairStep),
 	EV_LONG("LT1StairDamp", &g_bLT1StairDamp),
