@@ -1266,7 +1266,7 @@ BEGIN
     IDS_BUMPERSCREEN_13     "It seems that fate has made your decision for you. With no way to get back to LZ Minotaur without an MCA, the only sensible option is to go with Hank to Maritropa and rendezvous with Kura. Admiral Akkaraju won't be happy, but what choice is there? Hank is convinced he can get you inside an old CMC pumping station where you can steal an MCA, but the rest is up to you. Security should be light, so getting to the MCA dock should be fairly straightforward. Or so you hope."
     IDS_BUMPERSCREEN_14     "Much of the city of Maritropa has been under strict martial law since the Cronian Mining Consortium's fragmentation and the military rise of the Fallen. You can rest assured that a heavily armed MCA will be regarded with more than a little suspicion by CMC security forces. Still, there's no better means of getting where you need to go quickly. Hank has convinced some old friends of his, Maurice and Toshi, to back you up. Together, you'll have to fight your way to MEV dock 17 at Angel Station in the slums. Kura will contact you once you've docked."
     IDS_BUMPERSCREEN_15     "Catching the train to Crescent Square Station should be relatively simple. It's facing Kura again that gets complicated. After all, as far as you knew, she was dead. Your feelings for her have been compounded by grief and magnified by loss. To lose her was to lose a part of yourself. But now she's alive. And you're dating her sister."
-    IDS_BUMPERSCREEN_16     "According to Kura, there's a selective curfew in effect in the Shinara District, which means that only citizens with proper ID are allowed out of doors. Since you don't happen to belong to that select crowd, you'll have to be especially careful. Kura will guide you as best she can, but you should be prepared to improvise�"
+    IDS_BUMPERSCREEN_16     "According to Kura, there's a selective curfew in effect in the Shinara District, which means that only citizens with proper ID are allowed out of doors. Since you don't happen to belong to that select crowd, you'll have to be especially careful. Kura will guide you as best she can, but you should be prepared to improvise..."
 END
 
 STRINGTABLE DISCARDABLE 
@@ -1277,12 +1277,12 @@ BEGIN
     IDS_BUMPERSCREEN_20     "Kura has been captured by CMC security. Ryo Ishikawa, head of Shogo Industries on Cronus, has offered to help you infiltrate CMC security headquarters in exchange for your services once inside. Hank believes the Fallen will do everything in their power to eliminate Kura before she can reveal any information she might have. You've got to get to her before they do."
     IDS_BUMPERSCREEN_21     "The only way to Canopy Station is through heavily defended downtown Maritropa. You're on your own this time against even tougher odds, so be prepared for fierce resistance. Something tells you that the struggle for Cronus is far more complicated than you previously thought. Ryo Ishikawa has been a long-time ally of the UCA, but his motives have never been entirely clear. What does he have in mind for you at CMC headquarters?"
     IDS_BUMPERSCREEN_22     "The tram ride to Upper Maritropa should be uneventful. Enjoy the much needed respite and have a look around. You never know what you'll find lying around."
-    IDS_BUMPERSCREEN_23     "When you met Baku, he was a scrawny underachiever, a victim of bullies. Weak and fearful, he was slow to accept your friendship, but once he'd learned to trust you, his loyalty was inviolable. You remember�"
+    IDS_BUMPERSCREEN_23     "When you met Baku, he was a scrawny underachiever, a victim of bullies. Weak and fearful, he was slow to accept your friendship, but once he'd learned to trust you, his loyalty was inviolable. You remember..."
     IDS_BUMPERSCREEN_24     "Ryo has kept his word. With the ID code he supplied, you've made it inside CMC security headquarters without incident. Kura is imprisoned on level two, but Ryo first wants you to make your way to the lowest level of the building and disable the network safeguards, which are located in a secured server room. Afterward, he will help you get into the heavily fortified holding area. So far, there's no sign of the Fallen, but time is precious."
     IDS_BUMPERSCREEN_25     "Your ID code will be useless in the high security area you're entering. Ryo has helped you get this far without firing a shot, but there won't be much he can do once you're detected."
     IDS_BUMPERSCREEN_26     "Fallen assassins are en route. Even if you get to Kura before they do, you should expect that they'll be close behind. Reaching the holding cells will be a lot more difficult now that Ryo has set off alarms throughout the building. You'll have to thank him for that personally."
     IDS_BUMPERSCREEN_27     "It seems that Admiral Akkaraju intends to target Avernus with the Leviathan's kato cannon, delivering a killing blow to the Fallen in their well fortified home base. But the power of the kato weapon has never been tested on a populated world, and the side effects of the blast could affect Maritropa and Constantine as well. You've got to arrange to meet Toshiro and try to talk sense into him. If Kura is right about Cothineal, then there may be hope. Meanwhile, your escape from Ryo's trap guarantees you'll be running into Shogo soldiers eventually. It's safe to assume it will be sooner rather than later."
-    IDS_BUMPERSCREEN_28     "Kura will be waiting for you at the Oshii Research Station, where she hopes to find conclusive evidence of Cothineal's existence. First you have to get there. Hank's plan is simple. The two of you will stow away aboard a CMC cargo transport and reroute it for Avernus. There's only one small complication�"
+    IDS_BUMPERSCREEN_28     "Kura will be waiting for you at the Oshii Research Station, where she hopes to find conclusive evidence of Cothineal's existence. First you have to get there. Hank's plan is simple. The two of you will stow away aboard a CMC cargo transport and reroute it for Avernus. There's only one small complication..."
     IDS_BUMPERSCREEN_29     "As long as Ryo is alive, everyone you care about is in danger. He'll pay for killing Hank, but vengeance will have to wait. Kathryn can help you reroute the airship's automated navigational system once you're aboard. Perhaps Kura is right and proof of Cothineal will convince her father to reconsider his plans. If not, you'll have to reach Avernus and confront Toshiro before the admiral issues the order to destroy Avernus. The first trick is to get aboard."
     IDS_BUMPERSCREEN_30     "With your MCA safely docked aboard the transport, it's time to make your way to the forward cabin and locate the primary navigational system. There is a detachment of CMC soldiers aboard to defend the ship's precious cargo of munitions, so be careful. Getting past them won't be easy."
     IDS_BUMPERSCREEN_31     "The Oshii Geological Research Center has been attacked by Shogo forces seeking information on Cothineal. Once you meet up with Kura, she'll guide you to the main database. From there you should be able to upload the data to the Leviathan. It may be enough to convince Admiral Akkaraju to let you try to resolve matters your way."
@@ -1330,7 +1330,7 @@ BEGIN
     IDS_TRANSMISSION_17     "Hey, sweetie, you're wanted at MCA Dock S. Don't forget your ID. I think I saw it on the nightstand."
     IDS_TRANSMISSION_18     "Sanjuro, this is Admiral Akkaraju, stop fooling around and get to Dock S."
     IDS_TRANSMISSION_19     "Commander, report immediately to Dock S. My patience is wearing thin."
-    IDS_TRANSMISSION_20     "Glad to see you�ve regained communications Sanjuro! I have bad news for you though. Surveillance shows CMC soldiers heading toward your mecha. You better get back quick!!"
+    IDS_TRANSMISSION_20     "Glad to see you've regained communications Sanjuro! I have bad news for you though. Surveillance shows CMC soldiers heading toward your mecha. You better get back quick!!"
     IDS_TRANSMISSION_21     "You gotta take out all five mainframes. Ya got it?"
     IDS_TRANSMISSION_22     "This place is packed with bad guys. I'm gonna have to create a distraction for ya."
     IDS_TRANSMISSION_23     "I got 'em on the run! Go for it!"
@@ -1465,7 +1465,7 @@ BEGIN
     IDS_TRANSMISSION_2259   "Head out for Maritropa, I'll contact you there. Kura out."
     IDS_TRANSMISSION_2260   "Sanjuro? What the hell happened? Are you okay?"
     IDS_TRANSMISSION_2262   "I see."
-    IDS_TRANSMISSION_2263   "�"
+    IDS_TRANSMISSION_2263   "..."
     IDS_TRANSMISSION_2264   "Fall back to LZ Minotaur for immediate extraction Commander. I'm aborting the mission. It's time to settle matters once and for all."
     IDS_TRANSMISSION_2266   "Of course she is. Where do you think our intelligence has been coming from?"
     IDS_TRANSMISSION_2268   "Kura is a soldier, Commander. She does what she's told. You'd do well to follow her example."
@@ -1498,7 +1498,7 @@ BEGIN
     IDS_TRANSMISSION_2313   "Sanjuro!"
     IDS_TRANSMISSION_2314   "You lost what? Abort, Sanjuro! It's over."
     IDS_TRANSMISSION_2316   "It's because of Kura, isn't it?"
-    IDS_TRANSMISSION_2317   "�"
+    IDS_TRANSMISSION_2317   "..."
 END
 
 STRINGTABLE DISCARDABLE 
@@ -1553,7 +1553,7 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDS_TRANSMISSION_2449   "�"
+    IDS_TRANSMISSION_2449   "..."
     IDS_TRANSMISSION_2463   "What's going on, Sanjuro? Where's Kura?"
 END
 
@@ -1580,12 +1580,12 @@ BEGIN
     IDS_TRANSMISSION_2502   "You shouldn't have any trouble. I've guaranteed that CMC security has its hands full elsewhere. I'll contact you once you're inside."
     IDS_TRANSMISSION_2504   "The press bends the truth to suit its own agenda. You should know that better than anyone. Leave it at that. Ryo out."
     IDS_TRANSMISSION_2509   "From Shogo?"
-    IDS_TRANSMISSION_2511   "Well, be careful. Oh, Sanjuro�"
+    IDS_TRANSMISSION_2511   "Well, be careful. Oh, Sanjuro..."
 END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDS_TRANSMISSION_2513   "I just wanted to apologize for how I reacted when I heard Kura was alive. I love my sister as much as you do. I'm just�"
+    IDS_TRANSMISSION_2513   "I just wanted to apologize for how I reacted when I heard Kura was alive. I love my sister as much as you do. I'm just..."
 END
 
 STRINGTABLE DISCARDABLE 
@@ -1703,7 +1703,7 @@ BEGIN
     IDS_TRANSMISSION_2740   "The service lift should be on your right."
     IDS_TRANSMISSION_2745   "The lift should place you in a tunnel that will take you to the surface. You're getting close."
     IDS_TRANSMISSION_2747   "I'd understand if you wanted to be with Kura again."
-    IDS_TRANSMISSION_2748   "�"
+    IDS_TRANSMISSION_2748   "..."
 END
 
 STRINGTABLE DISCARDABLE 
@@ -1844,24 +1844,24 @@ BEGIN
     IDS_TRANSMISSION_2923   "Me wee-wee need lovin."
     IDS_TRANSMISSION_2924   "I want a doggie burger with fri to go."
     IDS_TRANSMISSION_2925   "It's only a flesh wound."
-    IDS_TRANSMISSION_2926   "There he is � open fire."
+    IDS_TRANSMISSION_2926   "There he is ... open fire."
     IDS_TRANSMISSION_2927   "Look out, he's got a gun."
 END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
     IDS_TRANSMISSION_2928   "Don't shoot, I'm unarmed."
-    IDS_TRANSMISSION_2929   "You want a piece of me � come and get it."
+    IDS_TRANSMISSION_2929   "You want a piece of me ... come and get it."
     IDS_TRANSMISSION_2930   "Whatcha do that for?"
     IDS_TRANSMISSION_2931   "Giddy up!"
-    IDS_TRANSMISSION_2932   "Yaaaaa�"
-    IDS_TRANSMISSION_2933   "So basically, you're telling me�"
-    IDS_TRANSMISSION_2934   "Well, we can talk about that later, but in regard to certain issues�"
+    IDS_TRANSMISSION_2932   "Yaaaaa..."
+    IDS_TRANSMISSION_2933   "So basically, you're telling me..."
+    IDS_TRANSMISSION_2934   "Well, we can talk about that later, but in regard to certain issues..."
     IDS_TRANSMISSION_2935   "Keep an eye out. Comm data shows he's in the area."
     IDS_TRANSMISSION_2936   "Roger."
     IDS_TRANSMISSION_2937   "He better not come my way. I gotta round of lead waiting for a new home."
     IDS_TRANSMISSION_2938   "My wife is pissed about me working double patrols."
-    IDS_TRANSMISSION_2939   "Unit 8 here, no sign of him�"
+    IDS_TRANSMISSION_2939   "Unit 8 here, no sign of him..."
     IDS_TRANSMISSION_2940   "Yeah, I hear he's a mecha pilot. My money says that academy boy can't fight like a trooper who's seen some shit."
     IDS_TRANSMISSION_2941   "Yeah, I hear he's a mecha pilot. My money says that academy boy can't fight like a trooper who's seen some action."
     IDS_TRANSMISSION_2942   "Unit 4 isn't responding. Those idiots must've turned off their radios again. I'm reporting them."
@@ -1870,7 +1870,7 @@ END
 STRINGTABLE DISCARDABLE 
 BEGIN
     IDS_TRANSMISSION_2999   "A good one. We can discuss it later."
-    IDS_TRANSMISSION_3000   " � Sanjuro, you there. Come in Sanjuro."
+    IDS_TRANSMISSION_3000   " ... Sanjuro, you there. Come in Sanjuro."
     IDS_TRANSMISSION_3001   "Gonna break down some punks!"
     IDS_TRANSMISSION_3002   "Grrrr."
     IDS_TRANSMISSION_3003   "Ha!"
@@ -1896,14 +1896,14 @@ BEGIN
     IDS_TRANSMISSION_3019   "Get to the elevator in the parking garage. It'll take you up into the main comm facility. You should be able to re-establish contact with the UCA from there."
     IDS_TRANSMISSION_3020   "Good, now you're gonna have to shut down the heating coils for shaft A. The coils are near your position. Find 'em, then destroy their control panels."
     IDS_TRANSMISSION_3021   "Okay, now for the fun part. You gotta jump down shaft A. The current should slow your descent enough to keep ya from cratering. There's a platform near the base of the shaft that'll lead you to shaft B."
-    IDS_TRANSMISSION_3022   "Sanjuro, get outta here! Shogo troopers are storming the place! There's too many � Hurry, Sanjuro!"
+    IDS_TRANSMISSION_3022   "Sanjuro, get outta here! Shogo troopers are storming the place! There's too many ... Hurry, Sanjuro!"
     IDS_TRANSMISSION_3023   "Say hello to Maurice and Toshi, Commander. They're here to help you out."
 END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
     IDS_TRANSMISSION_3024   "See that air intake tube?"
-    IDS_TRANSMISSION_3025   "You're not going to like this�"
+    IDS_TRANSMISSION_3025   "You're not going to like this..."
     IDS_TRANSMISSION_3026   "Wait up, hotshot."
 END
 
@@ -1928,7 +1928,7 @@ BEGIN
     IDS_TRANSMISSION_3155   "You're a failure."
     IDS_TRANSMISSION_3156   "Good work, Commander, I look forward to the debriefing."
     IDS_TRANSMISSION_3157   "Hmmm."
-    IDS_TRANSMISSION_3158   "Good, you're here � I'll get to the point. Your mission is to find and eliminate Gabriel at all costs."
+    IDS_TRANSMISSION_3158   "Good, you're here ... I'll get to the point. Your mission is to find and eliminate Gabriel at all costs."
     IDS_TRANSMISSION_3159   "Kill that traitor."
     IDS_TRANSMISSION_3160   "Its about time Commander!"
     IDS_TRANSMISSION_3161   "By the way, Commander, I'm pleased to note that you checked into Regional Diagnostics. It's about time you showed a little initiative."
@@ -2072,7 +2072,7 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDS_TRANSMISSION_3536   "I� I think so."
+    IDS_TRANSMISSION_3536   "I... I think so."
     IDS_TRANSMISSION_3537   "If you choose to pursue your mission, Avernus may be spared, but you will learn the true power of Gabriel."
     IDS_TRANSMISSION_3538   "Look around you, Sanjuro. This place is a shrine to what it means to be human. What more concise symbol of humanity is there than a clenched fist, a raised knife, a loaded gun? We are destroyers, colonizers, devourers. Our appetites define us. Human achievement is a destructive thing. It is measured in conquest and bloodshed."
     IDS_TRANSMISSION_3539   "Cothineal exists and that is all. Its only hunger is for self-preservation. When humans came to this world, to Coth, they came for power. They came to harvest. For many years, Cothineal tolerated them, for they posed no threat. When a threat finally arose, Cothineal reached out to the invaders and beseeched them to moderate their harvesting. Ivan Isarevich was the ambassador of Coth, and when humanity scorned him, he turned to terrorism. When we killed him, Cothineal was angered. I became the new ambassador."
@@ -2092,13 +2092,13 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_TRANSMISSION_3666   "Fair enough. Oh, and Baku, I'm glad to see you're alive."
     IDS_TRANSMISSION_3667   "I don't think so."
-    IDS_TRANSMISSION_3668   "I remember� you saved my life. In return, I'll spare yours. This time."
+    IDS_TRANSMISSION_3668   "I remember... you saved my life. In return, I'll spare yours. This time."
     IDS_TRANSMISSION_3669   "This is as far as you go, Sanjuro."
     IDS_TRANSMISSION_3670   "We'll finish this later."
     IDS_TRANSMISSION_3671   "Recon 4, fall back to Drop Point Renegade for immediate evac. We're picking up Fallen reinforcements approaching from the southeast. Get your team clear ASAP. Over."
     IDS_TRANSMISSION_3672   "Roger, fire for effect. Over."
     IDS_TRANSMISSION_3676   "Get out of here. I won't spare you next time."
-    IDS_TRANSMISSION_3677   "Sanjuro? I know you�"
+    IDS_TRANSMISSION_3677   "Sanjuro? I know you..."
 END
 
 STRINGTABLE DISCARDABLE 
