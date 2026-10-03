@@ -146,6 +146,7 @@ LTRESULT CClientMgr::ProcessError(LTRESULT theError) {
     }
 }
 
+extern uint32 sdl2_keycode_to_vkey(SDL_Keycode key);
 
 void CClientMgr::ForwardMessagesToScript()
 {
@@ -157,11 +158,11 @@ void CClientMgr::ForwardMessagesToScript()
 		{
 			if (dsi_GetSDLDown(i))
 			{
-				i_client_shell->OnKeyDown(SDL_GetKeyFromScancode((SDL_Scancode)i), 0);
+				i_client_shell->OnKeyDown(sdl2_keycode_to_vkey(SDL_GetKeyFromScancode((SDL_Scancode)i)), 0);
 			}
 			if (dsi_GetSDLUp(i))
 			{
-				i_client_shell->OnKeyUp(SDL_GetKeyFromScancode((SDL_Scancode)i));
+				i_client_shell->OnKeyUp(sdl2_keycode_to_vkey(SDL_GetKeyFromScancode((SDL_Scancode)i)));
 			}
 		}
 		dsi_ClearKeyDowns();
