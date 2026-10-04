@@ -47,6 +47,7 @@ bool In(const Rect &r, int x, int y)
 }
 
 const Rect kPlayButton(406, 12, 222, 26);
+const Rect kQuitButton(406, 330, 222, 26);
 
 SDL_Renderer *g_pRen  = 0;
 SDL_Texture  *g_pFont = 0;
@@ -248,7 +249,12 @@ struct App
         Frame(title, kBorder);
         Text(title.x + 4, title.y + (title.h - g_nLineH) / 2, kGameTitle, kText, title.w - 8);
 
-        Button(kPlayButton, "Play");
+        const Rect panel(12, 40, 380, 290);
+        Fill(panel, kWindow);
+        Frame(panel, kBorder);
+
+        Button(kPlayButton, "Launch");
+        Button(kQuitButton, "Quit");
 
         // A refused or failed launch
         Text(12, 366, sStatus, kAlert, kWinW - 24);
@@ -266,6 +272,9 @@ int LauncherMain()
 #ifdef _WIN32
     SDL_SetMainReady();
 #endif
+
+    // A click that activates the window still reaches the buttons
+    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) return 1;
 
@@ -312,11 +321,15 @@ int LauncherMain()
                 bQuit = true;
             else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_EXPOSED)
                 bRedraw = true;
-            else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT &&
-                     In(kPlayButton, e.button.x, e.button.y))
+            else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT)
             {
-                app.DoPlay();
-                bRedraw = true;
+                if (In(kPlayButton, e.button.x, e.button.y))
+                {
+                    app.DoPlay();
+                    bRedraw = true;
+                }
+                else if (In(kQuitButton, e.button.x, e.button.y))
+                    bQuit = true;
             }
         } while (SDL_PollEvent(&e));
     }
