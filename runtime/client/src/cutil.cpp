@@ -147,6 +147,14 @@ LTRESULT CClientMgr::ProcessError(LTRESULT theError) {
 }
 
 extern uint32 sdl2_keycode_to_vkey(SDL_Keycode key);
+extern int32 g_bLT1VirtualKeys;
+
+// LT1 shells compare against VK_ codes, and Jupiter shells against SDLK_ codes
+static uint32 cutil_ShellKey(int nScancode)
+{
+	SDL_Keycode key = SDL_GetKeyFromScancode((SDL_Scancode)nScancode);
+	return g_bLT1VirtualKeys ? sdl2_keycode_to_vkey(key) : (uint32)key;
+}
 
 void CClientMgr::ForwardMessagesToScript()
 {
@@ -158,11 +166,11 @@ void CClientMgr::ForwardMessagesToScript()
 		{
 			if (dsi_GetSDLDown(i))
 			{
-				i_client_shell->OnKeyDown(sdl2_keycode_to_vkey(SDL_GetKeyFromScancode((SDL_Scancode)i)), 0);
+				i_client_shell->OnKeyDown(cutil_ShellKey(i), 0);
 			}
 			if (dsi_GetSDLUp(i))
 			{
-				i_client_shell->OnKeyUp(sdl2_keycode_to_vkey(SDL_GetKeyFromScancode((SDL_Scancode)i)));
+				i_client_shell->OnKeyUp(cutil_ShellKey(i));
 			}
 		}
 		dsi_ClearKeyDowns();

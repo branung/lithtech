@@ -45,6 +45,9 @@ void DECompat_ApplyLT1ClientDefaults(ILTClient *pClientDE)
 
     // Optimized 2D draws over the whole target, not clipped to the last camera's rect
     pClientDE->RunConsoleString("-Optimized2DFullViewport 1");
+
+    // LT1 shells read OnKeyDown and OnKeyUp as Win32 virtual key codes
+    pClientDE->RunConsoleString("-LT1VirtualKeys 1");
     
     // LT1StairStep (both sides) and DynamicLightWorld are set per game after this call
 }
