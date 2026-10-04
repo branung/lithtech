@@ -9,9 +9,11 @@ endif()
 
 add_executable(LithLauncher
 	launcher_core.cpp
-	launcher_sdl2.cpp)
+	launcher_sdl2.cpp
+	launcher_splash.cpp)
 target_include_directories(LithLauncher PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${SDL2_INCLUDE_DIRS})
-target_link_libraries(LithLauncher ${SDL2_LIBRARIES})
+target_include_directories(LithLauncher PRIVATE ${CMAKE_SOURCE_DIR}/libs/rezmgr ${CMAKE_SOURCE_DIR}/libs/lith ${CMAKE_SOURCE_DIR}/sdk/inc)
+target_link_libraries(LithLauncher ${SDL2_LIBRARIES} LIB_RezMgr)
 
 if(NOT MSVC)
 	target_compile_options(LithLauncher PRIVATE -Wall -Wextra)

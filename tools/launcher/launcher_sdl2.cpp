@@ -1,4 +1,5 @@
 #include "launcher_core.h"
+#include "launcher_splash.h"
 
 #ifdef _WIN32
 #define SDL_MAIN_HANDLED
@@ -24,6 +25,8 @@ namespace {
 const char *kLauncherName    = "LithLauncher";
 const char *kLauncherVersion = "0.01";
 const char *kGameTitle       = "Shogo: Mobile Armor Division";
+const char *kSplashRez       = "SHOGO.REZ";
+const char *kSplashPath      = "INTERFACE\\SPLASH.PCX";
 
 const Uint32 kFace   = 0xF0F0F0;
 const Uint32 kWindow = 0xFFFFFF;
@@ -235,6 +238,9 @@ struct App
     std::string sStatus;
     bool bDisplayOpen = false;
 
+    SDL_Texture *pSplash = 0;
+    bool bSplashTried = false;
+
     // Refuses a launch whose archives aren't there.
     void DoPlay()
     {
@@ -266,7 +272,13 @@ struct App
             present.push_back(ltlaunch::FileExists(ltlaunch::JoinPath(spec.m_sGameDir, spec.m_Rez[i])));
             bMissing = bMissing || !present.back();
         }
-        if (bMissing) DrawDataMissing(panel, present);
+        if (bMissing)
+        {
+            DrawDataMissing(panel, present);
+            bSplashTried = false; // loaded again once the archives are back
+        }
+        else
+            DrawSplash(panel);
 
         Button(kPlayButton, "Launch");
         Button(kDisplayButton, "Display...");
@@ -280,6 +292,39 @@ struct App
         Text((kWinW - TextW(sLine)) / 2, 440, sLine, kText);
 
         if (bDisplayOpen) DrawDisplayDialog();
+    }
+
+    void LoadSplash()
+    {
+        bSplashTried = true;
+        if (pSplash) { SDL_DestroyTexture(pSplash); pSplash = 0; }
+
+        std::vector<unsigned char> raw;
+        ltlaunch::Image img;
+        if (!ltlaunch::ReadRezEntry(ltlaunch::JoinPath(spec.m_sGameDir, kSplashRez), kSplashPath, raw) ||
+            !ltlaunch::DecodePcx(raw, img))
+            return;
+
+        pSplash = SDL_CreateTexture(g_pRen, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STATIC,
+                                    img.m_nWidth, img.m_nHeight);
+        if (!pSplash) return;
+        SDL_UpdateTexture(pSplash, 0, &img.m_RGB[0], img.m_nWidth * 3);
+        SDL_SetTextureScaleMode(pSplash, SDL_ScaleModeLinear);
+    }
+
+    void DrawSplash(const Rect &panel)
+    {
+        if (!bSplashTried) LoadSplash();
+        if (!pSplash) return;
+
+        int nW = 0, nH = 0;
+        SDL_QueryTexture(pSplash, 0, 0, &nW, &nH);
+        const Rect in(panel.x + 1, panel.y + 1, panel.w - 2, panel.h - 2);
+        int w = in.w, h = nH * in.w / nW;
+        if (h > in.h) { h = in.h; w = nW * in.h / nH; }
+        Fill(in, 0x000000);
+        SDL_Rect dst = { in.x + (in.w - w) / 2, in.y + (in.h - h) / 2, w, h };
+        SDL_RenderCopy(g_pRen, pSplash, 0, &dst);
     }
 
     // Names each archive the game needs, whether it was found, and the folder they belong in
@@ -426,6 +471,7 @@ int LauncherMain()
         } while (SDL_PollEvent(&e));
     }
 
+    if (app.pSplash) SDL_DestroyTexture(app.pSplash);
     if (g_pFont) SDL_DestroyTexture(g_pFont);
     SDL_DestroyRenderer(g_pRen);
     SDL_DestroyWindow(pWnd);
