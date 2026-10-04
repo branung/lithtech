@@ -21,6 +21,7 @@ option(BUILD_FEAR "Build F.E.A.R. game code" OFF)
 option(BUILD_NOLF "Build No One Lives Forever game code" OFF)
 option(BUILD_SHOGO "Build Shogo game code" OFF)
 option(BUILD_TOOLS "Build tools" OFF)
+option(BUILD_LAUNCHER "Build the game launcher" ON)
 if(WIN32)
 option(ENABLE_D3D "Enable Direct3D" ON)
 option(ENABLE_DIRECTX "Enable DirectX" ON)
@@ -210,6 +211,10 @@ if(BUILD_TOOLS)
     add_subdirectory(tools/DtxView)			# TOOLS_DtxView
     add_subdirectory(tools/LithRez)			# TOOLS_LithRez
 endif(BUILD_TOOLS)
+
+if(BUILD_LAUNCHER)
+    add_subdirectory(tools/launcher)		# LithLauncher
+endif(BUILD_LAUNCHER)
 
 if(NOT WIN32)
 add_subdirectory(tests/RegMgr)
