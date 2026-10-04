@@ -31,6 +31,7 @@ const Uint32 kBorder = 0x7A7A7A;
 const Uint32 kButton = 0xE1E1E1;
 const Uint32 kText   = 0x000000;
 const Uint32 kAlert  = 0xA00000;
+const Uint32 kGrayTxt = 0x6D6D6D;
 const Uint32 kCaption = 0x0078D7;
 const Uint32 kCapText = 0xFFFFFF;
 
@@ -237,12 +238,7 @@ struct App
     // Refuses a launch whose archives aren't there.
     void DoPlay()
     {
-        const std::string sMissing = ltlaunch::FirstMissing(spec);
-        if (!sMissing.empty())
-        {
-            sStatus = sMissing + " was not found in " + spec.m_sGameDir;
-            return;
-        }
+        if (!ltlaunch::FirstMissing(spec).empty()) return;
 
         std::string sError;
         if (!Spawn(ltlaunch::BuildCommandLine(spec), spec.m_sGameDir, sError))
@@ -263,6 +259,15 @@ struct App
         Fill(panel, kWindow);
         Frame(panel, kBorder);
 
+        std::vector<bool> present;
+        bool bMissing = false;
+        for (size_t i = 0; i < spec.m_Rez.size(); ++i)
+        {
+            present.push_back(ltlaunch::FileExists(ltlaunch::JoinPath(spec.m_sGameDir, spec.m_Rez[i])));
+            bMissing = bMissing || !present.back();
+        }
+        if (bMissing) DrawDataMissing(panel, present);
+
         Button(kPlayButton, "Launch");
         Button(kDisplayButton, "Display...");
         Button(kQuitButton, "Quit");
@@ -275,6 +280,46 @@ struct App
         Text((kWinW - TextW(sLine)) / 2, 440, sLine, kText);
 
         if (bDisplayOpen) DrawDisplayDialog();
+    }
+
+    // Names each archive the game needs, whether it was found, and the folder they belong in
+    void DrawDataMissing(const Rect &panel, const std::vector<bool> &present)
+    {
+        const Rect in(panel.x + 3, panel.y + 3, panel.w - 6, panel.h - 6);
+        const int nMaxW = in.w - 8;
+        int y = in.y + 12;
+
+        const std::string sHead = "GAME DATA MISSING";
+        const int hx = in.x + (in.w - TextW(sHead)) / 2;
+        Text(hx, y, sHead, kAlert);
+        Text(hx + 1, y, sHead, kAlert);
+        y += g_nLineH + 10;
+
+        Text(in.x + 4, y, "This game's archives were not found. Copy them into:", kText, nMaxW);
+        y += g_nLineH + 4;
+
+        std::string sDir = spec.m_sGameDir;
+        while (!sDir.empty())
+        {
+            size_t n = 1;
+            while (n < sDir.size() && TextW(sDir.substr(0, n + 1)) <= nMaxW) ++n;
+            if (n < sDir.size())
+            {
+                const size_t cut = sDir.find_last_of("\\/", n - 1);
+                if (cut != std::string::npos && cut > 0) n = cut + 1;
+            }
+            Text(in.x + 4, y, sDir.substr(0, n), kText, nMaxW);
+            sDir.erase(0, n);
+            y += g_nLineH;
+        }
+        y += 8;
+
+        for (size_t i = 0; i < spec.m_Rez.size() && y + g_nLineH <= in.y + in.h; ++i)
+        {
+            Text(in.x + 12, y, present[i] ? "found" : "missing", present[i] ? kGrayTxt : kAlert);
+            Text(in.x + 84, y, spec.m_Rez[i], present[i] ? kGrayTxt : kText, in.w - 88);
+            y += g_nLineH;
+        }
     }
 
     void DrawDisplayDialog()
@@ -344,7 +389,8 @@ int LauncherMain()
         {
             if (e.type == SDL_QUIT)
                 bQuit = true;
-            else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_EXPOSED)
+            else if (e.type == SDL_WINDOWEVENT && (e.window.event == SDL_WINDOWEVENT_EXPOSED ||
+                                                   e.window.event == SDL_WINDOWEVENT_FOCUS_GAINED))
                 bRedraw = true;
             else if (e.type == SDL_KEYDOWN && app.bDisplayOpen &&
                      (e.key.keysym.sym == SDLK_ESCAPE || e.key.keysym.sym == SDLK_RETURN ||
