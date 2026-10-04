@@ -31,6 +31,8 @@ const Uint32 kBorder = 0x7A7A7A;
 const Uint32 kButton = 0xE1E1E1;
 const Uint32 kText   = 0x000000;
 const Uint32 kAlert  = 0xA00000;
+const Uint32 kCaption = 0x0078D7;
+const Uint32 kCapText = 0xFFFFFF;
 
 const int kWinW = 640, kWinH = 470;
 
@@ -48,6 +50,13 @@ bool In(const Rect &r, int x, int y)
 
 const Rect kPlayButton(406, 12, 222, 26);
 const Rect kQuitButton(406, 330, 222, 26);
+const Rect kDisplayButton(406, 52, 222, 26);
+
+const Rect kDialog((kWinW - 440) / 2, (kWinH - 320) / 2, 440, 320);
+const Rect kDialogCaption(kDialog.x + 1, kDialog.y + 1, kDialog.w - 2, 22);
+const Rect kDialogClose(kDialogCaption.x + kDialogCaption.w - 21, kDialogCaption.y + 2, 18, 18);
+const Rect kDialogOK(kDialog.x + kDialog.w - 176, kDialog.y + kDialog.h - 34, 80, 24);
+const Rect kDialogCancel(kDialog.x + kDialog.w - 88, kDialog.y + kDialog.h - 34, 80, 24);
 
 SDL_Renderer *g_pRen  = 0;
 SDL_Texture  *g_pFont = 0;
@@ -223,6 +232,7 @@ struct App
 {
     ltlaunch::LaunchSpec spec;
     std::string sStatus;
+    bool bDisplayOpen = false;
 
     // Refuses a launch whose archives aren't there.
     void DoPlay()
@@ -254,6 +264,7 @@ struct App
         Frame(panel, kBorder);
 
         Button(kPlayButton, "Launch");
+        Button(kDisplayButton, "Display...");
         Button(kQuitButton, "Quit");
 
         // A refused or failed launch
@@ -262,6 +273,20 @@ struct App
         // The footer
         const std::string sLine = std::string(kLauncherName) + " v" + kLauncherVersion;
         Text((kWinW - TextW(sLine)) / 2, 440, sLine, kText);
+
+        if (bDisplayOpen) DrawDisplayDialog();
+    }
+
+    void DrawDisplayDialog()
+    {
+        Fill(kDialog, kFace);
+        Frame(kDialog, kBorder);
+        Fill(kDialogCaption, kCaption);
+        Text(kDialogCaption.x + 6, kDialogCaption.y + (kDialogCaption.h - g_nLineH) / 2,
+             "Display Settings", kCapText, kDialogCaption.w - 32);
+        Button(kDialogClose, "x");
+        Button(kDialogOK, "OK");
+        Button(kDialogCancel, "Cancel");
     }
 };
 
@@ -321,11 +346,32 @@ int LauncherMain()
                 bQuit = true;
             else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_EXPOSED)
                 bRedraw = true;
+            else if (e.type == SDL_KEYDOWN && app.bDisplayOpen &&
+                     (e.key.keysym.sym == SDLK_ESCAPE || e.key.keysym.sym == SDLK_RETURN ||
+                      e.key.keysym.sym == SDLK_KP_ENTER))
+            {
+                app.bDisplayOpen = false;
+                bRedraw = true;
+            }
+            else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT && app.bDisplayOpen)
+            {
+                if (In(kDialogOK, e.button.x, e.button.y) || In(kDialogCancel, e.button.x, e.button.y) ||
+                    In(kDialogClose, e.button.x, e.button.y))
+                {
+                    app.bDisplayOpen = false;
+                    bRedraw = true;
+                }
+            }
             else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT)
             {
                 if (In(kPlayButton, e.button.x, e.button.y))
                 {
                     app.DoPlay();
+                    bRedraw = true;
+                }
+                else if (In(kDisplayButton, e.button.x, e.button.y))
+                {
+                    app.bDisplayOpen = true;
                     bRedraw = true;
                 }
                 else if (In(kQuitButton, e.button.x, e.button.y))
