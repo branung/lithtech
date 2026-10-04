@@ -683,11 +683,11 @@ void dsi_ClearKeyMessages() {
         }
     }
 
-    for (i = 0; i < 500; i++) {
-        if (!PeekMessage(&msg, g_ClientGlob.m_hMainWnd, WM_KEYUP, WM_KEYUP, PM_REMOVE)) {
-            break;
-        }
-    }
+    // for (i = 0; i < 500; i++) {
+    //     if (!PeekMessage(&msg, g_ClientGlob.m_hMainWnd, WM_KEYUP, WM_KEYUP, PM_REMOVE)) {
+    //         break;
+    //     }
+    // }
 }
 
 LTBOOL dsi_IsConsoleUp() {
