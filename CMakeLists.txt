@@ -35,6 +35,7 @@ option(ENABLE_OPENAL "Use OpenAL as audio backend" ON)
 option(ENABLE_DIRECTMUSIC OFF)
 endif(WIN32)
 option(FINAL_BUILD "Strip the developer console, counters and diagnostics" OFF)
+option(BUILD_TESTS "Build the offline loader checks (testDtxLT1, testModelABC, testWorldV56)" OFF)
 option(USE_INTERNAL_ZLIB "Use bundled zlib" ON)			# eventually want default to be OFF
 option(USE_INTERNAL_FREETYPE "Use bundled freetype" ON)	# eventually want default to be OFF
 
@@ -218,6 +219,8 @@ add_subdirectory(tests/DynResDLL)
 add_subdirectory(tests/rndgen)
 endif(NOT WIN32)
 
-add_subdirectory(tests/DtxLT1)
-add_subdirectory(tests/ModelABC)
-add_subdirectory(tests/WorldV56)
+if(BUILD_TESTS)
+    add_subdirectory(tests/DtxLT1)
+    add_subdirectory(tests/ModelABC)
+    add_subdirectory(tests/WorldV56)
+endif(BUILD_TESTS)
