@@ -4,7 +4,11 @@
 #ifndef __OBJECTTEMPLATEMGR_H__
 #define __OBJECTTEMPLATEMGR_H__
 #ifndef __LINUX
+#if _MSC_VER >= 1916
+#include <unordered_map>
+#else
 #include <hash_map>
+#endif
 #else
 #include <map>
 #endif
@@ -86,7 +90,7 @@ protected:
 
 	typedef std::map< std::string, ObjectCreateStruct, ObjectTemplateMgrHashCompare > TTemplateMap;
 
-#elif _MSC_VER > 1300
+#elif _MSC_VER > 1300 && _MSC_VER < 1916
 
 	typedef stdext::hash_map< std::string, ObjectCreateStruct, ObjectTemplateMgrHashCompare > TTemplateMap;
 
@@ -107,7 +111,7 @@ protected:
 	{
 		size_t operator()(const std::string &sName) const {
 			uint32 nHash = 0;
-			const char *pName = sName.begin();
+			const char *pName = sName.c_str();
 			for (; *pName; ++pName)
 				nHash = 13 * nHash + (toupper(*pName) - '@');
 			return nHash;
@@ -115,7 +119,7 @@ protected:
 	};
 
 	// The actual template dictionary type
-	typedef std::hash_map<std::string, ObjectCreateStruct, SHash_TemplateName, SCompare_TemplateName> TTemplateMap;
+	typedef std::unordered_map<std::string, ObjectCreateStruct, SHash_TemplateName, SCompare_TemplateName> TTemplateMap;
 
 #endif // VC7
 

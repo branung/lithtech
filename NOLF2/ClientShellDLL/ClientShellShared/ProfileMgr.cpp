@@ -8,7 +8,7 @@
 //
 // ----------------------------------------------------------------------- //
 
-#include "StdAfx.h"
+#include "Stdafx.h"
 
 #include "ProfileMgr.h"
 #include "ClientUtilities.h"
@@ -501,7 +501,7 @@ void CUserProfile::LoadControls()
 		
 	}
 
-	int countPOV = std::min(kMaxDevicePOV, g_pProfileMgr->GetNumPOV());
+	int countPOV = (std::min)(kMaxDevicePOV, g_pProfileMgr->GetNumPOV());
 	for (int a = 0; a < countPOV; a++)
 	{
 		CDevicePOVData *pPOVData = g_pProfileMgr->GetPOVData(a);
@@ -1318,7 +1318,7 @@ void CUserProfile::ApplyJoystick()
 		}
 	}
 
-	int countPOV = std::min(kMaxDevicePOV, g_pProfileMgr->GetNumPOV());
+	int countPOV = (std::min)(kMaxDevicePOV, g_pProfileMgr->GetNumPOV());
 	for (int a = 0; a < countPOV; a++)
 	{
 		CDevicePOVData *pPOVData = g_pProfileMgr->GetPOVData(a);

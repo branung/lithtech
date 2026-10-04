@@ -22,7 +22,11 @@
 
 #ifdef _MSC_VER
 #pragma warning( disable : 4786 )
+#if _MSC_VER >= 1916
+#include <unordered_map>
+#else
 #include <hash_map>
+#endif
 #endif
 
 #include <string>
@@ -131,7 +135,9 @@ namespace LineSystem
 			  pLineSystem(0) {}
 	};
 
-#if _MSC_VER >= 1300
+#if _MSC_VER >= 1916
+	typedef std::unordered_map< std::string, SystemEntry > SystemMap;
+#elif _MSC_VER >= 1300
 	typedef std::hash_map< std::string, SystemEntry, ObjectTemplateMgrHashCompare > SystemMap;
 #elif defined(__LINUX)
 	typedef std::map< std::string, SystemEntry > SystemMap;    

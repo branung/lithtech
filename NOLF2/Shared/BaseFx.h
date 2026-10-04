@@ -183,9 +183,8 @@
 											}
 
 											CLIENTFX_CREATESTRUCT(const char *sName, uint32 dwFlags, const LTVector &vPos)
+												: CLIENTFX_CREATESTRUCT()
 											{
-												CLIENTFX_CREATESTRUCT();
-
 												LTStrCpy(m_sName, sName, sizeof(m_sName));
 												m_dwFlags    = dwFlags;
 												m_vPos       = LTVector{vPos};
@@ -193,9 +192,8 @@
 											}
 
 											CLIENTFX_CREATESTRUCT(const char *sName, uint32 dwFlags,const LTVector &vPos,const LTRotation &rRot)
+												: CLIENTFX_CREATESTRUCT()
 											{
-												CLIENTFX_CREATESTRUCT();
-
 												LTStrCpy(m_sName, sName, sizeof(m_sName));
 												m_dwFlags    = dwFlags;
 												m_vPos       = LTVector{vPos};
@@ -203,9 +201,8 @@
 											}
 
 											CLIENTFX_CREATESTRUCT(const char *sName, uint32 dwFlags, HOBJECT hParent)
+												: CLIENTFX_CREATESTRUCT()
 											{
-												CLIENTFX_CREATESTRUCT();
-
 												LTStrCpy(m_sName, sName, sizeof(m_sName));
 												m_dwFlags    = dwFlags;
 												m_hParent	 = hParent;

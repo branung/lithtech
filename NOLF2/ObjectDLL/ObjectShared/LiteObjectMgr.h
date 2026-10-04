@@ -74,7 +74,7 @@ private:
 
 	typedef std::hash_map< const char *, GameBaseLite *, ButeMgrHashCompare > TNameMap;
 
-#elif _MSC_VER > 1300
+#elif _MSC_VER > 1300 && _MSC_VER < 1916
 
 	typedef stdext::hash_map< const char *, GameBaseLite *, ButeMgrHashCompare > TNameMap;
 
@@ -107,7 +107,7 @@ private:
 	// The map for storing the name/GameBaseLite* association
 	// Note : I happen to know that the lite game object names are stored in the object...
 	// If that changes, the const char * part of this would need changing...
-	typedef std::hash_map<const char *, GameBaseLite *, hash_str_nocase, eqstr_nocase> TNameMap;
+	typedef std::unordered_map<const char *, GameBaseLite *, hash_str_nocase, eqstr_nocase> TNameMap;
 
 #endif // VC7
 

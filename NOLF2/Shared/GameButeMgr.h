@@ -16,7 +16,11 @@
 
 #ifdef _MSC_VER
 #pragma warning( disable : 4786 )
+#if _MSC_VER >= 1916
+#include <unordered_map>
+#else
 #include <hash_map>
+#endif
 #else
 #include <map>
 #endif
@@ -34,7 +38,7 @@ void GBM_DisplayError(const char* szMsg);
 
 typedef std::hash_map< const char *, int, ButeMgrHashCompare > IndexTable;
 
-#elif _MSC_VER > 1300
+#elif _MSC_VER > 1300 && _MSC_VER < 1916
 
 typedef stdext::hash_map< const char *, int, ButeMgrHashCompare > IndexTable;
 
@@ -66,7 +70,7 @@ struct GBM_hash_str_nocase
 	}
 };
 
-typedef std::hash_map<const char *,int, GBM_hash_str_nocase, eqstr_nocase> IndexTable;
+typedef std::unordered_map<const char *,int, GBM_hash_str_nocase, eqstr_nocase> IndexTable;
 
 #endif // VC7
 
