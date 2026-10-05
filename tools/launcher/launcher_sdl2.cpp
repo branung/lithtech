@@ -28,10 +28,13 @@ const char *kGameTitle       = "Shogo: Mobile Armor Division";
 const char *kSplashRez       = "SHOGO.REZ";
 const char *kSplashPath      = "INTERFACE\\SPLASH.PCX";
 
+// Launcher color palette (0xRRGGBB)
 const Uint32 kFace   = 0xF0F0F0;
 const Uint32 kWindow = 0xFFFFFF;
 const Uint32 kBorder = 0x7A7A7A;
 const Uint32 kButton = 0xE1E1E1;
+const Uint32 kButtonDown = 0xCCE4F7;
+const Uint32 kBorderDown = 0x005499;
 const Uint32 kText   = 0x000000;
 const Uint32 kAlert  = 0xA00000;
 const Uint32 kGrayTxt = 0x6D6D6D;
@@ -193,11 +196,11 @@ SDL_Texture *MakeFontAtlas()
     return pTex;
 }
 
-void Button(const Rect &r, const std::string &sLabel)
+void Button(const Rect &r, const std::string &sLabel, bool bPressed = false)
 {
-    Fill(r, kButton);
-    Frame(r, kBorder);
-    TextC(r, sLabel, kText);
+    Fill(r, bPressed ? kButtonDown : kButton);
+    Frame(r, bPressed ? kBorderDown : kBorder);
+    TextC(bPressed ? Rect(r.x + 1, r.y + 1, r.w, r.h) : r, sLabel, kText);
 }
 
 // Starts the engine with the game directory as its working directory
@@ -237,6 +240,10 @@ struct App
     ltlaunch::LaunchSpec spec;
     std::string sStatus;
     bool bDisplayOpen = false;
+    bool bQuit = false;
+
+    const Rect *pPressed = 0;
+    bool bPressedOver = false;
 
     SDL_Texture *pSplash = 0;
     bool bSplashTried = false;
@@ -250,6 +257,26 @@ struct App
         if (!Spawn(ltlaunch::BuildCommandLine(spec), spec.m_sGameDir, sError))
         { sStatus = sError; return; }
         sStatus.clear();
+    }
+
+    bool Down(const Rect &r) const { return pPressed == &r && bPressedOver; }
+
+    const Rect *ButtonAt(int x, int y) const
+    {
+        static const Rect *const kMain[] = { &kPlayButton, &kDisplayButton, &kQuitButton };
+        static const Rect *const kDlg[]  = { &kDialogOK, &kDialogCancel, &kDialogClose };
+        const Rect *const *pList = bDisplayOpen ? kDlg : kMain;
+        for (int i = 0; i < 3; ++i)
+            if (In(*pList[i], x, y)) return pList[i];
+        return 0;
+    }
+
+    void Press(const Rect *p)
+    {
+        if (p == &kPlayButton) DoPlay();
+        else if (p == &kDisplayButton) bDisplayOpen = true;
+        else if (p == &kQuitButton) bQuit = true;
+        else bDisplayOpen = false;   // OK, Cancel and the close box
     }
 
     void Draw()
@@ -280,9 +307,9 @@ struct App
         else
             DrawSplash(panel);
 
-        Button(kPlayButton, "Launch");
-        Button(kDisplayButton, "Display...");
-        Button(kQuitButton, "Quit");
+        Button(kPlayButton, "Launch", Down(kPlayButton));
+        Button(kDisplayButton, "Display...", Down(kDisplayButton));
+        Button(kQuitButton, "Quit", Down(kQuitButton));
 
         // A refused or failed launch
         Text(12, 366, sStatus, kAlert, kWinW - 24);
@@ -374,9 +401,9 @@ struct App
         Fill(kDialogCaption, kCaption);
         Text(kDialogCaption.x + 6, kDialogCaption.y + (kDialogCaption.h - g_nLineH) / 2,
              "Display Settings", kCapText, kDialogCaption.w - 32);
-        Button(kDialogClose, "x");
-        Button(kDialogOK, "OK");
-        Button(kDialogCancel, "Cancel");
+        Button(kDialogClose, "x", Down(kDialogClose));
+        Button(kDialogOK, "OK", Down(kDialogOK));
+        Button(kDialogCancel, "Cancel", Down(kDialogCancel));
     }
 };
 
@@ -418,8 +445,8 @@ int LauncherMain()
         return 1;
     }
 
-    bool bQuit = false, bRedraw = true;
-    while (!bQuit)
+    bool bRedraw = true;
+    while (!app.bQuit)
     {
         if (bRedraw)
         {
@@ -433,7 +460,7 @@ int LauncherMain()
         do
         {
             if (e.type == SDL_QUIT)
-                bQuit = true;
+                app.bQuit = true;
             else if (e.type == SDL_WINDOWEVENT && (e.window.event == SDL_WINDOWEVENT_EXPOSED ||
                                                    e.window.event == SDL_WINDOWEVENT_FOCUS_GAINED))
                 bRedraw = true;
@@ -442,31 +469,26 @@ int LauncherMain()
                       e.key.keysym.sym == SDLK_KP_ENTER))
             {
                 app.bDisplayOpen = false;
+                app.pPressed = 0;
                 bRedraw = true;
-            }
-            else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT && app.bDisplayOpen)
-            {
-                if (In(kDialogOK, e.button.x, e.button.y) || In(kDialogCancel, e.button.x, e.button.y) ||
-                    In(kDialogClose, e.button.x, e.button.y))
-                {
-                    app.bDisplayOpen = false;
-                    bRedraw = true;
-                }
             }
             else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT)
             {
-                if (In(kPlayButton, e.button.x, e.button.y))
-                {
-                    app.DoPlay();
-                    bRedraw = true;
-                }
-                else if (In(kDisplayButton, e.button.x, e.button.y))
-                {
-                    app.bDisplayOpen = true;
-                    bRedraw = true;
-                }
-                else if (In(kQuitButton, e.button.x, e.button.y))
-                    bQuit = true;
+                app.pPressed = app.ButtonAt(e.button.x, e.button.y);
+                app.bPressedOver = true;
+                if (app.pPressed) bRedraw = true;
+            }
+            else if (e.type == SDL_MOUSEMOTION && app.pPressed)
+            {
+                const bool bOver = In(*app.pPressed, e.motion.x, e.motion.y);
+                if (bOver != app.bPressedOver) { app.bPressedOver = bOver; bRedraw = true; }
+            }
+            else if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT && app.pPressed)
+            {
+                const Rect *p = app.pPressed;
+                app.pPressed = 0;
+                if (In(*p, e.button.x, e.button.y)) app.Press(p);
+                bRedraw = true;
             }
         } while (SDL_PollEvent(&e));
     }
