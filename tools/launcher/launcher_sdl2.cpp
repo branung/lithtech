@@ -6,6 +6,7 @@
 #endif
 #include <SDL.h>
 
+#include <cstdlib>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -64,6 +65,13 @@ const Rect kDialogCaption(kDialog.x + 1, kDialog.y + 1, kDialog.w - 2, 22);
 const Rect kDialogClose(kDialogCaption.x + kDialogCaption.w - 21, kDialogCaption.y + 2, 18, 18);
 const Rect kDialogOK(kDialog.x + kDialog.w - 176, kDialog.y + kDialog.h - 34, 80, 24);
 const Rect kDialogCancel(kDialog.x + kDialog.w - 88, kDialog.y + kDialog.h - 34, 80, 24);
+const Rect kSizeList(kDialog.x + 14, kDialog.y + 48, kDialog.w - 28, 172);
+const Rect kBorderlessBox(kDialog.x + 14, kDialog.y + 228, kDialog.w - 28, 18);
+const int  kRowH = 18;
+const int  kListPad = 2;
+const int  kScrollBarW = 14;
+const int  kMinHandleH = 12;
+const int  kCheckSize = 13;
 
 SDL_Renderer *g_pRen  = 0;
 SDL_Texture  *g_pFont = 0;
@@ -203,6 +211,70 @@ void Button(const Rect &r, const std::string &sLabel, bool bPressed = false)
     TextC(bPressed ? Rect(r.x + 1, r.y + 1, r.w, r.h) : r, sLabel, kText);
 }
 
+void CheckBox(const Rect &hit, const std::string &sLabel, bool bOn, bool bPressed)
+{
+    const Rect box(hit.x, hit.y + (hit.h - kCheckSize) / 2, kCheckSize, kCheckSize);
+    Fill(box, bPressed ? kButtonDown : kWindow);
+    Frame(box, bPressed ? kBorderDown : kBorder);
+    if (bOn)
+    {
+        for (int i = 0; i < 3; ++i) Fill(Rect(box.x + 3 + i, box.y + 5 + i, 1, 3), kText);
+        for (int i = 0; i < 4; ++i) Fill(Rect(box.x + 6 + i, box.y + 7 - i, 1, 3), kText);
+    }
+    Text(box.x + kCheckSize + 6, hit.y + (hit.h - g_nLineH) / 2, sLabel, kText);
+}
+
+int VisibleRows(const Rect &r)
+{
+    return (r.h - 2 * kListPad) / kRowH;
+}
+
+void ListBox(const Rect &r, const std::vector<std::string> &items, int iSel, int nScroll)
+{
+    Fill(r, kWindow);
+    Frame(r, kBorder);
+    const int nVis = VisibleRows(r);
+    const int nItems = (int)items.size();
+    const bool bBar = nItems > nVis;
+    const int nRowW = r.w - 2 * kListPad - (bBar ? kScrollBarW : 0);
+
+    for (int n = 0; n < nVis && nScroll + n < nItems; ++n)
+    {
+        const int i = nScroll + n;
+        const Rect row(r.x + kListPad, r.y + kListPad + n * kRowH, nRowW, kRowH);
+        if (i == iSel) Fill(row, kCaption);
+        Text(row.x + 4, row.y + (kRowH - g_nLineH) / 2, items[(size_t)i],
+             i == iSel ? kCapText : kText, row.w - 8);
+    }
+
+    if (bBar)
+    {
+        const Rect bar(r.x + r.w - kScrollBarW, r.y + kListPad, kScrollBarW - kListPad, r.h - 2 * kListPad);
+        Fill(bar, kFace);
+
+        int nHandleH = bar.h * nVis / nItems;
+        if (nHandleH < kMinHandleH) nHandleH = kMinHandleH;
+        const int nTravel = bar.h - nHandleH;
+        const int nHandleY = bar.y + nTravel * nScroll / (nItems - nVis);
+        const Rect handle(bar.x, nHandleY, bar.w, nHandleH);
+        Fill(handle, kButton);
+        Frame(handle, kBorder);
+    }
+}
+
+std::vector<ltlaunch::WindowSize> DesktopSizes()
+{
+    std::vector<ltlaunch::WindowSize> all;
+    for (int d = 0; d < SDL_GetNumVideoDisplays(); ++d)
+        for (int m = 0; m < SDL_GetNumDisplayModes(d); ++m)
+        {
+            SDL_DisplayMode dm;
+            if (SDL_GetDisplayMode(d, m, &dm) != 0) continue;
+            all.push_back({ dm.w, dm.h });
+        }
+    return ltlaunch::DistinctSizes(all);
+}
+
 // Starts the engine with the game directory as its working directory
 bool Spawn(const std::vector<std::string> &args, const std::string &sCwd,
            std::string &sError)
@@ -248,6 +320,11 @@ struct App
     SDL_Texture *pSplash = 0;
     bool bSplashTried = false;
 
+    std::vector<ltlaunch::WindowSize> sizes;
+    int  iSize = -1, iSizeOpen = -1;
+    bool bBorderless = false, bBorderlessOpen = false;
+    int  nSizeScroll = 0;
+
     // Refuses a launch whose archives aren't there.
     void DoPlay()
     {
@@ -263,20 +340,105 @@ struct App
 
     const Rect *ButtonAt(int x, int y) const
     {
-        static const Rect *const kMain[] = { &kPlayButton, &kDisplayButton, &kQuitButton };
-        static const Rect *const kDlg[]  = { &kDialogOK, &kDialogCancel, &kDialogClose };
-        const Rect *const *pList = bDisplayOpen ? kDlg : kMain;
-        for (int i = 0; i < 3; ++i)
-            if (In(*pList[i], x, y)) return pList[i];
+        static const std::vector<const Rect *> kMain = { &kPlayButton, &kDisplayButton, &kQuitButton };
+        static const std::vector<const Rect *> kDlg  = { &kDialogOK, &kDialogCancel, &kDialogClose, &kBorderlessBox };
+        for (const Rect *pButton : bDisplayOpen ? kDlg : kMain)
+            if (In(*pButton, x, y)) return pButton;
         return 0;
     }
 
     void Press(const Rect *p)
     {
         if (p == &kPlayButton) DoPlay();
-        else if (p == &kDisplayButton) bDisplayOpen = true;
+        else if (p == &kDisplayButton) OpenDisplay();
         else if (p == &kQuitButton) bQuit = true;
-        else bDisplayOpen = false;   // OK, Cancel and the close box
+        else if (p == &kBorderlessBox) bBorderless = !bBorderless;
+        else CloseDisplay(p == &kDialogOK);
+    }
+
+    std::vector<std::string> SizeRows() const
+    {
+        std::vector<std::string> rows;
+        for (size_t i = 0; i < sizes.size(); ++i) rows.push_back(ltlaunch::SizeText(sizes[i]));
+        return rows;
+    }
+
+    void ScrollTo(int iRow)
+    {
+        const int nMax = (int)sizes.size() - VisibleRows(kSizeList);
+        nSizeScroll = iRow;
+        if (nSizeScroll > nMax) nSizeScroll = nMax;
+        if (nSizeScroll < 0) nSizeScroll = 0;
+    }
+
+    void ScrollBy(int nRows) { ScrollTo(nSizeScroll + nRows); }
+
+    std::string DisplayCfgPath() const { return ltlaunch::JoinPath(spec.m_sGameDir, "display.cfg"); }
+
+    // Takes the size and borderless setting from display.cfg
+    void ReadDisplayCfg()
+    {
+        const std::string sCfg = ltlaunch::ReadTextFile(DisplayCfgPath());
+        std::string sWidth, sHeight, sBorderless;
+        ltlaunch::WindowSize fileSize = { 0, 0 };
+        if (ltlaunch::GetConfigValue(sCfg, "ScreenWidth", sWidth) &&
+            ltlaunch::GetConfigValue(sCfg, "ScreenHeight", sHeight))
+        {
+            fileSize.m_nWidth = std::atoi(sWidth.c_str());
+            fileSize.m_nHeight = std::atoi(sHeight.c_str());
+            std::vector<ltlaunch::WindowSize> all = sizes;
+            all.push_back(fileSize);
+            sizes = ltlaunch::DistinctSizes(all);
+        }
+
+        iSize = -1;
+        for (size_t i = 0; i < sizes.size(); ++i)
+            if (sizes[i].m_nWidth == fileSize.m_nWidth && sizes[i].m_nHeight == fileSize.m_nHeight)
+                iSize = (int)i;
+
+        bBorderless = ltlaunch::GetConfigValue(sCfg, "BorderlessWindow", sBorderless) &&
+                      std::atoi(sBorderless.c_str()) != 0;
+    }
+
+    void OpenDisplay()
+    {
+        ReadDisplayCfg();
+        iSizeOpen = iSize;
+        bBorderlessOpen = bBorderless;
+        ScrollTo(iSize);
+        bDisplayOpen = true;
+    }
+
+    // OK writes what changed into display.cfg
+    void CloseDisplay(bool bAccept)
+    {
+        bDisplayOpen = false;
+        if (!bAccept) { iSize = iSizeOpen; bBorderless = bBorderlessOpen; return; }
+
+        std::vector<ltlaunch::ConfigValue> values;
+        if (iSize != iSizeOpen && iSize >= 0)
+        {
+            values.push_back({ "ScreenWidth", std::to_string(sizes[(size_t)iSize].m_nWidth) });
+            values.push_back({ "ScreenHeight", std::to_string(sizes[(size_t)iSize].m_nHeight) });
+        }
+        if (bBorderless != bBorderlessOpen)
+            values.push_back({ "BorderlessWindow", bBorderless ? "1" : "0" });
+        if (values.empty()) return;
+
+        const std::string sCfg = ltlaunch::SetConfigValues(ltlaunch::ReadTextFile(DisplayCfgPath()), values);
+        if (ltlaunch::WriteTextFile(DisplayCfgPath(), sCfg)) sStatus.clear();
+        else sStatus = "Could not write " + DisplayCfgPath();
+    }
+
+    bool ClickSizeList(int x, int y)
+    {
+        const int nVis = VisibleRows(kSizeList);
+        const int nBar = ((int)sizes.size() > nVis) ? kScrollBarW : 0;
+        const Rect rows(kSizeList.x + kListPad, kSizeList.y + kListPad, kSizeList.w - 2 * kListPad - nBar, nVis * kRowH);
+        if (!In(rows, x, y)) return false;
+        const int iRow = nSizeScroll + (y - rows.y) / kRowH;
+        if (iRow < (int)sizes.size()) iSize = iRow;
+        return true;
     }
 
     void Draw()
@@ -399,8 +561,11 @@ struct App
         Fill(kDialog, kFace);
         Frame(kDialog, kBorder);
         Fill(kDialogCaption, kCaption);
-        Text(kDialogCaption.x + 6, kDialogCaption.y + (kDialogCaption.h - g_nLineH) / 2,
-             "Display Settings", kCapText, kDialogCaption.w - 32);
+        Text(kDialogCaption.x + 6, kDialogCaption.y + (kDialogCaption.h - g_nLineH) / 2, "Display Settings", 
+            kCapText, kDialogCaption.w - 32);
+        Text(kDialog.x + 14, kDialog.y + 30, "Window size:", kText);
+        ListBox(kSizeList, SizeRows(), iSize, nSizeScroll);
+        CheckBox(kBorderlessBox, "Borderless window", bBorderless, Down(kBorderlessBox));
         Button(kDialogClose, "x", Down(kDialogClose));
         Button(kDialogOK, "OK", Down(kDialogOK));
         Button(kDialogCancel, "Cancel", Down(kDialogCancel));
@@ -427,6 +592,8 @@ int LauncherMain()
 
     App app;
     app.spec = ltlaunch::ShogoLaunch(sExeDir);
+
+    app.sizes = DesktopSizes();
 
     SDL_Window *pWnd = SDL_CreateWindow(kLauncherName,
                                         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -468,15 +635,27 @@ int LauncherMain()
                      (e.key.keysym.sym == SDLK_ESCAPE || e.key.keysym.sym == SDLK_RETURN ||
                       e.key.keysym.sym == SDLK_KP_ENTER))
             {
-                app.bDisplayOpen = false;
+                const bool bAccept = e.key.keysym.sym != SDLK_ESCAPE;
+                app.CloseDisplay(bAccept);
                 app.pPressed = 0;
                 bRedraw = true;
             }
+            else if (e.type == SDL_MOUSEWHEEL && app.bDisplayOpen)
+            {
+                int mx = 0, my = 0;
+                SDL_GetMouseState(&mx, &my);
+                if (In(kSizeList, mx, my)) { app.ScrollBy(-e.wheel.y * 3); bRedraw = true; }
+            }
             else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT)
             {
-                app.pPressed = app.ButtonAt(e.button.x, e.button.y);
-                app.bPressedOver = true;
-                if (app.pPressed) bRedraw = true;
+                if (app.bDisplayOpen && app.ClickSizeList(e.button.x, e.button.y))
+                    bRedraw = true;
+                else
+                {
+                    app.pPressed = app.ButtonAt(e.button.x, e.button.y);
+                    app.bPressedOver = true;
+                    if (app.pPressed) bRedraw = true;
+                }
             }
             else if (e.type == SDL_MOUSEMOTION && app.pPressed)
             {
