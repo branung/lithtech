@@ -2,10 +2,13 @@
 
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
 namespace ltlaunch {
+
+const char *kCustomFolder = "Custom";
 
 std::string JoinPath(const std::string &dir, const std::string &leaf)
 {
@@ -74,6 +77,11 @@ bool EqualNoCase(const std::string &a, const std::string &b)
     return true;
 }
 
+bool EndsWithNoCase(const std::string &s, const std::string &sEnd)
+{
+    return s.size() >= sEnd.size() && EqualNoCase(s.substr(s.size() - sEnd.size()), sEnd);
+}
+
 bool ReadWord(const std::string &line, size_t &i, std::string &out)
 {
     while (i < line.size() && (line[i] == ' ' || line[i] == '\t')) ++i;
@@ -123,6 +131,41 @@ std::string QuotedLine(const ConfigValue &value)
     return "\"" + value.m_sName + "\" \"" + value.m_sValue + "\"";
 }
 
+}
+
+bool DirExists(const std::string &sPath)
+{
+    std::error_code ec;
+    return std::filesystem::is_directory(sPath, ec);
+}
+
+std::vector<std::string> ListFiles(const std::string &sDir, const std::string &sExt)
+{
+    std::vector<std::string> out;
+    std::error_code ec;
+    for (std::filesystem::directory_iterator it(sDir, ec), end; !ec && it != end; it.increment(ec))
+    {
+        if (!it->is_regular_file(ec)) continue;
+        const std::string sName = it->path().filename().string();
+        if (EndsWithNoCase(sName, sExt)) out.push_back(sName);
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+bool ContainsNoCase(const std::vector<std::string> &list, const std::string &sName)
+{
+    for (const std::string &s : list)
+        if (EqualNoCase(s, sName)) return true;
+    return false;
+}
+
+std::vector<std::string> AvailableRez(const LaunchSpec &spec)
+{
+    std::vector<std::string> out;
+    for (const std::string &sName : ListFiles(JoinPath(spec.m_sGameDir, kCustomFolder), ".rez"))
+        out.push_back(JoinPath(kCustomFolder, sName));
+    return out;
 }
 
 std::vector<WindowSize> DistinctSizes(const std::vector<WindowSize> &sizes)

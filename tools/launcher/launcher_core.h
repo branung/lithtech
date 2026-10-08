@@ -28,6 +28,13 @@ std::string JoinPath(const std::string &dir, const std::string &leaf);
 
 bool FileExists(const std::string &sPath);
 
+bool DirExists(const std::string &sPath);
+
+std::vector<std::string> ListFiles(const std::string &sDir, const std::string &sExt);
+
+// Whether a list holds a name (compared without case)
+bool ContainsNoCase(const std::vector<std::string> &list, const std::string &sName);
+
 // A whole file, or an empty string when it can't be read
 std::string ReadTextFile(const std::string &sPath);
 
@@ -49,6 +56,12 @@ LaunchSpec ShogoLaunch(const std::string &sExeDir);
 
 // The first rez file that isn't in the game directory, or an empty string when all are there
 std::string FirstMissing(const LaunchSpec &spec);
+
+// Where players put their own archives and levels inside the game folder
+extern const char *kCustomFolder;
+
+// The .rez files added in the Custom folder
+std::vector<std::string> AvailableRez(const LaunchSpec &spec);
 
 // The engine's argument list. The caller sets the working directory to m_sGameDir
 std::vector<std::string> BuildCommandLine(const LaunchSpec &spec);

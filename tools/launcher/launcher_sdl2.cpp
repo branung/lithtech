@@ -59,14 +59,38 @@ bool In(const Rect &r, int x, int y)
 const Rect kPlayButton(406, 12, 222, 26);
 const Rect kQuitButton(406, 330, 222, 26);
 const Rect kDisplayButton(406, 52, 222, 26);
+const Rect kCustomizeButton(406, 86, 222, 26);
 
-const Rect kDialog((kWinW - 440) / 2, (kWinH - 320) / 2, 440, 320);
-const Rect kDialogCaption(kDialog.x + 1, kDialog.y + 1, kDialog.w - 2, 22);
-const Rect kDialogClose(kDialogCaption.x + kDialogCaption.w - 21, kDialogCaption.y + 2, 18, 18);
-const Rect kDialogOK(kDialog.x + kDialog.w - 176, kDialog.y + kDialog.h - 34, 80, 24);
-const Rect kDialogCancel(kDialog.x + kDialog.w - 88, kDialog.y + kDialog.h - 34, 80, 24);
-const Rect kSizeList(kDialog.x + 14, kDialog.y + 48, kDialog.w - 28, 172);
-const Rect kBorderlessBox(kDialog.x + 14, kDialog.y + 228, kDialog.w - 28, 18);
+const int kCaptionH = 22;
+const int kCloseSize = 18;
+const int kDlgButtonW = 80, kDlgButtonH = 24;
+const int kDlgButtonGap = 8; // Gap between OK and Cancel and between Cancel and the frame's edge
+const int kDlgBottomMargin = 10; // Margin below OK and Cancel
+
+// A dialog centred over the window, with its caption bar, close box, OK and Cancel
+struct Dialog
+{
+    Rect frame, caption, close, ok, cancel;
+
+    Dialog(int w, int h)
+        : frame((kWinW - w) / 2, (kWinH - h) / 2, w, h),
+          caption(frame.x + 1, frame.y + 1, w - 2, kCaptionH),
+          close(caption.x + caption.w - kCloseSize - 3, caption.y + 2, kCloseSize, kCloseSize),
+          ok(frame.x + w - 2 * (kDlgButtonW + kDlgButtonGap), frame.y + h - kDlgButtonH - kDlgBottomMargin,
+             kDlgButtonW, kDlgButtonH),
+          cancel(frame.x + w - (kDlgButtonW + kDlgButtonGap), frame.y + h - kDlgButtonH - kDlgBottomMargin,
+                 kDlgButtonW, kDlgButtonH) {}
+};
+
+const Dialog kDisplayDlg(440, 320);
+const Rect kSizeList(kDisplayDlg.frame.x + 14, kDisplayDlg.frame.y + 48, kDisplayDlg.frame.w - 28, 172);
+const Rect kBorderlessBox(kDisplayDlg.frame.x + 14, kDisplayDlg.frame.y + 228, kDisplayDlg.frame.w - 28, 18);
+
+const Dialog kCustomizeDlg(586, 290);
+const Rect kAvailableList(kCustomizeDlg.frame.x + 14, kCustomizeDlg.frame.y + 46, 220, 160);
+const Rect kChosenList(kCustomizeDlg.frame.x + 352, kCustomizeDlg.frame.y + 46, 220, 160);
+const Rect kAddButton(kCustomizeDlg.frame.x + 248, kCustomizeDlg.frame.y + 90, 90, 24);
+const Rect kRemoveButton(kCustomizeDlg.frame.x + 248, kCustomizeDlg.frame.y + 122, 90, 24);
 const int  kRowH = 18;
 const int  kListPad = 2;
 const int  kScrollBarW = 14;
@@ -262,6 +286,23 @@ void ListBox(const Rect &r, const std::vector<std::string> &items, int iSel, int
     }
 }
 
+int ListRowAt(const Rect &list, int nItems, int nScroll, int x, int y)
+{
+    const int nVis = VisibleRows(list);
+    const int nBar = (nItems > nVis) ? kScrollBarW : 0;
+    const Rect rows(list.x + kListPad, list.y + kListPad, list.w - 2 * kListPad - nBar, nVis * kRowH);
+    if (!In(rows, x, y)) return -1;
+    return nScroll + (y - rows.y) / kRowH;
+}
+
+int ClampScroll(const Rect &list, int nItems, int nScroll)
+{
+    const int nMax = nItems - VisibleRows(list);
+    if (nScroll > nMax) nScroll = nMax;
+    if (nScroll < 0) nScroll = 0;
+    return nScroll;
+}
+
 std::vector<ltlaunch::WindowSize> DesktopSizes()
 {
     std::vector<ltlaunch::WindowSize> all;
@@ -311,8 +352,10 @@ struct App
 {
     ltlaunch::LaunchSpec spec;
     std::string sStatus;
-    bool bDisplayOpen = false;
     bool bQuit = false;
+
+    enum class DialogId { None, Display, Customize };
+    DialogId eOpenDialog = DialogId::None;
 
     const Rect *pPressed = 0;
     bool bPressedOver = false;
@@ -325,35 +368,151 @@ struct App
     bool bBorderless = false, bBorderlessOpen = false;
     int  nSizeScroll = 0;
 
-    // Refuses a launch whose archives aren't there.
+    // Extra archives loaded after the game's own
+    // The 'OnOpen' copy is what Cancel puts back
+    std::vector<std::string> availableRez, chosenRez, chosenRezOnOpen;
+    int iAvailableSel = -1, iChosenSel = -1;
+    int nAvailableScroll = 0, nChosenScroll = 0;
+
+    // The archives a launch loads
+    // Order: the game's archives, then the Custom folder itself so loose levels are listed ingame, then the selected custom archives.
+    // False when a selected archive is no longer there, with its name stored in sMissing
+    bool LaunchRez(std::vector<std::string> &rez, std::string &sMissing) const
+    {
+        rez = spec.m_Rez;
+
+        if (ltlaunch::DirExists(ltlaunch::JoinPath(spec.m_sGameDir, ltlaunch::kCustomFolder)))
+            rez.push_back(ltlaunch::kCustomFolder);
+
+        for (const std::string &sRez : chosenRez)
+        {
+            const std::string sPath = ltlaunch::JoinPath(spec.m_sGameDir, sRez);
+            if (!ltlaunch::FileExists(sPath) && !ltlaunch::DirExists(sPath))
+            {
+                sMissing = sRez;
+                return false;
+            }
+            rez.push_back(sRez);
+        }
+        return true;
+    }
+
     void DoPlay()
     {
         if (!ltlaunch::FirstMissing(spec).empty()) return;
 
+        ltlaunch::LaunchSpec launch = spec;
+        std::string sMissing;
+        if (!LaunchRez(launch.m_Rez, sMissing))
+        {
+            sStatus = sMissing + " was not found";
+            return;
+        }
+
         std::string sError;
-        if (!Spawn(ltlaunch::BuildCommandLine(spec), spec.m_sGameDir, sError))
+        if (!Spawn(ltlaunch::BuildCommandLine(launch), spec.m_sGameDir, sError))
         { sStatus = sError; return; }
         sStatus.clear();
     }
 
     bool Down(const Rect &r) const { return pPressed == &r && bPressedOver; }
 
+    // The buttons a screen takes clicks on
+    static const std::vector<const Rect *> &ButtonsFor(DialogId eDialog)
+    {
+        static const std::vector<const Rect *> kMain =
+            { &kPlayButton, &kDisplayButton, &kCustomizeButton, &kQuitButton };
+        static const std::vector<const Rect *> kDisplay =
+            { &kDisplayDlg.ok, &kDisplayDlg.cancel, &kDisplayDlg.close, &kBorderlessBox };
+        static const std::vector<const Rect *> kCustomize =
+            { &kCustomizeDlg.ok, &kCustomizeDlg.cancel, &kCustomizeDlg.close, &kAddButton, &kRemoveButton };
+
+        switch (eDialog)
+        {
+            case DialogId::Display:   return kDisplay;
+            case DialogId::Customize: return kCustomize;
+            default:                  return kMain;
+        }
+    }
+
     const Rect *ButtonAt(int x, int y) const
     {
-        static const std::vector<const Rect *> kMain = { &kPlayButton, &kDisplayButton, &kQuitButton };
-        static const std::vector<const Rect *> kDlg  = { &kDialogOK, &kDialogCancel, &kDialogClose, &kBorderlessBox };
-        for (const Rect *pButton : bDisplayOpen ? kDlg : kMain)
+        for (const Rect *pButton : ButtonsFor(eOpenDialog))
             if (In(*pButton, x, y)) return pButton;
         return 0;
     }
 
+    static bool IsOkButton(const Rect *p) { return p == &kDisplayDlg.ok || p == &kCustomizeDlg.ok; }
+
     void Press(const Rect *p)
     {
+        // Main window
         if (p == &kPlayButton) DoPlay();
         else if (p == &kDisplayButton) OpenDisplay();
+        else if (p == &kCustomizeButton) OpenCustomize();
         else if (p == &kQuitButton) bQuit = true;
+        // Display dialog
         else if (p == &kBorderlessBox) bBorderless = !bBorderless;
-        else CloseDisplay(p == &kDialogOK);
+        // Customize dialog
+        else if (p == &kAddButton) AddRez();
+        else if (p == &kRemoveButton) RemoveRez();
+        // OK, Cancel or a close box. Cancel and the close boxes put things back
+        else CloseDialog(IsOkButton(p));
+    }
+
+    void CloseDialog(bool bAccept)
+    {
+        if (eOpenDialog == DialogId::Display) CloseDisplay(bAccept);
+        else if (eOpenDialog == DialogId::Customize) CloseCustomize(bAccept);
+        eOpenDialog = DialogId::None;
+    }
+
+    // One list in a dialog
+    struct ListRef
+    {
+        const Rect &rect;
+        int nItems;
+        int &nScroll;
+        int &iSel;
+    };
+
+    // The open dialog's lists
+    std::vector<ListRef> OpenLists()
+    {
+        if (eOpenDialog == DialogId::Display)
+            return { { kSizeList, (int)sizes.size(), nSizeScroll, iSize } };
+        if (eOpenDialog == DialogId::Customize)
+            return { { kAvailableList, (int)availableRez.size(), nAvailableScroll, iAvailableSel },
+                     { kChosenList, (int)chosenRez.size(), nChosenScroll, iChosenSel } };
+        return {};
+    }
+
+    // Selects the row under a click
+    static bool SelectRowAt(ListRef &list, int x, int y)
+    {
+        const int iRow = ListRowAt(list.rect, list.nItems, list.nScroll, x, y);
+        if (iRow < 0) return false;
+        if (iRow < list.nItems) list.iSel = iRow;
+        return true;
+    }
+
+    bool ClickList(int x, int y)
+    {
+        for (ListRef &list : OpenLists())
+            if (SelectRowAt(list, x, y)) return true;
+        return false;
+    }
+
+    // Scrolls the list under the mouse
+    bool ScrollList(int x, int y, int nRows)
+    {
+        for (ListRef &list : OpenLists())
+            if (In(list.rect, x, y))
+            {
+                list.nScroll = ClampScroll(list.rect, list.nItems, list.nScroll + nRows);
+                return true;
+            }
+        return false;
     }
 
     std::vector<std::string> SizeRows() const
@@ -362,16 +521,6 @@ struct App
         for (size_t i = 0; i < sizes.size(); ++i) rows.push_back(ltlaunch::SizeText(sizes[i]));
         return rows;
     }
-
-    void ScrollTo(int iRow)
-    {
-        const int nMax = (int)sizes.size() - VisibleRows(kSizeList);
-        nSizeScroll = iRow;
-        if (nSizeScroll > nMax) nSizeScroll = nMax;
-        if (nSizeScroll < 0) nSizeScroll = 0;
-    }
-
-    void ScrollBy(int nRows) { ScrollTo(nSizeScroll + nRows); }
 
     std::string DisplayCfgPath() const { return ltlaunch::JoinPath(spec.m_sGameDir, "display.cfg"); }
 
@@ -405,14 +554,13 @@ struct App
         ReadDisplayCfg();
         iSizeOpen = iSize;
         bBorderlessOpen = bBorderless;
-        ScrollTo(iSize);
-        bDisplayOpen = true;
+        nSizeScroll = ClampScroll(kSizeList, (int)sizes.size(), iSize);
+        eOpenDialog = DialogId::Display;
     }
 
     // OK writes what changed into display.cfg
     void CloseDisplay(bool bAccept)
     {
-        bDisplayOpen = false;
         if (!bAccept) { iSize = iSizeOpen; bBorderless = bBorderlessOpen; return; }
 
         std::vector<ltlaunch::ConfigValue> values;
@@ -430,15 +578,34 @@ struct App
         else sStatus = "Could not write " + DisplayCfgPath();
     }
 
-    bool ClickSizeList(int x, int y)
+    void OpenCustomize()
     {
-        const int nVis = VisibleRows(kSizeList);
-        const int nBar = ((int)sizes.size() > nVis) ? kScrollBarW : 0;
-        const Rect rows(kSizeList.x + kListPad, kSizeList.y + kListPad, kSizeList.w - 2 * kListPad - nBar, nVis * kRowH);
-        if (!In(rows, x, y)) return false;
-        const int iRow = nSizeScroll + (y - rows.y) / kRowH;
-        if (iRow < (int)sizes.size()) iSize = iRow;
-        return true;
+        availableRez = ltlaunch::AvailableRez(spec);
+        iAvailableSel = iChosenSel = -1;
+        nAvailableScroll = nChosenScroll = 0;
+        chosenRezOnOpen = chosenRez;
+        eOpenDialog = DialogId::Customize;
+    }
+
+    void CloseCustomize(bool bAccept)
+    {
+        if (!bAccept) chosenRez = chosenRezOnOpen;
+    }
+
+    void AddRez()
+    {
+        if (iAvailableSel < 0 || iAvailableSel >= (int)availableRez.size()) return;
+        const std::string &sRez = availableRez[(size_t)iAvailableSel];
+        if (!ltlaunch::ContainsNoCase(chosenRez, sRez)) chosenRez.push_back(sRez);
+    }
+
+    void RemoveRez()
+    {
+        if (iChosenSel < 0 || iChosenSel >= (int)chosenRez.size()) return;
+        chosenRez.erase(chosenRez.begin() + iChosenSel);
+
+        if (iChosenSel >= (int)chosenRez.size()) iChosenSel = (int)chosenRez.size() - 1;
+        nChosenScroll = ClampScroll(kChosenList, (int)chosenRez.size(), nChosenScroll);
     }
 
     void Draw()
@@ -471,6 +638,7 @@ struct App
 
         Button(kPlayButton, "Launch", Down(kPlayButton));
         Button(kDisplayButton, "Display...", Down(kDisplayButton));
+        Button(kCustomizeButton, "Customize...", Down(kCustomizeButton));
         Button(kQuitButton, "Quit", Down(kQuitButton));
 
         // A refused or failed launch
@@ -480,7 +648,8 @@ struct App
         const std::string sLine = std::string(kLauncherName) + " v" + kLauncherVersion;
         Text((kWinW - TextW(sLine)) / 2, 440, sLine, kText);
 
-        if (bDisplayOpen) DrawDisplayDialog();
+        if (eOpenDialog == DialogId::Display) DrawDisplayDialog();
+        else if (eOpenDialog == DialogId::Customize) DrawCustomizeDialog();
     }
 
     void LoadSplash()
@@ -556,19 +725,35 @@ struct App
         }
     }
 
+    // The frame, caption bar, close box, OK and Cancel every dialog shares
+    void DrawDialog(const Dialog &d, const std::string &sTitle)
+    {
+        Fill(d.frame, kFace);
+        Frame(d.frame, kBorder);
+        Fill(d.caption, kCaption);
+        Text(d.caption.x + 6, d.caption.y + (d.caption.h - g_nLineH) / 2, sTitle, kCapText, d.caption.w - 32);
+        Button(d.close, "x", Down(d.close));
+        Button(d.ok, "OK", Down(d.ok));
+        Button(d.cancel, "Cancel", Down(d.cancel));
+    }
+
     void DrawDisplayDialog()
     {
-        Fill(kDialog, kFace);
-        Frame(kDialog, kBorder);
-        Fill(kDialogCaption, kCaption);
-        Text(kDialogCaption.x + 6, kDialogCaption.y + (kDialogCaption.h - g_nLineH) / 2, "Display Settings", 
-            kCapText, kDialogCaption.w - 32);
-        Text(kDialog.x + 14, kDialog.y + 30, "Window size:", kText);
+        DrawDialog(kDisplayDlg, "Display Settings");
+        Text(kSizeList.x, kSizeList.y - 18, "Window size:", kText);
         ListBox(kSizeList, SizeRows(), iSize, nSizeScroll);
         CheckBox(kBorderlessBox, "Borderless window", bBorderless, Down(kBorderlessBox));
-        Button(kDialogClose, "x", Down(kDialogClose));
-        Button(kDialogOK, "OK", Down(kDialogOK));
-        Button(kDialogCancel, "Cancel", Down(kDialogCancel));
+    }
+
+    void DrawCustomizeDialog()
+    {
+        DrawDialog(kCustomizeDlg, std::string("Customize ") + kGameTitle);
+        Text(kAvailableList.x, kAvailableList.y - 16, "Available rez files:", kText);
+        ListBox(kAvailableList, availableRez, iAvailableSel, nAvailableScroll);
+        Button(kAddButton, "Add >", Down(kAddButton));
+        Button(kRemoveButton, "< Remove", Down(kRemoveButton));
+        Text(kChosenList.x, kChosenList.y - 16, "Rez files to load:", kText);
+        ListBox(kChosenList, chosenRez, iChosenSel, nChosenScroll);
     }
 };
 
@@ -631,24 +816,24 @@ int LauncherMain()
             else if (e.type == SDL_WINDOWEVENT && (e.window.event == SDL_WINDOWEVENT_EXPOSED ||
                                                    e.window.event == SDL_WINDOWEVENT_FOCUS_GAINED))
                 bRedraw = true;
-            else if (e.type == SDL_KEYDOWN && app.bDisplayOpen &&
+            else if (e.type == SDL_KEYDOWN && app.eOpenDialog != App::DialogId::None &&
                      (e.key.keysym.sym == SDLK_ESCAPE || e.key.keysym.sym == SDLK_RETURN ||
                       e.key.keysym.sym == SDLK_KP_ENTER))
             {
                 const bool bAccept = e.key.keysym.sym != SDLK_ESCAPE;
-                app.CloseDisplay(bAccept);
+                app.CloseDialog(bAccept);
                 app.pPressed = 0;
                 bRedraw = true;
             }
-            else if (e.type == SDL_MOUSEWHEEL && app.bDisplayOpen)
+            else if (e.type == SDL_MOUSEWHEEL)
             {
                 int mx = 0, my = 0;
                 SDL_GetMouseState(&mx, &my);
-                if (In(kSizeList, mx, my)) { app.ScrollBy(-e.wheel.y * 3); bRedraw = true; }
+                if (app.ScrollList(mx, my, -e.wheel.y * 3)) bRedraw = true;
             }
             else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT)
             {
-                if (app.bDisplayOpen && app.ClickSizeList(e.button.x, e.button.y))
+                if (app.ClickList(e.button.x, e.button.y))
                     bRedraw = true;
                 else
                 {
