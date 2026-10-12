@@ -39,6 +39,7 @@
 #include "clientshell.h"
 #include "servermgr.h"
 #include "systimer.h"
+#include "demoplay_lt1.h"
 #include "iltclient.h"
 #include "ltbenchmark_impl.h"
 #include "sprite.h"
@@ -122,6 +123,9 @@ static ILTDrawPrim* g_pLTDrawPrimInternal;
 define_holder_to_instance(ILTDrawPrim, g_pLTDrawPrimInternal, Internal);
 
 #include "vkdefs.h"
+
+// How many milliseconds the models animate this frame (whole ms during a demo, as LT1 did)
+static uint32 s_nAnimFrameMS = 0;
 
 //------------------------------------------------------------------
 //------------------------------------------------------------------
@@ -488,7 +492,7 @@ LTRESULT CClientMgr::StartShell(StartGameRequest *pRequest)
     LTRESULT dResult;
     char errorString[256];
     CBaseDriver *pDriver;
-    char *pWorldName, playbackWorldName[256];
+    char *pWorldName;
 
 
     // Kill the old server connection if there is one.
@@ -622,10 +626,16 @@ LTRESULT CClientMgr::StartShell(StartGameRequest *pRequest)
                 RETURN_ERROR_PARAM(1, CClientMgr::StartShell, dResult, errorString);
             }
 
-            // If they asked for a playdemo, fill in the world name.
+            // A playdemo gets the recording's world, which Shogo reads back after StartGame
             if (pRequest->m_PlaybackFilename[0] != 0)
             {
-                SAFE_STRCPY(pRequest->m_WorldName, playbackWorldName);
+                if (!DemoPlaybackLT1().Load(pRequest->m_PlaybackFilename))
+                {
+                    delete pShell;
+                    RETURN_ERROR_PARAM(1, CClientMgr::StartShell, LT_ERROR, pRequest->m_PlaybackFilename);
+                }
+                SAFE_STRCPY(pRequest->m_WorldName, DemoPlaybackLT1().World());
+                DemoPlaybackLT1().Begin();
             }
         }
         break;
@@ -651,6 +661,9 @@ LTRESULT CClientMgr::StartShell(StartGameRequest *pRequest)
 
 void CClientMgr::EndShell()
 {
+    // A demo ends with its game
+    DemoPlaybackLT1().Stop();
+
     if (m_pCurShell)
     {
 		if (m_bInCurShellUpdate)
@@ -1068,14 +1081,24 @@ LTRESULT CClientMgr::Update()
         m_fGlobalPanScaleX  = m_fGlobalPanScaleZ  = 1.0f;
 	}
 
+    // A demo sets this frame's clock and keys before the time update and input read them
+    DemoPlaybackLT1().StepClock(m_pCurShell && m_pCurShell->m_bWorldOpened);
+
     // Update framerate (don't want to update it if the client's not active).
     if (dsi_IsClientActive())
 	{
-		m_nCurUpdateTimeMS	= time_GetMSTime();
+		// During a demo the recorded clock, model step, and frame time replace the live ones
+		extern int32 g_nDemoClockMS;
+		extern int32 g_nDemoAnimMS;
+		extern float g_fDemoClientFrameTime;
+		m_nCurUpdateTimeMS	= g_nDemoClockMS ? (uint32)g_nDemoClockMS : time_GetMSTime();
 		m_nFrameTimeMS		= m_nCurUpdateTimeMS - m_nLastUpdateTimeMS;
 		m_nLastUpdateTimeMS	= m_nCurUpdateTimeMS;
+		s_nAnimFrameMS		= (g_nDemoClockMS && g_nDemoAnimMS >= 0) ? (uint32)g_nDemoAnimMS : m_nFrameTimeMS;
 
         m_FrameTime			= m_nFrameTimeMS / 1000.0f;
+		if (g_nDemoClockMS && g_fDemoClientFrameTime > 0.0f && m_nFrameTimeMS > 0)
+			m_FrameTime		= g_fDemoClientFrameTime;
 		m_CurTime			= m_nCurUpdateTimeMS / 1000.0f;
 
         UpdateFrameRate();
@@ -1258,6 +1281,12 @@ void CClientMgr::ProcessAllInput(bool bForceClear) {
     {
         memset((void*)pCurSlot, 0, MAX_CLIENT_COMMANDS);
         memset((void*)m_AxisOffsets, 0, sizeof(m_AxisOffsets));
+    }
+
+    // A demo's recorded input replaces the devices
+    if (!bForceClear)
+    {
+        DemoPlaybackLT1().ApplyInput(pCurSlot, MAX_CLIENT_COMMANDS, m_AxisOffsets);
     }
 
     // Find out how many have changed.
@@ -2591,8 +2620,10 @@ static void ClientStringKeyCallback(LTAnimTracker *pTracker, AnimKeyFrame *pFram
 
 void CClientMgr::UpdateModels()
 {
+	const uint32 msAnim = s_nAnimFrameMS;
+
 	//determine if any time has even elapsed
-    if (m_nFrameTimeMS)
+    if (msAnim)
     {
 		//it has, so we need to run through and update all models
         LTLink *pListHead = &m_ObjectMgr.m_ObjectLists[OT_MODEL].m_Head;
@@ -2609,7 +2640,7 @@ void CClientMgr::UpdateModels()
 			{
 				//setup the string callback and update the model animation
 				pModel->SetStringKeyCallback(ClientStringKeyCallback);
-				pModel->ClientUpdate(m_nFrameTimeMS);
+				pModel->ClientUpdate(msAnim);
 
 				//count down how many sprites we have to update. This is mainly because most
 				//don't have sprites, or only a single one so it avoids the need to go through
@@ -2620,7 +2651,7 @@ void CClientMgr::UpdateModels()
 				{
 					if (pModel->m_pSprites[i])
 					{
-						spr_UpdateTracker(&pModel->m_SpriteTrackers[i], m_nFrameTimeMS);
+						spr_UpdateTracker(&pModel->m_SpriteTrackers[i], msAnim);
 
 						FileRef        skinName;
 						skinName.m_pFilename = pModel->m_SpriteTrackers[i].m_pCurFrame->m_pTex->m_pFile->m_Filename;

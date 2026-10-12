@@ -75,6 +75,7 @@ set(exec_src
 	../shared/src/debuggeometry.cpp
 	../kernel/src/debugging.cpp
 	src/debuggraphmgr.cpp
+	src/demoplay_lt1.cpp
 	../shared/src/dhashtable.cpp
 	../shared/src/dtxmgr.cpp
 	../shared/src/dtxmgr_lt1.cpp

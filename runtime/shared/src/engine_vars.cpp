@@ -17,6 +17,13 @@ int32	g_CV_RenderEnable = LTTRUE;
 
 int32	g_CV_PlayDemoReps = 0;	// How many times to repeat the PlayDemo.
 
+// Set each frame by demo playback, and reset when playback stops
+int32	g_nDemoClockMS = 0; // The recorded clock in ms in place of the system timer (0 = the system timer)
+float	g_fDemoFrameTime = 0.0f; // The recorded server frame time in place of the measured one (0 = the measured one)
+float	g_fDemoClientFrameTime = 0.0f; // The client's frame time, the same difference
+int32	g_nDemoAnimMS = -1; // The client models' step, truncated to whole ms as LT1's was (-1 = the frame's own)
+const char *g_DemoStopCommand = LTNULL; // A console line run when a playback stops, for the game to undo what it changed
+
 int32	g_CV_ForceNoSound = LTFALSE;
 int32	g_CV_BorderlessWindow = LTFALSE; // Create the game window without a frame (fullscreen at desktop resolution)
 int32	g_CV_NoSaveConfig = LTFALSE; // Skip rewriting autoexec.cfg on exit
@@ -268,6 +275,11 @@ static LTEngineVar g_LTEngineVars[] =
 
 	EV_LONG("RenderEnable", &g_CV_RenderEnable),
 	EV_LONG("PlayDemoReps", &g_CV_PlayDemoReps),
+	EV_LONG("DemoClockMS", &g_nDemoClockMS),
+	EV_FLOAT("DemoFrameTime", &g_fDemoFrameTime),
+	EV_FLOAT("DemoClientFrameTime", &g_fDemoClientFrameTime),
+	EV_LONG("DemoAnimMS", &g_nDemoAnimMS),
+	EV_STRING("DemoStopCommand", &g_DemoStopCommand),
 	EV_LONG("ForceNoSound", &g_CV_ForceNoSound),
 	
 	EV_LONG("CursorCenter", &g_CV_CursorCenter),

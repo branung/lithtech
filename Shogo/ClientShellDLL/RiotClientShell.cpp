@@ -201,6 +201,8 @@ void RecordFn(int argc, const char **argv)
 		g_pRiotClientShell->HandleRecord(argc, argv);
 }
 
+void DemoSettingsRestoreFn(int argc, const char **argv); // Beside ApplyDemoSettings
+
 void PlayDemoFn(int argc, const char **argv)
 {
 	if(g_pRiotClientShell)
@@ -258,6 +260,7 @@ CRiotClientShell::CRiotClientShell()
 
 	m_bGamePaused		= LTFALSE;
 	m_bRecordingDemo	= LTFALSE;
+	m_bDemoSettings		= LTFALSE;
 
 	m_bSwitchingModes = LTFALSE;
 	m_nClearScreenCount		= 0;
@@ -849,6 +852,7 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 	g_pLTClient->RegisterConsoleProgram("FragSelf", FragSelfFn);
 	g_pLTClient->RegisterConsoleProgram("Record", RecordFn);
 	g_pLTClient->RegisterConsoleProgram("PlayDemo", PlayDemoFn);
+	g_pLTClient->RegisterConsoleProgram("DemoSettingsRestore", DemoSettingsRestoreFn);
 	g_pLTClient->RegisterConsoleProgram("InitSound", InitSoundFn);
 
 	g_pLTClient->SetModelHook((ModelHookFn)DefaultModelHook, this);
@@ -1345,7 +1349,10 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 void CRiotClientShell::OnEngineTerm()
 {
 	if (!g_pLTClient) return;
-	
+
+	// This is here so that a demo's settings are never saved
+	RestoreDemoSettings();
+
 	if (m_hCamera)
 	{
 		g_pLTClient->RemoveObject(m_hCamera);
@@ -7469,11 +7476,13 @@ LTBOOL CRiotClientShell::DoLoadWorld(const char* pWorldFile, const char* pCurWor
 		if(pPlaydemoFile)
 		{
 			SAFE_STRCPY(request.m_PlaybackFilename, pPlaydemoFile);
+			ApplyDemoSettings(pPlaydemoFile);
 		}
 
 		LTRESULT dr = g_pLTClient->StartGame(&request);
 		if (dr != LT_OK)
 		{
+			RestoreDemoSettings();
 			return LTFALSE;
 		}
 
@@ -9979,6 +9988,95 @@ void CRiotClientShell::DemoSerialize(ILTStream *pStream, LTBOOL bLoad)
 			(*pStream) << pSettings->SubDetailSetting(i);
 		}
 	}
+}
+
+
+// --------------------------------------------------------------------------- //
+//
+//	An original Shogo demo's 24 settings are read by hand as
+//  this port's DemoSerialize adds UseWheel and writes 25.
+//
+// --------------------------------------------------------------------------- //
+
+static LTFLOAT *DemoSettingSlot(CRiotSettings *pSettings, int i)
+{
+	if (i >= 2 && i < 10)  return &pSettings->ControlSetting(RS_CTRL_FIRST + (i - 2));
+	if (i >= 10 && i < 12) return &pSettings->DetailSetting(RS_DET_FIRST + (i - 10));
+	if (i >= 12 && i < 24) return &pSettings->SubDetailSetting(RS_SUBDET_FIRST + (i - 12));
+	return LTNULL;
+}
+
+static LTFLOAT GetConVarFloat(const char *pName, LTFLOAT fDefault)
+{
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar(const_cast<char *>(pName));
+	return hVar ? g_pLTClient->GetVarValueFloat(hVar) : fDefault;
+}
+
+void CRiotClientShell::ApplyDemoSettings(const char *pDemoFile)
+{
+	RestoreDemoSettings();
+
+	FILE *fp = pDemoFile ? fopen(pDemoFile, "rb") : LTNULL;
+	if (!fp)
+		return;
+	unsigned char hdr[4 + 64 + 2];
+	LTFLOAT fDemo[24];
+	unsigned short nLen = 0;
+	unsigned char tag = 0xff;
+	bool bOk = fread(hdr, 1, sizeof(hdr), fp) == sizeof(hdr) &&
+	           *(uint32 *)hdr == 0xF0F0AABCu;
+	if (bOk)
+	{
+		memcpy(&nLen, hdr + 4 + 64, 2);
+		bOk = fseek(fp, nLen + 8, SEEK_CUR) == 0 &&				// The world name and the two clocks
+		      fread(fDemo, sizeof(LTFLOAT), 24, fp) == 24 &&
+		      fread(&tag, 1, 1, fp) == 1 && tag == 0;           // The first frame follows
+	}
+	fclose(fp);
+	if (!bOk)
+	{
+		g_pLTClient->CPrint("%s has no retail settings block. It will play with your settings", pDemoFile);
+		return;
+	}
+
+	CRiotSettings *pSettings = m_menu.GetSettings();
+	m_fPlayerDemoSettings[0] = GetConVarFloat(NORMAL_TURN_RATE_VAR, DEFAULT_NORMAL_TURN_SPEED);
+	m_fPlayerDemoSettings[1] = GetConVarFloat(FAST_TURN_RATE_VAR, DEFAULT_FAST_TURN_SPEED);
+	for (int i = 2; i < 24; i++)
+		m_fPlayerDemoSettings[i] = *DemoSettingSlot(pSettings, i);
+
+	char sz[128];
+	sprintf(sz, "%s %f", NORMAL_TURN_RATE_VAR, fDemo[0]);
+	g_pLTClient->RunConsoleString(sz);
+	sprintf(sz, "%s %f", FAST_TURN_RATE_VAR, fDemo[1]);
+	g_pLTClient->RunConsoleString(sz);
+	for (int i = 2; i < 24; i++)
+		*DemoSettingSlot(pSettings, i) = fDemo[i];
+	m_bDemoSettings = LTTRUE;
+	g_pLTClient->RunConsoleString("-DemoStopCommand DemoSettingsRestore");
+}
+
+void CRiotClientShell::RestoreDemoSettings()
+{
+	if (!m_bDemoSettings)
+		return;
+	m_bDemoSettings = LTFALSE;
+	g_pLTClient->RunConsoleString("-DemoStopCommand \"\"");
+
+	CRiotSettings *pSettings = m_menu.GetSettings();
+	char sz[128];
+	sprintf(sz, "%s %f", NORMAL_TURN_RATE_VAR, m_fPlayerDemoSettings[0]);
+	g_pLTClient->RunConsoleString(sz);
+	sprintf(sz, "%s %f", FAST_TURN_RATE_VAR, m_fPlayerDemoSettings[1]);
+	g_pLTClient->RunConsoleString(sz);
+	for (int i = 2; i < 24; i++)
+		*DemoSettingSlot(pSettings, i) = m_fPlayerDemoSettings[i];
+}
+
+void DemoSettingsRestoreFn(int argc, const char **argv)
+{
+	if (g_pRiotClientShell)
+		g_pRiotClientShell->RestoreDemoSettings();
 }
 
 

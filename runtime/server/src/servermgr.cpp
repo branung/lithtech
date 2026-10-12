@@ -1173,6 +1173,11 @@ bool CServerMgr::Update(int32 updateFlags, uint32 nCurTimeMS)
 			}
 	
 			m_FrameTime = ((LTCLAMP(m_nTrueFrameTimeMS / 1000.0f, 0.0f, 0.2f)) * g_ServerTimeScale);
+			// The recorded frame time for this one frame during a demo
+			extern float g_fDemoFrameTime;
+			if (g_fDemoFrameTime > 0.0f && m_nTrueFrameTimeMS > 0)
+				m_FrameTime = LTCLAMP(g_fDemoFrameTime, 0.0f, 0.2f) * g_ServerTimeScale;
+			g_fDemoFrameTime = 0.0f;
 			m_GameTime += m_FrameTime;
 
 			

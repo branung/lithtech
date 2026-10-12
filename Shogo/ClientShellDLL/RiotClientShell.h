@@ -214,6 +214,12 @@ class CRiotClientShell : public IClientShellStub
 		
 		void		DemoSerialize(ILTStream *pStream, LTBOOL bLoad);
 
+		// A demo plays with its recording's 24 settings, and the player's come back after as LT1's DemoMgr did
+		void		ApplyDemoSettings(const char *pDemoFile);
+		void		RestoreDemoSettings();
+		LTBOOL		m_bDemoSettings;
+		LTFLOAT		m_fPlayerDemoSettings[24];
+
 		
 		LTBOOL		m_bSwitchingModes;
 
