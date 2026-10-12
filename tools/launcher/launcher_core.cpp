@@ -233,6 +233,37 @@ std::string SetConfigValues(const std::string &sCfg, const std::vector<ConfigVal
     return os.str();
 }
 
+// One 'key=value' line per setting, and one rez= line per remembered archive
+bool LoadSettings(const std::string &sPath, LauncherSettings &settings)
+{
+    std::ifstream in(sPath.c_str(), std::ios::binary);
+    if (!in.good()) return false;
+
+    settings = LauncherSettings();
+    std::string line;
+    while (std::getline(in, line))
+    {
+        if (!line.empty() && line[line.size() - 1] == '\r') line.erase(line.size() - 1);
+        const size_t eq = line.find('=');
+        if (line.empty() || line[0] == '#' || eq == std::string::npos) continue;
+
+        const std::string sKey = line.substr(0, eq), sValue = line.substr(eq + 1);
+        if (sKey == "alwaysrez") settings.m_bAlwaysRez = (sValue == "1");
+        else if (sKey == "rez") settings.m_AlwaysRez.push_back(sValue);
+    }
+    return true;
+}
+
+bool SaveSettings(const std::string &sPath, const LauncherSettings &settings)
+{
+    std::ostringstream os;
+    os << "# Written by LithLauncher. Safe to delete\n";
+    os << "alwaysrez=" << (settings.m_bAlwaysRez ? 1 : 0) << "\n";
+    if (settings.m_bAlwaysRez)
+        for (const std::string &sRez : settings.m_AlwaysRez) os << "rez=" << sRez << "\n";
+    return WriteTextFile(sPath, os.str());
+}
+
 std::vector<std::string> BuildCommandLine(const LaunchSpec &spec)
 {
     std::vector<std::string> args;

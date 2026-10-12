@@ -63,6 +63,19 @@ extern const char *kCustomFolder;
 // The .rez files added in the Custom folder
 std::vector<std::string> AvailableRez(const LaunchSpec &spec);
 
+// The launcher's own settings, kept in launcher.ini beside it
+struct LauncherSettings
+{
+    bool m_bAlwaysRez = false;
+    std::vector<std::string> m_AlwaysRez;
+};
+
+// False when the file can't be read, leaving the defaults
+bool LoadSettings(const std::string &sPath, LauncherSettings &settings);
+
+// False when the file can't be written
+bool SaveSettings(const std::string &sPath, const LauncherSettings &settings);
+
 // The engine's argument list. The caller sets the working directory to m_sGameDir
 std::vector<std::string> BuildCommandLine(const LaunchSpec &spec);
 

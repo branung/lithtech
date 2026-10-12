@@ -91,6 +91,7 @@ const Rect kAvailableList(kCustomizeDlg.frame.x + 14, kCustomizeDlg.frame.y + 46
 const Rect kChosenList(kCustomizeDlg.frame.x + 352, kCustomizeDlg.frame.y + 46, 220, 160);
 const Rect kAddButton(kCustomizeDlg.frame.x + 248, kCustomizeDlg.frame.y + 90, 90, 24);
 const Rect kRemoveButton(kCustomizeDlg.frame.x + 248, kCustomizeDlg.frame.y + 122, 90, 24);
+const Rect kAlwaysRezBox(kCustomizeDlg.frame.x + 193, kCustomizeDlg.frame.y + 216, 200, 18);
 const int  kRowH = 18;
 const int  kListPad = 2;
 const int  kScrollBarW = 14;
@@ -371,6 +372,8 @@ struct App
     // Extra archives loaded after the game's own
     // The 'OnOpen' copy is what Cancel puts back
     std::vector<std::string> availableRez, chosenRez, chosenRezOnOpen;
+    bool bAlwaysRez = false, bAlwaysRezOnOpen = false;
+    std::string sSettingsPath;
     int iAvailableSel = -1, iChosenSel = -1;
     int nAvailableScroll = 0, nChosenScroll = 0;
 
@@ -425,7 +428,8 @@ struct App
         static const std::vector<const Rect *> kDisplay =
             { &kDisplayDlg.ok, &kDisplayDlg.cancel, &kDisplayDlg.close, &kBorderlessBox };
         static const std::vector<const Rect *> kCustomize =
-            { &kCustomizeDlg.ok, &kCustomizeDlg.cancel, &kCustomizeDlg.close, &kAddButton, &kRemoveButton };
+            { &kCustomizeDlg.ok, &kCustomizeDlg.cancel, &kCustomizeDlg.close, &kAddButton, &kRemoveButton,
+              &kAlwaysRezBox };
 
         switch (eDialog)
         {
@@ -456,6 +460,7 @@ struct App
         // Customize dialog
         else if (p == &kAddButton) AddRez();
         else if (p == &kRemoveButton) RemoveRez();
+        else if (p == &kAlwaysRezBox) bAlwaysRez = !bAlwaysRez;
         // OK, Cancel or a close box. Cancel and the close boxes put things back
         else CloseDialog(IsOkButton(p));
     }
@@ -584,12 +589,33 @@ struct App
         iAvailableSel = iChosenSel = -1;
         nAvailableScroll = nChosenScroll = 0;
         chosenRezOnOpen = chosenRez;
+        bAlwaysRezOnOpen = bAlwaysRez;
         eOpenDialog = DialogId::Customize;
     }
 
+    // OK saves the checkbox, and the chosen archives with it when it's ticked
     void CloseCustomize(bool bAccept)
     {
-        if (!bAccept) chosenRez = chosenRezOnOpen;
+        if (!bAccept)
+        {
+            chosenRez = chosenRezOnOpen;
+            bAlwaysRez = bAlwaysRezOnOpen;
+            return;
+        }
+
+        ltlaunch::LauncherSettings settings;
+        settings.m_bAlwaysRez = bAlwaysRez;
+        settings.m_AlwaysRez = chosenRez;
+        if (!ltlaunch::SaveSettings(sSettingsPath, settings)) sStatus = "Could not write " + sSettingsPath;
+    }
+
+    // A ticked checkbox from an earlier run brings its archives back
+    void LoadSettings()
+    {
+        ltlaunch::LauncherSettings settings;
+        if (!ltlaunch::LoadSettings(sSettingsPath, settings)) return;
+        bAlwaysRez = settings.m_bAlwaysRez;
+        if (bAlwaysRez) chosenRez = settings.m_AlwaysRez;
     }
 
     void AddRez()
@@ -754,6 +780,7 @@ struct App
         Button(kRemoveButton, "< Remove", Down(kRemoveButton));
         Text(kChosenList.x, kChosenList.y - 16, "Rez files to load:", kText);
         ListBox(kChosenList, chosenRez, iChosenSel, nChosenScroll);
+        CheckBox(kAlwaysRezBox, "Always load these rez files", bAlwaysRez, Down(kAlwaysRezBox));
     }
 };
 
@@ -777,6 +804,8 @@ int LauncherMain()
 
     App app;
     app.spec = ltlaunch::ShogoLaunch(sExeDir);
+    app.sSettingsPath = ltlaunch::JoinPath(sExeDir, "launcher.ini");
+    app.LoadSettings();
 
     app.sizes = DesktopSizes();
 
