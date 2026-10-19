@@ -136,6 +136,11 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// A strike leaves the candidate loop early, and Jupiter put the main world in that loop (client too)
 	g_pServerDE->RunGameConString("LT1WorldAfterObjects 1");
 
+	// Walk the main world once per move, and give the stair step a box covering the whole move.
+	// Only both together match LT1 on slopes: the swept box alone lifts a climbing player twice, on the world's second walk (client too)
+	g_pServerDE->RunGameConString("LT1WorldOnce 1");
+	g_pServerDE->RunGameConString("LT1StairSwept 1");
+
 	// The rest of LT1's contact stack: 0.1 clearance, exact contact isn't a hit, no stale detections.
 	// Without them LT1StrikeKeep parks the player on the wall plane (client sets all four)
 	g_pServerDE->RunGameConString("LT1IntersectPushback 1");

@@ -28,6 +28,7 @@
 
 // LT1 stair step and resting behavior
 extern int32 g_bLT1StairStep;
+extern int32 g_bLT1StairSwept;
 extern int32 g_bLT1StairDamp;
 
 // LT1 collision behavior
@@ -1782,6 +1783,19 @@ static void SetupAxisAlignedBox
 	whole_sphere.m_Radius = (vWholeMax - whole_sphere.m_Center).Mag() + 1;//add some slop to radius
 }
 
+// LT1StairSwept: the stair walk's box covers both ends of the move, as LT1's does
+static void LT1SweepStairBox(const LTVector& P0, const LTVector& P1,
+                             const LTVector& dims, const LTVector& offset, AABB& box)
+{
+	if (!g_bLT1StairStep || !g_bLT1StairSwept)
+		return;
+	const LTVector vStart = P0 + offset, vEnd = P1 + offset;
+	VEC_MIN(box.Min, vStart, vEnd);
+	VEC_MAX(box.Max, vStart, vEnd);
+	box.Min -= dims;
+	box.Max += dims;
+}
+
 
 //---------------------------------------------------------------------------//
 // Clip an outline into the destination along an axis-aligned plane
@@ -2018,6 +2032,10 @@ static bool StairStep_Segment
 
 	//setup the box
 	SetupAxisAlignedBox( P0, P1, request.m_Dims, offset, whole_sphere, box );
+	LT1SweepStairBox( P0, P1, request.m_Dims, offset, box );
+
+	// After a push LT1 moves the same box by the push, leaving its dims and offset alone
+	const bool bLT1SweptStair = g_bLT1StairStep && g_bLT1StairSwept;
 
 	//remember how much we were moving down so we can stand on NotAStep brushes
 	if( P0.y > P1.y )
@@ -2188,17 +2206,19 @@ static bool StairStep_Segment
 									P0.y = P1.y;
 								}
 
-								// Adjust the location of the bounding box back to where it was & make it smaller
-								const LTVector new_offset( offset.x, offset.y - toAdd.y * 0.5f, offset.z );
+								// Adjust the location of the bounding box back to where it was & make it smaller (Jupiter)
+								const LTVector new_offset( offset.x, bLT1SweptStair ? offset.y : offset.y - toAdd.y * 0.5f, offset.z );
 								LTVector dims = request.m_Dims;
 
-								dims.y -= toAdd.y * 0.5f;
+								if (!bLT1SweptStair)
+									dims.y -= toAdd.y * 0.5f;
 
 								SetupAxisAlignedBox(P0, P1,
 													dims,
 													new_offset,
 													whole_sphere,
 													box);
+								LT1SweepStairBox(P0, P1, dims, new_offset, box);
 
 								// Adjust the cylinder
 								if (request.m_pObject->m_Flags2 & FLAG2_PLAYERCOLLIDE)

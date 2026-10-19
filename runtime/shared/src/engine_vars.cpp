@@ -97,6 +97,8 @@ int32	g_bLT1ModelAnimNoRestart = 0; // Ignore a request for the animation alread
 int32	g_bLT1CalcMotion = 0; // LT1's motion for a standing object in place of Jupiter's. Set on both client and server
 int32	g_bLT1StandVelStore = 0; // LT1CalcMotion's object keeps its clipped velocity when there's no friction, as LT1's does. Set on both client and server
 int32	g_bLT1DimsDetach = 0; // An object whose box changes size is detached from what it stood on, as in LT1. Set on both client and server
+int32	g_bLT1StairSwept = 0; // The stair step's box covers the whole move and moves with each push. Needs LT1StairStep and goes with LT1WorldOnce. Set on both client and server
+int32	g_bLT1WorldOnce = 0; // MoveObject collides with the main world once, after the other objects. Set on both client and server
 int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and rebuild the box during pushback like LT1
 int32	g_bLT1RaySolidOnly = 0; // Only solid polys stop a ray, so LT1 doorway polys pass shots and sight
 int32	g_bLT1VirtualKeys = 0; // The client shell gets Win32 virtual key codes, as LT1 sent, not SDL keycodes
@@ -360,6 +362,8 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1CalcMotion", &g_bLT1CalcMotion),
 	EV_LONG("LT1StandVelStore", &g_bLT1StandVelStore),
 	EV_LONG("LT1DimsDetach", &g_bLT1DimsDetach),
+	EV_LONG("LT1StairSwept", &g_bLT1StairSwept),
+	EV_LONG("LT1WorldOnce", &g_bLT1WorldOnce),
 	EV_LONG("LT1SetupBoxCheck", &g_bLT1SetupBoxCheck),
 	EV_LONG("LT1RaySolidOnly", &g_bLT1RaySolidOnly),
 	EV_LONG("LT1VirtualKeys", &g_bLT1VirtualKeys),

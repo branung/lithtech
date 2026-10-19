@@ -1219,10 +1219,11 @@ static void DetectAndProcessCollisions
 
 	// LT1 collides with the objects and then the world
 	extern int32 g_bLT1WorldAfterObjects;
+	extern int32 g_bLT1WorldOnce;
 	extern int32 g_bLT1StrikeKeep;
 	LTObject *pMainWorldCand = LTNULL;
 	LTBOOL bWorldWalked = LTFALSE;
-	if (g_bLT1WorldAfterObjects)
+	if (g_bLT1WorldAfterObjects || g_bLT1WorldOnce)
 	{
 		for (i = 0; i < objectArray.m_nObjects; ++i)
 		{
@@ -1237,6 +1238,10 @@ static void DetectAndProcessCollisions
 	for( i = objectArray.m_nObjects - 1, nRestarts = 0; i >= 0 && nRestarts < 10; i-- )
 	{
 		pTestObj = objectArray.m_pObjects[i];
+
+		// LT1 walks the main world once, after this loop. Here a world hit would restart the scan and walk it again
+		if (g_bLT1WorldOnce && pTestObj->IsMainWorldModel())
+			continue;
 		if (pTestObj->IsMainWorldModel())
 			bWorldWalked = LTTRUE;
 
@@ -1279,9 +1284,9 @@ static void DetectAndProcessCollisions
 		}
 	}
 
-	// The loop ended after an object moved the box and before the main world was reached again.
-	// LT1 always tests the main world after the objects. This is that test
-	if (g_bLT1WorldAfterObjects && pMainWorldCand && !bWorldWalked)
+	// The loop ended after an object moved the box and before the main world was reached again,
+	// or LT1WorldOnce left the world out of it. LT1 always tests the main world after the objects. This is that test
+	if (pMainWorldCand && (g_bLT1WorldOnce || (g_bLT1WorldAfterObjects && !bWorldWalked)))
 	{
 		pState->m_nRestart = 0;
 		MaybeCollide(pState, pMainWorldCand);

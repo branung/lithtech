@@ -1171,6 +1171,11 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		// Travels with LT1StrikeKeep (both sides)
 		g_pLTClient->RunConsoleString("-LT1WorldAfterObjects 1");
 
+		// The main world is walked once per move, and the stair step's box covers the whole move.
+		// Only both together match LT1 on slopes (both sides)
+		g_pLTClient->RunConsoleString("-LT1WorldOnce 1");
+		g_pLTClient->RunConsoleString("-LT1StairSwept 1");
+
 		// The rest of LT1's contact stack (both sides)
 		g_pLTClient->RunConsoleString("-LT1IntersectPushback 1");
 		g_pLTClient->RunConsoleString("-LT1PlaneRecheck 1");
