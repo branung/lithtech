@@ -1987,11 +1987,17 @@ LTRESULT si_CacheFile(uint32 fileType, const char *pFilename)
 
 int si_IntRandom(int min, int max)
 {
+	// LT1: min + rand() % (max - min + 1)
+	if (g_bLT1EngineRand)
+		return min + ic_LT1Rand() % (max - min + 1);
 	return katana_steel::lithtech::getRandom(min, max);
 }
 
 float si_RandomScale(LTFLOAT scale)
 {
+	// LT1: rand() / 32767 * scale
+	if (g_bLT1EngineRand)
+		return ic_LT1Unit() * scale;
 	return katana_steel::lithtech::getRandom(0.0f, scale);
 }
 

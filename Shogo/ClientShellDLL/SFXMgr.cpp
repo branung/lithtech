@@ -409,7 +409,7 @@ void CSFXMgr::HandleSFXMsg(HLOCALOBJ hObj, ILTMessage_Read* hMessage)
 			theAngle = hMessage->Readuint8();
 			fAngle = ((LTFLOAT)theAngle / 255.0f) * MATH_CIRCLE;
 			pMath->SetupEuler(tempRot, 0.0f, fAngle, 0.0f);
-			pMath->GetRotationVectors(tempRot, up, right, cs.m_DirVec);
+			pMath->GetRotationVectors(tempRot, right, up, cs.m_DirVec);
 			CreateSFX(nId, &cs);
 		}
 		break;

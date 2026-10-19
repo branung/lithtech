@@ -11,6 +11,7 @@
 #include "de_objects.h"
 #include "systimer.h"
 #include "consolecommands.h"
+#include "impl_common.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -135,6 +136,7 @@ void CDemoPlaybackLT1::Begin()
 	if (m_Frames.empty())
 		return;
 	srand(123); // LT1 seeds the C runtime when a recording starts
+	ic_LT1SRand(123); // And the engine's own stream (LT1EngineRand)
 	memset(m_Bank, 0, sizeof(m_Bank));
 	m_Axis[0] = m_Axis[1] = m_Axis[2] = 0.0f;
 	Toggle(m_Frames[0]); // Recorded before the world loads
@@ -188,8 +190,8 @@ void CDemoPlaybackLT1::StepClock(bool bWorldOpen)
 		LTVector p(0, 0, 0);
 		LTObject *pObj = g_pClientMgr && g_pClientMgr->m_pCurShell ? g_pClientMgr->m_pCurShell->GetClientObject() : LTNULL;
 		if (pObj) p = pObj->GetPos();
-		dsi_ConsolePrint("DEMOFRAME %u t=%.4f keys[%s] axis(%.3f,%.3f) player(%.2f,%.2f,%.2f)",
-			(unsigned)m_nNext, f.t, keys, f.axis[0], f.axis[1], p.x, p.y, p.z);
+		dsi_ConsolePrint("DEMOFRAME %u t=%.4f keys[%s] axis(%.3f,%.3f) player(%.2f,%.2f,%.2f) estate %08x",
+			(unsigned)m_nNext, f.t, keys, f.axis[0], f.axis[1], p.x, p.y, p.z, ic_LT1RandState());
 	}
 
 	++m_nNext;

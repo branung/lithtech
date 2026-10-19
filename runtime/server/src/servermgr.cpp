@@ -21,6 +21,7 @@
 #include "moveobject.h"
 #include "animtracker.h"
 #include "systimer.h"
+#include "impl_common.h"
 #include "serverde_impl.h"
 #include "interlink.h"
 #include "sounddata.h"
@@ -2569,6 +2570,8 @@ LTRESULT CServerMgr::DoStartWorld(const char *pWorldName, uint32 flags, uint32 n
 	float fSeed = time_GetTime();
 	srand((uint32)fSeed);
 	i_server_shell->SRand((uint32)fSeed);
+	// LT1 seeds its engine stream with 543 at every world start (LT1EngineRand)
+	ic_LT1SRand(543);
 
  
 	bSameWorld = false;

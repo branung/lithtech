@@ -64,6 +64,14 @@ void ic_FreeFileList(FileEntry *pList);
 
 float ic_Random(LTFLOAT min, LTFLOAT max);
 
+// LT1's engine random stream (LT1EngineRand).
+// ic_LT1Rand returns 0 to 0x7fff, and ic_LT1Unit is rand() / 32767 in float
+extern int32 g_bLT1EngineRand;
+void ic_LT1SRand(uint32 nSeed);
+int ic_LT1Rand();
+float ic_LT1Unit();
+uint32 ic_LT1RandState(); // For DemoTrace
+
 
 #endif  // __IMPL_COMMON_H__
 

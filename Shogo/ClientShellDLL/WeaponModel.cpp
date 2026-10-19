@@ -267,7 +267,7 @@ WeaponState CWeaponModel::UpdateWeaponModel(LTRotation rRot, LTVector vPos, LTBO
 	LTRotation rIdentity;
 	rIdentity.Init();
 	g_pLTClient->SetObjectRotation(m_hObject, &rIdentity);
-	pMath->GetRotationVectors(rRot, vU, vR, vF);
+	pMath->GetRotationVectors(rRot, vR, vU, vF);
 
 	LTVector vOffset, vMuzzleOffset, vRecoil;
 
@@ -1280,7 +1280,10 @@ void CWeaponModel::SendFireMsg(const LTRotation& rCameraRot)
 	// The camera's basis, since the weapon's own rotation is identity
 	LTRotation rRot = rCameraRot;
 	LTVector vU, vR, vF;
-	pMath->GetRotationVectors(rRot, vU, vR, vF);
+	// Note: This below  - and other changes to GetRotationVectors - is a change made for the Jupiter port.
+	// ILTMath's order is (right, up, forward), where LT1's and ILTCommon's are (up, right, forward).
+	// Passing LT1's order put the fire position on the player's left, so Jupiter's order is passed.
+	pMath->GetRotationVectors(rRot, vR, vU, vF);
 
 
 	// Make sure we always ignore the fire sound...
@@ -1349,7 +1352,7 @@ void CWeaponModel::SendFireMsg(const LTRotation& rCameraRot)
 		VEC_INIT(vCamU);
 		VEC_INIT(vCamR);
 		VEC_INIT(vCamF);
-		pMath->GetRotationVectors(rCam, vCamU, vCamR, vCamF);
+		pMath->GetRotationVectors(rCam, vCamR, vCamU, vCamF);
 
 		g_pRiotClientShell->GetDiag().OnWeaponFired(m_vFlashPos, vF, vCamF);
 	}

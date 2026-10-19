@@ -154,6 +154,10 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// Pings wake objects in LT1's order, so the server updates them in LT1's order
 	g_pServerDE->RunGameConString("LT1FileOrder 1");
 
+	// The engine's Random, IntRandom and RandomScale draw from LT1's stream with LT1's seeds,
+	// so things like how many pieces a destroyed prop breaks into match og Shogo (client too)
+	g_pServerDE->RunGameConString("LT1EngineRand 1");
+
 	// The rest of LT1's contact stack: 0.1 clearance, exact contact isn't a hit, no stale detections.
 	// Without them LT1StrikeKeep parks the player on the wall plane (client sets all four)
 	g_pServerDE->RunGameConString("LT1IntersectPushback 1");

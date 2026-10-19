@@ -18,6 +18,7 @@
 #include "sprite.h"
 #include "dutil.h"
 #include "iltclient.h"
+#include "impl_common.h"
 
 //---------------------
 // Console variables
@@ -98,12 +99,21 @@ void ps_AddParticles(LTParticleSystem *pSystem, uint32 nParticles,
 	for(i=0; i < nParticles; i++)
 	{
 
-		t[0] = katana_steel::lithtech::getRandom();
-		t[1] = katana_steel::lithtech::getRandom();
-		t[2] = katana_steel::lithtech::getRandom();
-		t[3] = katana_steel::lithtech::getRandom();
-		t[4] = katana_steel::lithtech::getRandom();
-		t[5] = katana_steel::lithtech::getRandom();
+		if (g_bLT1EngineRand)
+		{
+			// LT1 takes six draws from the engine's stream, in this order
+			for (int k = 0; k < 6; k++)
+				t[k] = ic_LT1Unit();
+		}
+		else
+		{
+			t[0] = katana_steel::lithtech::getRandom();
+			t[1] = katana_steel::lithtech::getRandom();
+			t[2] = katana_steel::lithtech::getRandom();
+			t[3] = katana_steel::lithtech::getRandom();
+			t[4] = katana_steel::lithtech::getRandom();
+			t[5] = katana_steel::lithtech::getRandom();
+		}
 
 		VINTERP(offset, (*minOffset), (*maxOffset), t[0], t[1], t[2]);
 		VINTERP(vel, (*minVel), (*maxVel), t[3], t[4], t[5]);

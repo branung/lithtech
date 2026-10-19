@@ -273,8 +273,40 @@ void ic_FreeFileList(FileEntry *pList)
 }
 
 
+// LT1's engine random stream (LT1EngineRand)
+static uint32 s_nLT1RandState = 1;
+
+void ic_LT1SRand(uint32 nSeed)
+{
+	s_nLT1RandState = nSeed;
+}
+
+int ic_LT1Rand()
+{
+	s_nLT1RandState = s_nLT1RandState * 214013 + 2531011;
+	return (int)((s_nLT1RandState >> 16) & 0x7fff);
+}
+
+uint32 ic_LT1RandState()
+{
+	return s_nLT1RandState;
+}
+
+float ic_LT1Unit()
+{
+	return (float)ic_LT1Rand() * (1.0f / 32767.0f);
+}
+
 float ic_Random(LTFLOAT min, LTFLOAT max)
 {
+	// LT1: (max - min) * (rand() / 32767) + min, in float
+	if (g_bLT1EngineRand)
+	{
+		const float r = ic_LT1Unit();
+		const float range = max - min;
+		const float scaled = range * r;
+		return scaled + min;
+	}
 	return katana_steel::lithtech::getRandom(min, max);
 }
 

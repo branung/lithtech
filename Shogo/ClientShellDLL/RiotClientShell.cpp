@@ -1179,6 +1179,9 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		g_pLTClient->RunConsoleString("-LT1WorldOnce 1");
 		g_pLTClient->RunConsoleString("-LT1StairSwept 1");
 
+		// The engine's random stream and its seeds are LT1's, for its particles (both sides)
+		g_pLTClient->RunConsoleString("-LT1EngineRand 1");
+
 		// The rest of LT1's contact stack (both sides)
 		g_pLTClient->RunConsoleString("-LT1IntersectPushback 1");
 		g_pLTClient->RunConsoleString("-LT1PlaneRecheck 1");
@@ -3210,7 +3213,7 @@ void CRiotClientShell::UpdateCameraPosition()
 		vPos.y += m_fBobHeight + m_fCamDuck;
 
 		LTVector vU, vR, vF;
-		pMath->GetRotationVectors(m_rRotation, vU, vR, vF);
+		pMath->GetRotationVectors(m_rRotation, vR, vU, vF);
 
 		VEC_MULSCALAR(vR, vR, m_fBobWidth)
 		VEC_ADD(vPos, vPos, vR)
@@ -3587,7 +3590,7 @@ void CRiotClientShell::UpdateCameraShake()
 	g_pLTClient->GetObjectRotation(m_hCamera, &rCamRot);
 
 	LTVector vCamU, vCamR, vCamF;
-	pMath->GetRotationVectors(rCamRot, vCamU, vCamR, vCamF);
+	pMath->GetRotationVectors(rCamRot, vCamR, vCamU, vCamF);
 
 	LTVector vResidual;
 	VEC_MULSCALAR(vResidual, vAdd, -0.05f);
@@ -3837,7 +3840,7 @@ void CRiotClientShell::Update3rdPersonCrossHair(LTFLOAT fDistance)
 	}
 
 	LTVector vU, vR, vF;
-	pMath->GetRotationVectors(m_rRotation, vU, vR, vF);
+	pMath->GetRotationVectors(m_rRotation, vR, vU, vF);
 	VEC_NORM(vF);
 
 	LTVector vPos;
@@ -5856,7 +5859,7 @@ void CRiotClientShell::TintScreen(LTVector vTintColor, LTVector vPos, LTFLOAT fT
 	LTRotation rRot;
 	LTVector vU, vR, vF;
 	g_pLTClient->GetObjectRotation(m_hCamera, &rRot);
-	pMath->GetRotationVectors(rRot, vU, vR, vF);
+	pMath->GetRotationVectors(rRot, vR, vU, vF);
 
 	VEC_NORM(vDir);
 	VEC_NORM(vF);
@@ -6875,7 +6878,7 @@ void CRiotClientShell::HandlePlayerDamage(ILTMessage_Read* hMessage)
 	g_pLTClient->GetObjectRotation(m_hCamera, &rRot);
 
 	LTVector vU, vR, vF;
-	pMath->GetRotationVectors(rRot, vU, vR, vF);
+	pMath->GetRotationVectors(rRot, vR, vU, vF);
 
 	VEC_MULSCALAR(vF, vF, 10.0f);
 	VEC_ADD(vCamPos, vCamPos, vF);
@@ -8773,7 +8776,7 @@ void CRiotClientShell::Update3rdPersonInfo()
 	{
 		fCrosshairDist = GetWeaponRange(m_weaponModel.GetId());
 
-		pMath->GetRotationVectors(m_rRotation, vUp, vRight, vForward);
+		pMath->GetRotationVectors(m_rRotation, vRight, vUp, vForward);
 
 		// Determine where the cross hair should be...
 
@@ -8809,7 +8812,7 @@ void CRiotClientShell::Update3rdPersonInfo()
 
 	LTRotation rRot;
 	g_pLTClient->GetObjectRotation(hPlayerObj, &rRot);
-	pMath->GetRotationVectors(rRot, vUp, vRight, vForward);
+	pMath->GetRotationVectors(rRot, vRight, vUp, vForward);
 	VEC_NORM(vForward);
 
 	// Determine how far behind the player the camera can go...
@@ -8877,7 +8880,7 @@ void CRiotClientShell::CreateMenuPolygrid()
 
 	g_pLTClient->GetObjectPos(m_hCamera, &vPos);
 	g_pLTClient->GetObjectRotation(m_hCamera, &rRot);
-	pMath->GetRotationVectors(rRot, vU, vR, vF);
+	pMath->GetRotationVectors(rRot, vR, vU, vF);
 
 	// Put the polygrid a little in front of the camera...
 
@@ -9905,7 +9908,7 @@ void CRiotClientShell::DoPickupItemScreenTint(PickupItemType eType)
 	g_pLTClient->GetObjectRotation(m_hCamera, &rRot);
 
 	LTVector vU, vR, vF;
-	pMath->GetRotationVectors(rRot, vU, vR, vF);
+	pMath->GetRotationVectors(rRot, vR, vU, vF);
 
 	VEC_MULSCALAR(vF, vF, 10.0f);
 	VEC_ADD(vCamPos, vCamPos, vF);

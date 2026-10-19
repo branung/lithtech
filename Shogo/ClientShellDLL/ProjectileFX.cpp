@@ -152,7 +152,7 @@ LTBOOL CProjectileFX::CreateObject(ILTClient* pClientDE)
 			m_fStartTime = m_pClientDE->GetTime();
 
 			LTVector vVel, vU, vR, vF;
-			pMath->GetRotationVectors(rRot, vU, vR, vF);
+			pMath->GetRotationVectors(rRot, vR, vU, vF);
 
 			VEC_COPY(m_vPath, vF);
 
@@ -301,7 +301,7 @@ LTBOOL CProjectileFX::MoveServerObj()
 
 		LTRotation rRot;
 		m_pClientDE->GetObjectRotation(m_hServerObject, &rRot);
-		pMath->GetRotationVectors(rRot, vU, vR, vF);
+		pMath->GetRotationVectors(rRot, vR, vU, vF);
 		VEC_NORM(vU);
 		VEC_NORM(vF);
 		
@@ -320,7 +320,7 @@ LTBOOL CProjectileFX::MoveServerObj()
 
 		pMath->RotateAroundAxis(rRot, vF, m_fSnakeDir * 10.0f * fFrameTime);
 		m_pClientDE->SetObjectRotation(m_hServerObject, &rRot);
-		pMath->GetRotationVectors(rRot, vU, vR, vF);
+		pMath->GetRotationVectors(rRot, vR, vU, vF);
 		VEC_NORM(vU);
 
 		// Add velocity to new up vector...
