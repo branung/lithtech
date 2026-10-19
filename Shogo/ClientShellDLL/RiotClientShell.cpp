@@ -1156,8 +1156,8 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		// Without it, MoveToFrontside walks the player up hillsides
 		g_pLTClient->RunConsoleString("-LT1StairStep 1");
 
-		// Gravity stays on a standing object (both sides)
-		g_pLTClient->RunConsoleString("-LT1StandGravity 1");
+		// LT1's motion for a standing object (both sides)
+		g_pLTClient->RunConsoleString("-LT1CalcMotion 1");
 
 		// Keeps resolved progress when the strike or restart cap cancels (both sides)
 		g_pLTClient->RunConsoleString("-LT1StrikeKeep 1");

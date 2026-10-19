@@ -6,6 +6,9 @@
 
 #include "bdefs.h"
 #include "demoplay_lt1.h"
+#include "clientmgr.h"
+#include "clientshell.h"
+#include "de_objects.h"
 #include "systimer.h"
 #include "consolecommands.h"
 #include <stdio.h>
@@ -17,6 +20,7 @@ extern float g_fDemoFrameTime;
 extern float g_fDemoClientFrameTime;
 extern int32 g_nDemoAnimMS;
 extern const char *g_DemoStopCommand;
+extern int32 g_DemoTrace;
 
 namespace
 {
@@ -173,6 +177,21 @@ void CDemoPlaybackLT1::StepClock(bool bWorldOpen)
 	const Frame &f = m_Frames[m_nNext];
 	SetClock(f.t);
 	Toggle(f);
+
+	// DemoTrace diagnostics
+	if (g_DemoTrace)
+	{
+		char keys[256]; int k = 0;
+		for (int id = 0; id < 256 && k < 200; id++)
+			if (m_Bank[id]) k += snprintf(keys + k, sizeof(keys) - k, "%d ", id);
+		keys[k] = 0;
+		LTVector p(0, 0, 0);
+		LTObject *pObj = g_pClientMgr && g_pClientMgr->m_pCurShell ? g_pClientMgr->m_pCurShell->GetClientObject() : LTNULL;
+		if (pObj) p = pObj->GetPos();
+		dsi_ConsolePrint("DEMOFRAME %u t=%.4f keys[%s] axis(%.3f,%.3f) player(%.2f,%.2f,%.2f)",
+			(unsigned)m_nNext, f.t, keys, f.axis[0], f.axis[1], p.x, p.y, p.z);
+	}
+
 	++m_nNext;
 }
 
@@ -192,6 +211,8 @@ void CDemoPlaybackLT1::Stop()
 	if (!m_bPlaying)
 		return;
 	m_bPlaying = false;
+	if (g_DemoTrace)
+		dsi_ConsolePrint("DEMO: stopped after %u of %u frames", (unsigned)m_nNext, (unsigned)m_Frames.size());
 	memset(m_Bank, 0, sizeof(m_Bank));
 	m_Axis[0] = m_Axis[1] = m_Axis[2] = 0.0f;
 	g_nDemoClockMS = 0;

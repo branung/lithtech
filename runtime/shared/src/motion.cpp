@@ -4,6 +4,102 @@
 #include "de_world.h"
 #include "motion.h"
 
+// Reimplementation of LT1's CalcMotion for a standing object
+// It differs from Jupiter's in three ways:
+// 1) An object moving away from its plane still gets only the force's normal part on a shallow plane, not the whole force
+// 2) The velocity clip and zeroing change only a copy used for this step's movement. The object's own velocity keeps them only when friction applies
+// 3) LT1's thresholds decide when no force is applied: almost no speed, too little speed along the plane, or little speed left after the clip
+static void LT1StandingMotion(MotionInfo *pInfo, LTObject *pObj, const LTVector &vForce,
+	LTVector &dr, LTVector &v, LTVector &a, float dt, float velocityMagSqr, float accelMagSqr)
+{
+	const LTVector *pPlaneNormal;
+	LTVector objectNormal;
+	if (pObj->m_pNodeStandingOn)
+		pPlaneNormal = &pObj->m_pNodeStandingOn->GetPlane()->m_Normal;
+	else
+	{
+		// Standing on another object, so the plane is taken as opposite to gravity
+		objectNormal = -pInfo->m_UnitForce;
+		pPlaneNormal = &objectNormal;
+	}
+
+	// The acceleration turned into the plane, keeping its size
+	if (accelMagSqr > 0.001f)
+	{
+		LTVector vSide = a.Cross(*pPlaneNormal);
+		const float fSideMagSqr = vSide.MagSqr();
+		if (fSideMagSqr > 0.1f)
+		{
+			vSide *= 1.0f / sqrtf(fSideMagSqr);
+			a = pPlaneNormal->Cross(vSide) * sqrtf(accelMagSqr);
+		}
+	}
+
+	LTVector vStepVel = v; // The velocity this step integrates
+	LTVector vAppliedForce(0.0f, 0.0f, 0.0f);
+	LTBOOL bFriction = LTFALSE;
+	if (velocityMagSqr > 0.001f)
+	{
+		LTVector vAlongPlane(0.0f, 0.0f, 0.0f); // The velocity's direction along the plane
+		LTVector vSide = vStepVel.Cross(*pPlaneNormal);
+		const float fSideMagSqr = vSide.MagSqr();
+		if (fSideMagSqr > 0.001f)
+		{
+			vSide *= 1.0f / sqrtf(fSideMagSqr);
+			vAlongPlane = pPlaneNormal->Cross(vSide);
+		}
+		float fNormalSpeed = pPlaneNormal->Dot(vStepVel); // Negative when moving into the plane
+		LTBOOL bConsiderForce = LTTRUE;
+		if (fNormalSpeed < 0.001f)
+		{
+			bConsiderForce = LTFALSE;
+			if (vAlongPlane.MagSqr() >= 0.001f)
+			{
+				// Speed into the plane beyond 10 is clipped
+				if (fNormalSpeed <= -10.0f)
+				{
+					vStepVel -= *pPlaneNormal * (fNormalSpeed + 10.0f);
+					velocityMagSqr = vStepVel.MagSqr();
+				}
+				const float fPlaneSpeed = vStepVel.Dot(vAlongPlane);
+				if ((vAlongPlane * fPlaneSpeed).MagSqr() > 1.0f)
+				{
+					bFriction = LTTRUE;
+					bConsiderForce = LTTRUE;
+				}
+			}
+			if (!bConsiderForce)
+				vStepVel.Init();
+		}
+		// A steep enough plane takes the whole force, a shallow one only its normal part
+		if (bConsiderForce && velocityMagSqr >= 0.1f && pInfo->m_ForceMag > 0.001f)
+		{
+			const float fForceAlongNormal = pPlaneNormal->Dot(vForce);
+			if (pInfo->m_SlideRatio * pInfo->m_ForceMag <= fForceAlongNormal)
+				vAppliedForce = vForce;
+			else
+				vAppliedForce = *pPlaneNormal * fForceAlongNormal;
+		}
+	}
+	a += vAppliedForce;
+
+	if (bFriction && pObj->m_FrictionCoefficient > 0.0f)
+	{
+		const float fFriction = pObj->m_FrictionCoefficient;
+		const float fDecay = (float)exp(-fFriction * dt);
+		const LTVector vTerminalVel = a / fFriction; // The velocity friction settles at
+		dr = vTerminalVel * dt + (vStepVel * fFriction - a) * ((1.0f - fDecay) / fFriction / fFriction);
+		pObj->m_Velocity = (vStepVel - vTerminalVel) * fDecay + vTerminalVel;
+		v = pObj->m_Velocity;
+	}
+	else
+	{
+		dr = vStepVel * dt + a * (dt * dt * 0.5f * 0.5f);
+		pObj->m_Velocity += a * dt;
+		v = pObj->m_Velocity;
+	}
+}
+
 //*
 // ----------------------------------------------------------------------- //
 // Returns the vector that the physics would have the object move by.
@@ -29,7 +125,7 @@ void CalcMotion
 	float velocityMagSqr, accelMagSqr;
 	LTBOOL bFriction;
 
-	extern int32 g_bLT1StandGravity;
+	extern int32 g_bLT1CalcMotion;
 
 	bFriction = LTFALSE;
 	timeIntegral = dt * dt * 0.5f;	
@@ -83,6 +179,11 @@ void CalcMotion
 				pObj->m_Velocity.Init();
 				pObj->m_Acceleration.Init();
 				pObj->m_InternalFlags &= ~IFLAG_APPLYPHYSICS;
+				return;
+			}
+			else if (g_bLT1CalcMotion)
+			{
+				LT1StandingMotion(pInfo, pObj, vForce, dr, v, a, dt, velocityMagSqr, accelMagSqr);
 				return;
 			}
 			else
@@ -141,20 +242,11 @@ void CalcMotion
 
 						bFriction = LTTRUE;
 
-						// LT1 adds the force here too
-						if (g_bLT1StandGravity)
-							a += *n * n->Dot(vForce);
-
 						// dsi_ConsolePrint("Downhill");
 					}
 					else
 					{
 						bFriction = LTTRUE;
-
-						// LT1 keeps gravity on a standing object, while Jupiter drops it.
-						// Without it objects flicker on and off the ground
-						if (g_bLT1StandGravity)
-							a += *n * n->Dot(vForce);
 
 						// dsi_ConsolePrint("Walk");
 					}

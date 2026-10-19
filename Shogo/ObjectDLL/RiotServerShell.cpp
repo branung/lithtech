@@ -119,9 +119,9 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// Each side compiles its own collision.cpp so the client shell sets this too
 	g_pServerDE->RunGameConString("LT1StairStep 1");
 
-	// Keep gravity on a standing object like LT1.
+	// LT1's motion for a standing object, which keeps gravity on it.
 	// Without it a standing character flickers between grounded and airborne and loses jumps (client too)
-	g_pServerDE->RunGameConString("LT1StandGravity 1");
+	g_pServerDE->RunGameConString("LT1CalcMotion 1");
 
 	// Keep the solver's resolved position when the strike or restart cap fires (client too)
 	g_pServerDE->RunGameConString("LT1StrikeKeep 1");

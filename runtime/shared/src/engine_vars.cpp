@@ -23,6 +23,7 @@ float	g_fDemoFrameTime = 0.0f; // The recorded server frame time in place of the
 float	g_fDemoClientFrameTime = 0.0f; // The client's frame time, the same difference
 int32	g_nDemoAnimMS = -1; // The client models' step, truncated to whole ms as LT1's was (-1 = the frame's own)
 const char *g_DemoStopCommand = LTNULL; // A console line run when a playback stops, for the game to undo what it changed
+int32	g_DemoTrace = 0; // Diagnostic: print each played frame's number, clock, held commands, mouse axes, and player position (0 = off)
 
 int32	g_CV_ForceNoSound = LTFALSE;
 int32	g_CV_BorderlessWindow = LTFALSE; // Create the game window without a frame (fullscreen at desktop resolution)
@@ -93,7 +94,7 @@ int32	g_bLT1PaletteAlpha   = 1;
 int32	g_bLocalPreLoadWorld = 1; // PreLoadWorld for a local client too, not just a remote one
 int32	g_bLT1CreateInPlace = 0; // Placement move before InitialUpdate, so a new object isn't sent MID_TOUCHNOTIFY
 int32	g_bLT1ModelAnimNoRestart = 0; // Ignore a request for the animation already playing.
-int32	g_bLT1StandGravity = 0; // Keep gravity on a standing object, as LT1 did
+int32	g_bLT1CalcMotion = 0; // LT1's motion for a standing object in place of Jupiter's. Set on both client and server
 int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and rebuild the box during pushback like LT1
 int32	g_bLT1RaySolidOnly = 0; // Only solid polys stop a ray, so LT1 doorway polys pass shots and sight
 int32	g_bLT1VirtualKeys = 0; // The client shell gets Win32 virtual key codes, as LT1 sent, not SDL keycodes
@@ -280,6 +281,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_FLOAT("DemoClientFrameTime", &g_fDemoClientFrameTime),
 	EV_LONG("DemoAnimMS", &g_nDemoAnimMS),
 	EV_STRING("DemoStopCommand", &g_DemoStopCommand),
+	EV_LONG("DemoTrace", &g_DemoTrace),
 	EV_LONG("ForceNoSound", &g_CV_ForceNoSound),
 	
 	EV_LONG("CursorCenter", &g_CV_CursorCenter),
@@ -353,7 +355,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LocalPreLoadWorld", &g_bLocalPreLoadWorld),
 	EV_LONG("LT1CreateInPlace", &g_bLT1CreateInPlace),
 	EV_LONG("LT1ModelAnimNoRestart", &g_bLT1ModelAnimNoRestart),
-	EV_LONG("LT1StandGravity", &g_bLT1StandGravity),
+	EV_LONG("LT1CalcMotion", &g_bLT1CalcMotion),
 	EV_LONG("LT1SetupBoxCheck", &g_bLT1SetupBoxCheck),
 	EV_LONG("LT1RaySolidOnly", &g_bLT1RaySolidOnly),
 	EV_LONG("LT1VirtualKeys", &g_bLT1VirtualKeys),
