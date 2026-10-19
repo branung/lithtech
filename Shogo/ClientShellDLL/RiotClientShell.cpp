@@ -112,6 +112,7 @@ PhysicsState	  g_normalPhysicsState;
 PhysicsState	  g_waterPhysicsState;
 
 VarTrack g_CV_CSendRate; // The SendRate console variable.
+VarTrack g_CV_LT1CommandSync; // Send command changes before the server update
 
 LTFLOAT s_fDemoTime   = 0.0f;
 
@@ -261,6 +262,7 @@ CRiotClientShell::CRiotClientShell()
 	m_bGamePaused		= LTFALSE;
 	m_bRecordingDemo	= LTFALSE;
 	m_bDemoSettings		= LTFALSE;
+	m_nLastSentCommands[0] = m_nLastSentCommands[1] = 0;
 
 	m_bSwitchingModes = LTFALSE;
 	m_nClearScreenCount		= 0;
@@ -829,6 +831,7 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 
 	// Init our client send rate var.
 	g_CV_CSendRate.Init(g_pLTClient, "CSendRate", NULL, DEFAULT_CSENDRATE);
+	g_CV_LT1CommandSync.Init(g_pLTClient, "LT1CommandSync", NULL, 1.0f);
 	
 
 	HCONSOLEVAR hIsSet = g_pLTClient->GetConsoleVar("UpdateRateInitted");
@@ -2854,6 +2857,8 @@ void CRiotClientShell::UpdatePlayerInfo()
 				}
 				cMsg.Writeuint64(nCommands[0]);
 				cMsg.Writeuint64(nCommands[1]);
+				m_nLastSentCommands[0] = nCommands[0];
+				m_nLastSentCommands[1] = nCommands[1];
 			}
 
 			// Write position info.
@@ -2869,6 +2874,58 @@ void CRiotClientShell::UpdatePlayerInfo()
 	}
 
 	m_bHandledStartup = LTTRUE;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CRiotClientShell::SendCommandSync()
+//
+//	PURPOSE:	Tell the server about a command change in the frame it happened
+//
+// ----------------------------------------------------------------------- //
+//
+// LT1's server saw a key change in the frame it was pressed or released.
+// UpdatePlayerInfo runs after the server update, so it's a frame late.
+// This sends from OnCommandOn/Off, which run before it. No position is sent (CLIENTUPDATE_NOPOSITION),
+// and the external camera field is repeated because ClientUpdate reads its absence as 'camera off'
+
+void CRiotClientShell::SendCommandSync()
+{
+	if (!g_pLTClient || !m_MoveMgr || !m_bHandledStartup) return;
+	if (!g_CV_LT1CommandSync.GetFloat(1.0f)) return;
+
+	uint64 nCommands[2] = { 0, 0 };
+	for (int nCmd = 0; nCmd < PLAYER_COMMAND_BITS; ++nCmd)
+	{
+		if (g_pLTClient->IsCommandOn(nCmd))
+			nCommands[nCmd >> 6] |= ((uint64)1) << (nCmd & 63);
+	}
+
+	// Several changes in one frame send once: the first sees the whole new state
+	if (nCommands[0] == m_nLastSentCommands[0] && nCommands[1] == m_nLastSentCommands[1])
+		return;
+
+	uint16 nFlags = CLIENTUPDATE_COMMANDS | CLIENTUPDATE_NOPOSITION;
+	LTVector vCameraPos;
+	vCameraPos.Init();
+	if (m_bUsingExternalCamera)
+	{
+		nFlags |= CLIENTUPDATE_EXTERNALCAMERA;
+		g_pLTClient->GetObjectPos(m_hCamera, &vCameraPos);
+	}
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_PLAYER_UPDATE);
+	cMsg.Writeuint16(nFlags);
+	if (nFlags & CLIENTUPDATE_EXTERNALCAMERA)
+		cMsg.WriteLTVector(vCameraPos);
+	cMsg.Writeuint64(nCommands[0]);
+	cMsg.Writeuint64(nCommands[1]);
+	g_pLTClient->SendToServer(cMsg.Read(), 0);
+
+	m_nLastSentCommands[0] = nCommands[0];
+	m_nLastSentCommands[1] = nCommands[1];
 }
 
 
@@ -4369,6 +4426,9 @@ void CRiotClientShell::OnCommandOn(int command)
 {
 	if (!g_pLTClient) return;
 
+	// Before the editing test, as the server hears raw command state either way
+	SendCommandSync();
+
 	// only allow input if not editing and not drawing the mission log
 
 	if (m_messageMgr.GetEditingState())
@@ -4628,6 +4688,8 @@ void CRiotClientShell::OnCommandOn(int command)
 void CRiotClientShell::OnCommandOff(int command)
 {
 	if (!g_pLTClient) return;
+
+	SendCommandSync();
 
 	// only process if not editing a message
 	if (!m_messageMgr.GetEditingState())

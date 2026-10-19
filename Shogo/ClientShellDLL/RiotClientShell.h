@@ -220,6 +220,10 @@ class CRiotClientShell : public IClientShellStub
 		LTBOOL		m_bDemoSettings;
 		LTFLOAT		m_fPlayerDemoSettings[24];
 
+		// Sends a command change to the server in the frame it happens, as LT1 did (LT1CommandSync)
+		void		SendCommandSync();
+		uint64		m_nLastSentCommands[2]; // The command state the server last heard
+
 		
 		LTBOOL		m_bSwitchingModes;
 

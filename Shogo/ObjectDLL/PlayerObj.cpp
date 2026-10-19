@@ -3366,6 +3366,10 @@ DBOOL CPlayerObj::ClientUpdate(HMESSAGEREAD hMessage)
 		}
 	}
 
+	// The command sync update has no position block to read
+	if ( m_nClientChangeFlags & CLIENTUPDATE_NOPOSITION )
+		bRet = DFALSE;
+
 	return bRet;
 }
 

@@ -122,6 +122,10 @@
 // Sent from the client because a cutscene camera zeroes the server's command slots
 #define CLIENTUPDATE_SKIPCUTSCENE	(1<<8)
 
+// Set on the command sync update (SendCommandSync), which has no position block.
+// A second position in one frame would repeat the on ground byte and hide a landing from the server
+#define CLIENTUPDATE_NOPOSITION		(1<<9)
+
 #define PLAYER_COMMAND_BITS			128
 
 // Music commands

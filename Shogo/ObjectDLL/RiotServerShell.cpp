@@ -141,6 +141,9 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	g_pServerDE->RunGameConString("LT1WorldOnce 1");
 	g_pServerDE->RunGameConString("LT1StairSwept 1");
 
+	// Tracked sounds count down by game time, so a character's next pain sound waits for the last one to end in game time
+	g_pServerDE->RunGameConString("LT1SoundStep 1");
+
 	// The rest of LT1's contact stack: 0.1 clearance, exact contact isn't a hit, no stale detections.
 	// Without them LT1StrikeKeep parks the player on the wall plane (client sets all four)
 	g_pServerDE->RunGameConString("LT1IntersectPushback 1");

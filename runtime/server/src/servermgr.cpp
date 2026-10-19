@@ -1184,7 +1184,9 @@ bool CServerMgr::Update(int32 updateFlags, uint32 nCurTimeMS)
 			// Update the sounds the server controls...
 			// MAG - 2/14/02 - use true frame time
 			// to keep client and server sound calcs in sync
-			UpdateSounds(m_nTrueFrameTimeMS / 1000.0f);
+			// LT1SoundStep: LT1 counts them down by the game step instead
+			extern int32 g_bLT1SoundStep;
+			UpdateSounds(g_bLT1SoundStep ? m_FrameTime : m_nTrueFrameTimeMS / 1000.0f);
 
 			// Update the server shell.
 			if (i_server_shell != NULL) {
