@@ -4,6 +4,7 @@
 #include "iltcommon.h"
 #include "iltmodel.h"
 #include "iltphysics.h"
+#include "iltlt1server.h"
 #include "ltobjectcreate.h"
 
 #include <string.h>
@@ -593,14 +594,31 @@ DBOOL CServerDE::GetAttachedModelNodeTransform(HATTACHMENT hAttachment,
     return DTRUE;
 }
 
-void CServerDE::SetDeactivationTime(HOBJECT /*hObj*/, DFLOAT /*fDeactivationTime*/)
+// LT1's auto deactivation, done by the engine under LT1AutoDeactivate (check sdk/inc/iltlt1server.h for more details)
+static ILTLT1Server* s_pDELT1Server = NULL;
+define_holder(ILTLT1Server, s_pDELT1Server);
+
+void CServerDE::SetDeactivationTime(HOBJECT hObj, DFLOAT fDeactivationTime)
 {
-    // In LT1 this was an idle hint
+    if (s_pDELT1Server)
+        s_pDELT1Server->SetDeactivationTime(hObj, fDeactivationTime);
 }
 
-void CServerDE::PingObjects(HOBJECT /*hObj*/)
+void CServerDE::PingObjects(HOBJECT hObj)
 {
-    // The other half of LT1's deactivation model
+    if (s_pDELT1Server)
+        s_pDELT1Server->PingObjects(hObj);
+}
+
+void CServerDE::SetObjectState(HOBJECT hObj, int state)
+{
+    if (state == DE_OBJSTATE_AUTODEACTIVATE_NOW)
+    {
+        if (s_pDELT1Server && s_pDELT1Server->AutoDeactivateNow(hObj))
+            return;
+        state = OBJSTATE_ACTIVE;
+    }
+    ILTServer::SetObjectState(hObj, state);
 }
 
 

@@ -141,6 +141,12 @@ public:
     // Used in conjunction with WorldTree::m_CurFrameCode.
     // Set to FRAMECODE_NOTINTREE if the object is not in the WorldTree.
     uint32          m_WTFrameCode;
+
+public:
+    // When the object was last inserted/reinserted, counted over every tree. 
+    // LT1 files an object at the head of its node's list whenever it's refiled, at the same places the port inserts it.
+    // LT1FileOrder sorts by it
+    uint32          m_nLT1FileStamp;
 };
 
 

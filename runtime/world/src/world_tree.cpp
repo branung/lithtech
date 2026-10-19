@@ -322,6 +322,8 @@ WorldTreeObj::WorldTreeObj(WTObjType objType)
 	uint32 i;
 	WTObjLink *pLink;
 
+	m_nLT1FileStamp = 0;
+
 	for(i=0; i < MAX_OBJ_NODE_LINKS; i++)
 	{
 		pLink = &m_Links[i];
@@ -585,6 +587,9 @@ void WorldTree::InsertObject2(WorldTreeObj *pObj,
 {
 	FilterObjInfo foInfo;
 	LTVector vDiff;
+
+	static uint32 s_nFileStamp = 0;
+	pObj->m_nLT1FileStamp = ++s_nFileStamp;
 
 	pObj->RemoveFromWorldTree();
 

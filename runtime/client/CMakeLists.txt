@@ -136,6 +136,8 @@ set(exec_src
 	../server/src/s_intersect.cpp
 	../server/src/s_net.cpp
 	../server/src/s_object.cpp
+	../server/src/s_lt1deactivate.cpp
+	../server/src/s_lt1vis.cpp
 	../server/src/server_consolestate.cpp
 	../server/src/server_extradata.cpp
 	../server/src/server_filemgr.cpp

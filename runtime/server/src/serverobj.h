@@ -56,7 +56,11 @@ public:
 	HHashElement    *m_hName;		// LTNULL if the name is "" or set if it has a valid name.
 
 	float			m_NextUpdate;	// If this is <= 0, then it never updates the object.
-										// If it's > 0 and goes to <= 0, then it updates the object.	
+										// If it's > 0 and goes to <= 0, then it updates the object.
+
+	// LT1AutoDeactivate: SetDeactivationTime's interval (0 = never), and the countdown since the last ping
+	float			m_fLT1DeactivateTime;
+	float			m_fLT1DeactivateLeft;
 	
 	Client			*m_pClient;		// If this is set, this object is a client's object..
 	LPBASECLASS		m_pObject;		// Object type is m_ObjectType.

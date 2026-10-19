@@ -69,6 +69,9 @@ uint32 g_Ticks_ClientVis;
 extern int32 g_CV_STracePackets, g_CV_DelimitPackets;
 extern int32 g_CV_MeasurePackets;
 extern int32 g_bForceRemote;
+extern int32 g_bLT1ClientPVS;
+bool sm_LT1WorldHasVis();
+void sm_LT1VisitVisibleObjects(const LTVector &vPos, void (*fn)(LTObject *pObj, void *pUser), void *pUser);
 extern int32 g_CV_ConnTroubleCount;
 extern int32 g_CV_BandwidthTargetServer;
 
@@ -1166,9 +1169,76 @@ struct CGuaranteedObjTrack
 };
 typedef std::priority_queue<CGuaranteedObjTrack> TGuaranteedObjQueue;
 
-void SendAllObjectsGuaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo) 
+// LT1ClientPVS: the objects LT1 sends a client, in its order.
+// First what the visibility walk reaches from the view, then the view object, 
+//the sky objects, and what the view object adds in MID_GETFORCEUPDATEOBJECTS
+struct LT1ForceUpdate // DECompat's ForceUpdate, laid out the same
 {
-	//determine if we are dealing with a local client. 
+	LTObject	**m_Objects;
+	uint32		m_nObjects;
+};
+static const uint32 kLT1MaxForceUpdate = 200;	// MAX_FORCEUPDATE_OBJECTS
+static const uint32 kLT1MidGetForceUpdate = 11;	// MID_GETFORCEUPDATEOBJECTS
+
+static void LT1CollectVisible(LTObject *pObj, void *pUser)
+{
+	((std::vector<LTObject*>*)pUser)->push_back(pObj);
+}
+
+static void LT1ClientObjects(const Client *pClient, std::vector<LTObject*> &objects)
+{
+	objects.clear();
+	sm_LT1VisitVisibleObjects(pClient->m_ViewPos, &LT1CollectVisible, &objects);
+
+	LTObject *forceObjects[kLT1MaxForceUpdate];
+	LT1ForceUpdate force;
+	force.m_Objects = forceObjects;
+	force.m_nObjects = 0;
+
+	LTObject *pViewObj = pClient->m_pAttachmentParent ? pClient->m_pAttachmentParent->m_pObject : pClient->m_pObject;
+	if (pViewObj)
+		force.m_Objects[force.m_nObjects++] = pViewObj;
+
+	for (uint32 i = 0; i < MAX_SKYOBJECTS; i++)
+	{
+		if (g_pServerMgr->m_SkyObjects[i] != 0xFFFF)
+		{
+			LTObject *pSky = sm_FindObject(g_pServerMgr->m_SkyObjects[i]);
+			if (pSky && force.m_nObjects < kLT1MaxForceUpdate)
+				force.m_Objects[force.m_nObjects++] = pSky;
+		}
+	}
+
+	if (pViewObj && pViewObj->sd && pViewObj->sd->m_pObject)
+		pViewObj->sd->m_pObject->EngineMessageFn(kLT1MidGetForceUpdate, &force, 0.0f);
+
+	for (uint32 i = 0; i < force.m_nObjects && i < kLT1MaxForceUpdate; i++)
+		if (force.m_Objects[i])
+			objects.push_back(force.m_Objects[i]);
+}
+
+void SendAllObjectsGuaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
+{
+	if (g_bLT1ClientPVS && sm_LT1WorldHasVis())
+	{
+		// LT1's set in LT1's order, skipping objects already sent
+		static std::vector<LTObject*> objects;
+		LT1ClientObjects(pInfo->m_pClient, objects);
+		for (size_t i = 0; i < objects.size(); ++i)
+		{
+			LTObject *pObject = objects[i];
+			if (pInfo->m_pClient->m_ObjInfos[pObject->m_ObjectID].m_ChangeFlags & CF_SENTINFO)
+				continue;
+			if (!ShouldSendToClient(pInfo->m_pClient, pObject))
+				continue;
+			if (pObject->IsMainWorldModel())
+				continue;
+			UpdateSendToClientState(pObject, pInfo);
+		}
+		return;
+	}
+
+	//determine if we are dealing with a local client.
 	bool bLocalClient = !!(pInfo->m_pClient->m_ClientFlags & CFLAG_LOCAL);
 
 	uint32 i;
@@ -1330,6 +1400,11 @@ void SendAllObjectsUnguaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
 				if ((pObject->sd->m_NetFlags & k_nUnguaranteedMask) == 0)
 					continue;
 
+				// LT1ClientPVS: only objects this update sent
+				if (g_bLT1ClientPVS && sm_LT1WorldHasVis() &&
+					!(pInfo->m_pClient->m_ObjInfos[pObject->m_ObjectID].m_ChangeFlags & CF_SENTINFO))
+					continue;
+
 				//write out all the unguaranteed data
 				WriteUnguaranteedDataWithAttachments(pObject, pInfo->m_cUnguaranteed, k_nUnguaranteedMask);
 
@@ -1365,6 +1440,10 @@ void SendAllObjectsUnguaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
 				if ((pObject->sd->m_NetFlags & k_nUnguaranteedMask) == 0)
 					continue;
 
+				// LT1ClientPVS: only objects this update sent
+				if (g_bLT1ClientPVS && sm_LT1WorldHasVis() &&
+					!(pInfo->m_pClient->m_ObjInfos[pObject->m_ObjectID].m_ChangeFlags & CF_SENTINFO))
+					continue;
 
 				CUnguaranteedObjTrack cCurObj;
 				cCurObj.m_pObject = pObject;

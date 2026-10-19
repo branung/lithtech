@@ -100,6 +100,9 @@ int32	g_bLT1DimsDetach = 0; // An object whose box changes size is detached from
 int32	g_bLT1StairSwept = 0; // The stair step's box covers the whole move and moves with each push. Needs LT1StairStep and goes with LT1WorldOnce. Set on both client and server
 int32	g_bLT1WorldOnce = 0; // MoveObject collides with the main world once, after the other objects. Set on both client and server
 int32	g_bLT1SoundStep = 0; // The server's tracked sounds count down by game time rather than system time. Server only
+int32	g_bLT1AutoDeactivate = 0; // An object nothing has pinged for its deactivation time stops updating. Needs LT1 vis data. Server only
+int32	g_bLT1ClientPVS = 0; // A client is only sent what LT1's visibility walk reaches from its view, plus its forced objects. Also needs LT1 vis data. Server only
+int32	g_bLT1FileOrder = 0; // The visibility walk meets a node's newest filed objects first, as LT1's does. Server only
 int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and rebuild the box during pushback like LT1
 int32	g_bLT1RaySolidOnly = 0; // Only solid polys stop a ray, so LT1 doorway polys pass shots and sight
 int32	g_bLT1VirtualKeys = 0; // The client shell gets Win32 virtual key codes, as LT1 sent, not SDL keycodes
@@ -366,6 +369,9 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1StairSwept", &g_bLT1StairSwept),
 	EV_LONG("LT1WorldOnce", &g_bLT1WorldOnce),
 	EV_LONG("LT1SoundStep", &g_bLT1SoundStep),
+	EV_LONG("LT1AutoDeactivate", &g_bLT1AutoDeactivate),
+	EV_LONG("LT1ClientPVS", &g_bLT1ClientPVS),
+	EV_LONG("LT1FileOrder", &g_bLT1FileOrder),
 	EV_LONG("LT1SetupBoxCheck", &g_bLT1SetupBoxCheck),
 	EV_LONG("LT1RaySolidOnly", &g_bLT1RaySolidOnly),
 	EV_LONG("LT1VirtualKeys", &g_bLT1VirtualKeys),

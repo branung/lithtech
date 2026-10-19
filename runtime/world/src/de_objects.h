@@ -76,8 +76,10 @@ struct ObjectCreateStruct;
 #define IFLAG_INSKY             (1<<8)  // Is this object in the sky?
 #define IFLAG_MAINWORLDMODEL	(1<<9)	// Is this object the main world model?
 
+#define IFLAG_AUTODEACTIVATED	(1<<13) // LT1AutoDeactivate: the countdown ran out.. so no update, animation or physics until awoken.
+
 // Just a helper to see if an object is inactive.
-#define IFLAG_INACTIVE_MASK (IFLAG_INACTIVE|IFLAG_INACTIVE_TOUCH)
+#define IFLAG_INACTIVE_MASK (IFLAG_INACTIVE|IFLAG_INACTIVE_TOUCH|IFLAG_AUTODEACTIVATED)
 
 class CRenderStyle;
 

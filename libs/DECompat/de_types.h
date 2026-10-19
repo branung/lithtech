@@ -182,11 +182,12 @@ typedef CheapLTLink CheapDLink;
 
 /*
     LT1 values with no Jupiter counterpart
-    OBJSTATE_AUTODEACTIVATE_NOW was 3, past the end of Jupiter's OBJSTATE_ enum
-    Jupiter deactivates objects itself and has no PingObjects, so it maps to OBJSTATE_ACTIVE.
+    OBJSTATE_AUTODEACTIVATE_NOW is LT1's 3, which Jupiter's OBJSTATE_ enum lacks.
+    CServerDE::SetObjectState catches it: under LT1AutoDeactivate it deactivates the object, otherwise it's OBJSTATE_ACTIVE.
 */
 
-#define OBJSTATE_AUTODEACTIVATE_NOW OBJSTATE_ACTIVE
+#define DE_OBJSTATE_AUTODEACTIVATE_NOW 3
+#define OBJSTATE_AUTODEACTIVATE_NOW DE_OBJSTATE_AUTODEACTIVATE_NOW
 
 // In LT1: also save portal states.
 //There are no portal states to save.

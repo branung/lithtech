@@ -276,7 +276,18 @@ void WorldBsp::Clear()
 
     m_PolyData = NULL;
     m_PolyDataSize = 0;
-    
+
+    m_pVisData = NULL;
+    m_nVisDataSize = 0;
+    m_pVisLists = NULL;
+    m_nVisLists = 0;
+    m_pVisLeaves = NULL;
+    m_nVisLeaves = 0;
+    m_pVisNodes = NULL;
+    m_nVisNodes = 0;
+    m_nVisRoot = -1;
+    m_pNodeLeaf = NULL;
+
     m_WorldInfoFlags = 0;
 
     m_WorldName[0] = 0;
@@ -296,9 +307,54 @@ void WorldBsp::Term()
     dfree(m_TextureNames);
     dfree(m_TextureNameData);
 
+    dfree(m_pVisData);
+    dfree(m_pVisLists);
+    dfree(m_pVisLeaves);
+    dfree(m_pVisNodes);
+    dfree(m_pNodeLeaf);
+
     g_WorldGeometryMemory -= m_MemoryUse;
 
     Clear();
+}
+
+// LT1's descent to a point's leaf
+uint32 WorldBsp::PVSFindLeaf(const LTVector &vPos) const
+{
+    if (!HasPVS() || !m_pNodeLeaf || !m_RootNode || !m_Nodes)
+        return kPVSNoLeaf;
+
+    const float kEpsilon = -0.0001f;
+
+    const Node *pNode = m_RootNode;
+    uint32 nBest = kPVSNoLeaf;
+
+    // A malformed tree ends rather than endlessly loops
+    for (uint32 nGuard = 0; nGuard < 4096; ++nGuard)
+    {
+        if (pNode == NODE_IN || pNode == NODE_OUT || !pNode)
+            break;
+
+        uint32 nIdx = (uint32)(pNode - m_Nodes);
+        if (nIdx >= m_nNodes)
+            break;
+
+        uint16 nLeaf = m_pNodeLeaf[nIdx];
+        if (nLeaf != 0xFFFF)
+            nBest = nLeaf;
+
+        const WorldPoly *pPoly = pNode->GetPoly();
+        if (!pPoly)
+            break;
+        const LTPlane *pPlane = pPoly->GetPlane();
+        if (!pPlane)
+            break;
+
+        // m_Sides[1] is the front (empty) side and m_Sides[0] the back (solid) one
+        pNode = pNode->m_Sides[(pPlane->DistTo(vPos) >= kEpsilon) ? 1 : 0];
+    }
+
+    return nBest;
 }
 
 HPOLY WorldBsp::MakeHPoly(const Node *pNode) const {
@@ -518,7 +574,33 @@ ELoadWorldStatus WorldBsp::Load(ILTStream *pStream, bool bUsePlaneTypes)
         curPos  = ALIGN_MEMORY(curPos); 
 	}
 
-	//pseudo load in the leaf lists
+	// The leaf lists, kept when the world has LT1 vis data. 
+    // totalVisListSize is both the flag and the size, how LT1 had it
+	if (totalVisListSize > 0 && nLeafs > 0)
+	{
+		LT_MEM_TRACK_ALLOC(m_pVisData = (uint8*)dalloc_z(totalVisListSize), LT_MEM_TYPE_WORLD);
+		LT_MEM_TRACK_ALLOC(m_pVisLeaves = (SVisLeaf*)dalloc_z(sizeof(SVisLeaf) * nLeafs), LT_MEM_TYPE_WORLD);
+		if (nLeafLists > 0)
+		{
+			LT_MEM_TRACK_ALLOC(m_pVisLists = (SVisList*)dalloc_z(sizeof(SVisList) * nLeafLists), LT_MEM_TYPE_WORLD);
+		}
+		if (m_pVisData && m_pVisLeaves && (nLeafLists == 0 || m_pVisLists))
+		{
+			m_nVisDataSize = totalVisListSize;
+			m_nVisLeaves = nLeafs;
+			m_nVisLists = nLeafLists;
+			m_MemoryUse += totalVisListSize + sizeof(SVisLeaf) * nLeafs + sizeof(SVisList) * nLeafLists;
+
+			// Filled in the node loop below
+			LT_MEM_TRACK_ALLOC(m_pNodeLeaf = (uint16*)dalloc_z(sizeof(uint16) * m_nNodes), LT_MEM_TYPE_WORLD);
+			if (m_pNodeLeaf)
+				m_MemoryUse += sizeof(uint16) * m_nNodes;
+		}
+	}
+
+	uint32 nVisCursor = 0;	// Running offset into m_pVisData
+	uint32 nListCursor = 0;	// Running index into m_pVisLists
+
     for (i=0; i < nLeafs; i++)
     {
 		uint16 nNumLeafLists;
@@ -528,9 +610,19 @@ ELoadWorldStatus WorldBsp::Load(ILTStream *pStream, bool bUsePlaneTypes)
         {
             // This leaf uses the lists from another leaf.
             STREAM_READ(tempWord);
+
+			// Takes that leaf's run as LT1 does. Range is checked as an earlier leaf isn't guaranteed
+			if (m_nVisLeaves && tempWord < i)
+				m_pVisLeaves[i] = m_pVisLeaves[tempWord];
         }
         else
         {
+			if (m_nVisLeaves)
+			{
+				m_pVisLeaves[i].m_nFirstList = nListCursor;
+				m_pVisLeaves[i].m_nNumLists = nNumLeafLists;
+			}
+
             // This leaf has its own lists.
             for (k=0; k < nNumLeafLists; k++)
             {
@@ -541,19 +633,46 @@ ELoadWorldStatus WorldBsp::Load(ILTStream *pStream, bool bUsePlaneTypes)
 				uint16 nListSize;
                 STREAM_READ(nListSize);
 
-				//skip over the list
-				pStream->SeekTo(pStream->GetPos() + nListSize);
+				if (m_nVisLists && nListCursor < m_nVisLists && (nVisCursor + nListSize) <= m_nVisDataSize)
+				{
+					m_pVisLists[nListCursor].m_nPortalId = tempWord;
+					m_pVisLists[nListCursor].m_nSize = nListSize;
+					m_pVisLists[nListCursor].m_nOffset = nVisCursor;
+					pStream->Read(&m_pVisData[nVisCursor], nListSize);
+					nVisCursor += nListSize;
+					++nListCursor;
+				}
+				else
+				{
+					//skip over the list
+					pStream->SeekTo(pStream->GetPos() + nListSize);
+				}
             }
         }
     }
 
+	// The vis tree
 	if (totalVisListSize > 0)
 	{
 		int32 nVisRoot;
 		uint32 nVisNodes;
 		STREAM_READ(nVisRoot);
 		STREAM_READ(nVisNodes);
-		pStream->SeekTo(pStream->GetPos() + nVisNodes * 16);
+		if (nVisNodes > 0)
+		{
+			LT_MEM_TRACK_ALLOC(m_pVisNodes = (SVisNode*)dalloc_z(sizeof(SVisNode) * nVisNodes), LT_MEM_TYPE_WORLD);
+			if (m_pVisNodes)
+			{
+				pStream->Read(m_pVisNodes, sizeof(SVisNode) * nVisNodes);
+				m_nVisNodes = nVisNodes;
+				m_nVisRoot = (nVisRoot >= 0 && (uint32)nVisRoot < nVisNodes) ? nVisRoot : -1;
+				m_MemoryUse += sizeof(SVisNode) * nVisNodes;
+			}
+			else
+			{
+				pStream->SeekTo(pStream->GetPos() + sizeof(SVisNode) * nVisNodes);
+			}
+		}
 	}
 
     // Read in the planes.
@@ -618,6 +737,11 @@ ELoadWorldStatus WorldBsp::Load(ILTStream *pStream, bool bUsePlaneTypes)
 		pNode->m_PlaneType	= 0;
 
         STREAM_READ(wLeaf);
+
+        // Kept when the world has vis data, which is keyed by leaf
+        if (m_pNodeLeaf)
+            m_pNodeLeaf[i] = wLeaf;
+
         STREAM_READ(nNodeIndices);
 
         for (j=0; j < 2; j++)

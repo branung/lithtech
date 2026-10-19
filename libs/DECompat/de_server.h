@@ -341,9 +341,12 @@ public:
     // GetStringData and GetVarValueString only lost const and are virtual, so they cannot be redeclared here.
     char*           GetObjectName(HOBJECT hObj);
 
-    //Both empty because Jupiter manages deactivation itself
+    // LT1's auto deactivation, done by the engine under LT1AutoDeactivate
     void            SetDeactivationTime(HOBJECT hObj, DFLOAT fDeactivationTime);
     void            PingObjects(HOBJECT hObj);
+
+    // Catches LT1's state 3 (OBJSTATE_AUTODEACTIVATE_NOW), which Jupiter doesn't have
+    void            SetObjectState(HOBJECT hObj, int state);
 };
 
 

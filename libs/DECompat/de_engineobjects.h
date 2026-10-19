@@ -118,8 +118,8 @@ public:
 /*
     MID_GETFORCEUPDATEOBJECTS
 
-    Jupiter never sends it, so handlers for it are dead code.
-    The type stays because it appears in method signatures.
+    Jupiter never sends it. Under LT1ClientPVS, the engine sends it to the client's view object,
+    which replies with the objects that client must always be sent.
 */
 #define MAX_FORCEUPDATE_OBJECTS 200
 

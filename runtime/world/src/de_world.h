@@ -368,6 +368,37 @@ public:
 	ELightAttenuationType	m_eAttenuation;		// The attenuation model of this light
 };
 
+// LT1's visibility data (PVS), carried over from v56 worlds by the converter, which also builds the vis tree.
+// Each leaf's list is a bitstream walking the tree, a bit per node's leaf and per child slot
+
+// One list a leaf owns, with an offset into m_pVisData
+struct SVisList
+{
+    uint16  m_nPortalId;
+    uint16  m_nSize;
+    uint32  m_nOffset;
+};
+
+// A leaf's run of lists. An aliasing leaf takes the other's run at load, as in LT1
+struct SVisLeaf
+{
+    uint32  m_nFirstList;
+    uint32  m_nNumLists;
+};
+
+// PVSFindLeaf's answer without vis data, or for a point in solid space
+const uint32 kPVSNoLeaf = 0xFFFFFFFF;
+
+// One vis tree node, in the bitstream's order. A bit is read for its leaf - if any - and for each real child. A missing child is -1
+struct SVisNode
+{
+    uint32  m_nBspNode;     // The BSP node whose plane files objects
+    uint16  m_nLeaf;        // 0xFFFF for none
+    uint16  m_nPad;
+    int32   m_Slot0;        // The back side (Read first)
+    int32   m_Slot1;        // The front side
+};
+
 // A world BSP.
 class WorldBsp
 {
@@ -406,7 +437,13 @@ public:
     HPOLY           MakeHPoly(const Node *pNode) const;
 
     // Get the poly from the HPOLY.
-    WorldPoly*      GetPolyFromHPoly(HPOLY hPoly);    
+    WorldPoly*      GetPolyFromHPoly(HPOLY hPoly);
+
+    // Whether the world has LT1 vis data. Never true for a Jupiter world
+    bool            HasPVS() const { return m_nVisDataSize > 0 && m_nVisNodes > 0; }
+
+    // The leaf a point is in, as LT1 finds it. kPVSNoLeaf without vis data or in solid space
+    uint32          PVSFindLeaf(const LTVector &vPos) const;
 
 public:
 
@@ -431,6 +468,24 @@ public:
 
     char			*m_TextureNameData; // The list of texture names used in this world.
     char			**m_TextureNames;
+
+    // LT1's vis data. m_nVisDataSize is 0 without it
+    uint8           *m_pVisData;
+    uint32          m_nVisDataSize;
+
+    SVisList        *m_pVisLists;
+    uint32          m_nVisLists;
+
+    SVisLeaf        *m_pVisLeaves;
+    uint32          m_nVisLeaves;
+
+    SVisNode        *m_pVisNodes;
+    uint32          m_nVisNodes;
+    int32           m_nVisRoot;         // Index into m_pVisNodes, or -1
+
+    // Each BSP node's leaf (0xFFFF for none)
+    // Jupiter's Node drops it, and PVSFindLeaf needs it
+    uint16          *m_pNodeLeaf;
 
     LTVector        m_MinBox, m_MaxBox; // Bounding box on the whole WorldBsp.
 

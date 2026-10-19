@@ -927,6 +927,10 @@ void CServerMgr::PreUpdateObjects()
 		}
 		else if (pObj->m_InternalFlags & IFLAG_INWORLD)
 		{
+			// LT1AutoDeactivate: count down before the update and skip an object that has just deactivated
+			extern bool sm_LT1DeactivateTick(LTObject *pObj);
+			if (sm_LT1DeactivateTick(pObj))
+				continue;
 
 #ifdef _PROCESS_CLASS_TICKS_
 
@@ -1759,6 +1763,8 @@ LTRESULT sm_CreateServerData(ObjectCreateStruct *pStruct,
 	pRet->m_pClass = pClass;
 	pRet->m_pClient = LTNULL;
 	pRet->m_NextUpdate = pStruct->m_NextUpdate;
+	pRet->m_fLT1DeactivateTime = 0.0f;
+	pRet->m_fLT1DeactivateLeft = 0.0f;
 	pRet->m_cSpecialEffectMsg.Clear();
 	pRet->m_pIDLink = LTNULL;
 	pRet->m_ChangeFlags = 0;

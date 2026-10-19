@@ -76,6 +76,8 @@ set(libsources
 	src/s_intersect.cpp
 	src/s_net.cpp
 	src/s_object.cpp
+	src/s_lt1deactivate.cpp
+	src/s_lt1vis.cpp
 	src/server_consolestate.cpp
 	src/server_extradata.cpp
 	src/server_filemgr.cpp

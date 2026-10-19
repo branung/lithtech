@@ -144,6 +144,16 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// Tracked sounds count down by game time, so a character's next pain sound waits for the last one to end in game time
 	g_pServerDE->RunGameConString("LT1SoundStep 1");
 
+	// An AI nobody has seen for 10 s (AI_DEACTIVATION_TIME) stops updating until the player or a camera pings it.
+	// 'autodeactivate 1.0' above is LT1's own switch, and this turns on the engine's part
+	g_pServerDE->RunGameConString("LT1AutoDeactivate 1");
+
+	// Only send the client objects it could see from its position
+	g_pServerDE->RunGameConString("LT1ClientPVS 1");
+
+	// Pings wake objects in LT1's order, so the server updates them in LT1's order
+	g_pServerDE->RunGameConString("LT1FileOrder 1");
+
 	// The rest of LT1's contact stack: 0.1 clearance, exact contact isn't a hit, no stale detections.
 	// Without them LT1StrikeKeep parks the player on the wall plane (client sets all four)
 	g_pServerDE->RunGameConString("LT1IntersectPushback 1");
