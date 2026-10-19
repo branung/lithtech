@@ -123,6 +123,12 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// Without it a standing character flickers between grounded and airborne and loses jumps (client too)
 	g_pServerDE->RunGameConString("LT1CalcMotion 1");
 
+	// A standing object keeps its clipped velocity, as LT1 clips it in place (client too)
+	g_pServerDE->RunGameConString("LT1StandVelStore 1");
+
+	// A resized box is detached from what it stood on, so its first step from rest falls and lands like LT1 (client too)
+	g_pServerDE->RunGameConString("LT1DimsDetach 1");
+
 	// Keep the solver's resolved position when the strike or restart cap fires (client too)
 	g_pServerDE->RunGameConString("LT1StrikeKeep 1");
 

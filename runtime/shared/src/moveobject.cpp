@@ -1854,7 +1854,11 @@ LTBOOL ChangeObjectDimensions(MoveState *pState, LTVector &newDims, LTBOOL bColl
 	}
 
 	// Restore the standing-on state
-	if( pObj_WasStandingOn )
+	// LT1 detaches instead, so the next step has no standing friction or stair step
+	extern int32 g_bLT1DimsDetach;
+	if (g_bLT1DimsDetach)
+		DetachObjectStanding(pObj);
+	else if( pObj_WasStandingOn )
 		SetObjectStanding( pObj, pObj_WasStandingOn, pObj_WasStandingOnNode );
 
 	SetObjectBoundingBox(pObj, LTTRUE);

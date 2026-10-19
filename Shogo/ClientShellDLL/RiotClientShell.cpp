@@ -1159,6 +1159,12 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		// LT1's motion for a standing object (both sides)
 		g_pLTClient->RunConsoleString("-LT1CalcMotion 1");
 
+		// A standing object keeps its clipped velocity (both sides)
+		g_pLTClient->RunConsoleString("-LT1StandVelStore 1");
+
+		// A resized box is detached from what it stood on (both sides)
+		g_pLTClient->RunConsoleString("-LT1DimsDetach 1");
+
 		// Keeps resolved progress when the strike or restart cap cancels (both sides)
 		g_pLTClient->RunConsoleString("-LT1StrikeKeep 1");
 

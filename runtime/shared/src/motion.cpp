@@ -7,7 +7,8 @@
 // Reimplementation of LT1's CalcMotion for a standing object
 // It differs from Jupiter's in three ways:
 // 1) An object moving away from its plane still gets only the force's normal part on a shallow plane, not the whole force
-// 2) The velocity clip and zeroing change only a copy used for this step's movement. The object's own velocity keeps them only when friction applies
+// 2) The velocity clip and zeroing change only a copy used for this step's movement. The object's own velocity keeps them only when friction applies,
+// unless LT1StandVelStore is on, which keeps them either way as LT1 does
 // 3) LT1's thresholds decide when no force is applied: almost no speed, too little speed along the plane, or little speed left after the clip
 static void LT1StandingMotion(MotionInfo *pInfo, LTObject *pObj, const LTVector &vForce,
 	LTVector &dr, LTVector &v, LTVector &a, float dt, float velocityMagSqr, float accelMagSqr)
@@ -95,7 +96,12 @@ static void LT1StandingMotion(MotionInfo *pInfo, LTObject *pObj, const LTVector 
 	else
 	{
 		dr = vStepVel * dt + a * (dt * dt * 0.5f * 0.5f);
-		pObj->m_Velocity += a * dt;
+		// LT1 clips and zeroes the velocity in place, so it keeps the clipped one (LT1StandVelStore)
+		extern int32 g_bLT1StandVelStore;
+		if (g_bLT1StandVelStore)
+			pObj->m_Velocity = vStepVel + a * dt;
+		else
+			pObj->m_Velocity += a * dt;
 		v = pObj->m_Velocity;
 	}
 }
