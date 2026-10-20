@@ -4,6 +4,8 @@
 // unless something that can see it (ex the player, a live camera) pings it first.
 // Implemented in runtime/server/src/s_lt1deactivate.cpp, and active only under LT1AutoDeactivate
 
+// LT1's GetModelCommandString: the command string in a model file, where Shogo's weapon models carry their AI fire timings
+
 #ifndef __ILTLT1SERVER_H__
 #define __ILTLT1SERVER_H__
 
@@ -25,6 +27,10 @@ public:
     // SetObjectState(OBJSTATE_AUTODEACTIVATE_NOW).
     // False when LT1AutoDeactivate is off
     virtual bool AutoDeactivateNow(HOBJECT hObj) = 0;
+
+    // Copies the model file's command string into pStr (an empty string when it has none).
+    // LT_INVALIDPARAMS when hModel isn't a model
+    virtual LTRESULT GetModelCommandString(HOBJECT hModel, char *pStr, uint32 maxLen) = 0;
 };
 
 #endif

@@ -10,6 +10,8 @@
 #include "bdefs.h"
 #include "ltmodule.h"
 #include "iltlt1server.h"
+#include "de_objects.h"
+#include "animtracker.h"
 #include "servermgr.h"
 #include "s_object.h"
 #include "serverobj.h"
@@ -107,6 +109,24 @@ public:
 		if (pObj && LT1AutoDeactivateOn())
 			LT1SetStateBits(pObj, IFLAG_AUTODEACTIVATED);
 		return true;
+	}
+
+	// The model file's command string, which the model loader keeps in Model::m_CommandString
+	virtual LTRESULT GetModelCommandString(HOBJECT hModel, char *pStr, uint32 maxLen)
+	{
+		if (!pStr || !maxLen)
+			return LT_INVALIDPARAMS;
+		pStr[0] = '\0';
+		LTObject *pObj = HandleToServerObj(hModel);
+		if (!pObj || pObj->m_ObjectType != OT_MODEL)
+			return LT_INVALIDPARAMS;
+		Model *pModel = pObj->ToModel()->GetModelDB();
+		if (pModel && pModel->m_CommandString)
+		{
+			strncpy(pStr, pModel->m_CommandString, maxLen - 1);
+			pStr[maxLen - 1] = '\0';
+		}
+		return LT_OK;
 	}
 };
 

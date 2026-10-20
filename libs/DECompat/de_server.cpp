@@ -8,6 +8,7 @@
 #include "ltobjectcreate.h"
 
 #include <string.h>
+#include <unordered_map>
 #include <stdlib.h>
 
 
@@ -567,36 +568,125 @@ DBOOL CServerDE::GetModelNodeTransform(HOBJECT hObj, const char *pNodeName,
     return DTRUE;
 }
 
-DBOOL CServerDE::GetAttachedModelNodeTransform(HATTACHMENT hAttachment,
+// What each attachment was made with, for GetAttachedModelNodeTransform's LT1 math.
+// Checked against the parent and child on use, as Jupiter frees an attachment with its parent
+// without calling RemoveAttachment, and a handle can be reused
+namespace
+{
+    struct DEAttachRecord
+    {
+        HOBJECT     m_hParent, m_hChild;
+        char        m_szNode[64];
+        LTVector    m_vOffset;
+        LTRotation  m_rOffset;
+    };
+    std::unordered_map<HATTACHMENT, DEAttachRecord> &DEAttachRecords()
+    {
+        static std::unordered_map<HATTACHMENT, DEAttachRecord> s_Records;
+        return s_Records;
+    }
+}
+
+DRESULT CServerDE::CreateAttachment(HOBJECT hParent, HOBJECT hChild, const char *pNodeName,
+                                    DVector *pOffset, DRotation *pRotationOffset,
+                                    HATTACHMENT *pAttachment)
+{
+    HATTACHMENT hAttach = DNULL;
+    const DRESULT dRes = ILTServer::CreateAttachment(hParent, hChild, pNodeName, pOffset,
+                                                     pRotationOffset, &hAttach);
+    if (pAttachment)
+        *pAttachment = hAttach;
+    if (dRes == LT_OK && hAttach)
+    {
+        DEAttachRecord rec;
+        rec.m_hParent = hParent;
+        rec.m_hChild  = hChild;
+        LTStrCpy(rec.m_szNode, pNodeName ? pNodeName : "", sizeof(rec.m_szNode));
+        if (pOffset) rec.m_vOffset = *pOffset; else rec.m_vOffset.Init();
+        if (pRotationOffset) rec.m_rOffset = *pRotationOffset; else rec.m_rOffset.Init();
+        DEAttachRecords()[hAttach] = rec;
+    }
+    return dRes;
+}
+
+DRESULT CServerDE::RemoveAttachment(HATTACHMENT hAttachment)
+{
+    DEAttachRecords().erase(hAttachment);
+    return ILTServer::RemoveAttachment(hAttachment);
+}
+
+DRESULT CServerDE::GetAttachedModelNodeTransform(HATTACHMENT hAttachment,
                                                const char *pNodeName,
                                                DVector *pPos, DRotation *pRot)
 {
     if (!GetModelLT() || !pNodeName)
-        return DFALSE;
+        return LT_ERROR;
 
     HOBJECT hParent = DNULL, hChild = DNULL;
     if (Common()->GetAttachmentObjects(hAttachment, hParent, hChild) != LT_OK || !hChild)
-        return DFALSE;
+        return LT_ERROR;
 
     HMODELNODE hNode = INVALID_MODEL_NODE;
     if (GetModelLT()->GetNode(hChild, pNodeName, hNode) != LT_OK)
-        return DFALSE;
+        return LT_ERROR;
 
-    LTransform transform;
-    if (Common()->GetAttachedModelNodeTransform(hAttachment, hNode, transform) != LT_OK)
-        return DFALSE;
+    // LT1 scales the child node's model space position by the parent's scale before rotating it into place,
+    // where as Jupiter's GetAttachedModelNodeTransform doesn't scale it at all.
+    // A Shogo vehicle and its turret are scaled together, so a small one's muzzle landed 200 units out instead of 40
+    LTransform tAttach, tChild;
+    if (Common()->GetAttachmentTransform(hAttachment, tAttach, true) != LT_OK)
+        return LT_ERROR;
+    if (GetModelLT()->GetNodeTransform(hChild, hNode, tChild, false) != LT_OK)
+        return LT_ERROR;
+
+    LTVector vScale(1.0f, 1.0f, 1.0f);
+    if (hParent)
+        GetObjectScale(hParent, &vScale);
+    const LTVector vScaled(tChild.m_Pos.x * vScale.x, tChild.m_Pos.y * vScale.y, tChild.m_Pos.z * vScale.z);
+
+    // LT1's composition, when the attachment's record is at hand:
+    // pos = parent node pos + parent rotation * offset + (offset rotation * node rotation) * scaled child pos
+    // Without a record, Jupiter's node * offset
+    LTVector vBase = tAttach.m_Pos;
+    LTRotation rCompose = tAttach.m_Rot;
+    std::unordered_map<HATTACHMENT, DEAttachRecord>::const_iterator it = DEAttachRecords().find(hAttachment);
+    if (it != DEAttachRecords().end() && it->second.m_hParent == hParent && it->second.m_hChild == hChild &&
+        it->second.m_szNode[0])
+    {
+        DVector vNodePos;
+        DRotation rNode;
+        if (GetModelNodeTransform(hParent, it->second.m_szNode, &vNodePos, &rNode))
+        {
+            LTRotation rParent;
+            GetObjectRotation(hParent, &rParent);
+            LTVector vOff;
+            quat_RotVec(&vOff.x, rParent.m_Quat, &it->second.m_vOffset.x);
+            vBase = vNodePos + vOff;
+            rCompose = it->second.m_rOffset * rNode;
+        }
+    }
+
+    LTVector vRotated;
+    quat_RotVec(&vRotated.x, rCompose.m_Quat, &vScaled.x);
 
     if (pPos)
-        *pPos = transform.m_Pos;
+        *pPos = vBase + vRotated;
     if (pRot)
-        *pRot = transform.m_Rot;
+        *pRot = rCompose * tChild.m_Rot;
 
-    return DTRUE;
+    return LT_OK;
 }
 
 // LT1's auto deactivation, done by the engine under LT1AutoDeactivate (check sdk/inc/iltlt1server.h for more details)
 static ILTLT1Server* s_pDELT1Server = NULL;
 define_holder(ILTLT1Server, s_pDELT1Server);
+
+DRESULT CServerDE::GetModelCommandString(HOBJECT hObj, char *pStr, DDWORD maxLen)
+{
+    if (!pStr || !maxLen) return LT_ERROR;
+    pStr[0] = '\0';
+    return s_pDELT1Server ? s_pDELT1Server->GetModelCommandString(hObj, pStr, maxLen) : LT_ERROR;
+}
 
 void CServerDE::SetDeactivationTime(HOBJECT hObj, DFLOAT fDeactivationTime)
 {

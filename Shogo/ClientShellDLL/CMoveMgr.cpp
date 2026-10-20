@@ -1218,8 +1218,14 @@ void CMoveMgr::Update()
 	UpdatePlayerAnimation();
 
 	// Don't integrate motion while m_WantedDims is still the (1,1,1) placeholder.
-	// Gravity would pull the small box down and the full box would land past the floor
-	if (m_WantedDims.x <= 1.0f && m_WantedDims.y <= 1.0f && m_WantedDims.z <= 1.0f)
+	// Gravity would pull the small box down and the full box would land past the floor.
+	// Off unless SpawnDimsGate is set. Og Shogo has no such gate: its placeholder box falls on the load frame and the resize
+	// lifts it onto the floor. With the gate the box stopped just above the floor and was never on the ground,
+	// so the head bob didn't run. The fall through it was added for was fixed elsewhere
+	static HCONSOLEVAR s_hSpawnGate = NULL;
+	if (!s_hSpawnGate) s_hSpawnGate = m_pClientDE->GetConsoleVar("SpawnDimsGate");
+	if (s_hSpawnGate && m_pClientDE->GetVarValueFloat(s_hSpawnGate) != 0.0f &&
+		m_WantedDims.x <= 1.0f && m_WantedDims.y <= 1.0f && m_WantedDims.z <= 1.0f)
 	{
 		LTVector vZero(0.0f, 0.0f, 0.0f);
 		m_pPhysicsLT->SetVelocity(m_hObject, &vZero);

@@ -2708,7 +2708,7 @@ DFLOAT BaseAI::MovementTimeDelta()
 	{
 		const DFLOAT fElapsed = fNow - m_fLastMoveUpdateTime;
 		const DFLOAT fCap     = 2.0f * AI_UPDATE_DELTA;
-		if (fElapsed > fDelta)
+		if (fFrame < AI_UPDATE_DELTA && fElapsed > 1.5f * fFrame)
 			fDelta = (fElapsed < fCap) ? fElapsed : fCap;
 	}
 
@@ -3928,9 +3928,14 @@ DBOOL BaseAI::UpdateScriptMovement(DVector* pvTargetPos)
 	
 	DFLOAT fDistLeft = VEC_DIST(vPos, vTargetPos);
 
+	// The arrival tolerance's frame time is floored at 1/30 second, so a jammed AI still arrives at high frame rates.
+	// "serv ScriptArrivalFloor 0" turns the floor off for comparing with retail's demo playback,
+	// which uses the raw frame time and arrives up to 10 units later than the floor does.
 	const DFLOAT kMinArrivalFrameTime = 1.0f / 30.0f;
 	DFLOAT fArrivalFrameTime = pServerDE->GetFrameTime();
-	if (fArrivalFrameTime < kMinArrivalFrameTime)
+	HCONVAR hFloorVar = pServerDE->GetGameConVar("ScriptArrivalFloor");
+	const DBOOL bArrivalFloor = !hFloorVar || pServerDE->GetVarValueFloat(hFloorVar) != 0.0f;
+	if (bArrivalFloor && fArrivalFrameTime < kMinArrivalFrameTime)
 		fArrivalFrameTime = kMinArrivalFrameTime;
 
 	DFLOAT fDistPredict = fArrivalFrameTime * fSpeed;

@@ -14,6 +14,7 @@
 #include "PlayerObj.h"
 #include "Weapon.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 extern char g_tokenSpace[];
 extern const char *g_pTokens[];
@@ -487,8 +488,28 @@ void CPVWeaponModel::SetupParent()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !m_pParent || !m_hObject) return;
 
-	// GetModelCommandString has no Jupiter equivalent,
-	// so the weapon keeps the fire timing SetMin/MaxFire{Duration,Rest} already set
+	// The model's command string carries the AI fire timings ("min duration, max duration, min rest, max rest")
+	// which override the weapon class's. Example: Ruin150_turret.abc's is "0.5 1.0 1.0 3.0"
+	char commandStr[100];
+	if (pServerDE->GetModelCommandString(m_hObject, commandStr, 100) != DE_OK)
+	{
+		return;
+	}
+
+	int nArgs;
+	pServerDE->Parse(commandStr, &g_pCommandPos, g_tokenSpace, g_pTokens, &nArgs);
+	if (nArgs < 4) return;
+
+	DFLOAT fMinDur, fMaxDur, fMinRest, fMaxRest;
+	fMinDur  = (DFLOAT)atof(g_pTokens[0]);
+	fMaxDur  = (DFLOAT)atof(g_pTokens[1]);
+	fMinRest = (DFLOAT)atof(g_pTokens[2]);
+	fMaxRest = (DFLOAT)atof(g_pTokens[3]);
+
+	m_pParent->SetMinFireDuration(fMinDur);
+	m_pParent->SetMaxFireDuration(fMaxDur);
+	m_pParent->SetMinFireRest(fMinRest);
+	m_pParent->SetMaxFireRest(fMaxRest);
 }
 
 

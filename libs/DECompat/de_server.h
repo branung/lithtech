@@ -149,9 +149,15 @@ public:
                                           DVector *pPos, DRotation *pRot);
 
     // The same for an attached model, resolving the attachment's child first
-    DBOOL           GetAttachedModelNodeTransform(HATTACHMENT hAttachment,
+    DRESULT         GetAttachedModelNodeTransform(HATTACHMENT hAttachment,
                                           const char *pNodeName,
                                           DVector *pPos, DRotation *pRot);
+
+    // ILTServer's own, plus a record of the node name and offsets for GetAttachedModelNodeTransform
+    DRESULT         CreateAttachment(HOBJECT hParent, HOBJECT hChild, const char *pNodeName,
+                                     DVector *pOffset, DRotation *pRotationOffset,
+                                     HATTACHMENT *pAttachment);
+    DRESULT         RemoveAttachment(HATTACHMENT hAttachment);
 
     /*
         Node visibility
@@ -340,6 +346,9 @@ public:
     //Like LT1, GetObjectName returns the name from the same rotating slots as ReadFromMessageString.
     // GetStringData and GetVarValueString only lost const and are virtual, so they cannot be redeclared here.
     char*           GetObjectName(HOBJECT hObj);
+
+    // The command string in the model file. DE_OK (0) on success, as in LT1
+    DRESULT         GetModelCommandString(HOBJECT hObj, char *pStr, DDWORD maxLen);
 
     // LT1's auto deactivation, done by the engine under LT1AutoDeactivate
     void            SetDeactivationTime(HOBJECT hObj, DFLOAT fDeactivationTime);

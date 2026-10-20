@@ -5967,28 +5967,33 @@ void CRiotClientShell::UpdateHeadBob()
 	LTFLOAT  swayH = SWAYH_WALKING / 4000.0f;
 	LTFLOAT  swayV = SWAYV_WALKING / 4000.0f;
 
-	LTBOOL bRunning = (LTBOOL)(m_dwPlayerFlags & CS_MFLG_RUN);
+	//LTBOOL bRunning = (LTBOOL)(m_dwPlayerFlags & CS_MFLG_RUN);
 	LTFLOAT moveDist = m_fVelMagnitude * g_pLTClient->GetFrameTime();
 
 	// Running
-
+	
+	// Note: This source code release has a faster pace and sway when running, but this seems to differ from actual retail Shogo.
+	// The phase decides where the camera and muzzle is when the player fires, so for accuracy (especially in demo testing) these elements are being commented out.
 	LTFLOAT pace;
 	if (bMecha && !pSettings->VehicleMode())
 	{
-		if (bRunning) pace = MATH_CIRCLE * 0.8f;
-		else pace = MATH_CIRCLE * 0.6;
+		//if (bRunning) pace = MATH_CIRCLE * 0.8f;
+		//else pace = MATH_CIRCLE * 0.6;
+		pace = MATH_CIRCLE * 0.6;
 	}
 	else
 	{
-		if (bRunning) pace = MATH_CIRCLE * 0.7f;
-		else pace = MATH_CIRCLE * 0.5;
+		//if (bRunning) pace = MATH_CIRCLE * 0.7f;
+		//else pace = MATH_CIRCLE * 0.5;
+		pace = MATH_CIRCLE * 0.5;
 	}
 
 	m_fBobPhase += (g_pLTClient->GetFrameTime() * pace);
 	if (m_fBobPhase > MATH_CIRCLE) m_fBobPhase -= MATH_CIRCLE;
 
-	if (bRunning) pace = MATH_CIRCLE * 0.8f;
-	else pace = 5*MATH_CIRCLE/6;
+	//if (bRunning) pace = MATH_CIRCLE * 0.8f;
+	//else pace = 5*MATH_CIRCLE/6;
+	pace = 5*MATH_CIRCLE/6;
 
 	m_fSwayPhase += (g_pLTClient->GetFrameTime() * pace) / 2;
 	if (m_fSwayPhase > MATH_CIRCLE) m_fSwayPhase -= MATH_CIRCLE;
