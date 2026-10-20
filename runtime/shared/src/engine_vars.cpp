@@ -117,6 +117,9 @@ int32	g_bLT1ClientPVS = 0; // A client is only sent what LT1's visibility walk r
 int32	g_bLT1FileOrder = 0; // The visibility walk meets a node's newest filed objects first, as LT1's does. Server only
 int32	g_bLT1AnimTransition = 0; // A model with FLAG_ANIMTRANSITION holds a newly set animation for ModelTransitionMS, firing no string keys. Set on both client and server
 int32	g_bLT1NetInterp = 0; // The client eases a networked object to each update over 1.1 server periods, with no velocity. Prediction 0 still turns the easing off. Set on both client and server
+int32	g_bLT1WorldTouchPos = 0; // A mover's world touch handler sees the position it was stopped at. Set on both client and server
+int32	g_bLT1SolidResize = 0; // In LT1 a resize only collides for a FLAG_SOLID object, while Jupiter also collides touch notify and container objects. Set on both client and server
+int32	g_bLT1BoxHitNormal = 0; // A ray hitting an object's box reports the x face's plane for every face, as LT1's box test did. Shogo sets it on the server
 int32	g_bLT1EngineRand = 0; // The engine's Random, IntRandom, RandomScale, and particles use LT1's stream, seeded 123 at demo start and 543 at world start
 int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and rebuild the box during pushback like LT1
 int32	g_bLT1RaySolidOnly = 0; // Only solid polys stop a ray, so LT1 doorway polys pass shots and sight
@@ -399,6 +402,9 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1FileOrder", &g_bLT1FileOrder),
 	EV_LONG("LT1AnimTransition", &g_bLT1AnimTransition),
 	EV_LONG("LT1NetInterp", &g_bLT1NetInterp),
+	EV_LONG("LT1WorldTouchPos", &g_bLT1WorldTouchPos),
+	EV_LONG("LT1SolidResize", &g_bLT1SolidResize),
+	EV_LONG("LT1BoxHitNormal", &g_bLT1BoxHitNormal),
 	EV_LONG("LT1EngineRand", &g_bLT1EngineRand),
 	EV_LONG("LT1SetupBoxCheck", &g_bLT1SetupBoxCheck),
 	EV_LONG("LT1RaySolidOnly", &g_bLT1RaySolidOnly),

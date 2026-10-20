@@ -211,7 +211,17 @@ static bool CollideAgainstWorld
 				//send on the notification
 				if(pObj->m_Flags & FLAG_TOUCH_NOTIFY)
 				{
+					// LT1WorldTouchPos: LT1 collides into the mover's own position, so its touch handler sees where it was stopped. 
+					// Jupiter only applies the stopped position after the whole move, so the mover is placed there for the call.
+					// Afterwards it goes back, unless the handler moved it
+					extern int32 g_bLT1WorldTouchPos;
+					const bool bLT1Pos = g_bLT1WorldTouchPos && pObj == pState->m_pObj;
+					const LTVector vSavedPos = pObj->GetPos();
+					if (bLT1Pos)
+						pObj->SetPos(P1);
 					pState->m_pAbstract->DoTouchNotify(pObj,pObj2, info.m_VelOffset, ltsqrtf(forceMagSqr));
+					if (bLT1Pos && pObj->GetPos() == P1)
+						pObj->SetPos(vSavedPos);
 				}
 			}
 
@@ -1307,6 +1317,7 @@ static void DetectAndProcessCollisions
 
 // LT1 dimension change behavior
 extern int32 g_bLT1ObjectDims;
+extern int32 g_bLT1SolidResize;
 
 // Is the box inside the solid main world?
 struct EmbedCheckState
@@ -1784,7 +1795,8 @@ LTBOOL ChangeObjectDimensions(MoveState *pState, LTVector &newDims, LTBOOL bColl
 	LTObject *pObj_WasStandingOn = pObj->m_pStandingOn;
 	const Node *pObj_WasStandingOnNode = pObj->m_pNodeStandingOn;
 	
-	if( bCollide && IsPhysical(pObj->m_Flags, pState->m_bServer) )
+	// LT1SolidResize: LT1 only collides a resize for a solid object
+	if( bCollide && (g_bLT1SolidResize ? (pObj->m_Flags & FLAG_SOLID) != 0 : IsPhysical(pObj->m_Flags, pState->m_bServer)) )
 	{
 		vDims = newDims;
 		LTVector vOldPos = pObj->GetPos();

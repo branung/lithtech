@@ -177,6 +177,15 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// so things like how many pieces a destroyed prop breaks into match og Shogo (client too)
 	g_pServerDE->RunGameConString("LT1EngineRand 1");
 
+	// A mover's world touch sees where it was stopped, which is where a projectile's impact is read from (client too)
+	g_pServerDE->RunGameConString("LT1WorldTouchPos 1");
+
+	// Only a solid object's resize collides. Anything else takes its new dims with no move and no touch (client too)
+	g_pServerDE->RunGameConString("LT1SolidResize 1");
+
+	// A ray hitting an object's box reports the x face's normal for every face, and impact effects are aligned to it
+	g_pServerDE->RunGameConString("LT1BoxHitNormal 1");
+
 	// During demo playback the server's step is floored at 0.01 s, as LT1's is (client too)
 	g_pServerDE->RunGameConString("LT1ServerStepFloor 1");
 

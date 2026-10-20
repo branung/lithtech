@@ -43,6 +43,15 @@ static LTVector g_V, g_VTimesInvVV, g_VOrigin, g_VDir;
 static float g_VPTimesInvVV, g_LineLen;
 
 
+// LT1BoxHitNormal: LT1 reported the x face's plane for a hit on any face of an object's box.
+// Shogo aligns its impact effects to it
+extern int32 g_bLT1BoxHitNormal;
+#define LT1_BOX_HIT_PLANE(normalDirection) \
+    if (g_bLT1BoxHitNormal)\
+    {\
+        pIntersectPlane->m_Normal.Init(normalDirection, 0.0f, 0.0f);\
+        pIntersectPlane->m_Dist = min.x * normalDirection;\
+    }
 
 
 // Get the intersection point and see if it's inside the other dimensions.
@@ -80,6 +89,7 @@ static float g_VPTimesInvVV, g_LineLen;
             pIntersectPlane->m_Normal.y = normalDirection;\
             pIntersectPlane->m_Normal.z = 0.0f;\
             pIntersectPlane->m_Dist = min.y * normalDirection;\
+            LT1_BOX_HIT_PLANE(normalDirection);\
             return true;\
         }\
     }
@@ -99,6 +109,7 @@ static float g_VPTimesInvVV, g_LineLen;
             pIntersectPlane->m_Normal.y = 0.0f;\
             pIntersectPlane->m_Normal.z = normalDirection;\
             pIntersectPlane->m_Dist = min.z * normalDirection;\
+            LT1_BOX_HIT_PLANE(normalDirection);\
             return true;\
         }\
     }

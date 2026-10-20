@@ -1217,6 +1217,10 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		// The engine's random stream and its seeds are LT1's, for its particles (both sides)
 		g_pLTClient->RunConsoleString("-LT1EngineRand 1");
 
+		// A mover's world touch sees where it was stopped, and only a solid object's resize collides (both sides)
+		g_pLTClient->RunConsoleString("-LT1WorldTouchPos 1");
+		g_pLTClient->RunConsoleString("-LT1SolidResize 1");
+
 		// Demo playback as og runs it, playback only: the server's step floored at 0.01 s,
 		// no held frame after the world loads, the client's clock is the recording's,
 		// and at the end the console comes up over the still running level
