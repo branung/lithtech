@@ -43,6 +43,15 @@ const Node* IntersectLine(const Node *pRoot, LTVector *pPoint1, LTVector *pPoint
 // than IntersectLine.  Only use it as a last resort.
 LTBOOL IntersectLineNode(const Node *pRoot, IntersectRequest *pRequest);
 
+// LT1's leaf search/walk for a ray without INTERSECT_HPOLY (LT1IntersectLeaf)
+const Node* IntersectLineLT1Leaf(const Node *pRoot, const LTVector *pPoint1, const LTVector *pPoint2,
+	LTVector *pIPos, LTPlane *pIPlane);
+
+// LT1's polygon search: a plane only counts as crossed if the ends are at least 0.1 to either side of it,
+// and a hit is a solid polygon crossed from its front, strictly inside every edge.
+// LT1PointCollide uses it to confirm a point mover's hit
+LTBOOL IntersectLineNodeLT1(const Node *pRoot, IntersectRequest *pRequest);
+
 
 #endif  // __INTERSECT_LINE_H__
 

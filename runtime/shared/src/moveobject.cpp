@@ -1089,8 +1089,15 @@ inline LTBOOL MaybeCollide(MoveState *pState, LTObject *pTestObj)
 	{
 		// Make sure the objects actually intersect before we do any collision and movement...
 
-		if( DoObjectsIntersect( pState->m_pObj, pTestObj, &pState->m_vMoveMin, 
-			&pState->m_vMoveMax, &pTestObj->m_MinBox, &pTestObj->m_MaxBox, 
+		// LT1MoverBoxGate: LT1 checks other objects against the mover's collision box at its destination,
+		// and only uses the box swept along the move to find candidates.
+		// The main world still uses the swept box, as LT1 checks the world separately
+		extern int32 g_bLT1MoverBoxGate;
+		const bool bDestGate = g_bLT1MoverBoxGate && !pTestObj->IsMainWorldModel();
+		LTVector *pMoverMin = bDestGate ? &pState->m_pObj->m_MinBox : &pState->m_vMoveMin;
+		LTVector *pMoverMax = bDestGate ? &pState->m_pObj->m_MaxBox : &pState->m_vMoveMax;
+		if( DoObjectsIntersect( pState->m_pObj, pTestObj, pMoverMin,
+			pMoverMax, &pTestObj->m_MinBox, &pTestObj->m_MaxBox,
 			pState->m_vStartPos, pState->m_vDestPos,
 			0.0f, &bWorldModel))
 		{

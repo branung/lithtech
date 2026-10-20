@@ -186,6 +186,17 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// A ray hitting an object's box reports the x face's normal for every face, and impact effects are aligned to it
 	g_pServerDE->RunGameConString("LT1BoxHitNormal 1");
 
+	// A world ray without INTERSECT_HPOLY walks leaves with a 0.1 tolerance, so debris that sinks a little into a floor rests
+	// rather than bouncing (client too)
+	g_pServerDE->RunGameConString("LT1IntersectLeaf 1");
+
+	// A point collide mover - such as every projectile - uses both LT1 walks' 0.1 tolerance and stops 0.1 short of the plane (client too)
+	g_pServerDE->RunGameConString("LT1PointCollide 1");
+
+	// Collision candidates are tested against the mover's box at its destination,
+	// so a player stepping away from an NPC it touches isn't pulled back to it (client too)
+	g_pServerDE->RunGameConString("LT1MoverBoxGate 1");
+
 	// During demo playback the server's step is floored at 0.01 s, as LT1's is (client too)
 	g_pServerDE->RunGameConString("LT1ServerStepFloor 1");
 

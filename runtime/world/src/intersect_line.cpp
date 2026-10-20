@@ -174,6 +174,163 @@ LTBOOL IntersectLineNode(
 }
 
 
+// LT1's world ray for a query without INTERSECT_HPOLY (LT1IntersectLeaf).
+// It never looks at a polygon and instead goes through the BSP's leaves along the segment and stops at the first solid one.
+// The hit point is where the segment entered that leaf, and the plane is the last one crossed, turned to face the start.
+// A plane only counts as crossed if the ends are at least 0.1 to either side of it, where the polygon search uses 0.01,
+// so a short step that starts or ends within 0.1 of a floor isn't a hit. A segment that starts in solid hits nothing
+const Node* IntersectLineLT1Leaf(const Node *pRoot, const LTVector *pPoint1, const LTVector *pPoint2,
+	LTVector *pIPos, LTPlane *pIPlane)
+{
+	const float kEpsilon = 0.1f;
+	struct LT1RayStack
+	{
+		const Node	*m_GoInto, *m_pNode;
+		LTVector	m_IPoint, m_Pt2;
+	};
+	LT1RayStack stack[400];
+	LT1RayStack *pStackPos = stack;
+	const Node *pLastNode = LTNULL;
+	LTVector pt1 = *pPoint1, pt2 = *pPoint2;
+
+	while (1)
+	{
+		while (pRoot->m_Flags & NF_IN)
+		{
+			if (pStackPos == stack)
+				return LTNULL;
+
+			--pStackPos;
+			pLastNode = pStackPos->m_pNode;
+			pt1 = pStackPos->m_IPoint;
+			pt2 = pStackPos->m_Pt2;
+			pRoot = pStackPos->m_GoInto;
+		}
+
+		if (pRoot->m_Flags & NF_OUT)
+		{
+			if (pLastNode)
+			{
+				*pIPos = pt1;
+
+				const LTPlane *pPlane = pLastNode->GetPlane();
+				if (pPlane->DistTo(*pPoint1) > 0.0f)
+				{
+					*pIPlane = *pPlane;
+				}
+				else
+				{
+					pIPlane->m_Normal = -pPlane->m_Normal;
+					pIPlane->m_Dist = -pPlane->m_Dist;
+				}
+			}
+
+			return pLastNode;
+		}
+
+		const float dot1 = pRoot->GetPlane()->DistTo(pt1);
+		const float dot2 = pRoot->GetPlane()->DistTo(pt2);
+
+		if (dot1 > -kEpsilon && dot2 > -kEpsilon)
+		{
+			pRoot = pRoot->m_Sides[FrontSide];
+		}
+		else if (dot1 < kEpsilon && dot2 < kEpsilon)
+		{
+			pRoot = pRoot->m_Sides[BackSide];
+		}
+		else
+		{
+			// LT1's stack held 400 deferred sides and ran off its end past that. Stop instead
+			if (pStackPos == stack + 400)
+				return LTNULL;
+
+			const int side1 = dot1 > 0.0f;
+			const float t = -dot1 / (dot2 - dot1);
+
+			// Push the far side, then go into the near one
+			VEC_LERP(pStackPos->m_IPoint, pt1, pt2, t);
+			pStackPos->m_GoInto = pRoot->m_Sides[!side1];
+			pStackPos->m_Pt2 = pt2;
+			pStackPos->m_pNode = pRoot;
+
+			pt2 = pStackPos->m_IPoint;
+			pRoot = pRoot->m_Sides[side1];
+			++pStackPos;
+		}
+	}
+}
+
+// LT1's inside test for a polygon: no radius pretest, no tolerance on the edges, and a non solid polygon is never inside
+static bool InsideConvexLT1(const WorldPoly *pPoly, const LTVector &vPt)
+{
+	if (!(pPoly->GetSurface()->m_Flags & SURF_SOLID))
+		return false;
+
+	const LTVector &vNormal = pPoly->GetPlane()->m_Normal;
+	const uint32 nVerts = pPoly->GetNumVertices();
+	uint32 iPrev = nVerts - 1;
+	for (uint32 iCur = 0; iCur != nVerts; iPrev = iCur, ++iCur)
+	{
+		const LTVector &vCur = pPoly->GetVertex(iCur);
+		LTPlane edge;
+		edge.m_Normal = vNormal.Cross(pPoly->GetVertex(iPrev) - vCur);
+		edge.m_Normal.Norm();
+		edge.m_Dist = edge.m_Normal.Dot(vCur);
+		if (edge.DistTo(vPt) < 0.0f)
+			return false;
+	}
+	return true;
+}
+
+LTBOOL IntersectLineNodeLT1(const Node *pRoot, IntersectRequest *pRequest)
+{
+	const float kEpsilon = 0.1f;
+	const LTVector &vP0 = *pRequest->m_pPoints[0];
+	const LTVector &vP1 = *pRequest->m_pPoints[1];
+
+	while (!(pRoot->m_Flags & (NF_IN | NF_OUT)))
+	{
+		const LTPlane *pPlane = pRoot->GetPlane();
+		const float dot1 = pPlane->DistTo(vP0);
+		const float dot2 = pPlane->DistTo(vP1);
+
+		if (dot1 > -kEpsilon && dot2 > -kEpsilon)
+		{
+			pRoot = pRoot->m_Sides[FrontSide];
+		}
+		else if (dot1 < kEpsilon && dot2 < kEpsilon)
+		{
+			pRoot = pRoot->m_Sides[BackSide];
+		}
+		else
+		{
+			const int side1 = dot1 > 0.0f;
+
+			// The side the start is on first
+			if (IntersectLineNodeLT1(pRoot->m_Sides[side1], pRequest))
+				return LTTRUE;
+
+			if (side1 == FrontSide && pRoot->m_pPoly)
+			{
+				const float t = -dot1 / (dot2 - dot1);
+				LTVector vHit;
+				VEC_LERP(vHit, vP0, vP1, t);
+				if (InsideConvexLT1(pRoot->m_pPoly, vHit))
+				{
+					pRequest->m_pNodeHit = pRoot;
+					*pRequest->m_pIPos = vHit;
+					return LTTRUE;
+				}
+			}
+
+			pRoot = pRoot->m_Sides[!side1];
+		}
+	}
+	return LTFALSE;
+}
+
+
 const Node* IntersectLine(const Node *pRoot, LTVector *pPoint1, LTVector *pPoint2, LTVector *pIPos, LTPlane *pIPlane)
 {
 	IntersectRequest req;

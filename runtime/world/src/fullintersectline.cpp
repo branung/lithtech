@@ -402,6 +402,8 @@ static bool i_TestWorldModel(WorldModelInstance *pObj)
 
     if (distToIntersectionSqr < g_IntersectionBestDistSqr) 
 	{
+        // The node's plane as stored, even when LT1IntersectLeaf's walk crossed it from behind.
+        // LT1's callers report the hit node's own plane, so a floor stored facing down comes back facing down
         planePt = pNodeIntersection->GetPlane()->m_Normal * pNodeIntersection->GetPlane()->m_Dist;
         MatVMul_3x3(&tempPlane.m_Normal, &pObj->m_Transform, &pNodeIntersection->GetPlane()->m_Normal);
         tempPlane.m_Dist = tempPlane.m_Normal.Dot(planePt);
@@ -617,8 +619,13 @@ static void i_FindIntersections(const WorldBsp *pWorldBsp, const Node **pNodeInt
 
 
     *hWorldPoly = INVALID_HPOLY;
-    *pNodeIntersectionPtr = IntersectLine(pWorldBsp->GetRootNode(), pPoint1, pPoint2, pIntersectionPosPtr, &iPlane);
-    if (*pNodeIntersectionPtr) 
+    // LT1IntersectLeaf: a ray without INTERSECT_HPOLY walks leaves rather than polygons, as LT1's does
+    extern int32 g_bLT1IntersectLeaf;
+    if (g_bLT1IntersectLeaf)
+        *pNodeIntersectionPtr = IntersectLineLT1Leaf(pWorldBsp->GetRootNode(), pPoint1, pPoint2, pIntersectionPosPtr, &iPlane);
+    else
+        *pNodeIntersectionPtr = IntersectLine(pWorldBsp->GetRootNode(), pPoint1, pPoint2, pIntersectionPosPtr, &iPlane);
+    if (*pNodeIntersectionPtr)
 	{
         *pDistSqrPtr = pPoint1->DistSqr(*pIntersectionPosPtr);
     }

@@ -2500,6 +2500,63 @@ static void DoPointCollision
 
 	pInfo->m_FinalPos = request.m_NewPos;
 
+	// LT1PointCollide: LT1's leaf walk/search finds a possible hit, which counts if the end is less than 0.01 in front of its plane or behind it,
+	// and LT1's polygon check finds a solid polygon crossed from the front.
+	// The end is then placed 0.1 in front of the plane: along the normal if the mover slides, back along the move if not.
+	// Both checks only count a plane as crossed if the ends are at least 0.1 to either side of it,
+	// so a fast mover crossing a floor at a shallow angle can pass through it, matching LT1's behavior
+	extern int32 g_bLT1PointCollide;
+	if (g_bLT1PointCollide)
+	{
+		for (i = 0; i < 40; i++)
+		{
+			bool bHit = false;
+			pNode = IntersectLineLT1Leaf(request.m_pWorld->GetRootNode(), &request.m_OriginalPos,
+				&pInfo->m_FinalPos, &iPos, &iPlane);
+			if (pNode)
+			{
+				const float fDist = iPlane.DistTo(pInfo->m_FinalPos);
+				if (fDist < 0.01f)
+				{
+					LTVector vHit;
+					IntersectRequest req;
+					req.m_pPoints[0] = &request.m_OriginalPos;
+					req.m_pPoints[1] = &pInfo->m_FinalPos;
+					req.m_pIPos = &vHit;
+					if (IntersectLineNodeLT1(request.m_pWorld->GetRootNode(), &req))
+					{
+						pNode = req.m_pNodeHit;
+						DoObjectCollisionResponse(request, pInfo, pNode);
+
+						const LTPlane *pPlane = pNode->GetPlane();
+						if (request.m_bSlide)
+						{
+							pInfo->m_FinalPos += pPlane->m_Normal * (-fDist + 0.1f);
+						}
+						else
+						{
+							const LTVector vDelta = pInfo->m_FinalPos - request.m_OriginalPos;
+							float t = (pPlane->m_Dist + 0.1f) - pPlane->m_Normal.Dot(request.m_OriginalPos);
+							t = t / vDelta.Dot(pPlane->m_Normal);
+							pInfo->m_FinalPos = request.m_OriginalPos + vDelta * t;
+						}
+
+						++pInfo->m_nHits;
+						bHit = true;
+					}
+				}
+			}
+
+			if (!bHit)
+				return;
+		}
+
+		if (g_DebugLevel > 0)
+			dsi_ConsolePrint("Error: (point) physics recursed infinitely on a %s",
+				request.m_pAbstract->GetObjectClassName(request.m_pObject));
+		return;
+	}
+
 	for(i=0; i < MAX_PHYSICS_ITERATIONS; i++)
 	{
 		bContinue = false;
