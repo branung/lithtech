@@ -135,6 +135,7 @@ RCONVAR(g_CV_2DBilinear, "2DBilinear", int, 1);
 RCONVAR(g_CV_Optimized2DFullViewport, "Optimized2DFullViewport", int, 0); // Optimized 2D draws over the whole target, not clipped to the last camera's rect
 RCONVAR(g_CV_OptimizeSurfaces, "OptimizeSurfaces", int, 0);
 RCONVAR(g_CV_CullWorldTree, "CullWorldTree", int, 0);
+RCONVAR(g_CV_LT1ColorKey565, "LT1ColorKey565", int, 0); // LT1 packs a 2D color key and every pixel to 16 bit 5:6:5 before comparing them, so near magentas such as 253,0,253 are transparent too
 RCONVAR(g_CV_FarZ, "FarZ", float, 10000.0f);
 RCONVAR(g_CV_PreventFrameBuffering, "PreventFrameBuffering", int, 1);
 RCONVAR(g_CV_ShowFrameBufferingInfo, "ShowFrameBufferingInfo", int, 0);

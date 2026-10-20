@@ -34,6 +34,7 @@
 #include "ltmessage_server.h"
 
 #include "misctools.h"
+#include "clientflagmask.h"     // ClientFlagMask(): CLIENT_FLAGMASK plus LT1's bit 22
 
 #include "compress.h"
 static ICompress* compress;
@@ -534,7 +535,7 @@ bool FillPacketFromInfo(Client *pClient, LTObject *pObj, ObjInfo *pInfo, CPacket
 		changeFlags &= ~CF_FILENAMES;
 
 		// If they got flags, we'll need to send those too.
-		if (pObj->m_Flags & CLIENT_FLAGMASK || pObj->m_UserFlags != 0)
+		if (pObj->m_Flags & ClientFlagMask() || pObj->m_UserFlags != 0)
 		{
 			changeFlags |= CF_FLAGS;
 	    }
@@ -658,7 +659,7 @@ bool FillPacketFromInfo(Client *pClient, LTObject *pObj, ObjInfo *pInfo, CPacket
     // Write which things have changed.
     if (changeFlags & CF_FLAGS)
     {
-		cPacket.Writeuint16((uint16)(pObj->m_Flags & CLIENT_FLAGMASK));
+		cPacket.Writeuint32(pObj->m_Flags & ClientFlagMask());	// 32 bits (see clientflagmask.h)
 		cPacket.Writeuint16((uint16)pObj->m_Flags2);
 		cPacket.Writeuint32(pObj->m_UserFlags);
     }
@@ -700,10 +701,13 @@ bool FillPacketFromInfo(Client *pClient, LTObject *pObj, ObjInfo *pInfo, CPacket
 			pInfo->m_ChangeFlags |= CF_POSITION;
 			vObjectVelocity.Init();
 		}
-		// Otherwise turn it on
+		// Otherwise turn it on, except under LT1NetInterp.
+		// LT1 sends no capping resend, and one would restart the client's easing a frame after the object stopped
 		else
 		{
-			pInfo->m_ChangeFlags |= CF_POSITION_PREDICTIONCAP;
+			extern int32 g_bLT1NetInterp;
+			if (!g_bLT1NetInterp)
+				pInfo->m_ChangeFlags |= CF_POSITION_PREDICTIONCAP;
 		}
 
         if (pObj->m_Flags & FLAG_FULLPOSITIONRES)

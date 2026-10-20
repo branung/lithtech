@@ -2,10 +2,12 @@
 #include "bdefs.h"
 #include "animtracker.h"
 #include "model_ops.h"
+#include "de_objects.h"   // LTObject::m_Flags, for FLAG_ANIMTRANSITION
 #include "ltsysoptim.h"
 
 
 extern int32 g_CV_ModelTransitionMS;
+extern int32 g_bLT1AnimTransition;
 
 void trk_ScanToKeyFrame(LTAnimTracker *pTracker, uint32 msDelta, bool bProcessKeys);
 
@@ -129,6 +131,14 @@ bool trk_SetCurAnim(LTAnimTracker *pTracker, uint32 iAnim, bool bTransition)
 	pTracker->m_CurKey = 0;
 	pTracker->m_TimeRef.m_Cur.m_iFrame = 0;
 	pTracker->m_TimeRef.m_Cur.m_Time = 0;
+
+	// LT1AnimTransition: LT1 only starts the blend for an object with FLAG_ANIMTRANSITION.
+	// Callers ask for a transition by Jupiter's rules, so the flag overrides them
+	if(g_bLT1AnimTransition && bTransition)
+	{
+		LTObject *pObj = pTracker->GetModelInstance();
+		bTransition = pObj && (pObj->m_Flags & FLAG_ANIMTRANSITION) != 0;
+	}
 
 	if(bTransition && pTracker->IsValid())
 	{
@@ -362,8 +372,14 @@ void trk_ScanToKeyFrame(LTAnimTracker *pTracker, uint32 msDelta, bool bProcessKe
 	// Are we interpolating between two animations?
 	if(pTracker->m_InterpolationMS != NOT_INTERPOLATING)
 	{
+		// LT1AnimTransition: LT1 has no per animation time, so the hold is ModelTransitionMS.
+		// The ABC converter writes the animation's own time as 0
+		uint32 nLimitMS = pCurAnim->m_InterpolationMS;
+		if(g_bLT1AnimTransition && nLimitMS == 0 && g_CV_ModelTransitionMS > 0)
+			nLimitMS = (uint32)g_CV_ModelTransitionMS;
+
 		//see if we really shouldn't be interpolating though
-		if(pCurAnim->m_InterpolationMS == 0)
+		if(nLimitMS == 0)
 		{
 			//we need to stop the interpolation of this
 			pTracker->m_InterpolationMS = NOT_INTERPOLATING;
@@ -373,17 +389,17 @@ void trk_ScanToKeyFrame(LTAnimTracker *pTracker, uint32 msDelta, bool bProcessKe
 		{
 			pTracker->m_InterpolationMS += msDelta;
 			// if we are done with interp, switch to next anim, move on.
-			if(pTracker->m_InterpolationMS > pCurAnim->m_InterpolationMS)
+			if(pTracker->m_InterpolationMS > nLimitMS)
 			{
 				trk_Reset(pTracker);
-				msDelta = pTracker->m_InterpolationMS - pCurAnim->m_InterpolationMS;
+				msDelta = pTracker->m_InterpolationMS - nLimitMS;
 				pTracker->m_InterpolationMS = NOT_INTERPOLATING; // Stop interpolating.
 				// Fall thru to update the anim with the extra time.
 			}
 			else // interpolate between last frame of prev and first frame of cur
 			{
-				if (pCurAnim->m_InterpolationMS)
-					pTracker->m_TimeRef.m_Percent = (float)pTracker->m_InterpolationMS / pCurAnim->m_InterpolationMS;
+				if (nLimitMS)
+					pTracker->m_TimeRef.m_Percent = (float)pTracker->m_InterpolationMS / nLimitMS;
 				else
 					pTracker->m_TimeRef.m_Percent = 0.0f;
 

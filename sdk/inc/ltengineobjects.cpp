@@ -13,6 +13,8 @@
 #include "iltmessage.h"
 #include "ltengineobjects.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "iltsoundmgr.h"
 #include "iltcommon.h"
 #include "ltserverobj.h"
@@ -1018,13 +1020,32 @@ uint32 SkyPointer::EngineMessageFn(
 		case MID_UPDATE:
 		{
 
-			ObjArray <HOBJECT, 1> objArray;
+			// Room for case variants
+			ObjArray <HOBJECT, 16> objArray;
 
 			g_pLTServer->FindNamedObjects(m_ObjectName, objArray);
 
-			if(objArray.NumObjects())
+			// LT1NameCase (set by DECompat for the LT1 games): take the first exact match, as LT1's name table is case sensitive.
+			// Jupiter returns the newest match first
+			hObject = LTNULL;
+			HCONVAR hNameCase = g_pLTServer->GetGameConVar("LT1NameCase");
+			const char *pNameCase = hNameCase ? g_pLTServer->GetVarValueString(hNameCase) : LTNULL;
+			bool bExactCase = pNameCase && atoi(pNameCase) != 0;
+
+			for(uint32 i = 0; i < objArray.NumObjects() && !hObject; ++i)
 			{
-				hObject = objArray.GetObject(0);
+				char szName[MAX_CS_FILENAME_LEN + 1];
+				szName[0] = 0;
+				if(bExactCase)
+					g_pLTServer->GetObjectName(objArray.GetObject(i), szName, sizeof(szName));
+				if(!bExactCase || strcmp(szName, m_ObjectName) == 0)
+					hObject = objArray.GetObject(i);
+				else
+					g_pLTServer->CPrint("LT1NameCase: SkyPointer '%s' skipped '%s'", m_ObjectName, szName);
+			}
+
+			if(hObject)
+			{
 				g_pLTServer->AddObjectToSky(hObject, m_Index);
 				
 				g_pLTServer->Common()->SetObjectFlags(hObject, OFT_Flags, FLAG_FORCEOPTIMIZEOBJECT, FLAG_FORCEOPTIMIZEOBJECT);

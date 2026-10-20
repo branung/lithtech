@@ -108,6 +108,7 @@ struct ClientData
     LTVector        m_LastUpdatePosServer;  // Last position given by server
     LTVector        m_LastUpdateVelServer;  // Last velocity given by server
     LTLink          m_MovingLink;   // Link into the main list of moving objects.
+    float           m_fInterpLeft;  // LT1NetInterp: seconds left to reach m_LastUpdatePosServer
 
     // Rotation interpolation info
     float           m_fRotAccumulatedTime;

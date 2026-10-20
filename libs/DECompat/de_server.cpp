@@ -925,10 +925,33 @@ ObjectList* CServerDE::FindNamedObjects(const char *pName)
     if (!pList)
         return NULL;
 
+    // LT1NameCase: LT1's name table is case sensitive and Jupiter's isn't, so only exact matches are kept.
+    // Read on every call so it can be switched at the server console
+    bool bExactCase = false;
+    if (HCONVAR hVar = GetGameConVar("LT1NameCase"))
+    {
+        const char *pVal = GetVarValueString(hVar);
+        bExactCase = pVal && atoi(pVal) != 0;
+    }
+
     if (dResult == LT_OK)
     {
         for (uint32 i = 0; i < objArray.NumObjects(); ++i)
-            AddObjectToList(pList, objArray.GetObject(i));
+        {
+            HOBJECT hObj = objArray.GetObject(i);
+            if (bExactCase)
+            {
+                char szObjName[MAX_CS_FILENAME_LEN + 1];
+                szObjName[0] = '\0';
+                static_cast<ILTServer*>(this)->GetObjectName(hObj, szObjName, sizeof(szObjName));
+                if (strcmp(szObjName, pName) != 0)
+                {
+                    CPrint("LT1NameCase: FindNamedObjects(\"%s\") skipped \"%s\"", pName, szObjName);
+                    continue;
+                }
+            }
+            AddObjectToList(pList, hObj);
+        }
     }
 
     return pList;

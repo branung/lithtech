@@ -210,6 +210,7 @@ void LTObject::Clear()
 	dl_TieOff(&cd.m_MovingLink);
 
     cd.m_fRotAccumulatedTime = 0.0f;
+    cd.m_fInterpLeft = 0.0f;
     cd.m_RotatingLink.m_pData = this;
     dl_TieOff(&cd.m_RotatingLink);
     cd.m_fLastUpdatePosTime = 0.0f;

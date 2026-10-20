@@ -96,9 +96,43 @@ void pd_InitialServerUpdate(CClientShell *pShell, float gameTime)
 }
 
 
+extern int32 g_bLT1NetInterp;
+
+// LT1NetInterp: Prediction keeps its LT1 meaning. 0, a new or teleported object, or no server period snaps.
+// Anything else becomes the target, reached over 1.1 server periods, with no velocity and no per object opt out
+static void pd_LT1OnObjectMove(CClientShell *pShell, LTObject *pObject, LTVector *pNewPos, LTVector *pNewVel, bool bNew, bool bTeleport)
+{
+	ClientData *pData = &pObject->cd;
+
+	pData->m_fLastUpdatePosTime = pShell->m_ClientGameTime;
+	pData->m_LastUpdatePosServer = *pNewPos;
+	pData->m_LastUpdateVelServer = *pNewVel;
+
+	if (!g_bPrediction || bNew || bTeleport || pShell->m_ServerPeriod == 0.0f)
+	{
+		dl_Remove(&pData->m_MovingLink);
+		dl_TieOff(&pData->m_MovingLink);
+		pData->m_fInterpLeft = 0.0f;
+		i_client_shell->OnObjectMove((HOBJECT)pObject, bNew || bTeleport, pNewPos);
+		g_pClientMgr->MoveObject(pObject, pNewPos, LTTRUE);
+	}
+	else
+	{
+		dl_Remove(&pData->m_MovingLink);
+		dl_Insert(&pShell->m_MovingObjects, &pData->m_MovingLink);
+		pData->m_fInterpLeft = g_fServerPeriodMultiplier * pShell->m_ServerPeriod;
+	}
+}
+
 void pd_OnObjectMove(CClientShell *pShell, LTObject *pObject, LTVector *pNewPos, LTVector *pNewVel, bool bNew, bool bTeleport)
 {
 	ClientData *pData;
+
+	if (g_bLT1NetInterp)
+	{
+		pd_LT1OnObjectMove(pShell, pObject, pNewPos, pNewVel, bNew, bTeleport);
+		return;
+	}
 
 	pData = &pObject->cd;
 
@@ -164,7 +198,8 @@ void pd_OnObjectRotate(CClientShell *pShell, LTObject *pObject, LTRotation *pNew
 	ClientData *pClientData;
 
 	pClientData = &pObject->cd;
-	if(g_bPrediction && ((pObject->m_Flags2 & FLAG2_DISABLEPREDICTION) == 0))
+	// Under LT1NetInterp Prediction alone decides as it does in LT1
+	if(g_bLT1NetInterp ? (g_bPrediction != 0) : (g_bPrediction && ((pObject->m_Flags2 & FLAG2_DISABLEPREDICTION) == 0)))
 	{
 		if(bNew || bSnap || pShell->m_ServerPeriod == 0.0f)
 		{
@@ -268,6 +303,61 @@ void pd_Update(CClientShell *pShell)
 	float fTimeLeft, fParam;
 	LTRotation rRot;
 
+
+	if (g_bLT1NetInterp)
+	{
+		curTime = g_pClientMgr->m_CurTime;
+		timeDelta = curTime - pShell->m_ClientGameTimerSync;
+		if (timeDelta < 0.0f)
+			timeDelta = 0.0f;
+		pShell->m_ClientGameTime += timeDelta;
+		pShell->m_ClientGameTimerSync = curTime;
+
+		pCur = pShell->m_MovingObjects.m_pNext;
+		while (pCur != &pShell->m_MovingObjects)
+		{
+			pObj = (LTObject*)pCur->m_pData;
+			pCur = pCur->m_pNext;
+			ClientData *pData = &pObj->cd;
+
+			// Each frame the object covers its share of the remaining distance for the time left, and is placed there directly
+			const float fStep = MIN(timeDelta, pData->m_fInterpLeft);
+			const float fFrac = (pData->m_fInterpLeft > 0.0f) ? fStep / pData->m_fInterpLeft : 1.0f;
+			newPos = pObj->GetPos() + (pData->m_LastUpdatePosServer - pObj->GetPos()) * fFrac;
+			i_client_shell->OnObjectMove((HOBJECT)pObj, LTFALSE, &newPos);
+			g_pClientMgr->MoveObject(pObj, &newPos, LTTRUE);
+			pData->m_fInterpLeft -= fStep;
+			if (pData->m_fInterpLeft <= 0.0f)
+			{
+				pData->m_fInterpLeft = 0.0f;
+				dl_Remove(&pData->m_MovingLink);
+				dl_TieOff(&pData->m_MovingLink);
+			}
+		}
+
+		// Rotation uses the same budget and one slerp, where Jupiter adds a second
+		pCur = pShell->m_RotatingObjects.m_pNext;
+		while (pCur != &pShell->m_RotatingObjects)
+		{
+			pObj = (LTObject*)pCur->m_pData;
+			pCur = pCur->m_pNext;
+
+			fTimeLeft = MIN(pObj->cd.m_fRotAccumulatedTime, timeDelta);
+			fParam = (pObj->cd.m_fRotAccumulatedTime > 0.0f) ? fTimeLeft / pObj->cd.m_fRotAccumulatedTime : 1.0f;
+			quat_Slerp((float*)&rRot, (float*)&pObj->m_Rotation, (float*)&pObj->cd.m_rLastUpdateRotServer, fParam);
+			pObj->cd.m_fRotAccumulatedTime -= fTimeLeft;
+			if (pObj->cd.m_fRotAccumulatedTime <= 0.0f)
+			{
+				rRot = pObj->cd.m_rLastUpdateRotServer;
+				pObj->cd.m_fRotAccumulatedTime = 0.0f;
+				dl_Remove(&pObj->cd.m_RotatingLink);
+				dl_TieOff(&pObj->cd.m_RotatingLink);
+			}
+			i_client_shell->OnObjectRotate((HOBJECT)pObj, LTFALSE, &rRot);
+			g_pClientMgr->RotateObject(pObj, &rRot);
+		}
+		return;
+	}
 
 	if(g_bPrediction)
 	{

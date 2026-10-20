@@ -170,9 +170,6 @@ typedef CheapLTLink CheapDLink;
 // In LT1: bypass the engine's outgoing bandwidth throttle
 #define MESSAGE_NOTHROTTLE      0
 
-// In LT1: a 200ms blend between model animations
-#define FLAG_ANIMTRANSITION     0
-
 // In LT1: gouraud shade this model
 #define FLAG_MODELGOURAUDSHADE  0
 

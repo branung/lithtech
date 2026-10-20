@@ -15,6 +15,7 @@
 #include "ltobjectcreate.h"
 
 #include "ltmessage_server.h"
+#include "clientflagmask.h"		// ClientFlagMask(): CLIENT_FLAGMASK plus LT1's bit 22
 
 //------------------------------------------------------------------
 //------------------------------------------------------------------
@@ -121,7 +122,7 @@ LTRESULT CLTCommonServer::SetObjectFlags(HOBJECT hObj, const ObjFlagType nFlagTy
 		case OFT_Flags :
         {
             // Only tell clients if it changes a flag relevant to them.
-            if (nChangingFlags & CLIENT_FLAGMASK)
+            if (nChangingFlags & ClientFlagMask())
             {
                 SetObjectChangeFlags(hObj, CF_FLAGS);
             }

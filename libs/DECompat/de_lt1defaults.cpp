@@ -17,15 +17,24 @@ void DECompat_ApplyLT1ClientDefaults(ILTClient *pClientDE)
     pClientDE->RunConsoleString("-LT1PolyGridCull 1");
     pClientDE->RunConsoleString("-LT1PolyGridTexCoords 1");
 
+    // LT1 packs a 2D color key and each pixel to 5:6:5 before comparing, so near magentas are transparent
+    pClientDE->RunConsoleString("-LT1ColorKey565 1");
+
     // LT1 vertex animated model nodes rewrite their stream every frame, and a static stream stalls on the GPU
     pClientDE->RunConsoleString("-VAMeshDynamicVB 1");
 
     // Without it d3d_BlitToScreen can't scale, and the splash draws 640x480 in the corner
     pClientDE->RunConsoleString("-OptimizeSurfaces 1");
 
-    // Jupiter predicts remote models through client physics.
-    // Gravity puts the target under the floor, so they animate in place and snap forward.
-    pClientDE->RunConsoleString("-Prediction 0");
+    // LT1 eases each networked object to its latest update over 1.1 server periods, with no velocity or physics.
+    // The switch goes first so Prediction 1 never means Jupiter's extrapolation, which put targets under the floor.
+    // Prediction 1 is what retail Shogo cfgs ship, and 0 still snaps as it did in LT1
+    pClientDE->RunConsoleString("-LT1NetInterp 1");
+    pClientDE->RunConsoleString("-Prediction 1");
+
+    // LT1's 200 ms animation hold for objects with FLAG_ANIMTRANSITION. No string key fires inside it,
+    // so an attack's first key comes 200 ms after the animation was set (both sides)
+    pClientDE->RunConsoleString("-LT1AnimTransition 1");
 
     // LT1 keeps a partial dims change where Jupiter moves the object back (both sides)
     pClientDE->RunConsoleString("-LT1ObjectDims 1");
@@ -81,6 +90,9 @@ void DECompat_ApplyLT1ServerDefaults(ILTServer *pServerDE)
     // The placement move runs before OnObjectCreated, so a flagless object scans nothing.
     pServerDE->RunGameConString("LT1CreateInPlace 1");
 
+    // LT1's object name table is case sensitive. Og content typos come back too, which is what LT1 did
+    pServerDE->RunGameConString("LT1NameCase 1");
+
     // The restore move after a load runs on the server, which matters for doors
     pServerDE->RunGameConString("LT1NonsolidNoDivert 1");
 
@@ -92,6 +104,13 @@ void DECompat_ApplyLT1ServerDefaults(ILTServer *pServerDE)
 
     // LT1 reserved client id 0 for 'no player' - ids are handed out on the server
     pServerDE->RunGameConString("LT1ClientIDFromOne 1");
+
+    // Under LT1NetInterp, the server sends no prediction cap resend as LT1 sent none.
+    // A Server.dll server has its own copy of the variable
+    pServerDE->RunGameConString("LT1NetInterp 1");
+
+    // The fire keys the hold delays are the server's
+    pServerDE->RunGameConString("LT1AnimTransition 1");
 
     s_bServerDefaultsApplied = true;
 

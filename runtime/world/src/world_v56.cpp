@@ -30,17 +30,6 @@ static const uint32 kSurfPanningSky = 1u << 15; // Sky shadow pan overlaid on th
 // Used to pick out the sky objects' names
 static const uint8 kPropTypeString = 0;
 
-// ASCII lowercase for the sky object name match because tolower() is locale dependent
-static std::string ToLower(const std::string &s)
-{
-	std::string out(s);
-	for (size_t i = 0; i < out.size(); ++i)
-	{
-		if (out[i] >= 'A' && out[i] <= 'Z')
-			out[i] = (char)(out[i] - 'A' + 'a');
-	}
-	return out;
-}
 
 // ePCShader_* codes written into each render section
 static const uint8 kShaderGouraud = 1;
@@ -540,7 +529,7 @@ bool ReadV56(const uint8 *pData, uint32 nSize, SourceWorld &out)
 					uint16 nChars = 0;
 					memcpy(&nChars, pVal, 2);
 					if ((uint32)nChars + 2 <= (uint32)nLen && nChars > 0)
-						SkyObjectNames.insert(ToLower(std::string((const char *)pVal + 2, nChars)));
+						SkyObjectNames.insert(std::string((const char *)pVal + 2, nChars));
 				}
 			}
 		}
@@ -564,12 +553,12 @@ bool ReadV56(const uint8 *pData, uint32 nSize, SourceWorld &out)
 		if (!ReadWorldModel(r, out.m_Models.back())) return false;
 	}
 
-	// A world model registered as a sky object is shaded differnetly
-	// Matched case insensitively as LT1's name lookups are.
+	// A world model registered as a sky object is shaded differently.
+	// Matched with case, as LT1's name table is actually case sensitive and SkyPointer only registers an exact match.
 	for (uint32 i = 0; i < out.m_Models.size(); ++i)
 	{
 		WorldModel &m = out.m_Models[i];
-		if (!m.m_sName.empty() && SkyObjectNames.find(ToLower(m.m_sName)) != SkyObjectNames.end())
+		if (!m.m_sName.empty() && SkyObjectNames.find(m.m_sName) != SkyObjectNames.end())
 		{
 			m.m_bSkyObject = true;
 		}

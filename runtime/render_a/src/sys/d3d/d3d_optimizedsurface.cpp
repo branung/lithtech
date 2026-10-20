@@ -91,6 +91,27 @@ void d3d_SetSolidAlpha(FMConvertRequest* pRequest, uint32 destAlpha32, GenericCo
 		pDestLine += pRequest->m_DestPitch; }
 }
 
+// The bits of a 32 bit pixel that a 5:6:5 pack keeps
+// Alpha is dropped, as LT1's 16 bit screen has none
+static uint32 d3d_LT1KeyMask(const PFormat *pFormat)
+{
+	static const int KEEP[NUM_COLORPLANES] = { 0, 5, 6, 5 }; // CP_ALPHA, CP_RED, CP_GREEN, CP_BLUE
+	uint32 mask = 0;
+	for (int cp = CP_RED; cp <= CP_BLUE; ++cp)
+	{
+		const uint32 m = pFormat->m_Masks[cp];
+		int nBits = 0;
+		for (uint32 t = m; t; t &= t - 1)
+			++nBits;
+		if (!nBits)
+			continue;
+		const int drop = nBits > KEEP[cp] ? nBits - KEEP[cp] : 0;
+		const uint32 low = m & (~m + 1); // The channel's lowest bit
+		mask |= m & ~((low << drop) - 1);
+	}
+	return mask;
+}
+
 // Iterates thru the ConvertRequest data and sets the alpha color you specify
 // on any pixels that have the color of tColor.
 void d3d_DoAlphaFromColorKey(FMConvertRequest* pRequest, uint32 destAlpha32, GenericColor &tColor)
@@ -121,7 +142,25 @@ void d3d_DoAlphaFromColorKey(FMConvertRequest* pRequest, uint32 destAlpha32, Gen
 			else if (pRequest->m_pDestFormat->GetType() == BPP_32) {
 				DO_MASK_LOOP(uint16, uint32, pSrc16, pDest32, tColor.wVal, destAlpha32) } }
 		else {
-			if (pRequest->m_pDestFormat->GetType() == BPP_16) {
+			if (g_CV_LT1ColorKey565.m_Val) {
+				// LT1's key: equal once both are packed to 5:6:5
+				const uint32 keyMask = d3d_LT1KeyMask(pRequest->m_pSrcFormat);
+				const uint32 key = tColor.dwVal & keyMask;
+				srcIt = (uint32*)pSrcLine;
+				if (pRequest->m_pDestFormat->GetType() == BPP_16) {
+					destIt = (uint16*)pDestLine;
+					while (xCounter) {
+						--xCounter;
+						if ((*srcIt & keyMask) != key) *destIt |= destAlpha16;
+						else *destIt &= 0x7FFF;
+						++srcIt; ++destIt; } }
+				else if (pRequest->m_pDestFormat->GetType() == BPP_32) {
+					pDest32 = (uint32*)pDestLine;
+					while (xCounter) {
+						--xCounter;
+						if ((*srcIt & keyMask) != key) *pDest32 |= destAlpha32;
+						++srcIt; ++pDest32; } } }
+			else if (pRequest->m_pDestFormat->GetType() == BPP_16) {
 				// This is a fix for the PCX trancparency bug
 				//DO_MASK_LOOP(uint32, uint16, pSrc32, pDest16, tColor.dwVal, destAlpha16)
 				srcIt  = (uint32*)pSrcLine;

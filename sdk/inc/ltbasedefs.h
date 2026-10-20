@@ -2002,6 +2002,11 @@ Server only flags.
 //! Object can pass through world
 #define FLAG_GOTHRUWORLD        (1<<21)
 
+//! LT1's 200ms transition between animations (LT1's bit 7), on Jupiter's unused bit 22.
+//! Under LT1AnimTransition a model with it holds each newly set animation for ModelTransitionMS,
+//! blending from the previous pose and firing no string keys.
+#define FLAG_ANIMTRANSITION     (1<<22)
+
 //! Don't follow the object this object is standing on.
 #define FLAG_DONTFOLLOWSTANDING (1<<23)
 

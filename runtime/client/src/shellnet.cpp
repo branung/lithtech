@@ -33,6 +33,7 @@
 #include "ltmessage_client.h"
 
 #include "misctools.h"
+#include "clientflagmask.h"		// ClientFlagMask(): must match the server's write
 
 //------------------------------------------------------------------
 //------------------------------------------------------------------
@@ -113,7 +114,20 @@ static LTRESULT SwitchModelAnim(CClientShell *pShell,
 	{
         return LT_OK;
     }
-    
+
+	// LT1AnimTransition: only a change of animation starts the hold.
+	// Model info updates can resync the same animation every frame, which would keep restarting it.
+	// During a hold the resync is ignored, since the server is holding too. Otherwise it only corrects the animation's time
+	{
+		extern int32 g_bLT1AnimTransition;
+		if (g_bLT1AnimTransition && animIndex == trk_GetCurAnimIndex(pTracker))
+		{
+			if (pTracker->m_InterpolationMS != NOT_INTERPOLATING)
+				return LT_OK;
+			bAllowTransition = false;
+		}
+	}
+
     trk_SetCurAnim(pTracker, animIndex, bAllowTransition);
     g_pClientMgr->UpdateModelDims(pInstance);
 
@@ -449,7 +463,7 @@ static LTRESULT UnpackObjectChange( CClientShell *pShell,
     if (changeFlags & CF_FLAGS) 
 	{
         // Read in the flags but keep anything that wasn't in the client flag mask.
-        pObject->m_Flags = cPacket.Readuint16() | (pObject->m_Flags & ~CLIENT_FLAGMASK);
+        pObject->m_Flags = cPacket.Readuint32() | (pObject->m_Flags & ~ClientFlagMask());	// 32 bits, see clientflagmask.h
         pObject->m_Flags2 = cPacket.Readuint16();
         pObject->m_UserFlags = cPacket.Readuint32();
     }
@@ -1254,8 +1268,11 @@ static LTRESULT OnUnguaranteedUpdatePacket(CClientShell *pShell, CPacket_Read &c
 						if (!pData->m_MovingLink.IsTiedOff())
 							bSameAsLast = false;
 					}
-					// Skip duplicate updates
-					if (!bSameAsLast)
+					// Skip duplicate updates, except under LT1NetInterp where every update restarts the easing
+					extern int32 g_bLT1NetInterp;
+					if (g_bLT1NetInterp)
+						pd_OnObjectMove(pShell, pObject, &newPos, &newVel, false, false);
+					else if (!bSameAsLast)
 					{
 						CompWorldPos cCompPos;
 						LTVector vCurCompPos;
