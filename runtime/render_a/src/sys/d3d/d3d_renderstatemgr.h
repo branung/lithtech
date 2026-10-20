@@ -98,11 +98,16 @@ public:
 
 	void				SetBumpEnvMapMatrix(uint32 BumpEnvMapStage);
 	CD3DRenderStyle*	GetBackupRenderStyle()												{ return m_pBackupRenderStyle; }
+
+	// LT1's model environment map
+	CD3DRenderStyle*	GetEnvMapRenderStyle(bool bReallyClose);
 // NOTE: The texture list needs to change to be device independent...
 
 private:
 	// RenderStateMgr's Personal Data...
 	CD3DRenderStyle*	m_pBackupRenderStyle;
+	CD3DRenderStyle*	m_pEnvMapRenderStyle;	// World models
+	CD3DRenderStyle*	m_pEnvMapRenderStyleRC;	// FLAG_REALLYCLOSE models
 
 	// Current State...
 	D3DMATRIX			m_World[MAX_WORLDMATRIX];

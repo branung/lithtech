@@ -29,6 +29,7 @@
 // LT1 stair step and resting behavior
 extern int32 g_bLT1StairStep;
 extern int32 g_bLT1StairSwept;
+extern int32 g_StairTrace;
 extern int32 g_bLT1StairDamp;
 
 // LT1 collision behavior
@@ -2139,6 +2140,26 @@ static bool StairStep_Segment
 									fDeepest = fDist;
 							}
 							maxPushAmt = (fDeepest < 0.0f) ? -fDeepest : 0.0f;
+							if (g_StairTrace > 0)
+							{
+								--g_StairTrace;
+								dsi_ConsolePrint("STAIR min %.7f plane n(%.5f,%.5f,%.5f) d %.4f  P0(%.4f,%.4f,%.4f) P1(%.4f,%.4f,%.4f) boxmin.y %.5f  vel(%.4f,%.4f,%.4f) veloff(%.4f,%.4f,%.4f) box(%.3f,%.3f,%.3f)-(%.3f,%.3f,%.3f)  obj %p world %p restart %d",
+									fDeepest, root_plane.m_Normal.x, root_plane.m_Normal.y, root_plane.m_Normal.z, root_plane.m_Dist,
+									P0.x, P0.y, P0.z, P1.x, P1.y, P1.z, box.Min.y,
+									request.m_pObject->m_Velocity.x, request.m_pObject->m_Velocity.y, request.m_pObject->m_Velocity.z,
+									pInfo->m_VelOffset.x, pInfo->m_VelOffset.y, pInfo->m_VelOffset.z,
+									box.Min.x, box.Min.y, box.Min.z, box.Max.x, box.Max.y, box.Max.z,
+									(void*)request.m_pObject, (void*)request.m_pWorldObj, (int)request.m_nRestart);
+								dsi_ConsolePrint("  exact n(%.9g,%.9g,%.9g) d %.9g P0(%.9g,%.9g,%.9g) P1(%.9g,%.9g,%.9g) polysphere(%.9g,%.9g,%.9g r %.9g)",
+									root_plane.m_Normal.x, root_plane.m_Normal.y, root_plane.m_Normal.z, root_plane.m_Dist,
+									P0.x, P0.y, P0.z, P1.x, P1.y, P1.z,
+									pRoot->m_pPoly->GetCenter().x, pRoot->m_pPoly->GetCenter().y, pRoot->m_pPoly->GetCenter().z, pRoot->m_pPoly->GetRadius());
+								for (uint32 nV = 0; nV < pRoot->m_pPoly->GetNumVertices(); ++nV)
+								{
+									const LTVector& vV = pRoot->m_pPoly->GetVertex(nV);
+									dsi_ConsolePrint("  v%u (%.9g,%.9g,%.9g)", nV, vV.x, vV.y, vV.z);
+								}
+							}
 
 							vLT1Push = root_plane.m_Normal * maxPushAmt;
 						}

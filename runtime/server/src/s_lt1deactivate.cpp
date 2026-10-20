@@ -17,8 +17,17 @@
 #include "serverobj.h"
 #include "concommand.h"
 #include "server_consolestate.h"
+#include "dhashtable.h"
 
 extern int32 g_bLT1AutoDeactivate;
+extern int32 g_LT1DeactivateTrace;
+
+// For LT1DeactivateTrace
+static const char *LT1ObjName(LTObject *pObj)
+{
+	const char *pName = (pObj && pObj->sd && pObj->sd->m_hName) ? (const char *)hs_GetElementKey(pObj->sd->m_hName, LTNULL) : LTNULL;
+	return pName ? pName : "?";
+}
 
 static IServerConsoleState *console_state;
 define_holder(IServerConsoleState, console_state);
@@ -60,6 +69,8 @@ bool sm_LT1DeactivateTick(LTObject *pObj)
 	if (sd->m_fLT1DeactivateLeft > 0.0f)
 		return false;
 	LT1SetStateBits(pObj, (pObj->m_InternalFlags & (IFLAG_INACTIVE | IFLAG_INACTIVE_TOUCH)) | IFLAG_AUTODEACTIVATED);
+	if (g_LT1DeactivateTrace)
+		dsi_ConsolePrint("LT1DEACT off %s t=%.4f", LT1ObjName(pObj), g_pServerMgr->m_GameTime);
 	return true;
 }
 
@@ -73,7 +84,11 @@ static void LT1ActivateObject(LTObject *pObj, void *)
 		? sd->m_fLT1DeactivateTime + g_pServerMgr->m_FrameTime
 		: sd->m_fLT1DeactivateTime;
 	if (pObj->m_InternalFlags & IFLAG_AUTODEACTIVATED)
+	{
 		LT1SetStateBits(pObj, pObj->m_InternalFlags & (IFLAG_INACTIVE | IFLAG_INACTIVE_TOUCH));
+		if (g_LT1DeactivateTrace)
+			dsi_ConsolePrint("LT1DEACT on  %s t=%.4f (ping)", LT1ObjName(pObj), g_pServerMgr->m_GameTime);
+	}
 }
 
 class CLTLT1Server : public ILTLT1Server

@@ -466,6 +466,35 @@ static void con_ListInputDevices(int argc, const char *argv[])
 
 
 //------------------------------------------------------------------
+// EnvMap <texture>: LT1's model environment map, one texture for the level, drawn on every model with FLAG2_ENVMAP
+static void con_EnvMap(int argc, const char *argv[])
+{
+	if (!g_pClientMgr)
+		return;
+
+	// LT1 ignored the command with no argument, so this only reports
+	if (argc < 1 || !argv[0] || !argv[0][0])
+	{
+		con_Printf(CONRGB(0,255,0), 1, "EnvMap: %s", g_pClientMgr->m_pEnvMapTexture ? "set" : "none");
+		return;
+	}
+
+	FileRef ref;
+	ref.m_FileType = FILE_CLIENTFILE;
+	ref.m_pFilename = argv[0];
+
+	SharedTexture *pTexture = g_pClientMgr->AddSharedTexture(&ref);
+	if (!pTexture)
+	{
+		con_Printf(CONRGB(255,0,0), 1, "Couldn't find texture %s.", argv[0]);
+		return;
+	}
+
+	g_pClientMgr->m_pEnvMapTexture = pTexture;
+	con_Printf(CONRGB(0,255,0), 1, "Environment map set to %s.", argv[0]);
+}
+
+//------------------------------------------------------------------
 static void con_RebindTextures(int argc, const char *argv[])
 {
 	if(g_pClientMgr)
@@ -861,6 +890,7 @@ static LTCommandStruct g_LTCommandStructs[] =
 	"RestartRender", con_RestartRender, 0,
 	"ResizeScreen", con_ResizeScreen, 0,
 	"RebindTextures", con_RebindTextures, 0,
+	"EnvMap", con_EnvMap, 0,
 	"LogTextureInfo", con_LogTextureInfo, 0,
 	"HeapCompact", con_HeapCompact, 0,
 	"ConsoleHistory", con_ConsoleHistory, 0,

@@ -949,6 +949,10 @@ static void client_TakeScreenShot()
 	dsi_ConsolePrint("Screenshot: Screenshots/ already holds 10000 shots");
 }
 
+void client_DemoScreenShot()
+{
+	client_TakeScreenShot();
+}
 
 void client_input(SDL_Event e)
 {
@@ -1100,6 +1104,21 @@ LTRESULT CClientMgr::Update()
 		if (g_nDemoClockMS && g_fDemoClientFrameTime > 0.0f && m_nFrameTimeMS > 0)
 			m_FrameTime		= g_fDemoClientFrameTime;
 		m_CurTime			= m_nCurUpdateTimeMS / 1000.0f;
+        
+		// LT1DemoClientTime: during playback the client's clock is the recording's,
+		// and afterwards it carries on from there rather than jumping back to the system timer
+		extern int32 g_bLT1DemoClientTime;
+		extern float g_fDemoClientTime;
+		static double s_dDemoTimeOffset = 0.0;
+		static bool s_bDemoTimeOffset = false;
+		if (g_bLT1DemoClientTime && g_nDemoClockMS)
+		{
+			m_CurTime = g_fDemoClientTime;
+			s_dDemoTimeOffset = (double)g_fDemoClientTime - (double)m_nCurUpdateTimeMS / 1000.0;
+			s_bDemoTimeOffset = true;
+		}
+		else if (g_bLT1DemoClientTime && s_bDemoTimeOffset)
+			m_CurTime = (float)((double)m_nCurUpdateTimeMS / 1000.0 + s_dDemoTimeOffset);
 
         UpdateFrameRate();
     }
@@ -2195,6 +2214,7 @@ bool CClientMgr::Render(CameraInstance *pCamera, int drawMode, LTObject **pObjec
     pDesc->m_fGlobalPanOffsetZ = m_fGlobalPanOffsetZ;
     pDesc->m_fGlobalPanScaleX  = m_fGlobalPanScaleX;
     pDesc->m_fGlobalPanScaleZ  = m_fGlobalPanScaleZ;
+    pDesc->m_pEnvMapTexture    = m_pEnvMapTexture;
     pDesc->m_GlobalLightAdd = pCamera->m_LightAdd;
 
     pDesc->m_GlobalModelLightAdd = g_ConsoleModelAdd;
@@ -2312,6 +2332,7 @@ bool CClientMgr::MakeCubicEnvMap(CameraInstance *pCamera, uint32 nSize, const ch
     Desc.m_fGlobalPanOffsetZ = m_fGlobalPanOffsetZ;
     Desc.m_fGlobalPanScaleX  = m_fGlobalPanScaleX;
     Desc.m_fGlobalPanScaleZ  = m_fGlobalPanScaleZ;
+    Desc.m_pEnvMapTexture    = m_pEnvMapTexture;
     Desc.m_GlobalLightAdd = pCamera->m_LightAdd;
 
     Desc.m_GlobalModelLightAdd = g_ConsoleModelAdd;

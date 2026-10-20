@@ -75,6 +75,7 @@ RCONVAR(g_CV_EnvMapAdd, "EnvMapAdd", int, 1);
 RCONVAR(g_CV_EnvPanSpeed, "EnvPanSpeed", float, 0.0005f);
 RCONVAR(g_CV_EnvScale, "EnvScale", float, 1.0f);
 RCONVAR(g_CV_EnvMapEnable, "EnvMapEnable", int, 1);
+RCONVAR(g_CV_EnvMapAll, "EnvMapAll", int, 0); // LT1's override: chrome every model, not only ones with FLAG2_ENVMAP
 
 //------------------------------
 // Environment Bump Maps

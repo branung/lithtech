@@ -38,6 +38,8 @@ private:
 	std::string m_World;
 	float       m_fHeaderT = 0.0f, m_fT0 = 0.0f, m_fLastT = 0.0f;
 	double      m_dBaseMS = 0.0;
+	double      m_dRealStartMS = 0.0;	// The system timer at the first played frame (for LT1DemoEndConsole)
+	unsigned    m_nWorldFrames = 0;		// Frames played in the world
 	size_t      m_nNext = 0;
 	bool        m_bPlaying = false, m_bPrimed = false;
 	unsigned char m_Bank[256];

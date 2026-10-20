@@ -24,6 +24,18 @@ float	g_fDemoClientFrameTime = 0.0f; // The client's frame time, the same differ
 int32	g_nDemoAnimMS = -1; // The client models' step, truncated to whole ms as LT1's was (-1 = the frame's own)
 const char *g_DemoStopCommand = LTNULL; // A console line run when a playback stops, for the game to undo what it changed
 int32	g_DemoTrace = 0; // Diagnostic: print each played frame's number, clock, held commands, mouse axes, and player position (0 = off)
+int32	g_DemoExecFrame = 0; // Diagnostic: the recorded frame at which DemoExec runs (0 = off)
+const char *g_DemoExec = LTNULL; // Diagnostic: a console line run once at DemoExecFrame, to switch something on from a state every run shares
+int32	g_DemoTraceRadius = 0; // Diagnostic: DemoTrace also prints every model and world model within this distance of the player (0 = off)
+const char *g_DemoShotFrames = LTNULL; // Diagnostic: a comma list of recorded frames to take a screenshot at
+int32	g_bLT1ServerStepFloor = 0; // During playback the server's step is floored at 0.01 s as LT1's is
+int32	g_bDemoZeroFrame = 0; // Set by playback for a frame whose recorded clock repeats the last one
+int32	g_bLT1DemoNoPrime = 0; // Playback doesn't hold recorded frame 0 for an extra frame after the world loads
+int32	g_bLT1DemoClientTime = 0; // During playback the client's clock is the recording's own, as LT1's is
+float	g_fDemoClientTime = 0.0f; // The recorded clock, for LT1DemoClientTime
+int32	g_bLT1DemoEndConsole = 0; // At the end of a demo print LT1's two summary lines and raise the console over the running level
+int32	g_LT1DeactivateTrace = 0; // Diagnostic: a line for each auto deactivation and wake
+int32	g_StairTrace = 0; // Diagnostic: the next N hits of the LT1 stair step, with the plane, deepest corner, endpoints, and box
 
 int32	g_CV_ForceNoSound = LTFALSE;
 int32	g_CV_BorderlessWindow = LTFALSE; // Create the game window without a frame (fullscreen at desktop resolution)
@@ -291,6 +303,16 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("DemoAnimMS", &g_nDemoAnimMS),
 	EV_STRING("DemoStopCommand", &g_DemoStopCommand),
 	EV_LONG("DemoTrace", &g_DemoTrace),
+	EV_LONG("DemoExecFrame", &g_DemoExecFrame),
+	EV_STRING("DemoExec", &g_DemoExec),
+	EV_LONG("DemoTraceRadius", &g_DemoTraceRadius),
+	EV_STRING("DemoShotFrames", &g_DemoShotFrames),
+	EV_LONG("LT1ServerStepFloor", &g_bLT1ServerStepFloor),
+	EV_LONG("LT1DemoNoPrime", &g_bLT1DemoNoPrime),
+	EV_LONG("LT1DemoClientTime", &g_bLT1DemoClientTime),
+	EV_LONG("LT1DemoEndConsole", &g_bLT1DemoEndConsole),
+	EV_LONG("LT1DeactivateTrace", &g_LT1DeactivateTrace),
+	EV_LONG("StairTrace", &g_StairTrace),
 	EV_LONG("ForceNoSound", &g_CV_ForceNoSound),
 	
 	EV_LONG("CursorCenter", &g_CV_CursorCenter),

@@ -162,3 +162,10 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 		$<TARGET_FILE_DIR:${PROJECT_NAME}>/DetailLo.cfg
 	COMMAND ${CMAKE_COMMAND} -E make_directory
 		$<TARGET_FILE_DIR:${PROJECT_NAME}>/Custom)
+
+set(SHOGO_MODULERAND ${CMAKE_CURRENT_SOURCE_DIR}/../../libs/DECompat/de_modulerand.h)
+if(MSVC)
+	target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FI${SHOGO_MODULERAND}>)
+else()
+	target_compile_options(${PROJECT_NAME} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-include;${SHOGO_MODULERAND}>")
+endif()

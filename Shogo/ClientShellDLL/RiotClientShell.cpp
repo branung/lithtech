@@ -815,8 +815,43 @@ void CRiotClientShell::ShowSplash()
 //
 // ----------------------------------------------------------------------- //
 
+static int		s_nClientRandTrace	= 0;
+static unsigned	s_nClientFrameDraws	= 0;
+static unsigned	s_nClientUpdate		= 0;
+static unsigned	s_nTraceWin0 = 1, s_nTraceWin1 = 0;
+
+static void ClientRandTrace(const char *pFile, int nLine, unsigned nCount, int nValue)
+{
+	if (!g_pLTClient) return;
+	if (s_nClientRandTrace == 3 && nValue >= 0)
+	{
+		++s_nClientFrameDraws;
+		if (s_nClientUpdate < s_nTraceWin0 || s_nClientUpdate > s_nTraceWin1)
+			return;
+	}
+	const char *pBase = strrchr(pFile, '\\');
+	if (!pBase) pBase = strrchr(pFile, '/');
+	pBase = pBase ? pBase + 1 : pFile;
+	if (nValue < 0)
+		g_pLTClient->CPrint("CLTSEED %u %s:%d", nCount, pBase, nLine);
+	else
+		g_pLTClient->CPrint("CLTRAND %u v=%d %s:%d site %s:%d", nCount, nValue, pBase, nLine,
+			g_pRandSiteFile ? (strrchr(g_pRandSiteFile, '\\') ? strrchr(g_pRandSiteFile, '\\') + 1 : g_pRandSiteFile) : "-", g_nRandSiteLine);
+}
+
 uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGuid)
 {
+	{
+		const char *pTrace = getenv("SHOGO_RANDTRACE");
+		if (pTrace && atoi(pTrace) >= 2)
+		{
+			s_nClientRandTrace = atoi(pTrace);
+			if (const char *pWin = getenv("SHOGO_RANDTRACE_WIN"))
+				sscanf(pWin, "%u,%u", &s_nTraceWin0, &s_nTraceWin1);
+			DE_ModuleRandHook() = &ClientRandTrace;
+		}
+	}
+
 	//CWinUtil::DebugBreak();
 
 	if (!g_pLTClient) return LT_OK;	
@@ -1181,6 +1216,14 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 
 		// The engine's random stream and its seeds are LT1's, for its particles (both sides)
 		g_pLTClient->RunConsoleString("-LT1EngineRand 1");
+
+		// Demo playback as og runs it, playback only: the server's step floored at 0.01 s,
+		// no held frame after the world loads, the client's clock is the recording's,
+		// and at the end the console comes up over the still running level
+		g_pLTClient->RunConsoleString("-LT1ServerStepFloor 1");
+		g_pLTClient->RunConsoleString("-LT1DemoNoPrime 1");
+		g_pLTClient->RunConsoleString("-LT1DemoClientTime 1");
+		g_pLTClient->RunConsoleString("-LT1DemoEndConsole 1");
 
 		// The rest of LT1's contact stack (both sides)
 		g_pLTClient->RunConsoleString("-LT1IntersectPushback 1");
@@ -1809,6 +1852,13 @@ void CRiotClientShell::PreUpdate()
 void CRiotClientShell::Update()
 {
 	if (!g_pLTClient) return;
+
+	// SHOGO_RANDTRACE=3: the client's draws since the last update, and the stream's state
+	if (s_nClientRandTrace == 3)
+	{
+		g_pLTClient->CPrint("CLTFRAME %u state %08x update %u", s_nClientFrameDraws, DE_ModuleRandState(), ++s_nClientUpdate);
+		s_nClientFrameDraws = 0;
+	}
 
 	// Handle first update...
 

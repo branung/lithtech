@@ -39,6 +39,98 @@ bool CD3DRenderStateMgr::Init()
 void CD3DRenderStateMgr::FreeAll()
 {
 	if (m_pBackupRenderStyle)	{ delete m_pBackupRenderStyle; m_pBackupRenderStyle = NULL; }
+	if (m_pEnvMapRenderStyle)	{ delete m_pEnvMapRenderStyle; m_pEnvMapRenderStyle = NULL; }
+	if (m_pEnvMapRenderStyleRC)	{ delete m_pEnvMapRenderStyleRC; m_pEnvMapRenderStyleRC = NULL; }
+}
+
+// LT1's model environment map, in two passes:
+// Pass 0 is the chrome: the level's EnvMap texture, opaque and lit, with UVs from the normal.
+// Pass 1 is the model's skin over it at SRCALPHA / INVSRCALPHA, so the skin's alpha mask decides how much chrome shows.
+CD3DRenderStyle* CD3DRenderStateMgr::GetEnvMapRenderStyle(bool bReallyClose)
+{
+	CD3DRenderStyle*& pStyle = bReallyClose ? m_pEnvMapRenderStyleRC : m_pEnvMapRenderStyle;
+
+	if (!pStyle)
+	{
+		LT_MEM_TRACK_ALLOC(pStyle = new CD3DRenderStyle, LT_MEM_TYPE_RENDERER);
+		pStyle->SetDefaults();
+
+		// Pass 0, the chrome. SetDefaults fills one pass so only what differs is changed
+		RenderPassOp Chrome;
+		pStyle->GetRenderPass(0, &Chrome);
+
+		// rendermodelpiecelist.cpp puts the chrome texture in the piece's last texture slot
+		Chrome.TextureStages[0].TextureParam		= RENDERSTYLE_USE_TEXTURE4;
+		Chrome.TextureStages[0].ColorOp				= RENDERSTYLE_COLOROP_MODULATE;
+		Chrome.TextureStages[0].ColorArg1			= RENDERSTYLE_COLORARG_TEXTURE;
+		Chrome.TextureStages[0].ColorArg2			= RENDERSTYLE_COLORARG_DIFFUSE;
+		// Alpha stays at the default MODULATE. The pass draws opaque, so the result is unused
+		Chrome.TextureStages[0].UVSource			= RENDERSTYLE_UVFROM_CAMERASPACENORMAL;
+		Chrome.TextureStages[0].UVTransform_Enable	= true;
+		Chrome.TextureStages[0].TexCoordCount		= 2;
+		// LT1's device default which lets the pan run past the edge of the map
+		Chrome.TextureStages[0].UAddress			= RENDERSTYLE_UVADDR_WRAP;
+		Chrome.TextureStages[0].VAddress			= RENDERSTYLE_UVADDR_WRAP;
+		Chrome.BlendMode							= RENDERSTYLE_NOBLEND;
+		Chrome.ZBufferMode							= RENDERSTYLE_ZRW;
+		Chrome.DynamicLight							= true;
+		pStyle->SetRenderPass(0, Chrome);
+
+		// Pass 1, the skin blended over the chrome by its own alpha
+		RenderPassOp Skin;
+		pStyle->GetRenderPass(0, &Skin);
+		Skin.TextureStages[0].TextureParam			= RENDERSTYLE_USE_TEXTURE1;
+		Skin.TextureStages[0].ColorOp				= RENDERSTYLE_COLOROP_MODULATE;
+		Skin.TextureStages[0].ColorArg1				= RENDERSTYLE_COLORARG_TEXTURE;
+		Skin.TextureStages[0].ColorArg2				= RENDERSTYLE_COLORARG_DIFFUSE;
+		// Texture times diffuse, as LT1's stage 0, so the object's own alpha counts too
+		Skin.TextureStages[0].AlphaOp				= RENDERSTYLE_ALPHAOP_MODULATE;
+		Skin.TextureStages[0].AlphaArg1				= RENDERSTYLE_ALPHAARG_TEXTURE;
+		Skin.TextureStages[0].AlphaArg2				= RENDERSTYLE_ALPHAARG_DIFFUSE;
+		Skin.TextureStages[0].UVSource				= RENDERSTYLE_UVFROM_MODELDATA_UVSET1;
+		Skin.TextureStages[0].UVTransform_Enable	= false;
+		Skin.BlendMode								= RENDERSTYLE_BLEND_MOD_SRCALPHA;
+		// LT1 writes Z on both passes and tests LESSEQUAL, so the skin lands on the chrome
+		Skin.ZBufferMode							= RENDERSTYLE_ZRW;
+		Skin.DynamicLight							= true;
+		pStyle->AddRenderPass(Skin);
+	}
+
+	// Refresh the sphere map's transform for this frame's camera
+	RenderPassOp Chrome;
+	if (pStyle->GetRenderPass(0, &Chrome))
+	{
+		const float fEnvScale = (g_CV_EnvScale.m_Val != 0.0f) ? (float)g_CV_EnvScale.m_Val : 1.0f;
+		const float S  = 0.5f / fEnvScale;
+		const float Ou = 0.5f + (float)g_CV_EnvPanSpeed.m_Val * g_ViewParams.m_Pos.x;
+		const float Ov = 0.5f + (float)g_CV_EnvPanSpeed.m_Val * g_ViewParams.m_Pos.z;
+
+		float *M = Chrome.TextureStages[0].UVTransform_Matrix;
+		memset(M, 0, sizeof(float) * 16);
+		M[15] = 1.0f;
+
+		if (bReallyClose)
+		{
+			// Already in the frame LT1's object matrix gives, so scale only
+			M[0]  = S; // u from normal.x
+			M[5]  = S; // v from normal.y
+		}
+		else
+		{
+			// Camera to world first
+			const LTMatrix &mInv = g_ViewParams.m_mInvView;
+			M[0]  = mInv.m[0][0] * S;	M[1]  = mInv.m[1][0] * S;
+			M[4]  = mInv.m[0][1] * S;	M[5]  = mInv.m[1][1] * S;
+			M[8]  = mInv.m[0][2] * S;	M[9]  = mInv.m[1][2] * S;
+		}
+
+		M[12] = Ou; // The translation row
+		M[13] = Ov;
+
+		pStyle->SetRenderPass(0, Chrome);
+	}
+
+	return pStyle;
 }
 
 // Reset the internal state (Note: This doesn't free stuff - if this isn't a first time thing, call FreeAll() first)...
@@ -49,6 +141,8 @@ void CD3DRenderStateMgr::Reset()
 	D3DMatrixIdentity(&m_Proj);
 	m_VertexShader				= 0;
 	m_pBackupRenderStyle		= nullptr;
+	m_pEnvMapRenderStyle		= nullptr;
+	m_pEnvMapRenderStyleRC		= nullptr;
 
 	for (uint32 l = 0; l < MAX_D3DLIGHTS; ++l) {
 		m_bLightEnable[l]		= false; }

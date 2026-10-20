@@ -311,14 +311,20 @@ void FullObjectUpdate(LTObject *pObj)
         {
             // Use the TrueFrameTime, otherwise the time will notbe synced with the client.
             // If time is out of sync between client/server, movement breaks.
-            if (g_pServerMgr->m_nTrueFrameTimeMS > 0)
+            // Or a demo frame with a repeated clock which LT1ServerStepFloor makes a 0.01 step
+            extern int32 g_nDemoClockMS;
+            extern int32 g_bLT1ServerStepFloor;
+            if (g_pServerMgr->m_nTrueFrameTimeMS > 0 ||
+                (g_nDemoClockMS && g_bLT1ServerStepFloor && g_pServerMgr->m_FrameTime > 0.0f))
             {
                 // During a demo, models animate as LT1's did:
                 // the server frame time x 1000, truncated to whole ms
-                extern int32 g_nDemoClockMS;
                 uint32 nAnimMS = g_pServerMgr->m_nTrueFrameTimeMS;
                 if (g_nDemoClockMS && g_pServerMgr->m_FrameTime > 0.0f)
                     nAnimMS = (uint32)((double)g_pServerMgr->m_FrameTime * 1000.0);
+                if (g_nDemoClockMS && g_bLT1ServerStepFloor && g_pServerMgr->m_FrameTime > 0.0f &&
+                    g_pServerMgr->m_FrameTime <= 0.01f)
+                    nAnimMS = 10;
                 pObj->ToModel()->SetStringKeyCallback(ServerStringKeyCallback);
                 pObj->ToModel()->ServerUpdate(nAnimMS);
             }

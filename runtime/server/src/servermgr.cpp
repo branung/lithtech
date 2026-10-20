@@ -1179,9 +1179,17 @@ bool CServerMgr::Update(int32 updateFlags, uint32 nCurTimeMS)
 	
 			m_FrameTime = ((LTCLAMP(m_nTrueFrameTimeMS / 1000.0f, 0.0f, 0.2f)) * g_ServerTimeScale);
 			// The recorded frame time for this one frame during a demo
+			// LT1ServerStepFloor: LT1 floors the server's step at 0.01 s, so a demo recorded above 100 fps runs its
+			// server clock faster than the recorded one. Playback only as this server steps once per client frame
 			extern float g_fDemoFrameTime;
+			extern int32 g_bLT1ServerStepFloor;
 			if (g_fDemoFrameTime > 0.0f && m_nTrueFrameTimeMS > 0)
-				m_FrameTime = LTCLAMP(g_fDemoFrameTime, 0.0f, 0.2f) * g_ServerTimeScale;
+				m_FrameTime = LTCLAMP(g_fDemoFrameTime, g_bLT1ServerStepFloor ? 0.01f : 0.0f, 0.2f) * g_ServerTimeScale;
+			// A demo frame whose clock repeats the last one which LT1's floor makes a 0.01 step
+			extern int32 g_bDemoZeroFrame;
+			if (g_bDemoZeroFrame && g_bLT1ServerStepFloor)
+				m_FrameTime = 0.01f * g_ServerTimeScale;
+			g_bDemoZeroFrame = 0;
 			g_fDemoFrameTime = 0.0f;
 			m_GameTime += m_FrameTime;
 

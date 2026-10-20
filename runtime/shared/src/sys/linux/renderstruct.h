@@ -58,6 +58,7 @@ struct SceneDesc
     SharedTexture  *m_pGlobalPanTexture;    // LT1's sky shadow pan texture
     float           m_fGlobalPanOffsetX, m_fGlobalPanOffsetZ; // World units (added before scaling)
     float           m_fGlobalPanScaleX,  m_fGlobalPanScaleZ;  // World units per texel
+    SharedTexture  *m_pEnvMapTexture;       // LT1's model environment map, kept in step with the Windows header
     float           m_FrameTime;            // Used for updating things like sprites and texture scripts
     float           m_fActualFrameTime;             // The actual elapsed time. Used for performance measurement.
     // Sky definition and objects.

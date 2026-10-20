@@ -33,7 +33,7 @@
 extern char s_FileBuffer[_MAX_PATH];
 
 // This is defined in both "RiotObjectUtilities.h" and "ClientUtilities.h"
-int GetRandom(int lo, int hi);
+int (GetRandom)(int lo, int hi);
 
 
 enum WeaponState { W_IDLE, W_BEGIN_FIRING, W_FIRING, W_FIRED, W_FIRED2, 

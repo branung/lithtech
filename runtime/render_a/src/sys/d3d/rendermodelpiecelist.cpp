@@ -20,6 +20,7 @@ define_holder(IClientShell, i_client_shell);
 #include "lteffectshadermgr.h"
 #include "LTShaderDeviceStateImp.h"
 #include "rendererconsolevars.h"
+#include "renderstruct.h"		// SceneDesc, for the level's environment map
 #include <algorithm>
 
 // LT1 object color semantics
@@ -362,7 +363,21 @@ void CRenderModelPieceList::QueuePiece(ModelInstance* pInstance, ModelPiece* pPi
 	//fill up any leftover slots with NULL pointers
 	for (; nCurrTexture < MAX_PIECE_TEXTURES; ++nCurrTexture) 
 	{
-		Info.m_TextureList[nCurrTexture] = NULL; 
+		Info.m_TextureList[nCurrTexture] = NULL;
+	}
+
+	// LT1's model environment map, with LT1's gate: EnvMapAll or the model's FLAG2_ENVMAP, EnvMapEnable, and a loaded texture.
+	if ((g_CV_EnvMapAll.m_Val || (pInstance->m_Flags2 & FLAG2_ENVMAP)) &&
+	    g_CV_EnvMapEnable.m_Val &&
+	    bTexture &&
+	    (pPiece->m_nNumTextures < MAX_PIECE_TEXTURES) &&
+	    g_pSceneDesc &&
+	    g_pSceneDesc->m_pEnvMapTexture &&
+	    g_pSceneDesc->m_pEnvMapTexture->m_pRenderData &&
+	    Info.m_TextureList[0])
+	{
+		Info.m_TextureList[MAX_PIECE_TEXTURES - 1] = g_pSceneDesc->m_pEnvMapTexture;
+		Info.m_pRenderStyle = g_RenderStateMgr.GetEnvMapRenderStyle(Info.m_bReallyClose);
 	}
 
 	//alright, the info is complete, put it on the list

@@ -12,6 +12,7 @@
 #include "systimer.h"
 #include "consolecommands.h"
 #include "impl_common.h"
+#include "iclientshell.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -22,6 +23,19 @@ extern float g_fDemoClientFrameTime;
 extern int32 g_nDemoAnimMS;
 extern const char *g_DemoStopCommand;
 extern int32 g_DemoTrace;
+extern int32 g_DemoExecFrame;
+extern const char *g_DemoExec;
+extern int32 g_DemoTraceRadius;
+extern const char *g_DemoShotFrames;
+extern int32 g_bLT1DemoNoPrime;
+extern int32 g_bLT1DemoEndConsole;
+extern int32 g_bDemoZeroFrame;
+extern float g_fDemoClientTime;
+extern void client_DemoScreenShot();
+
+// The game's client shell for its SRand at a demo's start
+static IClientShell *i_client_shell;
+define_holder(IClientShell, i_client_shell);
 
 namespace
 {
@@ -137,12 +151,17 @@ void CDemoPlaybackLT1::Begin()
 		return;
 	srand(123); // LT1 seeds the C runtime when a recording starts
 	ic_LT1SRand(123); // And the engine's own stream (LT1EngineRand)
+	// LT1 then calls the client shell's SRand, which seeds the shell's own stream (de_modulerand.h)
+	if (IClientShellStub *pStub = dynamic_cast<IClientShellStub*>(i_client_shell))
+		pStub->SRand();
 	memset(m_Bank, 0, sizeof(m_Bank));
 	m_Axis[0] = m_Axis[1] = m_Axis[2] = 0.0f;
 	Toggle(m_Frames[0]); // Recorded before the world loads
 	m_nNext = 1;
 	m_bPrimed = false;
 	m_bPlaying = true;
+	m_nWorldFrames = 0;
+	m_dRealStartMS = 0.0;
 	m_fT0 = m_fLastT = m_Frames[0].t;
 	m_dBaseMS = (double)time_GetMSTime() + 1000.0; // A second ahead of the system timer so the game's clock never runs back
 	SetClock(m_fT0);
@@ -154,6 +173,7 @@ void CDemoPlaybackLT1::SetClock(float t)
 {
 	const double ms = m_dBaseMS + ((double)t - (double)m_fT0) * 1000.0;
 	g_nDemoClockMS = (int32)(ms + 0.5);
+	g_fDemoClientTime = t; // The recorded clock (LT1DemoClientTime)
 	const float fFrame = t - m_fLastT; // The difference of the recorded float clocks
 	m_fLastT = t;
 	g_fDemoFrameTime = fFrame > 0.0f ? fFrame : 0.0f;
@@ -167,18 +187,57 @@ void CDemoPlaybackLT1::StepClock(bool bWorldOpen)
 		return;
 	if (m_nNext >= m_Frames.size())
 	{
+		// LT1DemoEndConsole: og Shogo prints two lines, raises the console, and then stops without disconnecting,
+		// so the level runs on behind the console with input cleared
+		if (g_bLT1DemoEndConsole)
+		{
+			const double fSecs = m_dRealStartMS > 0.0 ? ((double)time_GetMSTime() - m_dRealStartMS) / 1000.0 : 0.0;
+			dsi_ConsolePrint("Demo played in %.3f seconds", fSecs);
+			dsi_ConsolePrint("%d frames drawn, average %.3f fps", (int)m_nWorldFrames,
+				fSecs > 0.0 ? (double)m_nWorldFrames / fSecs : 0.0);
+			dsi_SetConsoleUp(LTTRUE);
+		}
 		Stop();
 		return;
 	}
 	// The first rendered frame in the world keeps recorded frame 0's time, and recorded frame 1 plays on the next rendered frame
-	if (m_nNext == 1 && !m_bPrimed)
+	// LT1DemoNoPrime: og Shogo loads the world inside its first counted frame, so there's no held frame
+	if (m_nNext == 1 && !m_bPrimed && !g_bLT1DemoNoPrime)
 	{
 		m_bPrimed = true;
 		return;
 	}
 	const Frame &f = m_Frames[m_nNext];
+
+	// DemoExecFrame and DemoExec: one console line at a chosen frame
+	if (g_DemoExecFrame > 0 && (size_t)g_DemoExecFrame == m_nNext && g_DemoExec && g_DemoExec[0])
+	{
+		dsi_ConsolePrint("DEMO: frame %u runs \"%s\"", (unsigned)m_nNext, g_DemoExec);
+		c_CommandHandler(g_DemoExec);
+	}
+
+	// DemoShotFrames: a screenshot at each listed frame, used for comparing frames against og playback
+	if (g_DemoShotFrames && g_DemoShotFrames[0])
+	{
+		for (const char *p = g_DemoShotFrames; *p; )
+		{
+			if ((size_t)atoi(p) == m_nNext)
+			{
+				client_DemoScreenShot();
+				dsi_ConsolePrint("DEMO: screenshot at frame %u", (unsigned)m_nNext);
+				break;
+			}
+			while (*p && *p != ',') p++;
+			if (*p == ',') p++;
+		}
+	}
+
+	// Tells the server about a recorded clock that repeats the last one (LT1ServerStepFloor)
+	g_bDemoZeroFrame = (f.t - m_fLastT) > 0.0f ? 0 : 1;
 	SetClock(f.t);
 	Toggle(f);
+	if (++m_nWorldFrames == 1)
+		m_dRealStartMS = (double)time_GetMSTime();
 
 	// DemoTrace diagnostics
 	if (g_DemoTrace)
@@ -192,6 +251,28 @@ void CDemoPlaybackLT1::StepClock(bool bWorldOpen)
 		if (pObj) p = pObj->GetPos();
 		dsi_ConsolePrint("DEMOFRAME %u t=%.4f keys[%s] axis(%.3f,%.3f) player(%.2f,%.2f,%.2f) estate %08x",
 			(unsigned)m_nNext, f.t, keys, f.axis[0], f.axis[1], p.x, p.y, p.z, ic_LT1RandState());
+
+		// DemoTraceRadius: every model and world model within that distance of the player.
+		// Object ids are the engine's and don't need to match og's, so pair objects by position
+		if (pObj && g_DemoTraceRadius > 0)
+		{
+			const float fR2 = (float)g_DemoTraceRadius * (float)g_DemoTraceRadius;
+			static const int aTypes[] = { OT_MODEL, OT_WORLDMODEL };
+			for (int nType = 0; nType < 2; ++nType)
+			{
+				LTLink *pHead = &g_pClientMgr->m_ObjectMgr.m_ObjectLists[aTypes[nType]].m_Head;
+				for (LTLink *pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
+				{
+					LTObject *pOther = (LTObject*)pCur->m_pData;
+					if (!pOther || pOther == pObj)
+						continue;
+					const LTVector q = pOther->GetPos();
+					if ((q - p).MagSqr() <= fR2)
+						dsi_ConsolePrint("DEMOOBJ %u id %u pos(%.4f,%.4f,%.4f)",
+							(unsigned)m_nNext, (unsigned)pOther->m_ObjectID, q.x, q.y, q.z);
+				}
+			}
+		}
 	}
 
 	++m_nNext;

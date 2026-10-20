@@ -9,6 +9,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "DebrisTypes.h"
+#include "RiotCommonUtilities.h" // GetRandom's call site macro (SHOGO_RANDTRACE)
 
 
 // Debris model related sheyot...

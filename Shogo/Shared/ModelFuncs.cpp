@@ -13,7 +13,7 @@
 #include "CharacterAlignment.h"
 #include "GibTypes.h"
 
-extern int GetRandom(int, int);
+#include "RiotCommonUtilities.h" // GetRandom, with its call site macro (SHOGO_RANDTRACE)
 
 // ----------------------------------------------------------------------- //
 //

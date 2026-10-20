@@ -262,6 +262,9 @@ void CClientMgr::FreeSharedTexture(SharedTexture *pTexture)
     if (m_pGlobalPanTexture == pTexture)
         m_pGlobalPanTexture = NULL;
 
+    if (m_pEnvMapTexture == pTexture)
+        m_pEnvMapTexture = NULL;
+
     dl_RemoveAt(&m_SharedTextures, &pTexture->m_Link);
 
     if (pTexture->m_pFile)
@@ -278,6 +281,7 @@ void CClientMgr::FreeSharedTextures() {
     LTLink *pCur, *pNext, *pListHead;
 
     m_pGlobalPanTexture = NULL;
+    m_pEnvMapTexture = NULL;
 
     pListHead = &m_SharedTextures.m_Head;
     pCur = pListHead->m_pNext;

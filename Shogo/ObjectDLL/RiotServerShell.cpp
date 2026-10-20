@@ -105,8 +105,27 @@ CRiotServerShell::CRiotServerShell()
 //
 // ----------------------------------------------------------------------- //
 
+// SHOGO_RANDTRACE (environment, diagnostic): every server draw and seed - with its call site and GetRandom's caller
+static void ServerRandTrace(const char *pFile, int nLine, unsigned nCount, int nValue)
+{
+	if (!g_pServerDE) return;
+	const char *pBase = strrchr(pFile, '\\');
+	if (!pBase) pBase = strrchr(pFile, '/');
+	pBase = pBase ? pBase + 1 : pFile;
+	if (nValue < 0)
+		g_pServerDE->CPrint("SRVSEED %u %s:%d", nCount, pBase, nLine);
+	else
+	{
+		const char *pSite = strrchr(g_pRandSiteFile, '\\'); pSite = pSite ? pSite + 1 : g_pRandSiteFile;
+		g_pServerDE->CPrint("SRVRAND %u v=%d %s:%d site %s:%d", nCount, nValue, pBase, nLine, pSite, g_nRandSiteLine);
+	}
+}
+
 LTRESULT CRiotServerShell::OnServerInitialized()
 {
+	if (getenv("SHOGO_RANDTRACE"))
+		DE_ModuleRandHook() = &ServerRandTrace;
+
 	// No base call since IServerShellStub's default is private and only returns LT_OK
 	if (!g_pServerDE) return LT_ERROR;
 
@@ -157,6 +176,9 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// The engine's Random, IntRandom and RandomScale draw from LT1's stream with LT1's seeds,
 	// so things like how many pieces a destroyed prop breaks into match og Shogo (client too)
 	g_pServerDE->RunGameConString("LT1EngineRand 1");
+
+	// During demo playback the server's step is floored at 0.01 s, as LT1's is (client too)
+	g_pServerDE->RunGameConString("LT1ServerStepFloor 1");
 
 	// The rest of LT1's contact stack: 0.1 clearance, exact contact isn't a hit, no stale detections.
 	// Without them LT1StrikeKeep parks the player on the wall plane (client sets all four)

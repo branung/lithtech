@@ -1,3 +1,4 @@
+#define RIOTCOMMONUTILITIES_IMPL
 // ----------------------------------------------------------------------- //
 //
 // MODULE  : RiotObjectUtilities.cpp
@@ -14,6 +15,7 @@
 // Temp buffer...
 
 char s_FileBuffer[_MAX_PATH];
+const char *g_pRandSiteFile = ""; int g_nRandSiteLine = 0;
 
 // Stolen from gamework.h...
 
