@@ -1687,6 +1687,15 @@ void MoveObject
 		return;
 	}
 
+	// LT1MinMove: LT1 ignores a move under 0.01 units, so a slowly bobbing platform's riders stay standing on it.
+	extern int32 g_bLT1MinMove;
+	if (g_bLT1MinMove)
+	{
+		const LTVector vDelta = P1 - pState->m_pObj->GetPos();
+		if (vDelta.MagSqr() < 0.0001f)
+			return;
+	}
+
 	++g_nMoveObjectCalls;
 	CountAdder cnt(&g_Ticks_MoveObject);
 
@@ -1807,8 +1816,11 @@ void MoveObject
 		{
 			pObjOn = startPosInfo[nNumObjectsStanding].m_pObj;
 			newPos = pState->m_pObj->GetPos() + startPosInfo[nNumObjectsStanding].m_vRelPos;
-			// Push the carried object into whatever it's standing on so it resets the standing on flag properly
-			newPos -= LTVector(0.0f, 0.1f, 0.0f);
+			// Push the carried object into whatever it's standing on so it resets the standing on flag properly.
+			// LT1CarryNoNudge: LT1 has no nudge. The nudge embeds the rider, and pushing it back out lifts it off the platform
+			extern int32 g_bLT1CarryNoNudge;
+			if (!g_bLT1CarryNoNudge)
+				newPos -= LTVector(0.0f, 0.1f, 0.0f);
 			
 			moveState.Inherit(pState, pObjOn);
 			MoveObject(&moveState, newPos, 
@@ -2114,8 +2126,12 @@ void RotateWorldModel(MoveState *pState,
 	pState->m_pWMObjectTransform = &fullTransform;
 
 	// Flag us as moving so no one can push us.
-	pState->m_pObj->m_InternalFlags |= IFLAG_MOVING;
-	
+	// LT1RotateNoMovingFlag: LT1's rotate never sets it, and with it set riders fall off a rotating platform.
+	// The clear below stays, as clearing an unset bit is harmless
+	extern int32 g_bLT1RotateNoMovingFlag;
+	if (!g_bLT1RotateNoMovingFlag)
+		pState->m_pObj->m_InternalFlags |= IFLAG_MOVING;
+
 	if(pState->m_CustomTestObjects)
 	{
 		for(i=0; i < pState->m_nCustomTestObjects; i++)

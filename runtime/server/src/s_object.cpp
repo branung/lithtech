@@ -582,6 +582,12 @@ void AddObjectToRemoveList(LTObject *pObj)
 
         // Add this object to the list of objects to remove for each client.
         pObj->m_InternalFlags &= ~IFLAG_INWORLD;
+
+        // LT1RemoveUnlinks: LT1 takes it out of the world tree here rather than at the end of the frame,
+        // so no ray or sphere query later in the same frame finds it
+        extern int32 g_bLT1RemoveUnlinks;
+        if (g_bLT1RemoveUnlinks)
+            pObj->RemoveFromWorldTree();
     }
 }
 

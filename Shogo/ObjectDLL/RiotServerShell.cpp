@@ -205,6 +205,19 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// so a player starting to walk from a wall gets the same box as in LT1 (client too)
 	g_pServerDE->RunGameConString("LT1GrowDim 1");
 
+	// Platforms carry riders as LT1's do: no nudge into the platform, tiny moves ignored,
+	// and a rotating platform doesn't refuse its riders (client too)
+	g_pServerDE->RunGameConString("LT1CarryNoNudge 1");
+	g_pServerDE->RunGameConString("LT1MinMove 1");
+	g_pServerDE->RunGameConString("LT1RotateNoMovingFlag 1");
+
+	// Positions in game messages at LT1's precision, so a weapon impact sent to the client
+	// is where LT1's explosion debris starts (client too)
+	g_pServerDE->RunGameConString("LT1CompPos 1");
+
+	// A removed object leaves the world tree at once
+	g_pServerDE->RunGameConString("LT1RemoveUnlinks 1");
+
 	// During demo playback the server's step is floored at 0.01 s, as LT1's is (client too)
 	g_pServerDE->RunGameConString("LT1ServerStepFloor 1");
 

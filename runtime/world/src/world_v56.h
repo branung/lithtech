@@ -31,6 +31,11 @@ LTRESULT world_v56_BuildV85Image(const uint8 *pSrc, uint32 nSrcSize, uint8 **ppI
 
 void world_v56_FreeImage(uint8 *pImage);
 
+// LT1CompPos: LT1's compressed world position, over the box of the last v56 world converted.
+// Both answer false when no box is known
+bool world_v56_LT1EncodePosition(uint16 nOut[3], const LTVector &vPos);
+bool world_v56_LT1DecodePosition(LTVector &vOut, const uint16 nIn[3]);
+
 class ILTStream;
 
 // Opens a game file by name for the texture lookup.

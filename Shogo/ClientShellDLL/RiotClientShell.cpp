@@ -1230,6 +1230,19 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		g_pLTClient->RunConsoleString("-LT1TunnelNonsolid 1");
 		g_pLTClient->RunConsoleString("-LT1GrowDim 1");
 
+		// Platforms carry riders as LT1's do: no nudge into the platform, tiny moves ignored,
+		// and a rotating platform doesn't refuse its riders (both sides)
+		g_pLTClient->RunConsoleString("-LT1CarryNoNudge 1");
+		g_pLTClient->RunConsoleString("-LT1MinMove 1");
+		g_pLTClient->RunConsoleString("-LT1RotateNoMovingFlag 1");
+
+		// Positions in game messages at LT1's precision, as the server encodes them (both sides)
+		g_pLTClient->RunConsoleString("-LT1CompPos 1");
+
+		// SetObjectPos drops moves under 0.0316 units as LT1's does.
+		// The weapon fires from the camera object, so this decides where shots start
+		g_pLTClient->RunConsoleString("-LT1ClientMoveMin 1");
+
 		// Demo playback as og runs it, playback only: the server's step floored at 0.01 s,
 		// no held frame after the world loads, the client's clock is the recording's,
 		// and at the end the console comes up over the still running level

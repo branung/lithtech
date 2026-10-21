@@ -613,6 +613,12 @@ LTRESULT CLTClient::SetObjectPos(HLOCALOBJ hObj, const LTVector *pPos, bool bFor
 	if (hObj->m_Pos == *pPos)
 		return LT_OK;
 
+	// LT1ClientMoveMin: LT1's SetObjectPos drops a move under 0.001 squared, where Jupiter's forces every move.
+	// Not for FLAG_REALLYCLOSE objects - which are in camera space here - so only the gun bob would be tested and the gun stepped
+	extern int32 g_bLT1ClientMoveMin;
+	if (g_bLT1ClientMoveMin && !(hObj->m_Flags & FLAG_REALLYCLOSE))
+		bForce = false;
+
 	g_pClientMgr->MoveObject(hObj, pPos, bForce);
 
 	return LT_OK;

@@ -125,6 +125,12 @@ int32	g_bLT1PointCollide = 0; // A FLAG_POINTCOLLIDE mover meets the world as LT
 int32	g_bLT1MoverBoxGate = 0; // A collision candidate is tested against the mover's box at its destination, not the box swept along the move. Set on both client and server
 int32	g_bLT1TunnelNonsolid = 0; // A move bigger than the mover's dims takes the swept test even when the pair isn't solid, and its touch comes at the blocker's face. Set on both client and server
 int32	g_bLT1GrowDim = 0; // A resize grows Y, then X, then Z, measuring the room with up to three test moves. Set on both client and server
+int32	g_bLT1CarryNoNudge = 0; // A platform carries its riders without pushing them 0.1 down into it, as LT1 does. Set on both client and server
+int32	g_bLT1MinMove = 0; // A move shorter than 0.01 units does nothing. Set on both client and server
+int32	g_bLT1RotateNoMovingFlag = 0; // A rotating world model doesn't set IFLAG_MOVING, so its riders' own moves don't refuse it. Set on both client and server
+int32	g_bLT1CompPos = 0; // Positions in game messages use LT1's 16 bit encoding over the v56 world's own box. Set on both client and server
+int32	g_bLT1RemoveUnlinks = 0; // A removed object leaves the world tree at once, so later queries in the same frame don't find it. Server only
+int32	g_bLT1ClientMoveMin = 0; // The client's SetObjectPos drops a move under 0.001 squared, except for camera space objects. Client only
 int32	g_bLT1EngineRand = 0; // The engine's Random, IntRandom, RandomScale, and particles use LT1's stream, seeded 123 at demo start and 543 at world start
 int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and rebuild the box during pushback like LT1
 int32	g_bLT1RaySolidOnly = 0; // Only solid polys stop a ray, so LT1 doorway polys pass shots and sight
@@ -415,6 +421,12 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1MoverBoxGate", &g_bLT1MoverBoxGate),
 	EV_LONG("LT1TunnelNonsolid", &g_bLT1TunnelNonsolid),
 	EV_LONG("LT1GrowDim", &g_bLT1GrowDim),
+	EV_LONG("LT1CarryNoNudge", &g_bLT1CarryNoNudge),
+	EV_LONG("LT1MinMove", &g_bLT1MinMove),
+	EV_LONG("LT1RotateNoMovingFlag", &g_bLT1RotateNoMovingFlag),
+	EV_LONG("LT1CompPos", &g_bLT1CompPos),
+	EV_LONG("LT1RemoveUnlinks", &g_bLT1RemoveUnlinks),
+	EV_LONG("LT1ClientMoveMin", &g_bLT1ClientMoveMin),
 	EV_LONG("LT1EngineRand", &g_bLT1EngineRand),
 	EV_LONG("LT1SetupBoxCheck", &g_bLT1SetupBoxCheck),
 	EV_LONG("LT1RaySolidOnly", &g_bLT1RaySolidOnly),

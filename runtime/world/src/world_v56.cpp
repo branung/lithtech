@@ -2420,12 +2420,63 @@ static void StampWholeModelTranslucency(SourceWorld &src)
 }
 
 
+// LT1's network position box from the last world converted (world_v56.h)
+static bool  s_bLT1PosBox = false;
+static float s_LT1PosMin[3], s_LT1PosMax[3];
+
+// The world file's last 24 bytes - min then max - each padded by 200 as LT1's loader does
+static void SetLT1PositionBox(const uint8 *pSrc, uint32 nSrcSize)
+{
+	s_bLT1PosBox = false;
+	if (!pSrc || nSrcSize < 24) return;
+	float f[6];
+	memcpy(f, pSrc + nSrcSize - 24, sizeof(f));
+	for (int i = 0; i < 3; ++i)
+	{
+		s_LT1PosMin[i] = f[i] - 200.0f;
+		s_LT1PosMax[i] = f[3 + i] + 200.0f;
+		if (!(s_LT1PosMax[i] > s_LT1PosMin[i])) return;
+	}
+	s_bLT1PosBox = true;
+}
+
+bool world_v56_LT1EncodePosition(uint16 nOut[3], const LTVector &vPos)
+{
+	if (!s_bLT1PosBox) return false;
+	const float v[3] = { vPos.x, vPos.y, vPos.z };
+	for (int i = 0; i < 3; ++i)
+	{
+		// Float throughout, as LT1's math rounded like a float, and LT1 stored the reciprocal as a float
+		const float fInv = 1.0f / (s_LT1PosMax[i] - s_LT1PosMin[i]);
+		const float fPercent = (v[i] - s_LT1PosMin[i]) * fInv;
+		nOut[i] = (uint16)(uint32)(fPercent * 65536.0f);   // Truncated, no clamp
+	}
+	return true;
+}
+
+bool world_v56_LT1DecodePosition(LTVector &vOut, const uint16 nIn[3])
+{
+	if (!s_bLT1PosBox) return false;
+	float v[3];
+	for (int i = 0; i < 3; ++i)
+	{
+		const float fPercent = (float)nIn[i] / 65536.0f;
+		v[i] = s_LT1PosMin[i] + (s_LT1PosMax[i] - s_LT1PosMin[i]) * fPercent;
+	}
+	vOut.Init(v[0], v[1], v[2]);
+	return true;
+}
+
+
 LTRESULT world_v56_BuildV85Image(const uint8 *pSrc, uint32 nSrcSize, uint8 **ppImage, uint32 *pImageSize, WorldV56TexDimsFn pTexDims, void *pUser, WorldV56WarnFn pWarn, void *pWarnUser, uint32 nMaxBlockVerts)
 {
 	if (!pSrc || !ppImage || !pImageSize) return LT_INVALIDPARAMS;
 
 	*ppImage = NULL;
 	*pImageSize = 0;
+
+	// LT1's position box, which the converted image doesn't carry
+	SetLT1PositionBox(pSrc, nSrcSize);
 
 	SourceWorld src;
 	if (!ReadV56(pSrc, nSrcSize, src)) return LT_INVALIDFILE;
