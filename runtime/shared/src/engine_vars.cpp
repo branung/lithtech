@@ -131,6 +131,7 @@ int32	g_bLT1RotateNoMovingFlag = 0; // A rotating world model doesn't set IFLAG_
 int32	g_bLT1CompPos = 0; // Positions in game messages use LT1's 16 bit encoding over the v56 world's own box. Set on both client and server
 int32	g_bLT1RemoveUnlinks = 0; // A removed object leaves the world tree at once, so later queries in the same frame don't find it. Server only
 int32	g_bLT1ClientMoveMin = 0; // The client's SetObjectPos drops a move under 0.001 squared, except for camera space objects. Client only
+int32	g_bLT1SpriteFlags = 0; // A sprite's FLAG_GLOWSPRITE and FLAG_SPRITEBIAS are sent to clients, as LT1's flag mask sent them. Set on both client and server
 int32	g_bLT1EngineRand = 0; // The engine's Random, IntRandom, RandomScale, and particles use LT1's stream, seeded 123 at demo start and 543 at world start
 int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and rebuild the box during pushback like LT1
 int32	g_bLT1RaySolidOnly = 0; // Only solid polys stop a ray, so LT1 doorway polys pass shots and sight
@@ -427,6 +428,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1CompPos", &g_bLT1CompPos),
 	EV_LONG("LT1RemoveUnlinks", &g_bLT1RemoveUnlinks),
 	EV_LONG("LT1ClientMoveMin", &g_bLT1ClientMoveMin),
+	EV_LONG("LT1SpriteFlags", &g_bLT1SpriteFlags),
 	EV_LONG("LT1EngineRand", &g_bLT1EngineRand),
 	EV_LONG("LT1SetupBoxCheck", &g_bLT1SetupBoxCheck),
 	EV_LONG("LT1RaySolidOnly", &g_bLT1RaySolidOnly),

@@ -258,7 +258,8 @@ void ScaleSprite::PostPropRead(ObjectCreateStruct *pStruct)
 			pStruct->m_Flags |= FLAG_ROTATEABLESPRITE;
 		}
 
-		pStruct->m_Flags |= m_dwAdditionalFlags;
+		// An LT1 flag word, by meaning rather than by number
+		pStruct->m_Flags |= DE_LT1SpriteFlags(m_dwAdditionalFlags);
 	}
 }
 

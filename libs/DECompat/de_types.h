@@ -203,6 +203,16 @@ typedef CheapLTLink CheapDLink;
 // Jupiter expresses this through render styles rather than a bit. A chrome prop renders untinted.
 #define FLAG_ENVIRONMENTMAP     0
 
+// An LT1 flag word for a sprite, taken as a number (ScaleSprite's AdditionalFlags), turned into Jupiter's bits by meaning.
+// LT1's bit 6 is FLAG_SPRITEBIAS on a sprite, while Jupiter's bit 6 is FLAG_REALLYCLOSE and its sprite bias is bit 2.
+inline DDWORD DE_LT1SpriteFlags(DDWORD dwLT1)
+{
+    DDWORD dw = dwLT1 & ~(DDWORD)(1u << 6);
+    if (dwLT1 & (1u << 6))
+        dw |= (DDWORD)FLAG_SPRITEBIAS;
+    return dw;
+}
+
 // In LT1: tint the model in the team color/keep it across a world switch.
 // Their bits are Jupiter's FLAG_SPRITEBIAS and FLAG_TOUCHABLE, so both are 0.
 #define FLAG_MODELTINT           0

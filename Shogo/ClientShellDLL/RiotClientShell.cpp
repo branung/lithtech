@@ -1243,6 +1243,10 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		// The weapon fires from the camera object, so this decides where shots start
 		g_pLTClient->RunConsoleString("-LT1ClientMoveMin 1");
 
+		// A sprite's glow and bias reach the client, as LT1's flag mask sent them.
+		// The server writes the mask and this client reads it, so both sides set it
+		g_pLTClient->RunConsoleString("-LT1SpriteFlags 1");
+
 		// Demo playback as og runs it, playback only: the server's step floored at 0.01 s,
 		// no held frame after the world loads, the client's clock is the recording's,
 		// and at the end the console comes up over the still running level

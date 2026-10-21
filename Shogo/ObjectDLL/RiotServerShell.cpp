@@ -218,6 +218,9 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// A removed object leaves the world tree at once
 	g_pServerDE->RunGameConString("LT1RemoveUnlinks 1");
 
+	// Send a sprite's glow and bias to clients, as LT1's flag mask did (client too)
+	g_pServerDE->RunGameConString("LT1SpriteFlags 1");
+
 	// During demo playback the server's step is floored at 0.01 s, as LT1's is (client too)
 	g_pServerDE->RunGameConString("LT1ServerStepFloor 1");
 
