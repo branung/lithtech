@@ -1247,6 +1247,9 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		// The server writes the mask and this client reads it, so both sides set it
 		g_pLTClient->RunConsoleString("-LT1SpriteFlags 1");
 
+		// LT1's model fullbright pass: seen in the glowing parts of Shogo's Laser Cannon and Pulse Rifle skins
+		g_pLTClient->RunConsoleString("-LT1ModelFullbrite 1");
+
 		// Demo playback as og runs it, playback only: the server's step floored at 0.01 s,
 		// no held frame after the world loads, the client's clock is the recording's,
 		// and at the end the console comes up over the still running level

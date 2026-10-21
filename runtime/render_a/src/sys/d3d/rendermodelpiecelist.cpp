@@ -384,6 +384,52 @@ void CRenderModelPieceList::QueuePiece(ModelInstance* pInstance, ModelPiece* pPi
 	LT_MEM_TRACK_ALLOC(m_cPieceList.push_back(Info), LT_MEM_TYPE_RENDERER);
 }
 
+// LT1ModelFullbrite: LT1's second pass over a model whose skin is fullbright (DTX iflags bit 0),
+// drawing the masked texels unlit over the lit piece. The mask is the skin's alpha, which dtxmgr_lt1.cpp fills from palette entries 246-255.
+extern int32 g_bLT1ModelFullbrite;
+
+static bool LT1PieceIsFullbrite(SharedTexture *pTexture)
+{
+	if (!pTexture || !pTexture->m_pRenderData)
+		return false;
+	return ((RTexture*)pTexture->m_pRenderData)->IsFullbrite();
+}
+
+static void LT1RenderModelFullbrite(CDIModelDrawable* pRPiece, ModelInstance* pInstance,
+                                    DDMatrix* pTransforms, CD3DRenderStyle* pRenderStyle, uint32 nCurrPass)
+{
+	static const D3DRENDERSTATETYPE aRS[] = { D3DRS_LIGHTING, D3DRS_ALPHABLENDENABLE, D3DRS_SRCBLEND,
+		D3DRS_DESTBLEND, D3DRS_ZFUNC, D3DRS_ALPHATESTENABLE };
+	static const D3DTEXTURESTAGESTATETYPE aTS[] = { D3DTSS_COLOROP, D3DTSS_COLORARG1,
+		D3DTSS_ALPHAOP, D3DTSS_ALPHAARG1 };
+	DWORD aRSSave[sizeof(aRS) / sizeof(aRS[0])], aTSSave[sizeof(aTS) / sizeof(aTS[0])], dwStage1Op;
+	for (uint32 i = 0; i < sizeof(aRS) / sizeof(aRS[0]); ++i)
+		PD3DDEVICE->GetRenderState(aRS[i], &aRSSave[i]);
+	for (uint32 i = 0; i < sizeof(aTS) / sizeof(aTS[0]); ++i)
+		PD3DDEVICE->GetTextureStageState(0, aTS[i], &aTSSave[i]);
+	PD3DDEVICE->GetTextureStageState(1, D3DTSS_COLOROP, &dwStage1Op);
+
+	PD3DDEVICE->SetRenderState(D3DRS_LIGHTING, FALSE);
+	PD3DDEVICE->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	PD3DDEVICE->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+	PD3DDEVICE->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+	PD3DDEVICE->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	PD3DDEVICE->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+	PD3DDEVICE->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+
+	RenderModelPiece(pRPiece, pInstance, pTransforms, pRenderStyle, nCurrPass);
+
+	for (uint32 i = 0; i < sizeof(aRS) / sizeof(aRS[0]); ++i)
+		PD3DDEVICE->SetRenderState(aRS[i], aRSSave[i]);
+	for (uint32 i = 0; i < sizeof(aTS) / sizeof(aTS[0]); ++i)
+		PD3DDEVICE->SetTextureStageState(0, aTS[i], aTSSave[i]);
+	PD3DDEVICE->SetTextureStageState(1, D3DTSS_COLOROP, dwStage1Op);
+}
+
 //Renders all the queued pieces and flushes the list
 void CRenderModelPieceList::RenderPieceList(float fAlpha)
 {
@@ -708,6 +754,17 @@ void CRenderModelPieceList::RenderPieceList(float fAlpha)
 
 					//ok, we can finally render our piece
 					RenderModelPiece(Piece.m_pRenderPiece, Piece.m_pInstance, Piece.m_pTransforms, pCurrRenderStyle, nCurrPass);
+
+					// LT1's fullbright pass
+					if (g_bLT1ModelFullbrite && nCurrPass + 1 == pCurrRenderStyle->GetRenderPassCount() &&
+						LT1PieceIsFullbrite(Piece.m_TextureList[0]))
+					{
+						DWORD dwBlend = 0;
+						PD3DDEVICE->GetRenderState(D3DRS_ALPHABLENDENABLE, &dwBlend);
+						if (!dwBlend)
+							LT1RenderModelFullbrite(Piece.m_pRenderPiece, Piece.m_pInstance, Piece.m_pTransforms,
+							                        pCurrRenderStyle, nCurrPass);
+					}
 				}
 
 				//we should end any outstanding pieces being rendered so the changing of the pass won't mess them up
