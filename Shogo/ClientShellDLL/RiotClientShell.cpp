@@ -1226,6 +1226,10 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		g_pLTClient->RunConsoleString("-LT1PointCollide 1");
 		g_pLTClient->RunConsoleString("-LT1MoverBoxGate 1");
 
+		// A fast non solid mover touches at the blocker's face, and a resize grows Y, X, Z with LT1's probes (both sides)
+		g_pLTClient->RunConsoleString("-LT1TunnelNonsolid 1");
+		g_pLTClient->RunConsoleString("-LT1GrowDim 1");
+
 		// Demo playback as og runs it, playback only: the server's step floored at 0.01 s,
 		// no held frame after the world loads, the client's clock is the recording's,
 		// and at the end the console comes up over the still running level

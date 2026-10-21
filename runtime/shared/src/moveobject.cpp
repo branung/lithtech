@@ -1009,8 +1009,16 @@ inline LTBOOL CheckIntersectOnMovement(MoveState *pState, LTObject *pTestObj)
 														pTestObj, pState->m_vStartPos, vTempDestPos,
 														LTFALSE );
 					}
-					// Adjust the delta position based on the collision
-					if (bStopped)
+					// Adjust the delta position based on the collision.
+					// Under LT1TunnelNonsolid, which is what brings a non solid mover here, LT1 only sends the touch
+					// when the model's BSP was hit, and leaves the move alone
+					extern int32 g_bLT1TunnelNonsolid;
+					if (g_bLT1TunnelNonsolid)
+					{
+						if (bStopped)
+							DoNonsolidCollision( pState->m_pAbstract, pTestObj, pState->m_pObj);
+					}
+					else if (bStopped)
 						pState->m_vDeltaPos = vTempDestPos - pState->m_vStartPos;
 				}
 				else
@@ -1070,8 +1078,9 @@ inline LTBOOL MaybeCollide(MoveState *pState, LTObject *pTestObj)
 	// LT1 takes this path whenever the move is bigger than the mover's dims on any axis.
 	// Jupiter only takes it for FLAG2_PLAYERCOLLIDE. No LT1 game sets that, so a fast object can pass through geometry
 	extern int32 g_bLT1TunnelPath;
+	extern int32 g_bLT1TunnelNonsolid;
 	LTBOOL bCouldTunnel = LTFALSE;
-	if (g_bLT1TunnelPath)
+	if (g_bLT1TunnelPath || g_bLT1TunnelNonsolid)
 	{
 		const LTVector vMoveDelta = pState->m_vDestPos - pState->m_vStartPos;
 		const LTVector &vMoverDims = pState->m_pObj->GetDims();
@@ -1080,8 +1089,14 @@ inline LTBOOL MaybeCollide(MoveState *pState, LTObject *pTestObj)
 		                fabsf(vMoveDelta.z) > vMoverDims.z) ? LTTRUE : LTFALSE;
 	}
 
+	// LT1TunnelNonsolid: LT1 takes the swept test for any move bigger than the mover's dims, before checking whether the pair is solid.
+	// So a non solid mover's touch comes at the blocker's face rather than at the end of its step.
+	// Not for the main world, which LT1 checks separately
+	const LTBOOL bTunnelNonsolid = g_bLT1TunnelNonsolid && bCouldTunnel && !bPushAway &&
+		!pTestObj->IsMainWorldModel();
+
 	// [kef 02/21/99] Player collision (i.e. cylinder) physics can avoid tunneling on their own..
-	if(bPushAway && (((pState->m_pObj->m_Flags2 & FLAG2_PLAYERCOLLIDE) != 0) || bCouldTunnel) )
+	if((bPushAway && (((pState->m_pObj->m_Flags2 & FLAG2_PLAYERCOLLIDE) != 0) || bCouldTunnel)) || bTunnelNonsolid)
 	{
 		return CheckIntersectOnMovement(pState, pTestObj);
 	}
@@ -1325,6 +1340,7 @@ static void DetectAndProcessCollisions
 // LT1 dimension change behavior
 extern int32 g_bLT1ObjectDims;
 extern int32 g_bLT1SolidResize;
+extern int32 g_bLT1GrowDim;
 
 // Is the box inside the solid main world?
 struct EmbedCheckState
@@ -1382,8 +1398,66 @@ static LTBOOL IsBoxEmbeddedInWorld(MoveState *pState, const LTVector &vMin, cons
 }
 
 
+// LT1GrowDim: LT1's grow along one axis. It probes down by the growth, then up by twice that from where it stopped.
+// If the up probe got all it asked for, or the down probe was blocked, the object is recentered down from the top.
+// Otherwise a third probe goes down by twice the growth and the object is recentered up from the bottom,
+// so a blocked up probe doesn't cost the axis when there's room below
+static void GrowDimLT1(MoveState *pState, int32 nDim, float &fTarget)
+{
+	LTObject *pObj = pState->m_pObj;
+	const float fDelta   = fTarget - pObj->GetDims()[nDim];
+	const float fStart   = pObj->GetPos()[nDim];
+	const float fLowWant = fStart - fDelta;
+
+	MoveState moveState;
+	moveState.Setup(pState->m_pWorldTree, pState->m_pAbstract, pObj, pObj->m_BPriority);
+
+	// Down by the growth
+	LTVector v = pObj->GetPos();
+	v[nDim] = fLowWant;
+	MoveObject(&moveState, v, MO_DETACHSTANDING);
+	const float fLow = pObj->GetPos()[nDim];
+
+	// Up by twice the growth, from wherever that left it
+	v = pObj->GetPos();
+	v[nDim] += fDelta + fDelta;
+	MoveObject(&moveState, v, MO_DETACHSTANDING);
+	const float fHigh = pObj->GetPos()[nDim];
+
+	float fHalf;
+	if (fStart + fDelta <= fHigh || fLowWant < fLow)
+	{
+		fHalf = (fHigh - fLow) * 0.5f;
+		v = pObj->GetPos();
+		v[nDim] -= fHalf;
+	}
+	else
+	{
+		v = pObj->GetPos();
+		v[nDim] -= fDelta + fDelta;
+		MoveObject(&moveState, v, MO_DETACHSTANDING);
+		const float fLow2 = pObj->GetPos()[nDim];
+		fHalf = (fHigh - fLow2) * 0.5f;
+		v = pObj->GetPos();
+		v[nDim] += fHalf;
+	}
+
+	MoveObject(&moveState, v, MO_DETACHSTANDING|MO_SETCHANGEFLAG|MO_MOVESTANDINGONS);
+
+	LTVector vNewDims = pObj->GetDims();
+	vNewDims[nDim] += fHalf;
+	pObj->SetDims(vNewDims);
+}
+
+
 static void GrowDim(MoveState *pState, int32 nDim, float &newDim)
 {
+	if (g_bLT1GrowDim)
+	{
+		GrowDimLT1(pState, nDim, newDim);
+		return;
+	}
+
 	MoveState moveState;
 
 	LTObject *pObj = pState->m_pObj;
@@ -1819,6 +1893,28 @@ LTBOOL ChangeObjectDimensions(MoveState *pState, LTVector &newDims, LTBOOL bColl
 				vOldPos + vOldDims - vPreInset);
 		}
 
+		if (g_bLT1GrowDim)
+		{
+			// LT1GrowDim: LT1 resizes Y, then X, then Z, and never touches FLAG2_PLAYERCOLLIDE.
+			// The order matters when more than one axis grows, as when Shogo's CMoveMgr::ResetDims grows all three
+			static const int32 kLT1Order[3] = { 1, 0, 2 };
+			for (int k = 0; k < 3; ++k)
+			{
+				const int32 i = kLT1Order[k];
+				if (pObj->GetDims()[i] < newDims[i])
+				{
+					GrowDim(pState, i, newDims[i]);
+				}
+				else
+				{
+					LTVector vSet = pObj->GetDims();
+					vSet[i] = newDims[i];
+					pObj->SetDims(vSet);
+				}
+			}
+		}
+		else
+		{
 		// Note : X/Z dim changing is incompatible with player collision physics
 		uint32 nOldPlayerFlag = pObj->m_Flags2 & FLAG2_PLAYERCOLLIDE;
 		pObj->m_Flags2 &= ~FLAG2_PLAYERCOLLIDE;
@@ -1840,6 +1936,7 @@ LTBOOL ChangeObjectDimensions(MoveState *pState, LTVector &newDims, LTBOOL bColl
 			pObj->SetDims(LTVector(pObj->GetDims().x, newDims.y, pObj->GetDims().z));
 		else
 			GrowDim( pState, 1, newDims.y );
+		}
 
 		vDiff = vDims - pObj->GetDims();
 		bRet = ( vDiff.MagSqr() < 0.001f );

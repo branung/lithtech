@@ -197,6 +197,14 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// so a player stepping away from an NPC it touches isn't pulled back to it (client too)
 	g_pServerDE->RunGameConString("LT1MoverBoxGate 1");
 
+	// A move bigger than the mover's dims takes the swept test even when the pair isn't solid,
+	// so a projectile's touch - and its impact point - comes at the target's face (client too)
+	g_pServerDE->RunGameConString("LT1TunnelNonsolid 1");
+
+	// A resize grows Y, then X, then Z with LT1's three test moves/probes,
+	// so a player starting to walk from a wall gets the same box as in LT1 (client too)
+	g_pServerDE->RunGameConString("LT1GrowDim 1");
+
 	// During demo playback the server's step is floored at 0.01 s, as LT1's is (client too)
 	g_pServerDE->RunGameConString("LT1ServerStepFloor 1");
 

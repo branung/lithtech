@@ -123,6 +123,8 @@ int32	g_bLT1BoxHitNormal = 0; // A ray hitting an object's box reports the x fac
 int32	g_bLT1IntersectLeaf = 0; // A world ray without INTERSECT_HPOLY walks the BSP's leaves with LT1's 0.1 plane tolerance, not the polygons with 0.01. Set on both client and server
 int32	g_bLT1PointCollide = 0; // A FLAG_POINTCOLLIDE mover meets the world as LT1's does, stopping 0.1 in front of the plane. Set on both client and server
 int32	g_bLT1MoverBoxGate = 0; // A collision candidate is tested against the mover's box at its destination, not the box swept along the move. Set on both client and server
+int32	g_bLT1TunnelNonsolid = 0; // A move bigger than the mover's dims takes the swept test even when the pair isn't solid, and its touch comes at the blocker's face. Set on both client and server
+int32	g_bLT1GrowDim = 0; // A resize grows Y, then X, then Z, measuring the room with up to three test moves. Set on both client and server
 int32	g_bLT1EngineRand = 0; // The engine's Random, IntRandom, RandomScale, and particles use LT1's stream, seeded 123 at demo start and 543 at world start
 int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and rebuild the box during pushback like LT1
 int32	g_bLT1RaySolidOnly = 0; // Only solid polys stop a ray, so LT1 doorway polys pass shots and sight
@@ -411,6 +413,8 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1IntersectLeaf", &g_bLT1IntersectLeaf),
 	EV_LONG("LT1PointCollide", &g_bLT1PointCollide),
 	EV_LONG("LT1MoverBoxGate", &g_bLT1MoverBoxGate),
+	EV_LONG("LT1TunnelNonsolid", &g_bLT1TunnelNonsolid),
+	EV_LONG("LT1GrowDim", &g_bLT1GrowDim),
 	EV_LONG("LT1EngineRand", &g_bLT1EngineRand),
 	EV_LONG("LT1SetupBoxCheck", &g_bLT1SetupBoxCheck),
 	EV_LONG("LT1RaySolidOnly", &g_bLT1RaySolidOnly),
