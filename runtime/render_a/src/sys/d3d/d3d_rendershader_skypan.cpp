@@ -13,6 +13,9 @@
 #include "memstats_world.h"
 #include "rendererconsolevars.h"
 
+#include <vector>
+#include <math.h>
+
 bool CRenderShader_SkyPan::s_bValidateRequired = true;
 bool CRenderShader_SkyPan::s_bValidateResult = false;
 
@@ -78,7 +81,93 @@ void CRenderShader_SkyPan::DrawNormal(const DrawState &cState, uint32 nRenderBlo
 	if (!HasPanTexture())
 		return;
 
-	QueueRenderBlock(nRenderBlock);
+	// A block with dynamic lights is lit per vertex, as LT1 lit a sky pan polygon
+	if (cState.m_nNumLights == 0)
+	{
+		QueueRenderBlock(nRenderBlock);
+		return;
+	}
+
+	PD3DDEVICE->SetVertexShader(NULL);
+	PD3DDEVICE->SetFVF(k_SVertex_SkyPan_FVF);
+
+	PreFlush();
+
+	// The lights in the block's space, with LT1's color term per channel
+	struct SPanLight { LTVector m_vPos; float m_fRadius, m_fRadiusSqr, m_fInvRadius; float m_fR, m_fG, m_fB; };
+	static std::vector<SPanLight> s_aLights;
+	s_aLights.clear();
+	for (uint32 nLight = 0; nLight < cState.m_nNumLights; ++nLight)
+	{
+		const DynamicLight *pLight = cState.m_pLightList[nLight];
+		if (pLight->m_LightRadius <= 0.0f)
+			continue;
+		SPanLight sLight;
+		MatVMul_H(&sLight.m_vPos, &cState.m_pParams->m_mInvWorld, &pLight->GetPos());
+		sLight.m_fRadius = pLight->m_LightRadius;
+		sLight.m_fRadiusSqr = sLight.m_fRadius * sLight.m_fRadius;
+		sLight.m_fInvRadius = 1.0f / sLight.m_fRadius;
+		sLight.m_fR = 2.0f * (float)pLight->m_ColorR - 255.0f;
+		sLight.m_fG = 2.0f * (float)pLight->m_ColorG - 255.0f;
+		sLight.m_fB = 2.0f * (float)pLight->m_ColorB - 255.0f;
+		s_aLights.push_back(sLight);
+	}
+
+	static std::vector<SVertex_SkyPan> s_aVerts;
+	static std::vector<uint16> s_aIndices;
+
+	CRenderBlockData &cRB = m_aRenderBlocks[nRenderBlock];
+	CRenderBlockData::TSectionIndexList::iterator iCurSection = cRB.m_aSections.begin();
+	for (; iCurSection != cRB.m_aSections.end(); ++iCurSection)
+	{
+		CInternalSection &cSection = m_aSections[*iCurSection];
+		if (!cSection.m_pOriginalVertices || !cSection.m_pOriginalIndices || !cSection.m_nTriCount)
+			continue;
+
+		// The section's vertices in the block's source array, which its original indices address
+		const int32 nSrcStart = (int32)cSection.m_nStartVertex - cSection.m_nOriginalVertexOffset;
+		const SRBVertex *pSrc = &cSection.m_pOriginalVertices[nSrcStart];
+
+		s_aVerts.resize(cSection.m_nVertexCount);
+		TranslateVertices(&s_aVerts[0], pSrc, cSection.m_nVertexCount);
+
+		for (uint32 nVert = 0; nVert < cSection.m_nVertexCount; ++nVert)
+		{
+			SVertex_SkyPan &v = s_aVerts[nVert];
+			int32 nR = (v.m_nColor >> 16) & 0xff;
+			int32 nG = (v.m_nColor >> 8) & 0xff;
+			int32 nB = v.m_nColor & 0xff;
+			for (size_t nLight = 0; nLight < s_aLights.size(); ++nLight)
+			{
+				const SPanLight &sLight = s_aLights[nLight];
+				const float fDistSqr = (v.m_vPos - sLight.m_vPos).MagSqr();
+				if (fDistSqr >= sLight.m_fRadiusSqr)
+					continue;
+				const float fScale = 1.0f - sqrtf(fDistSqr) * sLight.m_fInvRadius;
+				nR = LTCLAMP(nR + (int32)(fScale * sLight.m_fR), 0, 255);
+				nG = LTCLAMP(nG + (int32)(fScale * sLight.m_fG), 0, 255);
+				nB = LTCLAMP(nB + (int32)(fScale * sLight.m_fB), 0, 255);
+			}
+			v.m_nColor = (v.m_nColor & 0xff000000) | ((uint32)nR << 16) | ((uint32)nG << 8) | (uint32)nB;
+		}
+
+		const uint32 nIndexCount = cSection.m_nTriCount * 3;
+		s_aIndices.resize(nIndexCount);
+		for (uint32 nIndex = 0; nIndex < nIndexCount; ++nIndex)
+			s_aIndices[nIndex] = (uint16)((int32)cSection.m_pOriginalIndices[nIndex] - nSrcStart);
+
+		IncFrameStat(eFS_ShaderTris, cSection.m_nTriCount);
+		IncFrameStat(eFS_ShaderVerts, cSection.m_nVertexCount);
+		IncFrameStat(eFS_ShaderDrawPrim, 1);
+
+		PD3DDEVICE->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, 0, cSection.m_nVertexCount,
+			cSection.m_nTriCount, &s_aIndices[0], D3DFMT_INDEX16,
+			&s_aVerts[0], sizeof(SVertex_SkyPan));
+
+		IncFrameStat(eFS_WorldTriangles, cSection.m_nTriCount);
+	}
+
+	PostFlush();
 }
 
 void CRenderShader_SkyPan::PreFlush()

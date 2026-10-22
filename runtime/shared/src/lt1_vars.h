@@ -81,6 +81,7 @@ extern int32 g_bLT1VirtualKeys;
 extern int32 g_bLT1ObjectColor;
 extern int32 g_bLT1ModelShading;
 extern int32 g_bLT1ModelFullbrite;
+extern int32 g_bLT1ModelDynLight;
 extern int32 g_bLT1SkyObjectTransform;
 extern int32 g_bLT1LightTableY;
 extern int32 g_bLT1FullbriteAdd;

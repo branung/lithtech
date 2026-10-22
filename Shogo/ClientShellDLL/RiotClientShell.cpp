@@ -1179,8 +1179,11 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		g_pLTClient->RunConsoleString("-WidescreenFOV 1");
 
 		// The shared LT1 engine defaults before the server creates its objects.
-		// DynamicLightWorld stays off as Shogo never had it
 		DECompat_ApplyLT1ClientDefaults(g_pLTClient);
+
+		// Shogo's dynamic lights light the level as it does in the og.
+		// Jupiter only lets a dynamic light reach the world under this.
+		g_pLTClient->RunConsoleString("-DynamicLightWorld 1");
 
 		// LT1's translucent WorldModel split, part 1: whether a brush is culled.
 		// Much of Shogo is a box textured on one face that a cull would hide
@@ -1249,6 +1252,10 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 
 		// LT1's model fullbright pass: seen in the glowing parts of Shogo's Laser Cannon and Pulse Rifle skins
 		g_pLTClient->RunConsoleString("-LT1ModelFullbrite 1");
+
+		// LT1's model dynamic lighting: a dynamic light lights a model as one object, measured at its position.
+		// A Pulse Rifle hit in Shogo lights a whole truck or enemy in retail, where Jupiter's point lights leave a faint spot
+		g_pLTClient->RunConsoleString("-LT1ModelDynLight 1");
 
 		// Demo playback as og runs it, playback only: the server's step floored at 0.01 s,
 		// no held frame after the world loads, the client's clock is the recording's,

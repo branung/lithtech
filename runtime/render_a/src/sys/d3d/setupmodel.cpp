@@ -6,6 +6,7 @@
 #include "fullintersectline.h"
  
 #include "common_draw.h"
+#include "3d_ops.h"
 #include "de_mainworld.h"
 #include "ltb.h"
 
@@ -116,6 +117,20 @@ void ModelDraw::CallModelHook(ModelInstance* pInstance, ModelHookData& HookData)
 	{
 		HookData.m_LightAdd += HookData.m_ObjectColor;
 		HookData.m_ObjectColor.Init(255.0f, 255.0f, 255.0f);
+	}
+
+	// LT1ModelDynLight: LT1 lit a model from a dynamic light as one object.
+	// Jupiter's per vertex point lights only put a faint spot on the near side, so SetupModelLight leaves them out here.
+	// Not for player view models, whose position is in camera space. Or unlit models, which LT1 gives their object color alone
+	if(g_bLT1ModelDynLight && g_CV_LightModels.m_Val &&
+		!(HookData.m_ObjectFlags & (FLAG_NOLIGHT | FLAG_REALLYCLOSE)))
+	{
+		LTVector vDynamicAdd;
+		d3d_CalcLightAdd(pInstance, &vDynamicAdd);
+		HookData.m_LightAdd += vDynamicAdd;
+		HookData.m_LightAdd.x = LTCLAMP(HookData.m_LightAdd.x, 0.0f, 255.0f);
+		HookData.m_LightAdd.y = LTCLAMP(HookData.m_LightAdd.y, 0.0f, 255.0f);
+		HookData.m_LightAdd.z = LTCLAMP(HookData.m_LightAdd.z, 0.0f, 255.0f);
 	}
 
 	//add in the saturation from the console variable
@@ -423,8 +438,9 @@ void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& H
 	////////////////////////////////////////////////////////////////////
 	// Figure out the lights that will be directionally lighting it.
 	
-	// Dynamic lights..
-	for(uint32 i=0; i < g_nNumObjectDynamicLights; i++)
+	// Dynamic lights: under LT1ModelDynLight they're already in this model's light
+	const uint32 nDynamicLights = (g_bLT1ModelDynLight && !bReallyClose) ? 0 : g_nNumObjectDynamicLights;
+	for(uint32 i=0; i < nDynamicLights; i++)
 	{
 		DynamicLight* pSrcLight = g_ObjectDynamicLights[i];
 
