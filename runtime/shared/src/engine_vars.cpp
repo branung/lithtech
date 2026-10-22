@@ -135,6 +135,10 @@ int32	g_bLT1ClientMoveMin = 0; // The client's SetObjectPos drops a move under 0
 int32	g_bLT1SpriteFlags = 0; // A sprite's FLAG_GLOWSPRITE and FLAG_SPRITEBIAS are sent to clients, as LT1's flag mask sent them. Set on both client and server
 int32	g_bLT1ModelFullbrite = 0; // A model with a fullbright skin gets LT1's second pass, drawing the masked texels unlit. Client only
 int32	g_bLT1ModelDynLight = 0; // A dynamic light lights a model as one object, measured at its position and added to its base color, not per vertex. Client only
+int32	g_bLT1MoveAxisMin = 0; // MoveObject drops any axis of a move shorter than 0.001. Set on both client and server
+int32	g_bLT1PointBoxTouch = 0; // Two objects touch when their boxes overlap, even when one is FLAG_POINTCOLLIDE. Set on both client and server
+int32	g_bLT1ContainerBSP = 0; // Whether a box is in a container uses LT1's box against BSP test, not Jupiter's solid test. Goes with LT1BoxBSPProbes. Set on both client and server
+int32	g_bLT1BoxBSPProbes = 0; // The box against BSP test first probes the box's center and corners for solid, as LT1's did. Set on both client and server
 int32	g_bLT1EngineRand = 0; // The engine's Random, IntRandom, RandomScale, and particles use LT1's stream, seeded 123 at demo start and 543 at world start
 int32	g_bLT1SetupBoxCheck = 0; // Stop a sweep SetupBox says is too short, and rebuild the box during pushback like LT1
 int32	g_bLT1RaySolidOnly = 0; // Only solid polys stop a ray, so LT1 doorway polys pass shots and sight
@@ -434,6 +438,10 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1SpriteFlags", &g_bLT1SpriteFlags),
 	EV_LONG("LT1ModelFullbrite", &g_bLT1ModelFullbrite),
 	EV_LONG("LT1ModelDynLight", &g_bLT1ModelDynLight),
+	EV_LONG("LT1MoveAxisMin", &g_bLT1MoveAxisMin),
+	EV_LONG("LT1PointBoxTouch", &g_bLT1PointBoxTouch),
+	EV_LONG("LT1ContainerBSP", &g_bLT1ContainerBSP),
+	EV_LONG("LT1BoxBSPProbes", &g_bLT1BoxBSPProbes),
 	EV_LONG("LT1EngineRand", &g_bLT1EngineRand),
 	EV_LONG("LT1SetupBoxCheck", &g_bLT1SetupBoxCheck),
 	EV_LONG("LT1RaySolidOnly", &g_bLT1RaySolidOnly),

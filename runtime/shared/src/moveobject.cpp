@@ -416,7 +416,9 @@ static bool DoObjectsIntersect
 		*bWorldModel = false;
 
 		// Handle point collide physics...
-		if (vObjMoveStart != vObjMoveEnd)
+		// LT1PointBoxTouch: LT1 only tests whether the boxes overlap.
+		// This line test misses a box moving onto a resting projectile, so the projectile is never touched
+		if (vObjMoveStart != vObjMoveEnd && !g_bLT1PointBoxTouch)
 		{
 			LTObject *pPointCollideObj = LTNULL;
 
@@ -1685,6 +1687,9 @@ void MoveObject
 	++g_nMoveObjectCalls;
 	CountAdder cnt(&g_Ticks_MoveObject);
 
+	// LT1MoveAxisMin: LT1 takes the move's delta here - before CheckMaxPos - and uses it below
+	const LTVector vLT1Delta = P1 - pState->m_pObj->GetPos();
+
 	pState->m_pAbstract->CheckMaxPos(pState, &P1);
 
 	// Stack the collision info so this function is re-entrant
@@ -1757,6 +1762,17 @@ void MoveObject
 	// to be put into containers...
 	if (IsPhysical(pState->m_pObj->m_Flags, pState->m_bServer))
 	{
+		// LT1MoveAxisMin: LT1 drops any axis of the move shorter than 0.001 and rebuilds the destination as start + delta.
+		// Without it a player pressed against a wall creeps into the wall's 0.1 clearance
+		if (g_bLT1MoveAxisMin && !(flags & MO_TELEPORT))
+		{
+			LTVector vDelta = vLT1Delta;
+			if (fabsf(vDelta.x) < 0.001f) vDelta.x = 0.0f;
+			if (fabsf(vDelta.y) < 0.001f) vDelta.y = 0.0f;
+			if (fabsf(vDelta.z) < 0.001f) vDelta.z = 0.0f;
+			P1 = startPos + vDelta;
+		}
+
 		// Shortcut to the player collision physics
 		if (g_CV_NewPlayerPhysics && 
 			CPlayerMover::ShouldMoveObject(pState->m_pObj, pState->m_bServer != LTFALSE))

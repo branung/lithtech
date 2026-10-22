@@ -2457,9 +2457,25 @@ bool DoesBoxIntersectBSP
 	bool bSolid
 )
 {
-	if (bSolid)
+	// LT1ContainerBSP: LT1 has one box against BSP test for containers too, so a container's request takes the path below.
+	if (bSolid && !g_bLT1ContainerBSP)
 	{
 		return SolidBoxBSPIntersect( AABB(min,max), pRoot );
+	}
+
+	// LT1BoxBSPProbes: LT1's test first probes the box's center, min and max corners, and any of them in solid is a hit.
+	if (g_bLT1BoxBSPProbes)
+	{
+		const LTVector vMid = min + (max - min) * 0.5f;
+		const LTVector *pts[3] = { &vMid, &min, &max };
+		for (int k = 0; k < 3; ++k)
+		{
+			const Node *p = pRoot;
+			while (!(p->m_Flags & (NF_IN | NF_OUT)))
+				p = p->m_Sides[(p->GetPlane()->DistTo(*pts[k]) > 0.0f) ? FrontSide : BackSide];
+			if (p->m_Flags & NF_OUT)
+				return true;
+		}
 	}
 
 	PhysicsSphere whole_sphere;//contains start and end sphere

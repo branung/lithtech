@@ -55,6 +55,10 @@ extern int32 g_bLT1WorldTouchPos;
 extern int32 g_bLT1CarryNoNudge;
 extern int32 g_bLT1MinMove;
 extern int32 g_bLT1RotateNoMovingFlag;
+extern int32 g_bLT1MoveAxisMin;
+extern int32 g_bLT1PointBoxTouch;
+extern int32 g_bLT1ContainerBSP;
+extern int32 g_bLT1BoxBSPProbes;
 
 // Rays
 extern int32 g_bLT1IntersectLeaf;

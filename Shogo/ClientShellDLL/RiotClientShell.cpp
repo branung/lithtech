@@ -1239,6 +1239,13 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		g_pLTClient->RunConsoleString("-LT1MinMove 1");
 		g_pLTClient->RunConsoleString("-LT1RotateNoMovingFlag 1");
 
+		// Tiny move axes are dropped, touches are box overlap alone,
+		// and containers use LT1's box against BSP test with its probes (both sides)
+		g_pLTClient->RunConsoleString("-LT1MoveAxisMin 1");
+		g_pLTClient->RunConsoleString("-LT1PointBoxTouch 1");
+		g_pLTClient->RunConsoleString("-LT1ContainerBSP 1");
+		g_pLTClient->RunConsoleString("-LT1BoxBSPProbes 1");
+
 		// Positions in game messages at LT1's precision, as the server encodes them (both sides)
 		g_pLTClient->RunConsoleString("-LT1CompPos 1");
 

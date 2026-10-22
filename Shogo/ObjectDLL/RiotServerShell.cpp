@@ -221,6 +221,17 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// Send a sprite's glow and bias to clients, as LT1's flag mask did (client too)
 	g_pServerDE->RunGameConString("LT1SpriteFlags 1");
 
+	// MoveObject drops any axis of a move under 0.001, so a player against a wall doesn't creep into its clearance (client too)
+	g_pServerDE->RunGameConString("LT1MoveAxisMin 1");
+
+	// Touches are box overlap alone, so stepping onto a resting rocket detonates it (client too)
+	g_pServerDE->RunGameConString("LT1PointBoxTouch 1");
+
+	// Containers use LT1's box against BSP test with its center and corner probes,
+	// so Shogo's airshaft fans lift the player when its suppose to (client too)
+	g_pServerDE->RunGameConString("LT1ContainerBSP 1");
+	g_pServerDE->RunGameConString("LT1BoxBSPProbes 1");
+
 	// During demo playback the server's step is floored at 0.01 s, as LT1's is (client too)
 	g_pServerDE->RunGameConString("LT1ServerStepFloor 1");
 
