@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "lt1_vars.h"
 
 extern int32 g_nDemoClockMS;
 extern float g_fDemoFrameTime;
@@ -27,8 +28,6 @@ extern int32 g_DemoExecFrame;
 extern const char *g_DemoExec;
 extern int32 g_DemoTraceRadius;
 extern const char *g_DemoShotFrames;
-extern int32 g_bLT1DemoNoPrime;
-extern int32 g_bLT1DemoEndConsole;
 extern int32 g_bDemoZeroFrame;
 extern float g_fDemoClientTime;
 extern void client_DemoScreenShot();

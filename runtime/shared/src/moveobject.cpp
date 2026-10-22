@@ -13,6 +13,7 @@
 #include "ltsysoptim.h"
 #include "moveplayer.h"
 #include "fullintersectline.h"
+#include "lt1_vars.h"
 
 extern int32 g_CV_NewPlayerPhysics;	// Use the new player physics
 
@@ -214,7 +215,6 @@ static bool CollideAgainstWorld
 					// LT1WorldTouchPos: LT1 collides into the mover's own position, so its touch handler sees where it was stopped. 
 					// Jupiter only applies the stopped position after the whole move, so the mover is placed there for the call.
 					// Afterwards it goes back, unless the handler moved it
-					extern int32 g_bLT1WorldTouchPos;
 					const bool bLT1Pos = g_bLT1WorldTouchPos && pObj == pState->m_pObj;
 					const LTVector vSavedPos = pObj->GetPos();
 					if (bLT1Pos)
@@ -476,7 +476,6 @@ void DoNonsolidCollision(MoveAbstract *pAbstract, LTObject *pObj1, LTObject *pOb
 	// Update area object touching.
 	// LT1 has no FLAG_CONTAINER and makes an object a container by its type.
 	// Under LT1ContainerType, the type decides too
-	extern int32 g_bLT1ContainerType;
 	const uint32 nContainerType = g_bLT1ContainerType ? OT_CONTAINER : 0xFFFFFFFF;
 
 	if((pObj1->m_Flags & FLAG_CONTAINER) || pObj1->m_ObjectType == nContainerType)
@@ -1012,7 +1011,6 @@ inline LTBOOL CheckIntersectOnMovement(MoveState *pState, LTObject *pTestObj)
 					// Adjust the delta position based on the collision.
 					// Under LT1TunnelNonsolid, which is what brings a non solid mover here, LT1 only sends the touch
 					// when the model's BSP was hit, and leaves the move alone
-					extern int32 g_bLT1TunnelNonsolid;
 					if (g_bLT1TunnelNonsolid)
 					{
 						if (bStopped)
@@ -1077,8 +1075,6 @@ inline LTBOOL MaybeCollide(MoveState *pState, LTObject *pTestObj)
 
 	// LT1 takes this path whenever the move is bigger than the mover's dims on any axis.
 	// Jupiter only takes it for FLAG2_PLAYERCOLLIDE. No LT1 game sets that, so a fast object can pass through geometry
-	extern int32 g_bLT1TunnelPath;
-	extern int32 g_bLT1TunnelNonsolid;
 	LTBOOL bCouldTunnel = LTFALSE;
 	if (g_bLT1TunnelPath || g_bLT1TunnelNonsolid)
 	{
@@ -1107,7 +1103,6 @@ inline LTBOOL MaybeCollide(MoveState *pState, LTObject *pTestObj)
 		// LT1MoverBoxGate: LT1 checks other objects against the mover's collision box at its destination,
 		// and only uses the box swept along the move to find candidates.
 		// The main world still uses the swept box, as LT1 checks the world separately
-		extern int32 g_bLT1MoverBoxGate;
 		const bool bDestGate = g_bLT1MoverBoxGate && !pTestObj->IsMainWorldModel();
 		LTVector *pMoverMin = bDestGate ? &pState->m_pObj->m_MinBox : &pState->m_vMoveMin;
 		LTVector *pMoverMax = bDestGate ? &pState->m_pObj->m_MaxBox : &pState->m_vMoveMax;
@@ -1125,7 +1120,6 @@ inline LTBOOL MaybeCollide(MoveState *pState, LTObject *pTestObj)
 				// [kls 9/2/99] if(pTestObj->IsMainWorldModel())
 				// ^ That's LT1's rule, only the main world pushes a nonsolid mover.
 				// The widened test below ejects a mover from any solid WorldModel it's meant to occupy, like a door's own trigger
-				extern int32 g_bLT1NonsolidNoDivert;
 				const LTBOOL bWorldPushes = g_bLT1NonsolidNoDivert
 					? (LTBOOL)pTestObj->IsMainWorldModel()
 					: (LTBOOL)IsSolidWorld(pTestObj);
@@ -1250,9 +1244,6 @@ static void DetectAndProcessCollisions
 	pHitObjects[0] = pHitObjects[1] = LTNULL;
 
 	// LT1 collides with the objects and then the world
-	extern int32 g_bLT1WorldAfterObjects;
-	extern int32 g_bLT1WorldOnce;
-	extern int32 g_bLT1StrikeKeep;
 	LTObject *pMainWorldCand = LTNULL;
 	LTBOOL bWorldWalked = LTFALSE;
 	if (g_bLT1WorldAfterObjects || g_bLT1WorldOnce)
@@ -1337,10 +1328,6 @@ static void DetectAndProcessCollisions
 }
 
 
-// LT1 dimension change behavior
-extern int32 g_bLT1ObjectDims;
-extern int32 g_bLT1SolidResize;
-extern int32 g_bLT1GrowDim;
 
 // Is the box inside the solid main world?
 struct EmbedCheckState
@@ -1688,7 +1675,6 @@ void MoveObject
 	}
 
 	// LT1MinMove: LT1 ignores a move under 0.01 units, so a slowly bobbing platform's riders stay standing on it.
-	extern int32 g_bLT1MinMove;
 	if (g_bLT1MinMove)
 	{
 		const LTVector vDelta = P1 - pState->m_pObj->GetPos();
@@ -1818,7 +1804,6 @@ void MoveObject
 			newPos = pState->m_pObj->GetPos() + startPosInfo[nNumObjectsStanding].m_vRelPos;
 			// Push the carried object into whatever it's standing on so it resets the standing on flag properly.
 			// LT1CarryNoNudge: LT1 has no nudge. The nudge embeds the rider, and pushing it back out lifts it off the platform
-			extern int32 g_bLT1CarryNoNudge;
 			if (!g_bLT1CarryNoNudge)
 				newPos -= LTVector(0.0f, 0.1f, 0.0f);
 			
@@ -1988,7 +1973,6 @@ LTBOOL ChangeObjectDimensions(MoveState *pState, LTVector &newDims, LTBOOL bColl
 
 	// Restore the standing-on state
 	// LT1 detaches instead, so the next step has no standing friction or stair step
-	extern int32 g_bLT1DimsDetach;
 	if (g_bLT1DimsDetach)
 		DetachObjectStanding(pObj);
 	else if( pObj_WasStandingOn )
@@ -2128,7 +2112,6 @@ void RotateWorldModel(MoveState *pState,
 	// Flag us as moving so no one can push us.
 	// LT1RotateNoMovingFlag: LT1's rotate never sets it, and with it set riders fall off a rotating platform.
 	// The clear below stays, as clearing an unset bit is harmless
-	extern int32 g_bLT1RotateNoMovingFlag;
 	if (!g_bLT1RotateNoMovingFlag)
 		pState->m_pObj->m_InternalFlags |= IFLAG_MOVING;
 

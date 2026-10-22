@@ -49,6 +49,7 @@ define_holder(ILTServer, ilt_server);
 
 //IServerShell game server shell object.
 #include "iservershell.h"
+#include "lt1_vars.h"
 static IServerShell *i_server_shell;
 define_holder(IServerShell, i_server_shell);
 
@@ -69,7 +70,6 @@ uint32 g_Ticks_ClientVis;
 extern int32 g_CV_STracePackets, g_CV_DelimitPackets;
 extern int32 g_CV_MeasurePackets;
 extern int32 g_bForceRemote;
-extern int32 g_bLT1ClientPVS;
 bool sm_LT1WorldHasVis();
 void sm_LT1VisitVisibleObjects(const LTVector &vPos, void (*fn)(LTObject *pObj, void *pUser), void *pUser);
 extern int32 g_CV_ConnTroubleCount;
@@ -165,8 +165,6 @@ bool Client::Init( CBaseConn *pBaseConn, bool bIsLocal )
 	// LT1 never handed out client id 0, and its game code uses 0 to mean 'not a player',
 	// so id 0 checks like if(m_dwClientID) treat the local player as nobody.
 	// LT1ClientIDFromOne starts the search at 1 for the LT1 games only. Jupiter games keep 0
-	extern int32 g_bLT1ClientIDFromOne;
-
 	uint16 testID;
 	for (testID = g_bLT1ClientIDFromOne ? 1 : 0; testID < 30000; testID++)
 	{

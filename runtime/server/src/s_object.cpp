@@ -44,6 +44,7 @@
 //IWorld holder
 #include "world_server_bsp.h"
 #include "de_mainworld.h"
+#include "lt1_vars.h"
 static IWorldServerBSP *world_bsp_server;
 define_holder(IWorldServerBSP, world_bsp_server);
 
@@ -55,7 +56,6 @@ void GetPhysicsVector (LTObject *pObj, float dt, LTVector& dr)
     //with it and affect their physics
 
     // LT1 has no FLAG_CONTAINER and keys containment on the object type
-    extern int32 g_bLT1ContainerType;
     const uint32 nContainerType = g_bLT1ContainerType ? OT_CONTAINER : 0xFFFFFFFF;
 
     if (!((pObj->m_Flags & FLAG_CONTAINER) || pObj->m_ObjectType == nContainerType)
@@ -313,7 +313,6 @@ void FullObjectUpdate(LTObject *pObj)
             // If time is out of sync between client/server, movement breaks.
             // Or a demo frame with a repeated clock which LT1ServerStepFloor makes a 0.01 step
             extern int32 g_nDemoClockMS;
-            extern int32 g_bLT1ServerStepFloor;
             if (g_pServerMgr->m_nTrueFrameTimeMS > 0 ||
                 (g_nDemoClockMS && g_bLT1ServerStepFloor && g_pServerMgr->m_FrameTime > 0.0f))
             {
@@ -585,7 +584,6 @@ void AddObjectToRemoveList(LTObject *pObj)
 
         // LT1RemoveUnlinks: LT1 takes it out of the world tree here rather than at the end of the frame,
         // so no ray or sphere query later in the same frame finds it
-        extern int32 g_bLT1RemoveUnlinks;
         if (g_bLT1RemoveUnlinks)
             pObj->RemoveFromWorldTree();
     }

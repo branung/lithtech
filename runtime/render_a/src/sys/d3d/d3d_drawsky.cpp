@@ -13,6 +13,7 @@
 #include "drawsky.h"
 
 #include "d3d_renderworld.h"
+#include "lt1_vars.h"
 
 extern void d3d_DrawPolyGrid(const ViewParams &Params, LTObject *pGrid);
 extern void d3d_DrawSprite(const ViewParams &Params, LTObject *pObj);
@@ -94,7 +95,6 @@ void d3d_DrawSkyObjects(const ViewParams& SkyParams)
 					{
 						// LT1 transforms each sky polygon by the object's own matrix before drawing it.
 						// A sky WorldModel with a Rotation property draws unrotated without this
-						extern int32 g_bLT1SkyObjectTransform;
 						if (g_bLT1SkyObjectTransform)
 						{
 							// Set explicitly as CD3D_RenderWorld::Draw only forces a cull mode for the main world,

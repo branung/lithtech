@@ -3,6 +3,7 @@
 
 #include "light_table.h"
 #include "ltsysoptim.h"
+#include "lt1_vars.h"
 
 // MACROS...
 #define LTRGB_TO_VECTOR(dest, src)							\
@@ -159,7 +160,6 @@ void CLightTable::GetLightVal(const LTVector& vWorldPos,bool bFilter,LTRGB* pRGB
 
 	AddLightGroupSamples(samples, gridCoords);
 
-	extern int32 g_bLT1LightTableY;
 	if (g_bLT1LightTableY)
 	{
 		VEC_LERP(ySamples[0], samples[2], samples[0], fSamplePt.y);

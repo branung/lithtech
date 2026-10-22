@@ -40,6 +40,7 @@ define_holder(ICompress, compress);
 //ILTCollisionMgr holder
 #include "collision_mgr.h"
 #include "lt_collision_mgr.h"
+#include "lt1_vars.h"
 static ILTCollisionMgr* client_collision_mgr;
 define_holder_to_instance(ILTCollisionMgr, client_collision_mgr, Client);
 
@@ -253,7 +254,6 @@ void CWorldClientBSP::EncodeCompressWorldPosition(CompWorldPos *pPos, const LTVe
 {
 	// LT1CompPos: LT1's lower precision 16 bit encoding over its own box, truncated rather than rounded.
 	// Shogo's explosion debris starts from a weapon impact sent this way
-	extern int32 g_bLT1CompPos;
 	if (g_bLT1CompPos && pPos && pVal && world_v56_LT1EncodePosition(pPos->m_Pos, *pVal))
 	{
 		pPos->m_Extra = 0;
@@ -264,7 +264,6 @@ void CWorldClientBSP::EncodeCompressWorldPosition(CompWorldPos *pPos, const LTVe
 
 void CWorldClientBSP::DecodeCompressWorldPosition(LTVector *pVal, const CompWorldPos *pPos)
 {
-	extern int32 g_bLT1CompPos;
 	if (g_bLT1CompPos && pPos && pVal && world_v56_LT1DecodePosition(*pVal, pPos->m_Pos))
 		return;
 	compress->DecodeCompressWorldPosition(pVal, pPos, world_bsp_shared->ExtentsMin(), world_bsp_shared->ExtentsMax());

@@ -15,10 +15,10 @@
 #include "lt1modelshadow.h"
 
 #include "world_client_bsp.h"
+#include "lt1_vars.h"
 static IWorldClientBSP *world_bsp_client;
 define_holder(IWorldClientBSP, world_bsp_client);
 
-extern int32 g_bLT1ModelShading;
 
 // LT1's three shadow directions.
 // MaxModelShadows says how many are used

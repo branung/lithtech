@@ -11,6 +11,7 @@
 #include "geometry.h"
 #include "syscounter.h"
 #include "intersect_line.h"
+#include "lt1_vars.h"
 
 
 
@@ -45,7 +46,6 @@ static float g_VPTimesInvVV, g_LineLen;
 
 // LT1BoxHitNormal: LT1 reported the x face's plane for a hit on any face of an object's box.
 // Shogo aligns its impact effects to it
-extern int32 g_bLT1BoxHitNormal;
 #define LT1_BOX_HIT_PLANE(normalDirection) \
     if (g_bLT1BoxHitNormal)\
     {\
@@ -620,7 +620,6 @@ static void i_FindIntersections(const WorldBsp *pWorldBsp, const Node **pNodeInt
 
     *hWorldPoly = INVALID_HPOLY;
     // LT1IntersectLeaf: a ray without INTERSECT_HPOLY walks leaves rather than polygons, as LT1's does
-    extern int32 g_bLT1IntersectLeaf;
     if (g_bLT1IntersectLeaf)
         *pNodeIntersectionPtr = IntersectLineLT1Leaf(pWorldBsp->GetRootNode(), pPoint1, pPoint2, pIntersectionPosPtr, &iPlane);
     else

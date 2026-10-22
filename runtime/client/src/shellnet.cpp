@@ -58,6 +58,7 @@ define_holder(ILTClient, ilt_client);
 
 //IClientShell game client shell object.
 #include "iclientshell.h"
+#include "lt1_vars.h"
 static IClientShell *i_client_shell;
 define_holder(IClientShell, i_client_shell);
 
@@ -119,7 +120,6 @@ static LTRESULT SwitchModelAnim(CClientShell *pShell,
 	// Model info updates can resync the same animation every frame, which would keep restarting it.
 	// During a hold the resync is ignored, since the server is holding too. Otherwise it only corrects the animation's time
 	{
-		extern int32 g_bLT1AnimTransition;
 		if (g_bLT1AnimTransition && animIndex == trk_GetCurAnimIndex(pTracker))
 		{
 			if (pTracker->m_InterpolationMS != NOT_INTERPOLATING)
@@ -1269,7 +1269,6 @@ static LTRESULT OnUnguaranteedUpdatePacket(CClientShell *pShell, CPacket_Read &c
 							bSameAsLast = false;
 					}
 					// Skip duplicate updates, except under LT1NetInterp where every update restarts the easing
-					extern int32 g_bLT1NetInterp;
 					if (g_bLT1NetInterp)
 						pd_OnObjectMove(pShell, pObject, &newPos, &newVel, false, false);
 					else if (!bSameAsLast)

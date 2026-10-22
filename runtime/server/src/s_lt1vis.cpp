@@ -8,8 +8,8 @@
 #include "world_server_bsp.h"
 #include <vector>
 #include <algorithm>
+#include "lt1_vars.h"
 
-extern int32 g_bLT1FileOrder;
 
 // LT1's order within a node: newest filed first
 static bool LT1FiledLater(const LTObject *a, const LTObject *b)

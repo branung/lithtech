@@ -40,6 +40,7 @@ define_holder(IClientFileMgr, client_file_mgr);
 
 //IClientShell game client shell object.
 #include "iclientshell.h"
+#include "lt1_vars.h"
 static IClientShell *i_client_shell;
 define_holder(IClientShell, i_client_shell);
 
@@ -147,7 +148,6 @@ LTRESULT CClientMgr::ProcessError(LTRESULT theError) {
 }
 
 extern uint32 sdl2_keycode_to_vkey(SDL_Keycode key);
-extern int32 g_bLT1VirtualKeys;
 
 // LT1 shells compare against VK_ codes, and Jupiter shells against SDLK_ codes
 static uint32 cutil_ShellKey(int nScancode)

@@ -26,11 +26,10 @@ define_holder_to_instance(ILTModel, ilt_model_server, Server);
 
 
 #include "ilttransform.h"
+#include "lt1_vars.h"
 static ILTTransform *ilt_transform;
 define_holder(ILTTransform, ilt_transform);
 
-// LT1 object color semantics
-extern int32 g_bLT1ObjectColor;
 
 // Used for the global frame code.. when it wraps around, all object managers
 // have their objects reset.

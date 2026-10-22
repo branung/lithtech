@@ -64,6 +64,7 @@ define_holder(IWorldServerBSP, world_bsp_server);
 
 //IServerShell game server shell object.
 #include "iservershell.h"
+#include "lt1_vars.h"
 static IServerShell *i_server_shell;
 define_holder(IServerShell, i_server_shell);
 
@@ -705,7 +706,6 @@ bool FillPacketFromInfo(Client *pClient, LTObject *pObj, ObjInfo *pInfo, CPacket
 		// LT1 sends no capping resend, and one would restart the client's easing a frame after the object stopped
 		else
 		{
-			extern int32 g_bLT1NetInterp;
 			if (!g_bLT1NetInterp)
 				pInfo->m_ChangeFlags |= CF_POSITION_PREDICTIONCAP;
 		}

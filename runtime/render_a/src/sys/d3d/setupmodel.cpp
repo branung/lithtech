@@ -40,6 +40,7 @@ define_holder(IWorldSharedBSP, world_bsp_shared);
 
 //IFindObj holder
 #include "findobj.h"
+#include "lt1_vars.h"
 static IFindObj *g_pIFindObj;
 define_holder(IFindObj, g_pIFindObj);
 
@@ -51,9 +52,6 @@ define_holder(IFindObj, g_pIFindObj);
 // The model drawer..
 ModelDraw g_ModelDraw;
 
-// LT1 object color and model shading semantics
-extern int32 g_bLT1ObjectColor;
-extern int32 g_bLT1ModelShading;
 
 // --------------------------------------------------------------- //
 // Callback data structures

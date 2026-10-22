@@ -22,21 +22,10 @@
 #include "world_blocker_data.h"
 #include "world_blocker_math.h"
 #include "iltphysics.h"
+#include "lt1_vars.h"
 
-
-// Note: LT1 compatibility variables below are off for all Juputer games
-
-// LT1 stair step and resting behavior
-extern int32 g_bLT1StairStep;
-extern int32 g_bLT1StairSwept;
+// Diagnostic: the next N hits of the LT1 stair step
 extern int32 g_StairTrace;
-extern int32 g_bLT1StairDamp;
-
-// LT1 collision behavior
-extern int32 g_bLT1IntersectPushback; // The pushback loop in ClipBoxIntoTree2
-extern int32 g_bLT1PlaneRecheck; // LT1RecheckAccumulatedPlanes
-extern int32 g_bLT1SweepRebuild; // The SetupBox call after MoveToFrontside
-extern int32 g_bLT1PolyTest; // WorldPolyIntersectsAABB
 
 #ifndef __LINUX
 #define isnan _isnan
@@ -792,7 +781,6 @@ static bool ClipBoxIntoTree2
 	// LT1 stops there. Jupiter ignores the answer and classifies uninitialized stack, 
 	// and LT1SetupBoxCheck (set only by the LT1 games, through de_lt1defaults.cpp) restores the stop, 
 	// so Jupiter games keep the stock path
-	extern int32 g_bLT1SetupBoxCheck;
 	const bool bSwept = SetupBox(	P0, P1,
 									request.m_Dims,
 									offset,
@@ -2505,7 +2493,6 @@ static void DoPointCollision
 	// The end is then placed 0.1 in front of the plane: along the normal if the mover slides, back along the move if not.
 	// Both checks only count a plane as crossed if the ends are at least 0.1 to either side of it,
 	// so a fast mover crossing a floor at a shallow angle can pass through it, matching LT1's behavior
-	extern int32 g_bLT1PointCollide;
 	if (g_bLT1PointCollide)
 	{
 		for (i = 0; i < 40; i++)

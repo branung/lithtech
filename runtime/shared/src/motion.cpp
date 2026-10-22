@@ -3,6 +3,7 @@
 #include "de_objects.h"
 #include "de_world.h"
 #include "motion.h"
+#include "lt1_vars.h"
 
 // Reimplementation of LT1's CalcMotion for a standing object
 // It differs from Jupiter's in three ways:
@@ -97,7 +98,6 @@ static void LT1StandingMotion(MotionInfo *pInfo, LTObject *pObj, const LTVector 
 	{
 		dr = vStepVel * dt + a * (dt * dt * 0.5f * 0.5f);
 		// LT1 clips and zeroes the velocity in place, so it keeps the clipped one (LT1StandVelStore)
-		extern int32 g_bLT1StandVelStore;
 		if (g_bLT1StandVelStore)
 			pObj->m_Velocity = vStepVel + a * dt;
 		else
@@ -131,7 +131,6 @@ void CalcMotion
 	float velocityMagSqr, accelMagSqr;
 	LTBOOL bFriction;
 
-	extern int32 g_bLT1CalcMotion;
 
 	bFriction = LTFALSE;
 	timeIntegral = dt * dt * 0.5f;	

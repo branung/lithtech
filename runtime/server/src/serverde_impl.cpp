@@ -98,6 +98,7 @@ define_holder_to_instance(ILTSoundMgr, ilt_soundmgr_server, Server);
 
 //ILTPhysics game interface
 #include "iltphysics.h"
+#include "lt1_vars.h"
 static ILTPhysics *ilt_physics_server;
 define_holder_to_instance(ILTPhysics, ilt_physics_server, Server);
 
@@ -769,7 +770,6 @@ LTRESULT CLTServer::CopyFile(const char *pszSourceFile, const char *pszDestFile)
 	return server_filemgr->CopyFile(pszSourceFile, pszDestFile);
 }
 
-extern int32 g_bLT1ModelAnimNoRestart;
 
 void CLTServer::SetModelAnimation(HOBJECT hObj, HMODELANIM hAnim)
 {

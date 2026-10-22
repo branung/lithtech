@@ -3,6 +3,7 @@
 #include "dtxmgr_lt1.h"
 #include "genltstream.h"
 #include "iltstream.h"
+#include "lt1_vars.h"
 
 // This expands a v-2 file into the v-5 image dtx_Create already consumes and hands it back through a memory stream, 
 // so everything downstream runs unchanged.
@@ -78,13 +79,8 @@ private:
  palette, 246-255, applied to every palettized texture. 
  Bit 0 only chooses an alpha capable format and sets the flag the draw code tests.
 */
-extern int32 g_bLT1Fullbrite;
 
-// First palette index of LT1's fullbrite range, 246
-extern int32 g_nLT1FullbriteIndex;
 
-// Give every palettised texture LT1's alpha, 1 on palette indices 246-255, 0 elsewhere
-extern int32 g_bLT1PaletteAlpha;
 
 
 

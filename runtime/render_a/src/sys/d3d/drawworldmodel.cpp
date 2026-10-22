@@ -12,6 +12,7 @@
 
 #include "renderstruct.h"
 #include "counter.h"
+#include "lt1_vars.h"
 
 // ---------------------------------------------------------------- //
 // External functions.
@@ -36,7 +37,6 @@ void d3d_ProcessWorldModel(LTObject *pObject)
 
 	// Jupiter's IsTranslucent() tests object alpha and Jupiter era flags, never surface flags.
 	// No LT1 content passes it as a result. LT1WorldSort adds LT1's own test
-	extern int32 g_bLT1WorldSort;
 	if (pObject->IsTranslucent() ||
 	    (g_bLT1WorldSort && d3d_IsLT1TranslucentWorldModel(pObject)))
 	{
@@ -59,7 +59,6 @@ void d3d_DrawSolidWorldModel(const ViewParams& Params, LTObject *pObj)
 	pInstance = (WorldModelInstance*)pObj;
 
 	// Every WorldModel draws through here, so this is where LT1WorldCull decides its cull mode.
-	extern int32 g_bLT1WorldCull;
 	uint32 nOldCull = 0;
 	if (g_bLT1WorldCull)
 	{

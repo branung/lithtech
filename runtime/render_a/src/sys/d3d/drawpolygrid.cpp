@@ -42,6 +42,7 @@ define_holder(IClientShell, i_client_shell);
 
 //Interface for the client file manager
 #include "client_filemgr.h"
+#include "lt1_vars.h"
 static IClientFileMgr* g_pIClientFileMgr;
 define_holder(IClientFileMgr, g_pIClientFileMgr);
 
@@ -915,8 +916,6 @@ void d3d_DrawPolyGrid(const ViewParams &Params, LTObject *pObj)
 
 	// Jupiter reads the scale as the fraction of the texture across the whole grid.
 	// LT1 reads it as world units per texel, with the pan in texels
-	extern int32 g_bLT1PolyGridTexCoords;
-
 	float fXScale		= pGrid->m_xScale / ((pGrid->m_Width - 1) * fXInc);
 	float fZScale		= pGrid->m_yScale / ((pGrid->m_Height - 1) * fZInc);
 	float fLT1PanU		= 0.0f;
@@ -1350,7 +1349,6 @@ void d3d_DrawPolyGrid(const ViewParams &Params, LTObject *pObj)
 
 	// Cull backfaces unless LT1PolyGridCull is set.
 	// LT1 never culled polygrids, and its game code can't set PG_NOBACKFACECULL
-	extern int32 g_bLT1PolyGridCull;
 	StateSet ssCullMode(D3DRS_CULLMODE,
 		(g_bLT1PolyGridCull || (pGrid->m_nPGFlags & PG_NOBACKFACECULL)) ? D3DCULL_NONE : D3DCULL_CCW);
 

@@ -123,6 +123,7 @@ static ILTDrawPrim* g_pLTDrawPrimInternal;
 define_holder_to_instance(ILTDrawPrim, g_pLTDrawPrimInternal, Internal);
 
 #include "vkdefs.h"
+#include "lt1_vars.h"
 
 // How many milliseconds the models animate this frame (whole ms during a demo, as LT1 did)
 static uint32 s_nAnimFrameMS = 0;
@@ -1107,7 +1108,6 @@ LTRESULT CClientMgr::Update()
         
 		// LT1DemoClientTime: during playback the client's clock is the recording's,
 		// and afterwards it carries on from there rather than jumping back to the system timer
-		extern int32 g_bLT1DemoClientTime;
 		extern float g_fDemoClientTime;
 		static double s_dDemoTimeOffset = 0.0;
 		static bool s_bDemoTimeOffset = false;

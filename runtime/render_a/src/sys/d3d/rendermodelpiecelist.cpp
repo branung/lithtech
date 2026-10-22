@@ -22,9 +22,7 @@ define_holder(IClientShell, i_client_shell);
 #include "rendererconsolevars.h"
 #include "renderstruct.h"		// SceneDesc, for the level's environment map
 #include <algorithm>
-
-// LT1 object color semantics
-extern int32 g_bLT1ObjectColor;
+#include "lt1_vars.h"
 
 
 
@@ -386,7 +384,6 @@ void CRenderModelPieceList::QueuePiece(ModelInstance* pInstance, ModelPiece* pPi
 
 // LT1ModelFullbrite: LT1's second pass over a model whose skin is fullbright (DTX iflags bit 0),
 // drawing the masked texels unlit over the lit piece. The mask is the skin's alpha, which dtxmgr_lt1.cpp fills from palette entries 246-255.
-extern int32 g_bLT1ModelFullbrite;
 
 static bool LT1PieceIsFullbrite(SharedTexture *pTexture)
 {

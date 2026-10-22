@@ -3,6 +3,7 @@
 #include "bdefs.h"
 #include "de_world.h"
 #include "intersect_line.h"
+#include "lt1_vars.h"
 
 
 #define INTERSECT_EPSILON	0.01f
@@ -115,7 +116,6 @@ LTBOOL InternalIntersectLineNode(
 			{
 				// LT1 only lets solid polys stop a ray, as its levels put invisible nonsolid hullmaker polys across doorways.
 				// Checked here specifically so a skipped poly still clips the ray and continues instead of ending the ray early.
-				extern int32 g_bLT1RaySolidOnly;
 				if (!g_bLT1RaySolidOnly || (pRoot->m_pPoly->GetSurface()->m_Flags & SURF_SOLID))
 				{
 				VEC_LERP(iPoint, point1, point2, intersection_t);

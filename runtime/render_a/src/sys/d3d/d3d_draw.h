@@ -31,6 +31,8 @@ class IAggregateShader;
 #include "d3d_utils.h"
 #endif
 
+#include "lt1_vars.h"
+
 // Definitions.
 #ifdef _DEBUG
 	void VerifyRenderState(D3DRENDERSTATETYPE state, uint32 val, char *pStateName, char *pValName);
@@ -171,7 +173,6 @@ void d3d_SetD3DMat(D3DTRANSFORMSTATETYPE iTransform, const LTMatrix *pMat);
 // The world fullbright pass's destination blend
 // Jupiter blends the texel over the lit result (INVSRCALPHA)
 // LT1 adds it under LT1FullbriteAdd
-extern int32 g_bLT1FullbriteAdd;
 inline D3DBLEND d3d_FullbriteDestBlend()
 {
 	return g_bLT1FullbriteAdd ? D3DBLEND_ONE : D3DBLEND_INVSRCALPHA;

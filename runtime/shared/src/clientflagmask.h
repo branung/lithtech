@@ -15,9 +15,7 @@
 */
 
 #include "ltbasedefs.h"
-
-extern int32 g_bLT1AnimTransition;
-extern int32 g_bLT1SpriteFlags;
+#include "lt1_vars.h"
 
 inline uint32 ClientFlagMask()
 {

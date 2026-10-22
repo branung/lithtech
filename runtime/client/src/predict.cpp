@@ -42,6 +42,8 @@ static ILTClient *ilt_client;
 define_holder(ILTClient, ilt_client);
 #endif //_FINAL
 
+#include "lt1_vars.h"
+
 
 /*
 
@@ -96,7 +98,6 @@ void pd_InitialServerUpdate(CClientShell *pShell, float gameTime)
 }
 
 
-extern int32 g_bLT1NetInterp;
 
 // LT1NetInterp: Prediction keeps its LT1 meaning. 0, a new or teleported object, or no server period snaps.
 // Anything else becomes the target, reached over 1.1 server periods, with no velocity and no per object opt out

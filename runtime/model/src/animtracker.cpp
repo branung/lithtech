@@ -4,10 +4,10 @@
 #include "model_ops.h"
 #include "de_objects.h"   // LTObject::m_Flags, for FLAG_ANIMTRANSITION
 #include "ltsysoptim.h"
+#include "lt1_vars.h"
 
 
 extern int32 g_CV_ModelTransitionMS;
-extern int32 g_bLT1AnimTransition;
 
 void trk_ScanToKeyFrame(LTAnimTracker *pTracker, uint32 msDelta, bool bProcessKeys);
 

@@ -26,6 +26,7 @@
 #include <vector>
 #include <deque>
 #include <stack>
+#include "lt1_vars.h"
 
 CD3D_RenderWorld::CD3D_RenderWorld() :
 	m_pRenderBlocks(0),
@@ -666,7 +667,6 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 		StageStateSet state10(1, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_PASSTHRU | 1);
 		StageStateSet state20(2, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_PASSTHRU | 2);
 
-		extern int32 g_bLT1WorldCull;
 		if (!bTransformed || !g_bLT1WorldCull)
 			PD3DDEVICE->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 		PD3DDEVICE->SetSoftwareVertexProcessing(((g_Device.GetDeviceCaps()->DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT) == 0) ? 1 : 0);

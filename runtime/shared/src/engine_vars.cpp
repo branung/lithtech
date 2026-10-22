@@ -7,6 +7,7 @@
 #include "ltbasetypes.h"
 #include "concommand.h"
 #include "packetdefs.h"
+#include "lt1_vars.h"
 
 
 

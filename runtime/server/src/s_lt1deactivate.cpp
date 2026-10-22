@@ -18,9 +18,8 @@
 #include "concommand.h"
 #include "server_consolestate.h"
 #include "dhashtable.h"
+#include "lt1_vars.h"
 
-extern int32 g_bLT1AutoDeactivate;
-extern int32 g_LT1DeactivateTrace;
 
 // For LT1DeactivateTrace
 static const char *LT1ObjName(LTObject *pObj)
