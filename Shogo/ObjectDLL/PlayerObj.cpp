@@ -1818,6 +1818,13 @@ void CPlayerObj::Respawn(HSTRING hStartPointName, DBYTE nServerLoadGameFlags)
 	pServerDE->SetObjectState(m_hObject, OBJSTATE_ACTIVE);
 	pServerDE->SetObjectFlags(m_hObject, m_dwFlags | dwMultiFlags);
 
+	// FLAG_MODELTINT is 0 in DECompat, so the team color tint it asks for travels in the second flag word
+	if (m_eGameType != SINGLE && pServerDE->Common())
+	{
+		pServerDE->Common()->SetObjectFlags(m_hObject, OFT_Flags2,
+			FLAG2_LT1MODELTINT, FLAG2_LT1MODELTINT);
+	}
+
 	//pServerDE->BPrint("Respawn Pos: %.2f, %.2f, %.2f", vPos.x, vPos.y, vPos.z);
 
 

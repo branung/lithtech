@@ -215,6 +215,7 @@ inline DDWORD DE_LT1SpriteFlags(DDWORD dwLT1)
 
 // In LT1: tint the model in the team color/keep it across a world switch.
 // Their bits are Jupiter's FLAG_SPRITEBIAS and FLAG_TOUCHABLE, so both are 0.
+// The team color travels as FLAG2_LT1MODELTINT instead (which Shogo's CPlayerObj sets)
 #define FLAG_MODELTINT           0
 // LT1 never read FLAG_KEEPALIVE. CF_ALWAYSLOAD and CF_STATIC decide that.
 #define FLAG_KEEPALIVE           0

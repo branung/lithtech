@@ -2137,6 +2137,10 @@ DECompat maps LT1's FLAG_ENVIRONMENTMAP onto this bit.
 */
    FLAG2_ENVMAP 			=		(1<<11),
 
+    //! LT1's FLAG_MODELTINT, whose bit is Jupiter's FLAG_SPRITEBIAS.
+    //! Only read at full alpha, as LT1's was.
+   FLAG2_LT1MODELTINT		=		(1<<12),
+
 };
 
 /*!

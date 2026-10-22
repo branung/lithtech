@@ -277,6 +277,15 @@ void BodyProp::Setup(CBaseCharacter* pChar)
 
 	pServerDE->SetObjectUserFlags(m_hObject, dwUsrFlags);
 	pServerDE->SetObjectFlags(m_hObject, dwFlags);
+
+	// A dead multiplayer player's body keeps its team color, which the port carries in the second flag word
+	if (pServerDE->Common())
+	{
+		DDWORD dwFlags2 = 0;
+		pServerDE->Common()->GetObjectFlags(pChar->m_hObject, OFT_Flags2, dwFlags2);
+		pServerDE->Common()->SetObjectFlags(m_hObject, OFT_Flags2,
+			dwFlags2 & FLAG2_LT1MODELTINT, FLAG2_LT1MODELTINT);
+	}
 }
 
 // ----------------------------------------------------------------------- //

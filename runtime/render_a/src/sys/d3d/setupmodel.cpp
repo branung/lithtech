@@ -113,7 +113,20 @@ void ModelDraw::CallModelHook(ModelInstance* pInstance, ModelHookData& HookData)
 	// LT1 treats a model's object color as a brightining term rather than the light scale Jupiter makes of it.
 	// Under LT1ObjectColor, it's folded into the light add and the scale is left at 255.
 	// Doing this, LT1's default tint of (0,0,0) adds nothing rather than drawing the model black
-	if(g_bLT1ObjectColor)
+	// ..Except for a model with LT1's FLAG_MODELTINT (FLAG2_LT1MODELTINT) at full alpha.
+	if((pInstance->m_Flags2 & FLAG2_LT1MODELTINT) && pInstance->m_ColorA == 255)
+	{
+		const uint8 aColor[3] = { pInstance->m_ColorR, pInstance->m_ColorG, pInstance->m_ColorB };
+		float aScale[3];
+		for (int i = 0; i < 3; ++i)
+		{
+			const uint8 c = aColor[i];
+			const int nShift = c >= 253 ? 0 : c >= 126 ? 1 : c >= 62 ? 2 : c >= 30 ? 3 : 7;
+			aScale[i] = 255.0f / (float)(1 << nShift);
+		}
+		HookData.m_ObjectColor.Init(aScale[0], aScale[1], aScale[2]);
+	}
+	else if(g_bLT1ObjectColor)
 	{
 		HookData.m_LightAdd += HookData.m_ObjectColor;
 		HookData.m_ObjectColor.Init(255.0f, 255.0f, 255.0f);

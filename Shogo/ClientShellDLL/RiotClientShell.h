@@ -648,6 +648,7 @@ class CRiotClientShell : public IClientShellStub
 		void	UpdateCreditsState();
 		void	UpdateIntroState();
 		void	UpdateMenuState();
+		void	UpdateMenuMovement();
 		void	UpdateBumperState();
 		void	UpdateLoadingLevelState();
 		void	UpdatePausedState();

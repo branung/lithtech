@@ -2012,6 +2012,7 @@ void CRiotClientShell::Update()
 		case GS_MENU :
 		{
 			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
+			UpdateMenuMovement();
 			UpdateMenuState();
 			g_pLTClient->FlipScreen(0);
 			return;
@@ -2737,6 +2738,33 @@ void CRiotClientShell::UpdatePausedState()
 	g_pLTClient->EndOptimized2D();
 
 	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CRiotClientShell::UpdateMenuMovement()
+//
+//	PURPOSE:	Keep a multiplayer player moving under physics while the menu is up
+//
+// ----------------------------------------------------------------------- //
+
+// In multiplayer the menu doesn't stop the game, but it did stop this client's movement and the positions it sends.
+// The server then kept moving the player at the last velocity it was sent, with no gravity or friction,
+// so a player paused mid jump flew on and one paused while running slid across the level.
+// The menu has turned input off, so the player falls, slows and stops as if every key were released.
+// Single player pauses the server so it's left alone.
+void CRiotClientShell::UpdateMenuMovement()
+{
+	if (!IsMultiplayerGame() || !m_MoveMgr || !IsPlayerInWorld()) return;
+
+	// The play loop sets the axis movement every frame, so a stick held as the menu opened would keep pushing
+	m_MoveMgr->UpdateAxisMovement(LTFALSE, 0.0f, 0.0f, LTFALSE, 0.0f, 0.0f);
+
+	SetPhysicsStateTimeStep(&g_normalPhysicsState, g_pLTClient->GetFrameTime());
+	SetPhysicsStateTimeStep(&g_waterPhysicsState, g_pLTClient->GetFrameTime());
+	m_MoveMgr->Update();
+	UpdatePlayerInfo();
 }
 
 
