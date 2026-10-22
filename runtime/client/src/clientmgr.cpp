@@ -1096,7 +1096,15 @@ LTRESULT CClientMgr::Update()
 		extern int32 g_nDemoClockMS;
 		extern int32 g_nDemoAnimMS;
 		extern float g_fDemoClientFrameTime;
-		m_nCurUpdateTimeMS	= g_nDemoClockMS ? (uint32)g_nDemoClockMS : time_GetMSTime();
+		// The clock stays continuous when a playback stops so the switch over is smooth
+		extern int64 g_nClientClockOffsetMS;
+		if (g_nDemoClockMS)
+		{
+			m_nCurUpdateTimeMS	= (uint32)g_nDemoClockMS;
+			g_nClientClockOffsetMS = (int64)(uint32)g_nDemoClockMS - (int64)time_GetMSTime();
+		}
+		else
+			m_nCurUpdateTimeMS	= (uint32)((int64)time_GetMSTime() + g_nClientClockOffsetMS);
 		m_nFrameTimeMS		= m_nCurUpdateTimeMS - m_nLastUpdateTimeMS;
 		m_nLastUpdateTimeMS	= m_nCurUpdateTimeMS;
 		s_nAnimFrameMS		= (g_nDemoClockMS && g_nDemoAnimMS >= 0) ? (uint32)g_nDemoAnimMS : m_nFrameTimeMS;
@@ -2597,6 +2605,9 @@ void CClientMgr::UpdateLineSystems() {
 }
 
 
+
+// The client clock's lead over the wall clock, kept after a playback so the clock never steps back
+int64 g_nClientClockOffsetMS = 0;
 
 uint32 g_Ticks_UpdateObjects;
 

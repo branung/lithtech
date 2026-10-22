@@ -162,7 +162,9 @@ void CDemoPlaybackLT1::Begin()
 	m_nWorldFrames = 0;
 	m_dRealStartMS = 0.0;
 	m_fT0 = m_fLastT = m_Frames[0].t;
-	m_dBaseMS = (double)time_GetMSTime() + 1000.0; // A second ahead of the system timer so the game's clock never runs back
+	// A second ahead of the client's clock so it never runs back. That clock keeps any lead a previous playback left it
+	extern int64 g_nClientClockOffsetMS;
+	m_dBaseMS = (double)((int64)time_GetMSTime() + g_nClientClockOffsetMS) + 1000.0;
 	SetClock(m_fT0);
 	// The first frame is timed from the header's clock
 	g_fDemoClientFrameTime = m_fT0 - m_fHeaderT > 0.0f ? m_fT0 - m_fHeaderT : 0.0f;

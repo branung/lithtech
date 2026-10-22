@@ -17,6 +17,7 @@
 #include "SurfaceTypes.h"
 #include "RiotClientShell.h"
 #include "ltobjectcreate.h"
+#include <cmath>
 
 extern CRiotClientShell* g_pRiotClientShell;
 
@@ -147,6 +148,11 @@ LTBOOL CDebrisFX::CreateObject(ILTClient *pClientDE)
 		VEC_SET(vVel, GetRandom(vVelMin.x, vVelMax.x), 
 					  GetRandom(50.0f, 150.0f) + GetRandom(vVelMin.y, vVelMax.y), 
 					  GetRandom(vVelMin.z, vVelMax.z));
+
+		if (!std::isfinite(vVel.x) || !std::isfinite(vVel.y) || !std::isfinite(vVel.z))
+		{
+			vVel.Init();
+		}
 
 		InitMovingObject(&(m_Emmitters[i]), &m_vPos, &vVel);
 		m_Emmitters[i].m_PhysicsFlags |= m_nDebrisFlags;

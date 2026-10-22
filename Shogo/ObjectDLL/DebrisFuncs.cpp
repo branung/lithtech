@@ -13,6 +13,7 @@
 #include "serverobj_de.h"
 #include "DebrisFuncs.h"
 #include "SFXMsgIds.h"
+#include <limits>
 
 // ----------------------------------------------------------------------- //
 //
@@ -65,6 +66,12 @@ void CreatePropDebris(DVector & vPos, DFLOAT fDimsMag,
 	DVector vUp;
 	VEC_SET(vUp, 0.0f, 1.0f, 0.0f);
 	g_pServerDE->AlignRotation(&cd.rRot, &vDir, &vUp);
+
+	if (vDir.x == 0.0f && vDir.y == 0.0f && vDir.z == 0.0f)
+	{
+		const float fNaN = std::numeric_limits<float>::quiet_NaN();
+		cd.rRot.m_Quat[0] = cd.rRot.m_Quat[1] = cd.rRot.m_Quat[2] = cd.rRot.m_Quat[3] = fNaN;
+	}
 
 	VEC_COPY(cd.vPos, vPos);
 	VEC_SET(cd.vMinVel, -200.0f, 250.0f, -200.0f); 

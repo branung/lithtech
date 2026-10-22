@@ -382,11 +382,12 @@ void CProjectile::Update()
 			VEC_SUB(vVel, vVel, vTemp);
 		}
 
-		// The weave's time step, floored at 1/60.
-		// It's integrated by GetFrameTime().. so without the floor its amplitude shrinks at higher frame rates
+		// The weave's time step, floored at LT1's 0.01 second server step.
+		// It's integrated by GetFrameTime(), and LT1's server clamped its step to at least 0.01.
+		// The port's live step isn't clamped, so without the floor the weave shrinks at high frame rates.
 		DFLOAT fSnakeDelta = pServerDE->GetFrameTime();
-		if (fSnakeDelta < (1.0f / 60.0f))
-			fSnakeDelta = 1.0f / 60.0f;
+		if (fSnakeDelta < 0.01f)
+			fSnakeDelta = 0.01f;
 
 		// [D:SNAKE] Weave per second of clock, per projectile, once a second
 		{
