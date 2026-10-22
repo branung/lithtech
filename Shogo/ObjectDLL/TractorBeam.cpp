@@ -27,6 +27,8 @@
 BEGIN_CLASS(TractorBeam)
 END_CLASS_DEFAULT(TractorBeam, DEBaseClass, NULL, NULL)
 
+const BeamInfo* TractorBeam::s_pCreateInfo = DNULL;
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	TractorBeam::TractorBeam()
@@ -249,9 +251,9 @@ void TractorBeam::PostPropRead(ObjectCreateStruct* pStruct)
 		SAFE_STRCPY(pStruct->m_SkinName, hstrSkinName ? g_pServerDE->GetStringData (hstrSkinName) : "dummy string");
 		SAFE_STRCPY(pStruct->m_Name, "Tractor Beam");
 
-		// m_UserData is a 32-bit field holding a 64-bit address, which this cast doesn't fix.
-		// Only CPlayerObj::UpdateTractorBeam sets it
-		const BeamInfo* pBeamInfo = (const BeamInfo*)(uintptr_t)pStruct->m_UserData;
+		// Cleared as it's read, so a beam created during this one's creation gets null as in LT1
+		const BeamInfo* pBeamInfo = s_pCreateInfo;
+		s_pCreateInfo = DNULL;
 		if (pBeamInfo)
 		{
 			memcpy (&m_info, pBeamInfo, sizeof (BeamInfo));

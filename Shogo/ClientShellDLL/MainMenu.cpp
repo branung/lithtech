@@ -179,6 +179,13 @@ LTBOOL CMainMenu::DoMultiplayer(LTBOOL bMinimize)
 	NetStart ns;
 	LTBOOL bRet = NetStart_DoWizard(m_pClientDE, &ns);
 
+	// Restore the renderer before StartGame, or the models a host caches while loading the world never draw
+	if (bRet && bMinimize && pClientShell->IsMainWindowMinimized())
+	{
+		NetStart_RestoreMainWnd();
+		pClientShell->MainWindowRestored();
+	}
+
 	if (bRet)
 	{
 		StartGameRequest req;

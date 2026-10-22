@@ -67,6 +67,8 @@ class TractorBeam : public DEBaseClass
 		void			Remove();
 		BeamInfo&		Info() {return m_info;}
 
+		static const BeamInfo* s_pCreateInfo; // The beam's setup, set by CPlayerObj around the CreateObject call that makes it
+
 	protected :
 
 		DDWORD			EngineMessageFn (DDWORD messageID, void *pData, DFLOAT lData);

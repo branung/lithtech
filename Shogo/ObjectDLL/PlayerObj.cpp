@@ -17,6 +17,7 @@
 #include "RiotCommandIDs.h"
 #include "RiotObjectUtilities.h"
 #include "TractorBeam.h"
+#include "UpgradeItem.h"
 #include "PVWeaponModel.h"
 #include "RiotServerShell.h"
 #include "SurfaceFunctions.h"
@@ -1304,9 +1305,11 @@ void CPlayerObj::UpdateSpecialMove()
 
 			ObjectCreateStruct theStruct;
 			INIT_OBJECTCREATESTRUCT (theStruct);
-			theStruct.m_UserData = (DDWORD)(uintptr_t) &beamInfo;
 
+			// Passed through a static, as the 32 bit m_UserData truncated this pointer and crashed the server in the Jupiter port
+			TractorBeam::s_pCreateInfo = &beamInfo;
 			DEBaseClass* pBeam =  pServerDE->CreateObject (pServerDE->GetClass ("TractorBeam"), &theStruct);
+			TractorBeam::s_pCreateInfo = DNULL;
 			if (!pBeam) return;
 
 			m_hTractorBeam = pBeam->m_hObject;
@@ -1980,7 +1983,6 @@ void CPlayerObj::DropUpgrade()
 	ObjectCreateStruct theStruct;
 	INIT_OBJECTCREATESTRUCT(theStruct);
 	theStruct.m_Flags |= FLAG_VISIBLE | FLAG_SHADOW | FLAG_TOUCH_NOTIFY | FLAG_GRAVITY;
-	theStruct.m_UserData = (DDWORD)(uintptr_t) m_hObject;
 	VEC_COPY (theStruct.m_Pos, pos);
 	ROT_COPY (theStruct.m_Rotation, rot);
 
@@ -1995,7 +1997,9 @@ void CPlayerObj::DropUpgrade()
 		case IST_UPGRADE_TARGETING:		hClass = pServerDE->GetClass ("TargetingUpgrade"); break;
 	}
 	
+	UpgradeItem::s_hCreateDroppedBy = m_hObject;
 	g_pServerDE->CreateObject(hClass, &theStruct);
+	UpgradeItem::s_hCreateDroppedBy = DNULL;
 }
 
 // ----------------------------------------------------------------------- //

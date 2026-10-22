@@ -193,6 +193,18 @@ public:
             hObj, const_cast<char*>(pNodeName), bHidden ? true : false);
     }
 
+    // LT1's GetClientPing answered in seconds and Jupiter's in milliseconds.
+    // Due to this, LT1 game's send ping * 1000 to their scoreboards, causing 60 ms ping player to show as 60,000 ping
+    // This hides the engine's GetClientPing rather than overriding it, since the engine object is only cast to CServerDE and an override would never be called
+    DRESULT         GetClientPing(HCLIENT hClient, float &ping) const
+    {
+        ILTServer *pBase = static_cast<ILTServer*>(const_cast<CServerDE*>(this));
+        DRESULT dr = pBase->GetClientPing(hClient, ping);
+        if (dr == LT_OK)
+            ping *= 0.001f;
+        return dr;
+    }
+
     /*
         Functions Jupiter moved to Common(), Physics(), GetModelLT() or SoundMgr()
         

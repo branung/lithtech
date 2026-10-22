@@ -23,6 +23,8 @@
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
+HOBJECT UpgradeItem::s_hCreateDroppedBy = DNULL;
+
 BEGIN_CLASS(UpgradeItem)
 	ADD_BOOLPROP_FLAG(Rotate, 1, PF_HIDDEN)
 	ADD_STRINGPROP_FLAG(SoundFile, "", PF_HIDDEN)
@@ -146,7 +148,9 @@ void UpgradeItem::PostPropRead(ObjectCreateStruct *pStruct)
 
 	// get the handle of the player that dropped us, if any
 
-	m_hDroppedBy = (HOBJECT)(uintptr_t) pStruct->m_UserData;
+	// Cleared as it's read, as with the tractor beam
+	m_hDroppedBy = s_hCreateDroppedBy;
+	s_hCreateDroppedBy = DNULL;
 
 	// get the current time
 

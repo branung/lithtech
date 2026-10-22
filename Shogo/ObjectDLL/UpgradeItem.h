@@ -20,6 +20,8 @@ class UpgradeItem : public InventoryItem
 		UpgradeItem();
 		~UpgradeItem();
 
+		static HOBJECT s_hCreateDroppedBy; // The player dropping this upgrade, set by CPlayerObj around the CreateObject call that spawns it
+
 	protected :
 
 		DDWORD			EngineMessageFn (DDWORD messageID, void *pData, DFLOAT lData);
