@@ -189,6 +189,9 @@ if(BUILD_SHOGO)
         add_subdirectory(Shogo/ObjectDLL)       # Object.lto
     endif(BUILD_SHOGO_OBJECTDLL)
 endif(BUILD_SHOGO)
+if(BUILD_BLOOD2)
+    add_subdirectory(Blood2/ClientRes)          # CRes
+endif(BUILD_BLOOD2)
 
 if(WIN32)
     function(lt_game_output subdir)
@@ -204,6 +207,8 @@ if(WIN32)
     lt_game_output(NOLF2/Game NOLF2_ClientFXDLL)
 
     lt_game_output(Shogo      SHOGO_ClientShellDLL SHOGO_ClientRes SHOGO_ObjectDLL SHOGO_ServerRes)
+
+    lt_game_output(Blood2     BLOOD2_ClientShellDLL BLOOD2_ClientRes BLOOD2_ObjectDLL)
 
 endif(WIN32)
 
