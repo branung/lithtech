@@ -191,6 +191,17 @@ if(BUILD_SHOGO)
 endif(BUILD_SHOGO)
 if(BUILD_BLOOD2)
     add_subdirectory(Blood2/ClientRes)          # CRes
+
+    # Both DLLs are mid-port and off by default, so turning Blood II on doesn't break a tree that only wants CRes
+    option(BUILD_BLOOD2_OBJECTDLL "Build Blood II's server objects (doesn't build yet)" OFF)
+    if(BUILD_BLOOD2_OBJECTDLL)
+        add_subdirectory(Blood2/ObjectDLL)      # Object.lto
+    endif(BUILD_BLOOD2_OBJECTDLL)
+
+    option(BUILD_BLOOD2_CLIENTSHELL "Build Blood II's client shell (doesn't build yet)" OFF)
+    if(BUILD_BLOOD2_CLIENTSHELL)
+        add_subdirectory(Blood2/ClientShellDLL) # CShell
+    endif(BUILD_BLOOD2_CLIENTSHELL)
 endif(BUILD_BLOOD2)
 
 if(WIN32)
