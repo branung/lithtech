@@ -218,35 +218,67 @@ DRESULT CClientDE::WriteToMessageHMessageWrite(HMESSAGEWRITE hMessage, HMESSAGEW
 
 
 // Reading
+// Each read ends with DECompatMsg::AfterRead, which rewinds the message being dispatched when the read reaches its end as LT1 did.
+// Some 1998 handlers read a message and then pass it on to code that reads it again
 
 DBYTE CClientDE::ReadFromMessageByte(HMESSAGEREAD hMessage)
 {
-    return hMessage ? hMessage->Readuint8() : 0;
+    if (!hMessage)
+        return 0;
+
+    const auto ret = hMessage->Readuint8();
+    DECompatMsg::AfterRead(hMessage);
+    return ret;
 }
 
 D_WORD CClientDE::ReadFromMessageWord(HMESSAGEREAD hMessage)
 {
-    return hMessage ? hMessage->Readuint16() : 0;
+    if (!hMessage)
+        return 0;
+
+    const auto ret = hMessage->Readuint16();
+    DECompatMsg::AfterRead(hMessage);
+    return ret;
 }
 
 DDWORD CClientDE::ReadFromMessageDWord(HMESSAGEREAD hMessage)
 {
-    return hMessage ? hMessage->Readuint32() : 0;
+    if (!hMessage)
+        return 0;
+
+    const auto ret = hMessage->Readuint32();
+    DECompatMsg::AfterRead(hMessage);
+    return ret;
 }
 
 float CClientDE::ReadFromMessageFloat(HMESSAGEREAD hMessage)
 {
-    return hMessage ? hMessage->Readfloat() : 0.0f;
+    if (!hMessage)
+        return 0.0f;
+
+    const auto ret = hMessage->Readfloat();
+    DECompatMsg::AfterRead(hMessage);
+    return ret;
 }
 
 HSTRING CClientDE::ReadFromMessageHString(HMESSAGEREAD hMessage)
 {
-    return hMessage ? hMessage->ReadHString() : NULL;
+    if (!hMessage)
+        return NULL;
+
+    const auto ret = hMessage->ReadHString();
+    DECompatMsg::AfterRead(hMessage);
+    return ret;
 }
 
 HOBJECT CClientDE::ReadFromMessageObject(HMESSAGEREAD hMessage)
 {
-    return hMessage ? hMessage->ReadObject() : NULL;
+    if (!hMessage)
+        return NULL;
+
+    const auto ret = hMessage->ReadObject();
+    DECompatMsg::AfterRead(hMessage);
+    return ret;
 }
 
 void CClientDE::ReadFromMessageVector(HMESSAGEREAD hMessage, DVector *pVal)
@@ -254,6 +286,7 @@ void CClientDE::ReadFromMessageVector(HMESSAGEREAD hMessage, DVector *pVal)
     if (!pVal) return;
     if (!hMessage) { pVal->Init(); return; }
     *pVal = hMessage->ReadLTVector();
+    DECompatMsg::AfterRead(hMessage);
 }
 
 void CClientDE::ReadFromMessageCompVector(HMESSAGEREAD hMessage, DVector *pVal)
@@ -261,6 +294,7 @@ void CClientDE::ReadFromMessageCompVector(HMESSAGEREAD hMessage, DVector *pVal)
     if (!pVal) return;
     if (!hMessage) { pVal->Init(); return; }
     *pVal = hMessage->ReadCompLTVector();
+    DECompatMsg::AfterRead(hMessage);
 }
 
 void CClientDE::ReadFromMessageCompPosition(HMESSAGEREAD hMessage, DVector *pVal)
@@ -268,6 +302,7 @@ void CClientDE::ReadFromMessageCompPosition(HMESSAGEREAD hMessage, DVector *pVal
     if (!pVal) return;
     if (!hMessage) { pVal->Init(); return; }
     *pVal = hMessage->ReadCompPos();
+    DECompatMsg::AfterRead(hMessage);
 }
 
 void CClientDE::ReadFromMessageRotation(HMESSAGEREAD hMessage, DRotation *pVal)
@@ -275,6 +310,7 @@ void CClientDE::ReadFromMessageRotation(HMESSAGEREAD hMessage, DRotation *pVal)
     if (!pVal) return;
     if (!hMessage) { pVal->Init(); return; }
     *pVal = hMessage->ReadLTRotation();
+    DECompatMsg::AfterRead(hMessage);
 }
 
 HMESSAGEREAD CClientDE::ReadFromMessageHMessageRead(HMESSAGEREAD hMessage)
@@ -286,6 +322,7 @@ HMESSAGEREAD CClientDE::ReadFromMessageHMessageRead(HMESSAGEREAD hMessage)
     // bounds the sub message, and moves the parent past it as CServerDE's does.
     // Blood II's save block is written by the client and read by the server, and loaded back through here
     ILTMessage_Read* pSub = hMessage->ReadMessage();
+    DECompatMsg::AfterRead(hMessage);
     if (pSub)
     {
         // Released by EndHMessageRead, which LT1 callers make
@@ -300,7 +337,10 @@ char* CClientDE::ReadFromMessageString(HMESSAGEREAD hMessage)
     pBuffer[0] = '\0';
 
     if (hMessage)
+    {
         hMessage->ReadString(pBuffer, kStringLen);
+        DECompatMsg::AfterRead(hMessage);
+    }
 
     return pBuffer;
 }

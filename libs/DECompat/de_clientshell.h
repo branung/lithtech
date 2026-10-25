@@ -43,6 +43,11 @@ public:
     virtual void OnMessage(ILTMessage_Read *pMessage) override final
     {
         DBYTE messageID = pMessage ? pMessage->Readuint8() : 0;
+
+        // LT1 rewinds a message to its payload when a read reaches the end.
+        // This message still holds its id byte so the payload starts after it rather than at 0
+        DECompatMsg::CScope cRewind(pMessage, pMessage ? pMessage->Tell() : 0);
+
         OnMessage(messageID, pMessage);
     }
 
