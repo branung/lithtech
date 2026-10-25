@@ -5,6 +5,10 @@
     Nothing in this layer changes a data representation.
     Every mapping is a rename onto the Jupiter primitive 
     the converted client shell uses on the other end of the wire.
+
+    This is the server half. The client half (de_client.h, de_clientshell.h) isn't included here,
+    as a server module must not see ILTClient.
+    Client shells reach it through LT1's client include names in lt1/.
 */
 
 #ifndef __DE_COMPAT_H__

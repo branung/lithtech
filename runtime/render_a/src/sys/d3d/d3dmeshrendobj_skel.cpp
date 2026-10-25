@@ -507,6 +507,15 @@ void CD3DSkelMesh::Render(ModelInstance *pInstance, DDMatrix* pD3DTransforms, CD
 			for( int32 iBoneSet = 0; (iBoneSet < (int32)m_iBoneSetCount) ; ++iBoneSet )
 			{
 				BoneSetListItem* pBoneSet = &m_pBoneSetArray[iBoneSet];
+
+				// LT1 models get one bone set per skeleton node, so hiding a node skips its set.
+				// iCurrentPolyIndex still advances, as the next set's draw count is taken from it
+				if (pInstance && pInstance->IsNodeHidden(pBoneSet->BoneSetArray[0]))
+				{
+					iCurrentPolyIndex = pBoneSet->iIndexIntoIndexBuff;
+					continue;
+				}
+
 				nNumActiveBones = SetTransformsToBoneSet(pBoneSet,pD3DTransforms, nNumActiveBones);
 
 				// Set the vertex shader constants.

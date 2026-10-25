@@ -24,6 +24,7 @@ public:
 
     //ILTModel overrides.
     LTRESULT SetCurAnim(HOBJECT hModel, ANIMTRACKERID TrackerID, HMODELANIM hAnim);
+    LTRESULT SetNodeHideStatus(HOBJECT hModel, const char *pNodeName, bool bHidden);
 
 	// getfilesnames 
 	LTRESULT GetFilenames( HOBJECT hModel, 
@@ -246,3 +247,22 @@ LTRESULT CLTModelClient::IsModelDBLoaded( HMODELDB hModelDB)
 	return LTFALSE ;
 } 
 
+
+// LT1's client SetModelNodeHideStatus for a model the client created.
+// Sets the same bits si_SetModelNodeHideStatus sets on the server, which CD3DSkelMesh::Render skips
+LTRESULT CLTModelClient::SetNodeHideStatus(HOBJECT hModel, const char *pNodeName, bool bHidden)
+{
+    if (!hModel || !pNodeName || hModel->m_ObjectType != OT_MODEL)
+        return LT_ERROR;
+    ModelInstance *pInst = hModel->ToModel();
+    Model *pModelDB = pInst->GetModelDB();
+    if (!pModelDB)
+        return LT_ERROR;
+    uint32 nNode = 0;
+    if (!pModelDB->FindNode(pNodeName, &nNode))
+        return LT_NODENOTFOUND;
+    if (pInst->IsNodeHidden(nNode) == bHidden)
+        return LT_NOCHANGE;
+    pInst->SetNodeHidden(nNode, bHidden);
+    return LT_OK;
+}

@@ -872,6 +872,23 @@ Used for: Models and Animation.
 
 	virtual LTRESULT UpdateModelOBB( HOBJECT hObj, ModelOBB * ) ;
 
+/*!
+\param hModel      Model instance handle.
+\param pNodeName   The node's name.
+\param bHidden     Hide the node's geometry, or show it again.
+\return \b LT_OK, \b LT_NOCHANGE if it already was, \b LT_NODENOTFOUND, or
+        \b LT_UNSUPPORTED where the side has no implementation.
+
+LT1's client SetModelNodeHideStatus, for a model the client created itself.
+A server object's hidden nodes come from the server instead.
+Not pure, so nothing else that implements ILTModel has to change.
+
+Used for models rendering.
+*/
+	virtual LTRESULT SetNodeHideStatus(HOBJECT hModel, const char *pNodeName, bool bHidden)
+	{
+		return LT_UNSUPPORTED;
+	}
 
 };
 
