@@ -153,7 +153,7 @@ void CGrenade::HandleTouch(HOBJECT hObj)
 		if (hObj == m_hFiredFrom) return; // Let it get out of our bounding box...
 
 		// return if it hit a non solid object
-		if (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+		if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 			return;
 
 		if (m_nBounceCount <= 0) return;
@@ -359,13 +359,13 @@ void CGasGrenade::HandleTouch(HOBJECT hObj)
 	if (hObj == m_hFiredFrom) return; // Let it get out of our bounding box...
 
 	// return if it hit a non solid object
-	if (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	// See if we hit the sky...
-	HCLASS hClassObj	= pServerDE->GetObjectClass(hObj);
-	HCLASS hClassWorld  = pServerDE->GetObjectClass(pServerDE->GetWorldObject());
-	if (pServerDE->IsKindOf(hClassObj, hClassWorld))
+	// Was: IsKindOf(GetObjectClass(hObj), GetObjectClass(GetWorldObject())), which also matched world models.
+	// Jupiter has no world HOBJECT, so this asks IsWorldObject, which matches only the world itself
+	if (pServerDE->IsWorldObject(hObj) == LT_YES)
 	{
 		CollisionInfo info;
 		pServerDE->GetLastCollision(&info);
@@ -650,7 +650,7 @@ void CTimeBomb::HandleTouch(HOBJECT hObj)
 	if(hObj == m_hFiredFrom)
 		return;
 
-	if(hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID))
+	if(pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID))
 		return;
 
 	if (pServerDE->IsKindOf(pServerDE->GetObjectClass(hObj), pServerDE->GetClass("CBaseCharacter")))
@@ -903,7 +903,7 @@ void CProximityBomb::HandleTouch(HOBJECT hObj)
 	if(hObj == m_hFiredFrom)
 		return;
 
-	if(hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID))
+	if(pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID))
 		return;
 
 	if(pServerDE->IsKindOf(pServerDE->GetObjectClass(hObj), pServerDE->GetClass("CBaseCharacter")))
@@ -1087,7 +1087,7 @@ void CRemoteBomb::HandleTouch(HOBJECT hObj)
 	if(hObj == m_hFiredFrom)
 		return;
 
-	if(hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID))
+	if(pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID))
 		return;
 
 	if (pServerDE->IsKindOf(pServerDE->GetObjectClass(hObj), pServerDE->GetClass("CBaseCharacter")))
@@ -1530,7 +1530,7 @@ void CHowitzerAltFrag::HandleTouch(HOBJECT hObj)
 	if (!pServerDE) return;
 
 	// return if it hit a non solid object
-	if (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	// return if it hit another of this same class
@@ -1910,7 +1910,7 @@ void CNapalmFireball::HandleTouch(HOBJECT hObj)
 	if (!pServerDE) return;
 
 	// return if it hit a non solid object
-	if (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	// return if it hit another of this same class
@@ -2773,7 +2773,7 @@ void CFlareProjectile::HandleTouch(HOBJECT hObj)
 	if(hObj == m_hFiredFrom) return; // Let it get out of our bounding box...
 
 	// return if it hit a non solid object
-	if(hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if(pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	// return if it hit another of this same class
@@ -3278,7 +3278,7 @@ void COrbProjectile::HandleTouch(HOBJECT hObj)
 	if(m_hHitObject) return;
 	if(hObj == m_hFiredFrom) return;
 
-	if (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	if(m_bState == THEORB_STATE_TRACKING)
@@ -3667,7 +3667,7 @@ void COrbAltProjectile::HandleTouch(HOBJECT hObj)
 	if(m_hHitObject) return;
 	if(hObj == m_hFiredFrom) return;
 
-	if (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	// Change the view back to the character if we hit anything
@@ -5787,7 +5787,7 @@ void CSkullProjectile::HandleTouch(HOBJECT hObj)
 	if(hObj == m_hFiredFrom) return;
 
 	// return if it hit a non solid object [gjk]
-	if (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	if(m_bState == THEORB_STATE_TRACKING)
@@ -6193,7 +6193,7 @@ void CFlayerChain::HandleTouch(HOBJECT hObj)
 	if(!hObj) return;
 	if(m_hHitObject) return;
 	if(hObj == m_hFiredFrom) return;
-	if (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	if(!hObj) return;
@@ -6831,7 +6831,7 @@ void CRockProjectile::HandleTouch(HOBJECT hObj)
 	if(m_nBounceCount <= 0) return;		// Don't do anything else if it stopped bouncing
 
 	// return if it hit a non solid object
-	if(hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if(pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	// damage a player if it hit one

@@ -1027,7 +1027,7 @@ DBOOL AI_Shared::Jump(HOBJECT m_hObject, DFLOAT m_YjumpSpeed, DFLOAT m_ZjumpSpee
     	DBOOL bIsStandingOn;
 
 	    pServerDE->GetStandingOn(m_hObject, &collisionInfo);
-    	bIsStandingOn = (collisionInfo.m_hObject == pServerDE->GetWorldObject());
+    	bIsStandingOn = (pServerDE->IsWorldObject(collisionInfo.m_hObject) == LT_YES);
     
         if ( bIsStandingOn == DTRUE )
         {

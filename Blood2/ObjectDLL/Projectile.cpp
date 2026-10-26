@@ -401,7 +401,7 @@ void CProjectile::HandleTouch(HOBJECT hObj)
 	if (hObj == m_hFiredFrom) return; // Let it get out of our bounding box...
 
 	// return if it hit a non solid object 
-	if (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	// return if it hit another of this same class
@@ -409,9 +409,9 @@ void CProjectile::HandleTouch(HOBJECT hObj)
 		return;
 
 	// See if we hit the sky...
-	HCLASS hClassObj	= pServerDE->GetObjectClass(hObj);
-	HCLASS hClassWorld  = pServerDE->GetObjectClass(pServerDE->GetWorldObject());
-	if (pServerDE->IsKindOf(hClassObj, hClassWorld))
+	// Was: IsKindOf(GetObjectClass(hObj), GetObjectClass(GetWorldObject())), which also matched world models.
+	// Jupiter has no world HOBJECT, so this asks IsWorldObject, which matches only the world itself
+	if (pServerDE->IsWorldObject(hObj) == LT_YES)
 	{
 		CollisionInfo info;
 		pServerDE->GetLastCollision(&info);
@@ -789,7 +789,7 @@ SurfaceType CProjectile::GetSurfaceType(HOBJECT hObject)
 	
 	SurfaceType eType = ST_UNKNOWN;
 
-	if (pServerDE->GetWorldObject() == hObject)
+	if (pServerDE->IsWorldObject(hObject) == LT_YES)
 	{
 		eType = ST_WORLD;
 	}

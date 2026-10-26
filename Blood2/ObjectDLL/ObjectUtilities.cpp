@@ -228,7 +228,7 @@ SurfaceType GetSurfaceType(HOBJECT hObject, HPOLY hPoly)
 	SurfaceType eType = SURFTYPE_UNKNOWN;
 
 	// First see if we hit the world
-	if (pServerDE->GetWorldObject() == hObject)
+	if (pServerDE->IsWorldObject(hObject) == LT_YES)
 	{
 		DDWORD dwFlags;
 		if (hPoly != INVALID_HPOLY && pServerDE->GetPolyTextureFlags(hPoly, &dwFlags) == DE_OK)

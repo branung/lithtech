@@ -821,7 +821,7 @@ void SoccerBall::OnTouchNotify( HOBJECT hObj, float fForce )
 
 	g_pServerDE->GetObjectPos( m_hObject, &vPos );
 
-	if( hObj == g_pServerDE->GetWorldObject( ))
+	if( g_pServerDE->IsWorldObject(hObj) == LT_YES)
 	{
 		VEC_SUB( vEffectiveVel, vOtherVel, vVel );
 		fEffectiveVelMag = VEC_MAG( vEffectiveVel );

@@ -1819,7 +1819,7 @@ DBOOL AI_Mgr::HandleDamage()
 		CollisionInfo collisionInfo;
 		m_pServerDE->GetStandingOn(m_hObject, &collisionInfo);
 
-		if(collisionInfo.m_hObject && (collisionInfo.m_hObject != m_pServerDE->GetWorldObject()))
+		if(collisionInfo.m_hObject && (m_pServerDE->IsWorldObject(collisionInfo.m_hObject) != LT_YES))
 		{
 			DDWORD dwFlags = m_pServerDE->GetObjectFlags(collisionInfo.m_hObject);
 
@@ -2232,7 +2232,7 @@ DBOOL AI_Mgr::AI_Update()
 	CollisionInfo collisionInfo;
 	m_pServerDE->GetStandingOn(m_hObject, &collisionInfo);
 
-	if(collisionInfo.m_hObject && (collisionInfo.m_hObject != m_pServerDE->GetWorldObject()))
+	if(collisionInfo.m_hObject && (m_pServerDE->IsWorldObject(collisionInfo.m_hObject) != LT_YES))
 	{
 		HCLASS hCollClass = m_pServerDE->GetObjectClass(collisionInfo.m_hObject);
 		HCLASS hBaseChar = m_pServerDE->GetClass("CBaseCharacter");

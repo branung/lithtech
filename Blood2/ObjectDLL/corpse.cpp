@@ -873,7 +873,7 @@ void CCorpse::CreateBloodPool()
 	if (g_pServerDE->IntersectSegment(&iq, &ii))
 	{
 		// Only care if we hit the world
-		if (ii.m_hObject == g_pServerDE->GetWorldObject())
+		if (g_pServerDE->IsWorldObject(ii.m_hObject) == LT_YES)
 		{
 			HCLASS hClass = g_pServerDE->GetClass("CClientSplatFX");
 			ii.m_Point.y += 0.1f;

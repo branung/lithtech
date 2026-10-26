@@ -703,7 +703,7 @@ void CGib::HandleTouch(HOBJECT hObj, DFLOAT fData)
 	}
 
 	// return if it hit a non solid object
-	if (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
  	// Cast a ray from our last known position to see what we hit

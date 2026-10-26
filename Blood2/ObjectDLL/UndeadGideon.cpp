@@ -584,7 +584,7 @@ void UndeadGideon::MC_Dodge_Left()
 
 		m_pServerDE->GetStandingOn(m_hObject, &collisionInfo);
 
-		if ((collisionInfo.m_hObject == m_pServerDE->GetWorldObject()) && (vVel.y <= 0.0f))
+		if ((m_pServerDE->IsWorldObject(collisionInfo.m_hObject) == LT_YES) && (vVel.y <= 0.0f))
 		{
 			DVector vVel;
 			VEC_INIT(vVel);
@@ -627,7 +627,7 @@ void UndeadGideon::MC_Dodge_Right()
 
 		m_pServerDE->GetStandingOn(m_hObject, &collisionInfo);
 
-		if ((collisionInfo.m_hObject == m_pServerDE->GetWorldObject()) && (vVel.y <= 0.0f))
+		if ((m_pServerDE->IsWorldObject(collisionInfo.m_hObject) == LT_YES) && (vVel.y <= 0.0f))
 		{
 			DVector vVel;
 			VEC_INIT(vVel);

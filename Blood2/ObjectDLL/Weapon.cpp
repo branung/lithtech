@@ -724,7 +724,7 @@ DBOOL CWeapon::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 					}
 				}
 				// Check to see if we hit a world object that can be shot through
-				else if(ii.m_hObject == pServerDE->GetWorldObject() && eType != SURFTYPE_FIRETHROUGH)
+				else if(pServerDE->IsWorldObject(ii.m_hObject) == LT_YES && eType != SURFTYPE_FIRETHROUGH)
 				{
 					AddImpact(&(iq.m_From), &(ii.m_Point), vFire, &(ii.m_Plane.m_Normal), nFX, nExtras, &ext);
 					SendSoundTrigger(m_hOwner, SOUND_GUNIMPACT, ii.m_Point, 200.0f);

@@ -362,7 +362,7 @@ void CShellCasing::HandleTouch(HOBJECT hObj)
 	if (!pServerDE || !m_hObject) return;
 
 	// return if it hit a non solid object
-	if (hObj == m_hFiredFrom || (hObj != pServerDE->GetWorldObject() && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID))) // Ignore non-solid objects
+	if (hObj == m_hFiredFrom || (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID))) // Ignore non-solid objects
 		return;
 
 	// Only bounce so many times..

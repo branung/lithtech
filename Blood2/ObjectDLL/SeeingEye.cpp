@@ -235,9 +235,8 @@ void SeeingEye::ObjectTouch (HOBJECT hObj)
 	if (!pServerDE) return;
 
 	// return if it hit a non solid object, but not if it hit a world object
-	HOBJECT hWorld = pServerDE->GetWorldObject();
-
-	if (hObj != hWorld && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
+	// (was: HOBJECT hWorld = pServerDE->GetWorldObject(); hObj != hWorld)
+	if (pServerDE->IsWorldObject(hObj) != LT_YES && !(pServerDE->GetObjectFlags(hObj) & FLAG_SOLID)) // Ignore non-solid objects
 		return;
 
 	if (!m_bDropped)

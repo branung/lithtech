@@ -865,7 +865,7 @@ int CDestructable::CalculateHitLimb(DVector vDir, DVector vPos, DFLOAT fDamage)
 			VEC_ADDSCALED(iq.m_To, vPos, vDir, 75.0f);
 
 			// Apply a blood splat to the wall
-			if(pServerDE->IntersectSegment(&iq, &ii) && (ii.m_hObject == pServerDE->GetWorldObject()))
+			if(pServerDE->IntersectSegment(&iq, &ii) && (pServerDE->IsWorldObject(ii.m_hObject) == LT_YES))
 			{
 //				pW->AddImpact(WFX_BLOODSPLAT, ii.m_Point, vDir, ii.m_Plane.m_Normal, fDamage * 2.0f, 
 //							  ii.m_hObject, SURFTYPE_FLESH);
