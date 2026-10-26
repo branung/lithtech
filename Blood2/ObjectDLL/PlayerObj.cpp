@@ -1363,7 +1363,7 @@ void CPlayerObj::AddRemoteBomb(CProjectile* pBomb)
 	if (!m_pBombList)
 		m_pBombList = pServerDE->CreateObjectList();
 
-	HOBJECT hBombObject = pServerDE->ObjectToHandle((LPBASECLASS)pBomb);
+	HOBJECT hBombObject = pServerDE->ObjectToHandle((DEBaseClass*)pBomb);
 	if( hBombObject )
 	{
 		ObjectLink* ol = pServerDE->AddObjectToList(m_pBombList, hBombObject);
@@ -1386,7 +1386,7 @@ void CPlayerObj::RemoveRemoteBomb(CProjectile* pBomb)
 
 	if(m_pBombList)
 	{
-		HOBJECT hBombObject = pServerDE->ObjectToHandle((LPBASECLASS)pBomb);
+		HOBJECT hBombObject = pServerDE->ObjectToHandle((DEBaseClass*)pBomb);
 		if( hBombObject )
 		{
 			pServerDE->RemoveObjectFromList(m_pBombList, hBombObject);
@@ -1881,7 +1881,7 @@ DBOOL CPlayerObj::Update(DVector *pMovement)
 		{
 			DVector vNull;
 			VEC_INIT(vNull);
-			DamageObject(m_hObject, (LPBASECLASS)this, m_hObject, 100.0f, vNull, vNull, DAMAGE_TYPE_DEATH);
+			DamageObject(m_hObject, (DEBaseClass*)this, m_hObject, 100.0f, vNull, vNull, DAMAGE_TYPE_DEATH);
 		}
 	}
 
@@ -2262,7 +2262,7 @@ void CPlayerObj::GoToStartPoint()
 		// Set the rotation..
 		m_fYaw = pGSP->GetPitchYawRoll().y;
 		m_fPitch = 0.0f;
-		HOBJECT hGSP = pServerDE->ObjectToHandle((LPBASECLASS)pGSP);
+		HOBJECT hGSP = pServerDE->ObjectToHandle((DEBaseClass*)pGSP);
 		pServerDE->GetObjectPos(hGSP, &pos);
 
 		// Send any trigger message this is supposed to cause
@@ -2674,7 +2674,7 @@ void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 
 		case CMSG_PLAYERMESSAGE:
 		{
-			char *pszPlayerName;
+			const char *pszPlayerName;
 
 			if (g_pBloodServerShell->GetGameType() != GAMETYPE_SINGLE)
 			{
@@ -2704,7 +2704,7 @@ void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 								{
 									if (m_hstrPlayerName)
 									{
-										char *pszPlayerName = pServerDE->GetStringData(m_hstrPlayerName);
+										const char *pszPlayerName = pServerDE->GetStringData(m_hstrPlayerName);
 										if( pszPlayerName )
 											_mbscat((unsigned char*)msgbuf, (const unsigned char*)pszPlayerName);
 									}
@@ -2715,7 +2715,7 @@ void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 								{
 									if (m_hstrWhoIKilledLast)
 									{
-										char *pszWhoIKilledLast = pServerDE->GetStringData(m_hstrWhoIKilledLast);
+										const char *pszWhoIKilledLast = pServerDE->GetStringData(m_hstrWhoIKilledLast);
 										if( pszWhoIKilledLast )
 											_mbscat((unsigned char*)msgbuf, (const unsigned char*)pszWhoIKilledLast );
 									}
@@ -2726,7 +2726,7 @@ void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 								{
 									if (m_hstrWhoKilledMeLast)
 									{
-										char *pszWhoKilledMeLast = pServerDE->GetStringData(m_hstrWhoKilledMeLast);
+										const char *pszWhoKilledMeLast = pServerDE->GetStringData(m_hstrWhoKilledMeLast);
 										if( pszWhoKilledMeLast )
 											_mbscat((unsigned char*)msgbuf, (const unsigned char*)pszWhoKilledMeLast );
 									}
@@ -2793,7 +2793,7 @@ void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 		{
 			DVector vNull;
 			VEC_INIT(vNull);
-			DamageObject(m_hObject, (LPBASECLASS)this, m_hObject, 100.0f, vNull, vNull, DAMAGE_TYPE_DEATH);
+			DamageObject(m_hObject, (DEBaseClass*)this, m_hObject, 100.0f, vNull, vNull, DAMAGE_TYPE_DEATH);
 		}
 		break;
 
@@ -3116,13 +3116,13 @@ void CPlayerObj::OnStringKey(ArgList* pArgList)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
-	char* pKey = pArgList->argv[0];
+	const char* pKey = pArgList->argv[0];
 	if (!pKey) return;
 
 	if(pArgList->argc > 1 && _mbsicmp((const unsigned char*)pKey, (const unsigned char*)"play_sound") == 0)
 	{
 		char	szSound[MAX_CS_FILENAME_LEN+1];
-		char*	pSound = pArgList->argv[1];
+		const char*	pSound = pArgList->argv[1];
 
 		if( _mbsicmp((const unsigned char*)pSound,(const unsigned char*)"footstep") == 0 )
 		{
@@ -3381,7 +3381,7 @@ void CPlayerObj::SendMessageToClient(DBYTE messageID)
 //	PURPOSE:	Sends a message to this player's client shell.
 //
 // --------------------------------------------------------------------------- //
-void CPlayerObj::SendConsoleMessage(char *msg)
+void CPlayerObj::SendConsoleMessage(const char *msg)
 {
 	_mbscpy((unsigned char*)msgbuf, (const unsigned char*)msg);
 	SendMessageToClient(SMSG_CONSOLEMESSAGE);
@@ -3500,7 +3500,7 @@ void CPlayerObj::ProcessCheat(DBYTE nCheatCode, DBOOL bState)
 				HSTRING hMsg = pServerDE->CreateString("KILL");
 				if (hClass && hMsg)
 				{
-					SendTriggerMsgToClass((LPBASECLASS)this, hClass, hMsg);
+					SendTriggerMsgToClass((DEBaseClass*)this, hClass, hMsg);
 				}
 				// For good measure..
 				HSTRING hName = pServerDE->CreateString("mime");
@@ -4464,7 +4464,7 @@ DBOOL CPlayerObj::ProcessTriggerMsg(HOBJECT hSender, HMESSAGEREAD hRead)
 {
 	DBOOL bRet = DFALSE;
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pMsg = g_pServerDE->GetStringData(hMsg);
+	const char *pMsg = g_pServerDE->GetStringData(hMsg);
 
 	if (!pMsg)
 	{
@@ -4472,7 +4472,11 @@ DBOOL CPlayerObj::ProcessTriggerMsg(HOBJECT hSender, HMESSAGEREAD hRead)
 		return DFALSE;
 	}
 
-	char* pMsgType = strtok(pMsg, " ");
+	// Tokenize a copy, since strtok writes into the string and GetStringData returns the engine's own
+	char buf[256];
+	SAFE_STRCPY(buf, pMsg);
+
+	char* pMsgType = strtok(buf, " ");
 	if (pMsgType)
 	{
 		if (_mbsicmp((const unsigned char*)"Music", (const unsigned char*)pMsgType) == 0)
@@ -5632,7 +5636,7 @@ DBOOL CPlayerObj::CreateCorpse()
 									         theStruct.m_SkinName,MAX_CS_FILENAME_LEN+1);
 
 	// Allocate an object...
-	BaseClass* pObj = g_pServerDE->CreateObject( hClass, &theStruct );
+	DEBaseClass* pObj = g_pServerDE->CreateObject( hClass, &theStruct );
 	if( !pObj )	return DFALSE;
 
 	//Set the animation to the corpse animation
@@ -6313,7 +6317,8 @@ void CPlayerObj::UpdateClientPhysics()
 
 
 	// Did our container states change?
-	nContainers = pServerDE->GetObjectContainers(m_hObject, objContainers, objContainerFlags,
+	// Jupiter's GetObjectContainers dropped the container flags output which was never read
+	nContainers = pServerDE->GetObjectContainers(m_hObject, objContainers,
 		sizeof(objContainers)/sizeof(objContainers[0]));
 	nContainers = DMIN(nContainers, MAX_TRACKED_CONTAINERS);
 	if(nContainers != m_nCurContainers)
@@ -6432,7 +6437,7 @@ void CPlayerObj::UpdateClientPhysics()
 			pServerDE->WriteToMessageFloat(hWrite, m_fLadderVel);
 
 			frigginCoeff = 0.0f;
-			pServerDE->Physics()->GetFrictionCoefficient(m_hObject, frigginCoeff);
+			pServerDE->Physics()->GetFrictionCoefficient(m_hObject, &frigginCoeff);
 			pServerDE->WriteToMessageFloat(hWrite, frigginCoeff);
 		}
 

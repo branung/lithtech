@@ -183,7 +183,7 @@ void CClientLightningSFX::ReadProp(ObjectCreateStruct *pData)
 void CClientLightningSFX::HandleTrigger(HOBJECT hSender, HMESSAGEREAD hRead)
 {
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pszMessage = g_pServerDE->GetStringData(hMsg);
+	const char *pszMessage = g_pServerDE->GetStringData(hMsg);
 
 	if(_mbsncmp((const unsigned char*)pszMessage, (const unsigned char*)"FIRE", 4) == 0)
 		Fire(hSender);
@@ -202,7 +202,7 @@ void CClientLightningSFX::HandleTrigger(HOBJECT hSender, HMESSAGEREAD hRead)
 
 void CClientLightningSFX::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageVector(hWrite, &cl.vSource);
@@ -231,7 +231,7 @@ void CClientLightningSFX::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CClientLightningSFX::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromMessageVector(hRead, &cl.vSource);

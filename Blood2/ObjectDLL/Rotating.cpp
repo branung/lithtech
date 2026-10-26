@@ -65,7 +65,7 @@ Rotating::Rotating() : Aggregate()
 
 Rotating::~Rotating()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hstrSpinUpSound)
@@ -93,7 +93,7 @@ Rotating::~Rotating()
 //
 // ----------------------------------------------------------------------- //
 
-DDWORD Rotating::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData)
+DDWORD Rotating::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData)
 {
 	switch(messageID)
 	{
@@ -148,9 +148,9 @@ DDWORD Rotating::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pD
 //
 // --------------------------------------------------------------------------- //
 
-DDWORD Rotating::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
+DDWORD Rotating::ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return 0;
 
 	switch (messageID)
@@ -178,7 +178,7 @@ DDWORD Rotating::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD me
 
 DBOOL Rotating::ReadProp(ObjectCreateStruct *)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DFLOAT fRealVal;
@@ -257,7 +257,7 @@ DBOOL Rotating::ReadProp(ObjectCreateStruct *)
 
 void Rotating::InitialUpdate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_eState != RWM_OFF)
@@ -280,7 +280,7 @@ void Rotating::InitialUpdate()
 
 DBOOL Rotating::Init(HOBJECT hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!hObject || !pServerDE) return DFALSE;
 
 	m_hObject = hObject;
@@ -299,7 +299,7 @@ DBOOL Rotating::Init(HOBJECT hObject)
 
 void Rotating::SetNormalRotation()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_eState = RWM_NORMAL;
@@ -322,7 +322,7 @@ void Rotating::SetNormalRotation()
 
 void Rotating::SetOff()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_eState = RWM_OFF;
@@ -345,7 +345,7 @@ void Rotating::SetOff()
 
 void Rotating::SetSpinUp()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_eState = RWM_SPINUP;
@@ -368,7 +368,7 @@ void Rotating::SetSpinUp()
 
 void Rotating::SetSpinDown()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_eState = RWM_SPINDOWN;
@@ -391,7 +391,7 @@ void Rotating::SetSpinDown()
 
 void Rotating::Update()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DFLOAT fUpdateDelta = RWM_UPDATE_DELTA;
@@ -431,7 +431,7 @@ void Rotating::Update()
 
 void Rotating::UpdateNormalRotation()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DRotation rRot;
@@ -472,7 +472,7 @@ void Rotating::UpdateNormalRotation()
 
 void Rotating::UpdateSpinUp()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DBOOL bXDone = DFALSE, bYDone = DFALSE, bZDone = DFALSE;
@@ -534,7 +534,7 @@ void Rotating::UpdateSpinUp()
 
 void Rotating::UpdateSpinDown()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DBOOL bXDone = DFALSE, bYDone = DFALSE, bZDone = DFALSE;
@@ -596,10 +596,10 @@ void Rotating::UpdateSpinDown()
 
 void Rotating::HandleTrigger(HOBJECT hSender, HSTRING hMsg)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (!pMsg || !pMsg[0]) return;
 
 	if (m_eState == RWM_OFF && _mbsicmp((const unsigned char*)pMsg, (const unsigned char*)TRIGGER_MSG_ON) == 0)
@@ -632,7 +632,7 @@ void Rotating::HandleTrigger(HOBJECT hSender, HSTRING hMsg)
 
 void Rotating::StartSound(HSTRING hstrSoundName, DBOOL bLoop)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	// Stop the last sound if there is one...
@@ -645,7 +645,7 @@ void Rotating::StartSound(HSTRING hstrSoundName, DBOOL bLoop)
 
 	if (!hstrSoundName) return;
 
-	char *pSoundName = pServerDE->GetStringData(hstrSoundName);
+	const char *pSoundName = pServerDE->GetStringData(hstrSoundName);
 	if (!pSoundName) return;
 
 
@@ -684,7 +684,7 @@ void Rotating::StartSound(HSTRING hstrSoundName, DBOOL bLoop)
 
 void Rotating::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	DFLOAT fTime = pServerDE->GetTime();
@@ -722,7 +722,7 @@ void Rotating::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void Rotating::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	DFLOAT fTime = pServerDE->GetTime();

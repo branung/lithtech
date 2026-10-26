@@ -47,7 +47,7 @@ CInvFlashlight::CInvFlashlight() : CInvItem(INV_FLASHLIGHT)
 
 void CInvFlashlight::Init(HOBJECT hOwner)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CInvItem::Init(hOwner);
@@ -73,7 +73,7 @@ void CInvFlashlight::Init(HOBJECT hOwner)
 
 DBOOL CInvFlashlight::CreateLight()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	if( m_hLight )
@@ -88,8 +88,8 @@ DBOOL CInvFlashlight::CreateLight()
 	ocStruct.m_Flags = FLAG_FORCECLIENTUPDATE;
 	ocStruct.m_ObjectType = OT_NORMAL; 
 
-	HCLASS hClass = pServerDE->GetClass("BaseClass");
-	LPBASECLASS	pLight = pServerDE->CreateObject(hClass, &ocStruct);
+	HCLASS hClass = pServerDE->GetClass("DEBaseClass");
+	DEBaseClass*	pLight = pServerDE->CreateObject(hClass, &ocStruct);
 
 	if (pLight)
 	{
@@ -135,7 +135,7 @@ DBOOL CInvFlashlight::AddItem(DBYTE nCount)
 
 int CInvFlashlight::Activate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	if (!m_hLight)
@@ -167,7 +167,7 @@ int CInvFlashlight::Activate()
 
 int CInvFlashlight::Deactivate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hLight) return DFALSE;
 	
 	DDWORD dwUsrFlags = pServerDE->GetObjectUserFlags(m_hLight);
@@ -192,7 +192,7 @@ void CInvFlashlight::Update()
 {
 	DFLOAT fFrameTime;
 	CPlayerObj* pPlayer;
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CInvItem::Update();
@@ -252,7 +252,7 @@ void CInvFlashlight::Update()
 
 void CInvFlashlight::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	CInvItem::Save(hWrite, dwSaveFlags);
@@ -271,7 +271,7 @@ void CInvFlashlight::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CInvFlashlight::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	CInvItem::Load(hRead, dwLoadFlags);
@@ -305,7 +305,7 @@ void CInvFlashlight::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 
 void CInvMedkit::Init(HOBJECT hOwner)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CInvItem::Init(hOwner);
@@ -348,7 +348,7 @@ DBOOL CInvMedkit::AddItem(DBYTE nCount)
 
 int CInvMedkit::Activate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return 0;
 
 	// Make sure it's a character
@@ -425,7 +425,7 @@ CInvNightGoggles::CInvNightGoggles() : CInvItem(INV_NIGHTGOGGLES)
 
 void CInvNightGoggles::Init(HOBJECT hOwner)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CInvItem::Init(hOwner);
@@ -509,7 +509,7 @@ void CInvNightGoggles::Update()
 {
 	DFLOAT fFrameTime;
 	CPlayerObj* pPlayer;
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CInvItem::Update();
@@ -549,7 +549,7 @@ void CInvNightGoggles::Update()
 
 void CInvNightGoggles::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	CInvItem::Save(hWrite, dwSaveFlags);
@@ -569,7 +569,7 @@ void CInvNightGoggles::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CInvNightGoggles::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	CInvItem::Load(hRead, dwLoadFlags);
@@ -589,7 +589,7 @@ void CInvNightGoggles::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 
 void CInvBinoculars::Init(HOBJECT hOwner)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CInvItem::Init(hOwner);
@@ -612,7 +612,7 @@ void CInvBinoculars::Init(HOBJECT hOwner)
 
 int CInvBinoculars::Activate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	// Make sure it's a player
@@ -649,7 +649,7 @@ int CInvBinoculars::Activate()
 
 int CInvBinoculars::Deactivate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	// Make sure it's a player
@@ -684,7 +684,7 @@ CInvTheEye::CInvTheEye() : CInvItem(INV_THEEYE)
 
 void CInvTheEye::Init(HOBJECT hOwner)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CInvItem::Init(hOwner);
@@ -703,7 +703,7 @@ void CInvTheEye::Term()
 {
 	CInvItem::Term();
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hSeeingObject)
@@ -724,7 +724,7 @@ void CInvTheEye::Term()
 
 void CInvTheEye::SetRotation(DRotation *pRot)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hSeeingObject) return;
 
 	pServerDE->SetObjectRotation(m_hSeeingObject, pRot);
@@ -741,7 +741,7 @@ void CInvTheEye::SetRotation(DRotation *pRot)
 
 int CInvTheEye::Dropit()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
     if (!m_hSeeingObject)
@@ -779,7 +779,7 @@ int CInvTheEye::Dropit()
             // Check to make sure this is a valid class.
             if (pClass)
             {    
-            	LPBASECLASS pObject = pServerDE->CreateObject(pClass, &theStruct);
+            	DEBaseClass* pObject = pServerDE->CreateObject(pClass, &theStruct);
       
                 if (pObject)
                 {
@@ -814,7 +814,7 @@ int CInvTheEye::Dropit()
 
 int CInvTheEye::Activate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
     int nOn = 1;
@@ -843,7 +843,7 @@ int CInvTheEye::Activate()
 
 int CInvTheEye::Deactivate()
 {
-   	CServerDE* pServerDE = BaseClass::GetServerDE();
+   	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
     m_bIsActive = DFALSE;
@@ -911,7 +911,7 @@ DBOOL CInvTheEye::ActivateItem(char *msgbuf)
 
 void CInvTheEye::PickItUp()
 {
-   	CServerDE* pServerDE = BaseClass::GetServerDE();
+   	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_bDropped = DFALSE;
@@ -931,7 +931,7 @@ void CInvTheEye::PickItUp()
 
 void CInvTheEye::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	CInvItem::Save(hWrite, dwSaveFlags);
@@ -950,7 +950,7 @@ void CInvTheEye::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CInvTheEye::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	CInvItem::Load(hRead, dwLoadFlags);
@@ -982,7 +982,7 @@ void CInvTheEye::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 
 void CInvProxBomb::Init(HOBJECT hOwner)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CInvItem::Init(hOwner);
@@ -1045,7 +1045,7 @@ int CInvProxBomb::Activate()
 
 void CInvRemoteBomb::Init(HOBJECT hOwner)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CInvItem::Init(hOwner);
@@ -1108,7 +1108,7 @@ int CInvRemoteBomb::Activate()
 
 void CInvTimeBomb::Init(HOBJECT hOwner)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CInvItem::Init(hOwner);

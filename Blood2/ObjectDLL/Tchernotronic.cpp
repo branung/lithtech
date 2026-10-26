@@ -308,7 +308,7 @@ void Tchernotronic::TriggerMsg(HOBJECT hSender, HSTRING hMsg)
 
 DBOOL Tchernotronic::PlayAnimation(DDWORD dwNewAni)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || dwNewAni == INVALID_ANI) return DFALSE;
 
 	DDWORD dwAni	= pServerDE->GetModelAnimation(m_hObject);
@@ -337,7 +337,7 @@ DBOOL Tchernotronic::PlayAnimation(DDWORD dwNewAni)
 /*
 void Tchernotronic::AddExplosion(DVector &vPos)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	Explosion* pExplosion = DNULL;
@@ -400,7 +400,7 @@ void Tchernotronic::AddExplosion(DVector &vPos)
 
 void Tchernotronic::AddExplosion(DVector &vPos)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_GRENADE;

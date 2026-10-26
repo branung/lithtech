@@ -35,7 +35,7 @@ class CClientWeaponSFX : public CClientSFX
 
 inline void SendWeaponSFXMessage(DVector *source, DVector *dest, DVector *forward, DVector *normal, DDWORD nFX, DDWORD nExtras, WeaponFXExtras *ext)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if(!pServerDE || !source || !dest || !forward || !normal) return;
 
 

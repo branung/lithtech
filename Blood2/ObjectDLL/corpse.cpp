@@ -31,7 +31,7 @@ extern CPlayerObj* g_pPlayerObj;
 
 void CCorpse::Setup(HOBJECT hFireObj, DBOOL bLimbLoss)
 {
-	CServerDE* g_pServerDE = GetServerDE();
+	// g_pServerDE is a macro over the engine's pointer now (de_server.h), so the old local copy of it is gone
 	if (!g_pServerDE) return;
 
 	if(hFireObj)
@@ -84,8 +84,8 @@ void CCorpse::Setup(HOBJECT hFireObj, DBOOL bLimbLoss)
 		g_pServerDE->GetModelNodeTransform(m_hObject, "torso",&ocStruct.m_Pos,&ocStruct.m_Rotation);
 		ocStruct.m_Flags = FLAG_FORCECLIENTUPDATE;
 		
-		HCLASS hClass = g_pServerDE->GetClass("BaseClass");
-		BaseClass* pObj = g_pServerDE->CreateObject(hClass, &ocStruct);
+		HCLASS hClass = g_pServerDE->GetClass("DEBaseClass");
+		DEBaseClass* pObj = g_pServerDE->CreateObject(hClass, &ocStruct);
 
 		if(pObj)
 		{
@@ -178,7 +178,7 @@ DDWORD CCorpse::EngineMessageFn(DDWORD messageID, void *pData, float fData)
 
 DDWORD CCorpse::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead )
 {
-	CServerDE* g_pServerDE = GetServerDE();
+	// g_pServerDE is a macro over the engine's pointer now (de_server.h), so the old local copy of it is gone
 	if (!g_pServerDE) return 0;
 
 	switch(messageID)
@@ -751,7 +751,7 @@ void CCorpse::OnStringKey(ArgList* pArgList)
 {
 	if (!g_pServerDE || !pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
-	char* pKey = pArgList->argv[0];
+	const char* pKey = pArgList->argv[0];
 	if (!pKey) return;
 
 	char szTemp[32];

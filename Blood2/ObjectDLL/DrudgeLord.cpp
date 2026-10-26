@@ -132,7 +132,7 @@ void DrudgeLord::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL DrudgeLord::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
     if(m_bLoadAnims)

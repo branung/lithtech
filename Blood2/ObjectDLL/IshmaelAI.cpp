@@ -132,7 +132,7 @@ DDWORD IshmaelAI::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 
 DBOOL IshmaelAI::FirstUpdate()
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE || !m_hObject) return DFALSE;
 
 	//Load up animation indexes if first model instance

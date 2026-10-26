@@ -83,8 +83,8 @@ class CMovement : public Aggregate
 
 	protected:
 
-		DDWORD	EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT lData);
-		DDWORD	ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
+		DDWORD	EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT lData);
+		DDWORD	ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
 
 		void	Update();
 		void	Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags);

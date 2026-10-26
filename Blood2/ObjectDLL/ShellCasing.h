@@ -12,7 +12,7 @@
 #define MAX_SHELLS	200
 
 
-class CShellCasing : public BaseClass
+class CShellCasing : public DEBaseClass
 {
 	public :
 

@@ -2,7 +2,7 @@
 //
 // MODULE  : B2BaseClass.h
 //
-// PURPOSE : A BaseClass extension for Blood2 objects
+// PURPOSE : A DEBaseClass extension for Blood2 objects
 //
 // CREATED : 8/4/98
 //
@@ -32,7 +32,7 @@ extern char g_szVarGameType[];
 
 	
 
-class B2BaseClass : public BaseClass
+class B2BaseClass : public DEBaseClass
 {
 	public :
 

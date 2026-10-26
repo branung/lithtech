@@ -413,7 +413,7 @@ void CClientExplosionSFX::HandleTrigger(HOBJECT hSender, HMESSAGEREAD hRead)
 
 void CClientExplosionSFX::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageVector(hWrite, &m_vPos);
@@ -437,7 +437,7 @@ void CClientExplosionSFX::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CClientExplosionSFX::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromMessageVector(hRead, &m_vPos);

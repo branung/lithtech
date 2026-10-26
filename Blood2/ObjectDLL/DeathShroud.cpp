@@ -142,7 +142,7 @@ void DeathShroud::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL DeathShroud::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
     if(m_bLoadAnims)

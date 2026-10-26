@@ -22,14 +22,14 @@
 #define	IGNORE_DESTRUCTABLE	0x00000004
 #define IGNORE_GLASS		0x00000008
 
-HSOUNDDE PlaySoundFromObject( HOBJECT hObject, char *pSoundName, DFLOAT fRadius, 
+HSOUNDDE PlaySoundFromObject( HOBJECT hObject, const char *pSoundName, DFLOAT fRadius, 
 						  DBYTE nSoundPriority, DBOOL bLoop = DFALSE, DBOOL bHandle = DFALSE, DBOOL bTime = DFALSE, DBYTE nVolume = 100,
 						  DBOOL bStreaming = DFALSE, DBOOL bInstant = DFALSE );
-HSOUNDDE PlaySoundFromPos( DVector *vPos, char *pSoundName, DFLOAT fRadius, 
+HSOUNDDE PlaySoundFromPos( DVector *vPos, const char *pSoundName, DFLOAT fRadius, 
 						  DBYTE nSoundPriority, DBOOL bLoop = DFALSE, DBOOL bHandle = DFALSE, DBOOL bTime = DFALSE, DBYTE nVolume = 100,
 						  DBOOL bStreaming = DFALSE);
 
-HSOUNDDE PlaySoundLocal( char *pSoundName, DBYTE nSoundPriority, 
+HSOUNDDE PlaySoundLocal( const char *pSoundName, DBYTE nSoundPriority, 
 						DBOOL bLoop = DFALSE, DBOOL bHandle = DFALSE, DBOOL bStream = DFALSE, DBYTE nVolume = 100 );
 
 
@@ -53,7 +53,7 @@ struct GlobalFilterFnData
 	HOBJECT *m_hIgnoreObjects;		// Objects to ignore
 };
 
-DBOOL GlobalFilterFn(HOBJECT hObj, void *pUserData);
+bool GlobalFilterFn(HOBJECT hObj, void *pUserData);
 
 DBOOL IsRandomChance(int nPercent);
 int   GetRandom(int lo, int hi);
@@ -173,9 +173,9 @@ inline DBOOL IsProjectile( HCLASS hObjClass )
 }
 
 
-void DamageObject(HOBJECT hResponsible, LPBASECLASS pDamager, 
+void DamageObject(HOBJECT hResponsible, DEBaseClass* pDamager, 
 						 HOBJECT hDamagee, DFLOAT fDamage, DVector vDir, DVector vPos,DBYTE nDamageType);
-void DamageObjectsInRadius(HOBJECT hResponsible, LPBASECLASS pDamager,
+void DamageObjectsInRadius(HOBJECT hResponsible, DEBaseClass* pDamager,
 								  DVector vOrigin, DFLOAT fRadius,
 								  DFLOAT fDamage, DBYTE nDamageType = DAMAGE_TYPE_NORMAL);
 

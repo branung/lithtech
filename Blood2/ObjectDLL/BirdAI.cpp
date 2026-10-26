@@ -387,7 +387,7 @@ void AI_Bird::AI_STATE_EscapeEnemy()
 
 void AI_Bird::MC_Jump()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector vPos,m_vDown;
@@ -456,7 +456,7 @@ void AI_Bird::MC_Jump()
 
 void AI_Bird::MC_Crouch()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector vPos,m_vDown;

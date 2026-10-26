@@ -26,7 +26,7 @@
 //
 // ----------------------------------------------------------------------- //
 		
-DDWORD CMovement::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData)
+DDWORD CMovement::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData)
 {
 	switch(messageID)
 	{
@@ -56,7 +56,7 @@ DDWORD CMovement::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *p
 //
 // ----------------------------------------------------------------------- //
 
-DDWORD CMovement::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
+DDWORD CMovement::ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
 {
 	return Aggregate::ObjectMessageFn(pObject, hSender, messageID, hRead);
 }
@@ -71,7 +71,7 @@ DDWORD CMovement::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD m
 
 DBOOL CMovement::Init(HOBJECT hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!hObject || !pServerDE) return DFALSE;
 
 	m_hObject = hObject;
@@ -97,7 +97,7 @@ DBOOL CMovement::Init(HOBJECT hObject)
 
 void CMovement::Update()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
     // Save our last position...
@@ -121,7 +121,7 @@ void CMovement::Update()
 
 DBOOL CMovement::CalculatePath(DVector vDestPos)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector vDims, vTest;
@@ -204,7 +204,7 @@ DBOOL CMovement::CalculatePath(DVector vDestPos)
 
 DVector CMovement::FindPosAroundObj(DVector vStart, DVector vDir)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return vStart;
 
 	DVector vDims, vPoint, vColor;
@@ -245,7 +245,7 @@ DVector CMovement::FindPosAroundObj(DVector vStart, DVector vDir)
 DBOOL CMovement::ClearToPoint(DVector vStart, DVector vDestPos, DVector vDims, IntersectInfo* IInfo)
 {
 	GlobalFilterFnData globalFilterFnData;
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DFLOAT fDim = (DFLOAT)sqrt((vDims.x * vDims.x) + (vDims.z * vDims.z)) + 0.1f;
@@ -301,7 +301,7 @@ DBOOL CMovement::ClearToPoint(DVector vStart, DVector vDestPos, DVector vDims, I
 
 DVector CMovement::FindShortestTurn(DVector vStart, DRotation* prRot, DFLOAT fMoveLen)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return vStart;
 
 	DVector vDir, vEnd, vCurPos;
@@ -398,7 +398,7 @@ DVector CMovement::FindTurn(DVector vStart, DVector vTestDir, DVector vMoveDir, 
 	VEC_INIT(vFinal);
 	VEC_COPY(vCurPos, vStart);
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return vFinal;
 
 	IntersectQuery IQuery;
@@ -417,7 +417,8 @@ DVector CMovement::FindTurn(DVector vStart, DVector vTestDir, DVector vMoveDir, 
 	}
 
 	//loop til we find a spot to turn
-	for(float fDist = 0.0f; !((fDist + fMoveLen) >= fMaxDist); fDist += fMoveLen)
+	float fDist;
+	for(fDist = 0.0f; !((fDist + fMoveLen) >= fMaxDist); fDist += fMoveLen)
 	{
 		VEC_ADDSCALED(vCurPos, vCurPos, vMoveDir, fMoveLen);
 
@@ -453,7 +454,7 @@ DVector CMovement::FindTurn(DVector vStart, DVector vTestDir, DVector vMoveDir, 
 
 void CMovement::AddPosToPathList(DVector vPathpoint)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector* vPoint = new DVector;
@@ -478,7 +479,7 @@ void CMovement::AddPosToPathList(DVector vPathpoint)
 
 void CMovement::ConsolidatePath()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	IntersectQuery IQuery;
@@ -545,7 +546,7 @@ void CMovement::ConsolidatePath()
 
 void CMovement::DebugDrawPath()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	HCLASS hClass = pServerDE->GetClass( "CClientDebugLine" );
@@ -583,7 +584,7 @@ void CMovement::DebugDrawPath()
 
 void CMovement::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToLoadSaveMessageObject(hWrite, m_hObject);
@@ -616,7 +617,7 @@ void CMovement::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CMovement::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromLoadSaveMessageObject(hRead, &m_hObject);

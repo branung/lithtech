@@ -437,7 +437,7 @@ void TripLaser::TriggerMsg(HOBJECT hSender, HSTRING hMsg)
 
 void TripLaser::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	// Apply damage 10 times a second.

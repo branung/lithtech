@@ -15,7 +15,7 @@
 
 
 BEGIN_CLASS(CHandWeaponModel)
-END_CLASS_DEFAULT_FLAGS(CHandWeaponModel, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CHandWeaponModel, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 
 // ----------------------------------------------------------------------- //
@@ -26,7 +26,7 @@ END_CLASS_DEFAULT_FLAGS(CHandWeaponModel, BaseClass, NULL, NULL, CF_HIDDEN)
 //
 // ----------------------------------------------------------------------- //
 
-CHandWeaponModel::CHandWeaponModel() : BaseClass(OT_MODEL)
+CHandWeaponModel::CHandWeaponModel() : DEBaseClass(OT_MODEL)
 {
 	m_bDropped = DFALSE;
 	m_bOwnedByPlayer = DFALSE;
@@ -110,7 +110,7 @@ DDWORD CHandWeaponModel::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT l
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, lData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, lData);
 }
 
 

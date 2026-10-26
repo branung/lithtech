@@ -24,7 +24,7 @@
 
 DBOOL PathMgr::BuildPathList()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 	
 	ClearPathList();
@@ -65,7 +65,7 @@ DBOOL PathMgr::BuildPathList()
 
 DBOOL PathMgr::GetPath(char* pBasePathName, PathList* pReturnList)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	if (!pBasePathName || !pReturnList || pBasePathName[0] == '\0') return DFALSE;
@@ -93,7 +93,7 @@ DBOOL PathMgr::GetPath(char* pBasePathName, PathList* pReturnList)
 		PathListData* pCurData = m_pathList[i];
 		if (!pCurData || !pCurData->m_hstrName) return DFALSE;
 
-		char* pName = pServerDE->GetStringData(pCurData->m_hstrName);
+		const char* pName = pServerDE->GetStringData(pCurData->m_hstrName);
 		if (!pName) return DFALSE;
 
 		if (strnicmp(pName, pBasePathName, nNameLen) == 0)
@@ -150,7 +150,7 @@ DBOOL PathMgr::GetPath(char* pBasePathName, PathList* pReturnList)
 
 void PathMgr::AddToSortedList(DList* pSortList, PathListData* pCurData)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pSortList || !pCurData) return;
 
 	DLink* pLink = new DLink;

@@ -137,7 +137,7 @@ void GremlinAI::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL GremlinAI::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
 	m_hObject = m_pServerDE->ObjectToHandle(this);

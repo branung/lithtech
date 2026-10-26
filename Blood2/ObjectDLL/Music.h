@@ -29,7 +29,7 @@ class CMusic
 
 		DBOOL						Init( CPlayerObj* pMyObj );
 
-		DBOOL						HandleMusicMessage( char *pMsg );
+		DBOOL						HandleMusicMessage( const char *pMsg );
 
 		DBOOL						SetMusicLevel( DBYTE nLevel );
 		DBOOL						PlayMotif( char *pMotifName, DBOOL bLoop );

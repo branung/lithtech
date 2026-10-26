@@ -137,7 +137,7 @@ DDWORD SoundFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		{
     		if (!Update()) 
             {
-		    	CServerDE* pServerDE = BaseClass::GetServerDE();
+		    	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			    if (pServerDE) pServerDE->RemoveObject(m_hObject);
             }
 		}
@@ -200,7 +200,7 @@ DDWORD SoundFX::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD 
 void SoundFX::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 {
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pszMessage = g_pServerDE->GetStringData( hMsg );
+	const char *pszMessage = g_pServerDE->GetStringData( hMsg );
 
     if ( _mbsicmp((const unsigned char*)pszMessage, (const unsigned char*)"TOGGLE") == 0)
     {
@@ -401,7 +401,7 @@ void SoundFX::UpdateSound()
 		m_hsndSound = DNULL;
 	}
 
-	char *pSoundFile = DNULL;
+	const char *pSoundFile = DNULL;
 
 	switch (m_byState)
 	{
@@ -578,7 +578,7 @@ void SoundFX::CacheFiles()
 	if(!(pServerDE->GetServerFlags() & SS_CACHING))
 		return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 
 	if (m_hstrRampUpSound)
 	{

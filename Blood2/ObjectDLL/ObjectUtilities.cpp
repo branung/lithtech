@@ -35,7 +35,7 @@
 // Return:
 //		Handle to sound, if bHandle was set to TRUE.
 //-------------------------------------------------------------------------------------------
-HSOUNDDE PlaySoundFromObject( HOBJECT hObject, char *pSoundName, DFLOAT fRadius, 
+HSOUNDDE PlaySoundFromObject( HOBJECT hObject, const char *pSoundName, DFLOAT fRadius, 
 						  DBYTE nSoundPriority, DBOOL bLoop, DBOOL bHandle, DBOOL bTime, DBYTE nVolume,
 						  DBOOL bStream, DBOOL bInstant )
 {
@@ -92,7 +92,7 @@ HSOUNDDE PlaySoundFromObject( HOBJECT hObject, char *pSoundName, DFLOAT fRadius,
 // Return:
 //		Handle to sound, if bHandle was set to TRUE.
 //-------------------------------------------------------------------------------------------
-HSOUNDDE PlaySoundFromPos( DVector *vPos, char *pSoundName, DFLOAT fRadius, 
+HSOUNDDE PlaySoundFromPos( DVector *vPos, const char *pSoundName, DFLOAT fRadius, 
 						  DBYTE nSoundPriority, DBOOL bLoop, DBOOL bHandle, DBOOL bTime, DBYTE nVolume,
 						  DBOOL bStream )
 {
@@ -135,7 +135,7 @@ HSOUNDDE PlaySoundFromPos( DVector *vPos, char *pSoundName, DFLOAT fRadius,
 // Return:
 //		Handle to sound, if bHandle was set to TRUE.
 //-------------------------------------------------------------------------------------------
-HSOUNDDE PlaySoundLocal(char *pSoundName, DBYTE nSoundPriority, DBOOL bLoop, DBOOL bHandle, 
+HSOUNDDE PlaySoundLocal(const char *pSoundName, DBYTE nSoundPriority, DBOOL bLoop, DBOOL bHandle, 
 						DBOOL bStream, DBYTE nVolume)
 {
 	PlaySoundInfo playSoundInfo;
@@ -222,7 +222,7 @@ void CreateScorchMark(DVector *pvPos, DFLOAT fMinLightRadius, DFLOAT fMaxLightRa
 
 SurfaceType GetSurfaceType(HOBJECT hObject, HPOLY hPoly)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hObject) return SURFTYPE_UNKNOWN;
 	
 	SurfaceType eType = SURFTYPE_UNKNOWN;
@@ -231,7 +231,7 @@ SurfaceType GetSurfaceType(HOBJECT hObject, HPOLY hPoly)
 	if (pServerDE->GetWorldObject() == hObject)
 	{
 		DDWORD dwFlags;
-		if (hPoly && pServerDE->GetPolyTextureFlags(hPoly, &dwFlags) == DE_OK)
+		if (hPoly != INVALID_HPOLY && pServerDE->GetPolyTextureFlags(hPoly, &dwFlags) == DE_OK)
 		{
 			eType = (SurfaceType)dwFlags;
 		}
@@ -283,7 +283,7 @@ void TiltVectorToPlane(DVector *pVec, DVector *pNormal)
 
 void SendSoundTrigger(HOBJECT hSender, int nId, DVector vPos, DFLOAT fRadius)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	fRadius = fRadius * fRadius;	// So we can compare squares
@@ -299,7 +299,7 @@ void SendSoundTrigger(HOBJECT hSender, int nId, DVector vPos, DFLOAT fRadius)
 
 	while(pLink != &AI_Mgr::m_CabalHead)
 	{
-		hObject = pServerDE->ObjectToHandle((BaseClass*)pLink->m_pData);
+		hObject = pServerDE->ObjectToHandle((DEBaseClass*)pLink->m_pData);
 
 		if (!hObject)
 			break;
@@ -312,7 +312,7 @@ void SendSoundTrigger(HOBJECT hSender, int nId, DVector vPos, DFLOAT fRadius)
 			{
 				sprintf(szTemp, "%s %d %.1f %.1f %.1f;", TRIGGER_SOUND, nId, vPos.x, vPos.y, vPos.z);
 
-				LPBASECLASS lpClass = pServerDE->HandleToObject( hSender );
+				DEBaseClass* lpClass = pServerDE->HandleToObject( hSender );
 				HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject( lpClass, hObject, MID_TRIGGER );
 				HSTRING hString = pServerDE->CreateString( szTemp );
 				pServerDE->WriteToMessageHString( hMessage, hString );
@@ -331,7 +331,7 @@ void SendSoundTrigger(HOBJECT hSender, int nId, DVector vPos, DFLOAT fRadius)
 
 	while(pLink != &AI_Mgr::m_MonsterHead)
 	{
-		hObject = pServerDE->ObjectToHandle((BaseClass*)pLink->m_pData);
+		hObject = pServerDE->ObjectToHandle((DEBaseClass*)pLink->m_pData);
 
 		if (!hObject)
 			break;
@@ -344,7 +344,7 @@ void SendSoundTrigger(HOBJECT hSender, int nId, DVector vPos, DFLOAT fRadius)
 			{
 				sprintf(szTemp, "%s %d %.1f %.1f %.1f;", TRIGGER_SOUND, nId, vPos.x, vPos.y, vPos.z);
 
-				LPBASECLASS lpClass = pServerDE->HandleToObject(hSender);
+				DEBaseClass* lpClass = pServerDE->HandleToObject(hSender);
 				HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject(lpClass, hObject, MID_TRIGGER);
 				HSTRING hString = pServerDE->CreateString(szTemp);
 				pServerDE->WriteToMessageHString(hMessage, hString );
@@ -409,7 +409,7 @@ DBOOL MoveObjectToGround(HOBJECT hObject)
 	return DFALSE;
 }
 
-DBOOL GlobalFilterFn(HOBJECT hObj, void *pUserData)
+bool GlobalFilterFn(HOBJECT hObj, void *pUserData)
 {
 	DDWORD dwObject;
 	GlobalFilterFnData *pGlobalFilterFnData;
@@ -430,7 +430,7 @@ DBOOL GlobalFilterFn(HOBJECT hObj, void *pUserData)
 	}
 
 	HCLASS hObjClass	= g_pServerDE->GetObjectClass(hObj);
-	BaseClass* pObj = (BaseClass*)g_pServerDE->HandleToObject(hObj);			
+	DEBaseClass* pObj = (DEBaseClass*)g_pServerDE->HandleToObject(hObj);			
 
 	if( pGlobalFilterFnData->m_dwFlags & IGNORE_CHARACTER)
 	{
@@ -495,10 +495,10 @@ DBOOL GlobalFilterFn(HOBJECT hObj, void *pUserData)
 //		nDamageType	 -	The type of damage being inflicted.
 //
 // ----------------------------------------------------------------------- //
-void DamageObject(HOBJECT hResponsible, LPBASECLASS pDamager, 
+void DamageObject(HOBJECT hResponsible, DEBaseClass* pDamager, 
 						 HOBJECT hDamagee, DFLOAT fDamage, DVector vDir, DVector vPos,DBYTE nDamageType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pDamager || !hDamagee) return;
 
 	// Damage object...
@@ -531,11 +531,11 @@ void DamageObject(HOBJECT hResponsible, LPBASECLASS pDamager,
 //
 // ----------------------------------------------------------------------- //
 
-void DamageObjectsInRadius(HOBJECT hResponsible, LPBASECLASS pDamager,
+void DamageObjectsInRadius(HOBJECT hResponsible, DEBaseClass* pDamager,
 								  DVector vOrigin, DFLOAT fRadius,
 								  DFLOAT fDamage, DBYTE nDamageType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || fRadius <= 0.0f) return;
 
 	// Set area of effect damage type flag, for those who care

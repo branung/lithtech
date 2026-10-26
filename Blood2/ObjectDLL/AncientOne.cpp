@@ -198,7 +198,7 @@ void AncientOne::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL AncientOne::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
 	VEC_SET(m_vScale,5.0f,5.0f,5.0f);
@@ -378,7 +378,7 @@ void AncientOne::AI_STATE_Idle()
 
 void AncientOne::SpawnTentacle()
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return;
 
 	DVector vPos;
@@ -417,7 +417,7 @@ void AncientOne::SpawnTentacle()
 
 void AncientOne::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	pServerDE->WriteToMessageFloat(hWrite, m_fLastFire);
@@ -426,7 +426,7 @@ void AncientOne::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void AncientOne::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_fLastFire = pServerDE->ReadFromMessageFloat(hRead);

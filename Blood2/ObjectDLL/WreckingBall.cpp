@@ -72,7 +72,7 @@ WreckingBall::~WreckingBall()
 
 DDWORD WreckingBall::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return 0;
 
 	switch(messageID)
@@ -163,7 +163,7 @@ DDWORD WreckingBall::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData
 
 DBOOL WreckingBall::InitialUpdate(DVector*)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	DVector vDims;
@@ -191,7 +191,7 @@ DBOOL WreckingBall::InitialUpdate(DVector*)
 
 void WreckingBall::FirstUpdate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	// Try to find a crane
@@ -231,7 +231,7 @@ void WreckingBall::FirstUpdate()
 
 DBOOL WreckingBall::Update(DVector* pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.01);
@@ -313,7 +313,7 @@ DBOOL WreckingBall::Update(DVector* pMovement)
 
 void WreckingBall::ComputeAttachPoint(DVector* pvAttachPoint)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
 	DRotation rRot;

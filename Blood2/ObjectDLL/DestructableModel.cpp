@@ -426,7 +426,10 @@ void CDestructableModel::InitialUpdate( DDWORD nData )
 		{
 			g_pServerDE->GetModelAnimUserDims(m_hObject, &m_InitDims, 0);
 			g_pServerDE->GetObjectRotation( m_hObject, &rRot );
-			if( VEC_MAGSQR( rRot.m_Vec ) > 0.0f )
+			// Was VEC_MAGSQR(rRot.m_Vec) > 0, which asks whether the object is rotated at all
+			if( rRot.m_Quat[0] * rRot.m_Quat[0] +
+				rRot.m_Quat[1] * rRot.m_Quat[1] +
+				rRot.m_Quat[2] * rRot.m_Quat[2] > 0.0f )
 			{
 				RotateDims( &rRot, &m_InitDims);
 			}
@@ -495,7 +498,7 @@ void CDestructableModel::Update( )
 	DFLOAT fTime, fDeltaTime, fAlphaAdjust;
 	DVector vPos;
 	CollisionInfo colInfo;
-	char *pszSlidingSound;
+	const char *pszSlidingSound;
 	DBOOL bSlid, bUpdateAgain;
 
 	fTime = g_pServerDE->GetTime( );
@@ -681,7 +684,7 @@ DDWORD CDestructableModel::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HM
 		case MID_TRIGGER:
 		{
 			HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-			char *pMsg = g_pServerDE->GetStringData(hMsg);
+			const char *pMsg = g_pServerDE->GetStringData(hMsg);
 
 			HandleTriggerMessage( pMsg );
 
@@ -753,13 +756,13 @@ char *CDestructableModel::GetSlidingSound( )
 //
 // ----------------------------------------------------------------------- //
 
-void CDestructableModel::HandleTriggerMessage( char *pMsg )
+void CDestructableModel::HandleTriggerMessage( const char *pMsg )
 {
 	int nArgs;
     
     char tokenSpace[64*20];
-    char *pTokens[64];
-    char *pCommand, *pCommandPos;
+    const char *pTokens[64];
+    const char *pCommand, *pCommandPos;
 	DFLOAT fFadeTime;
 	DBOOL bMore;
 

@@ -17,7 +17,7 @@
 
 class CImpact;
 
-class CProjectile : public BaseClass
+class CProjectile : public DEBaseClass
 {
 	public :
 

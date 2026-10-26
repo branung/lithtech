@@ -94,7 +94,7 @@ class CPlayerObj : public CBaseCharacter
 		void		SendFadeMsg(DBYTE byFadeIn);
 		void		SendVoiceMessage(TheVoice eVoiceType, D_WORD wIndex, DBYTE nAttackerCharacter, DBYTE nVictimCharacter);
 		void		SendMessageToClient(DBYTE messageID);
-		void		SendConsoleMessage(char *msg);
+		void		SendConsoleMessage(const char *msg);
 		HSTRING		GetPlayerName() { return m_hstrPlayerName; }
 		void		GetPlayerRotation(DRotation *rRotation) { ROT_COPY(*rRotation, m_rRotation); }
 		void		GetPlayerForward(DVector *vForward) { VEC_COPY(*vForward, m_vForward); }

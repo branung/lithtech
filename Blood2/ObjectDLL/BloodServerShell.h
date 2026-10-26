@@ -29,6 +29,9 @@ class CBloodServerShell : public CServerShellDE
 {
 	public :
 
+		// Pairs with define_interface in BloodServerShell.cpp
+		declare_interface(CBloodServerShell);
+
 		CBloodServerShell();
 		~CBloodServerShell();
         
@@ -56,7 +59,7 @@ class CBloodServerShell : public CServerShellDE
 
 	protected :
 
-		BaseClass*	OnClientEnterWorld(HCLIENT hClient, void* pClientData, DDWORD dwClientDataLen);
+		DEBaseClass*	OnClientEnterWorld(HCLIENT hClient, void* pClientData, DDWORD dwClientDataLen);
 		void		OnClientExitWorld(HCLIENT hClient);
 		void		OnMessage(HCLIENT hSender, DBYTE messageID, HMESSAGEREAD hMessage);
 		void		OnCommandOn(HCLIENT hClient, int command);
@@ -80,8 +83,8 @@ class CBloodServerShell : public CServerShellDE
 	private:
 
 		int			m_NumPlayers;
-		BaseClass*	CreatePlayer(HCLIENT hClient);
-		void		RespawnPlayer(BaseClass* pBaseClass, HCLIENT hClient);
+		DEBaseClass*	CreatePlayer(HCLIENT hClient);
+		void		RespawnPlayer(DEBaseClass* pBaseClass, HCLIENT hClient);
 		void		ConsoleMessage(HCLIENT hClient, char *msg);
 		void		AddPlayerMessage(HCLIENT hDestClient, HCLIENT hNewPlayerClient);
 		void		AddPlayersMessage(HCLIENT hClient);

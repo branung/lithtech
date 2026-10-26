@@ -151,7 +151,7 @@ DBOOL KeyFramer::CreateKeyList()
 		char strNum[18]; memset (strNum, 0, 18);
 
 		_itoa (nNum, strNum, 10);
-		char *pszBaseKeyName = pServerDE->GetStringData (m_hstrBaseKeyName);
+		const char *pszBaseKeyName = pServerDE->GetStringData (m_hstrBaseKeyName);
 		if( pszBaseKeyName )
 			_mbscpy ((unsigned char*)strKey, (const unsigned char*)pszBaseKeyName);
 		else
@@ -251,8 +251,14 @@ DBOOL KeyFramer::CreateKeyList()
 
 			DRotation objrot;
 			pServerDE->GetObjectRotation(pLink->m_hObject, &objrot);
-			VEC_SUB(m_pRotations[i].m_Vec, objrot.m_Vec, rot.m_Vec);
-			m_pRotations[i].m_Spin = objrot.m_Spin - rot.m_Spin;
+
+			// LT1's m_Vec/m_Spin are LTRotation's m_Quat[0..3].
+			// This subtracts the quaternions component by component rather than composing them, as LT1 did,
+			// and the levels were made against that. Update() adds it back
+			m_pRotations[i].m_Quat[0] = objrot.m_Quat[0] - rot.m_Quat[0];
+			m_pRotations[i].m_Quat[1] = objrot.m_Quat[1] - rot.m_Quat[1];
+			m_pRotations[i].m_Quat[2] = objrot.m_Quat[2] - rot.m_Quat[2];
+			m_pRotations[i].m_Quat[3] = objrot.m_Quat[3] - rot.m_Quat[3];
 
 			i++;
 			pLink = pLink->m_pNext;
@@ -463,7 +469,7 @@ DDWORD KeyFramer::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREA
 		case MID_TRIGGER:
 		{
 			HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-			char* pMsg = g_pServerDE->GetStringData(hMsg);
+			const char* pMsg = g_pServerDE->GetStringData(hMsg);
 			if (!pMsg) return 0;
 
 			if (_mbsicmp((const unsigned char*)pMsg, (const unsigned char*)"ON") == 0 || _mbsicmp((const unsigned char*)pMsg, (const unsigned char*)"TRIGGER") == 0)
@@ -675,8 +681,12 @@ DBOOL KeyFramer::Update(DVector* pMovement)
 				pServerDE->BPrint (msg);
 */				
 				pServerDE->GetObjectRotation(pLink->m_hObject, &rot1);
-				VEC_ADD(rot1.m_Vec, rotNew.m_Vec, m_pRotations[i].m_Vec);
-				rot1.m_Spin = rotNew.m_Spin + m_pRotations[i].m_Spin;
+
+				// Adds back what Init() subtracted, component by component as LT1 did
+				rot1.m_Quat[0] = rotNew.m_Quat[0] + m_pRotations[i].m_Quat[0];
+				rot1.m_Quat[1] = rotNew.m_Quat[1] + m_pRotations[i].m_Quat[1];
+				rot1.m_Quat[2] = rotNew.m_Quat[2] + m_pRotations[i].m_Quat[2];
+				rot1.m_Quat[3] = rotNew.m_Quat[3] + m_pRotations[i].m_Quat[3];
 
 				// If object is a camera, and it has a link, don't rotate it.
 				DBOOL bRotate = DTRUE;
@@ -734,7 +744,8 @@ void KeyFramer::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 	int nPosition2Index = -1;
 	
 	KEYNODE* pCurKey = m_pKeys;
-	for (int i=0; i < m_nNumKeys && pCurKey; i++)
+	int i;
+	for (i=0; i < m_nNumKeys && pCurKey; i++)
 	{
 		if (m_pCurKey == pCurKey)
 		{
@@ -795,7 +806,8 @@ void KeyFramer::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 	// Build the m_pKeys data member...
 
 	KEYNODE* pNode = DNULL;
-	for (int i=0; i < m_nNumKeys; i++)
+	int i;
+	for (i=0; i < m_nNumKeys; i++)
 	{
 		if (!m_pKeys)
 		{

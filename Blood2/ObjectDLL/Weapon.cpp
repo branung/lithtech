@@ -45,7 +45,7 @@ void BPrint(char*);
 
 CWeapon::CWeapon(DBYTE dbWeapType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	m_hOwner				= DNULL;
 	m_hClient				= DNULL;
@@ -198,7 +198,7 @@ CWeapon::~CWeapon()
 
 void CWeapon::Init(HOBJECT hOwner, CInventoryMgr* pInventoryMgr, DBOOL bLeftHand, HOBJECT hMuzzleFlash)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!hOwner || !pInventoryMgr) return;
 
 	m_hOwner = hOwner;
@@ -243,7 +243,7 @@ void CWeapon::SetClient(HCLIENT hClient, CViewWeaponModel *pViewModel)
 
 void CWeapon::Term()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (m_hHandAttachment)
 	{
@@ -363,7 +363,7 @@ DFLOAT CWeapon::GetDamageMultiplier()
 
 void CWeapon::ShowHandModel(DBOOL bShow)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (bShow)	// Create it.
 	{
@@ -401,7 +401,7 @@ void CWeapon::ShowHandModel(DBOOL bShow)
 
 void CWeapon::Update()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hOwner) return;
 
 	// This flag shows that the weapon has had an update, so it's now ok to 
@@ -452,7 +452,7 @@ void CWeapon::Update()
 
 void CWeapon::PlayFireSound(DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	HSOUNDDE hSound = DNULL;
 
 	char *sound;
@@ -529,7 +529,7 @@ void CWeapon::PlayFireSound(DBOOL bAltFire)
 
 void CWeapon::PlayEmptyWeaponSound(DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	char *sound;
 	if (bAltFire)
@@ -561,7 +561,7 @@ void CWeapon::PlayEmptyWeaponSound(DBOOL bAltFire)
 
 void CWeapon::KillSounds()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	for (int i=0; i < 4; i++)
@@ -585,7 +585,7 @@ void CWeapon::KillSounds()
 
 void CWeapon::UpdateWeaponFX(DDWORD &nFX, DDWORD &nExtras, WeaponFXExtras *ext, SurfaceType eType, DBYTE nAmmoType, DFLOAT fDamage)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return;
 
 	ext->nAmmo = nAmmoType;
@@ -663,7 +663,7 @@ void CWeapon::UpdateWeaponFX(DDWORD &nFX, DDWORD &nExtras, WeaponFXExtras *ext, 
 
 DBOOL CWeapon::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return DFALSE;
 
 	IntersectQuery	iq;
@@ -798,7 +798,7 @@ DBOOL CWeapon::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 
 CProjectile* CWeapon::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (!pServerDE)
 		return DFALSE;
@@ -866,7 +866,7 @@ CProjectile* CWeapon::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire
 DDWORD CWeapon::Fire()
 {
 	//***** Make sure the server and inventory systems are valid *****//
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_pInventoryMgr)
 		return 0;
 
@@ -982,7 +982,7 @@ DDWORD CWeapon::Fire()
 void CWeapon::FireSpread(Spread *spread, DDWORD shots, DFLOAT range, DBOOL bAltFire, DVector *rDir)
 {
 	//***** Make sure the server and inventory systems are valid *****//
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_pInventoryMgr)		return;
 
 	//***** Variables to calculate the spread of the weapon fire *****//
@@ -1048,7 +1048,7 @@ void CWeapon::FireSpread(Spread *spread, DDWORD shots, DFLOAT range, DBOOL bAltF
 DBOOL CWeapon::FiringTooClose(DVector *vFire, DFLOAT fDist, DVector *vNewPos)
 {
 	//***** Make sure the server and inventory systems are valid *****//
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_pViewModel) return DFALSE;
 
    	CPlayerObj	*pObj = (CPlayerObj*)pServerDE->HandleToObject(m_hOwner);
@@ -1095,7 +1095,7 @@ DBOOL CWeapon::FiringTooClose(DVector *vFire, DFLOAT fDist, DVector *vNewPos)
 void CWeapon::AlignFireVector(DVector *vFire, DFLOAT fDist)
 {
 	//***** Make sure the server and inventory systems are valid *****//
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hOwner) return;
 
    	CPlayerObj	*pObj = (CPlayerObj*)pServerDE->HandleToObject(m_hOwner);
@@ -1164,7 +1164,7 @@ void CWeapon::SetFirePosRot(DVector *firedPos, DRotation *rotP, DBOOL bAltFire)
 
 DBOOL CWeapon::GetHandModelPos(DVector *pvPos, DRotation *prRot)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_pHandModel || !m_pHandModel->m_hObject || !pvPos || !prRot) return DFALSE;
 
 
@@ -1185,7 +1185,7 @@ DBOOL CWeapon::GetHandModelPos(DVector *pvPos, DRotation *prRot)
 
 void CWeapon::UpdateFiringState(DVector *firedPos, DRotation *rotP, DBOOL bFiring, DBOOL bAltFiring)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_pViewModel) return;
 
 	VEC_COPY(m_vPosition, *firedPos);
@@ -1403,7 +1403,7 @@ void CWeapon::UpdateFiringState(DVector *firedPos, DRotation *rotP, DBOOL bFirin
 
 void CWeapon::CreateHandModel()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_pHandModelFilename || !m_pHandModelSkinname) return;
 
 	HCLASS hOwnerClass = pServerDE->GetObjectClass(m_hOwner);
@@ -1481,7 +1481,7 @@ void CWeapon::CreateHandModel()
 
 void CWeapon::DropHandModel()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_pHandModel || !m_pHandModel->m_hObject) return;
 
 	// Reset the color in case owner had stealth or something.
@@ -1518,7 +1518,7 @@ void CWeapon::DropHandModel()
 
 void CWeapon::SetupViewModel()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_pViewModel) return;
 
 	HCLASS hOwnerClass = pServerDE->GetObjectClass(m_hOwner);
@@ -1660,7 +1660,7 @@ void CWeapon::SetupViewModel()
 
 void CWeapon::SetupMuzzleFlash()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	WeaponData *wd = &g_WeaponDefaults[m_nType-1];
 
@@ -1682,7 +1682,7 @@ void CWeapon::SetupMuzzleFlash()
 
 void CWeapon::ShowMuzzleFlash(DVector *vPos)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	WeaponData *wd = &g_WeaponDefaults[m_nType-1];
 	DFLOAT fRadius = wd->m_fFlashRadius;
@@ -1715,7 +1715,7 @@ void CWeapon::ShowMuzzleFlash(DVector *vPos)
 
 void CWeapon::UpdateMuzzleFlash()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (m_hFlash && m_bFlashShowing)
 	{
@@ -1739,12 +1739,12 @@ void CWeapon::UpdateMuzzleFlash()
 // ----------------------------------------------------------------------- //
 DBOOL CWeapon::SendDamageMsg(HOBJECT firedTo, DVector vPoint, DVector *vFire, DFLOAT fDamage)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (!pServerDE)
 		return DFALSE;
 
-	BaseClass *ffObj = pServerDE->HandleToObject(m_hOwner);
+	DEBaseClass *ffObj = pServerDE->HandleToObject(m_hOwner);
 
 	// Send a damage message to the object
 	if(g_pBloodServerShell->IsMultiplayerGame() && m_bMultiDamageBoost)
@@ -1784,7 +1784,7 @@ void CWeapon::OnFireKey()
 
 void CWeapon::SendClientInfo(DBYTE slot)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !IsOwnerAPlayer())
 		return;
 
@@ -1837,7 +1837,7 @@ void CWeapon::SendClientInfo(DBYTE slot)
 // ----------------------------------------------------------------------- //
 void CWeapon::SendClientFiring(DBYTE type)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !IsOwnerAPlayer())
 		return;
 
@@ -1860,7 +1860,7 @@ void CWeapon::SendClientFiring(DBYTE type)
 
 DBOOL CWeapon::PlayAnimation(DDWORD dwNewAni)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_pViewModel || dwNewAni == INVALID_ANI) return DFALSE;
 
 	DDWORD dwAni	= pServerDE->GetModelAnimation(m_pViewModel->m_hObject);
@@ -1890,7 +1890,7 @@ DBOOL CWeapon::PlayAnimation(DDWORD dwNewAni)
 
 void CWeapon::AddImpact(DVector *pvSource, DVector *pvDest, DVector *pvForward, DVector *pvNormal, DDWORD nFX, DDWORD nExtras, WeaponFXExtras *ext)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector	vAdjDest;
@@ -1925,7 +1925,7 @@ void CWeapon::AddImpact(DVector *pvSource, DVector *pvDest, DVector *pvForward, 
 
 void CWeapon::AddSplash(DVector vPos, DVector vNormal, HOBJECT hObject, DVector vColor1, DVector vColor2)
 {
-	ServerDE* pServerDE = BaseClass::GetServerDE();
+	ServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if(!pServerDE) return;
 
 	ObjectCreateStruct ocStruct;
@@ -1973,7 +1973,7 @@ void CWeapon::AddSplash(DVector vPos, DVector vNormal, HOBJECT hObject, DVector 
 
 void CWeapon::AddSparks(DVector vPos, DVector vNormal, DFLOAT fDamage, HOBJECT hObject, SurfaceType eType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if(!pServerDE) return;
 
 	ObjectCreateStruct ocStruct;
@@ -2054,7 +2054,7 @@ void CWeapon::AddSparks(DVector vPos, DVector vNormal, DFLOAT fDamage, HOBJECT h
 
 void CWeapon::AddWorldModelMark(DVector vPos, DVector vNormal, HOBJECT hObject, SurfaceType eType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	ObjectCreateStruct ocStruct;

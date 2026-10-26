@@ -164,7 +164,7 @@ void ZealotAI::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL ZealotAI::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
     if(m_bLoadAnims)
@@ -492,8 +492,8 @@ void ZealotAI::MC_Fire_Stand()
 		m_pServerDE->GetModelNodeTransform(m_hObject,"r_hand_extra2",&ocStruct.m_Pos,&ocStruct.m_Rotation);
 		ocStruct.m_Flags = FLAG_FORCECLIENTUPDATE;
 		
-		HCLASS hClass = m_pServerDE->GetClass("BaseClass");
-		BaseClass* pObj = m_pServerDE->CreateObject(hClass, &ocStruct);
+		HCLASS hClass = m_pServerDE->GetClass("DEBaseClass");
+		DEBaseClass* pObj = m_pServerDE->CreateObject(hClass, &ocStruct);
 		m_hStaffEffect = pObj->m_hObject;
 
 		m_bStartStaffEffect = DTRUE;
@@ -862,7 +862,7 @@ void ZealotAI::AI_STATE_Teleport()
 
 void ZealotAI::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DBYTE val;
@@ -875,7 +875,7 @@ void ZealotAI::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void ZealotAI::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DBYTE val;

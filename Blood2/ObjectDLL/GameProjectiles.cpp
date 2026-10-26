@@ -74,7 +74,7 @@ CGrenade::CGrenade() : CProjectile()
 
 DBOOL CGrenade::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	// Play a sound if we don't have one playing already
@@ -138,7 +138,7 @@ DBOOL CGrenade::Update(DVector *pMovement)
 
 void CGrenade::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if ((m_nBounceCount == 5) && pServerDE->IsKindOf(pServerDE->GetObjectClass(hObj), pServerDE->GetClass("CBaseCharacter")))
@@ -169,7 +169,7 @@ void CGrenade::HandleTouch(HOBJECT hObj)
 
 		// Compute new velocity reflected off of the surface.
 		DVector vNormal;
-		if( colInfo.m_hPoly )
+		if( colInfo.m_hPoly != INVALID_HPOLY )
 		{
 			VEC_COPY(vNormal, colInfo.m_Plane.m_Normal);
 
@@ -255,7 +255,7 @@ CGasGrenade::CGasGrenade() : CProjectile()
 
 DBOOL CGasGrenade::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	// Play a sound if we don't have one playing already
@@ -353,7 +353,7 @@ DBOOL CGasGrenade::Update(DVector *pMovement)
 
 void CGasGrenade::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (hObj == m_hFiredFrom) return; // Let it get out of our bounding box...
@@ -403,7 +403,7 @@ void CGasGrenade::HandleTouch(HOBJECT hObj)
 
 		// Compute new velocity reflected off of the surface.
 		DVector vNormal;
-		if( colInfo.m_hPoly )
+		if( colInfo.m_hPoly != INVALID_HPOLY )
 		{
 			VEC_COPY(vNormal, colInfo.m_Plane.m_Normal);
 
@@ -447,7 +447,7 @@ void CGasGrenade::HandleTouch(HOBJECT hObj)
 
 void CGasGrenade::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_GAS_GRENADE;
@@ -476,7 +476,7 @@ void CGasGrenade::AddExplosion(DVector vPos, DVector vNormal)
 
 void CGasGrenade::DamageAndWonky(DFLOAT fWonkyTime)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return;
 
 	// Get the head of the list of destructable objects
@@ -549,7 +549,7 @@ END_CLASS_DEFAULT_FLAGS(CTimeBomb, CProjectile, NULL, NULL, CF_HIDDEN)
 
 CTimeBomb::CTimeBomb() : CProjectile()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_bShockwave			= DFALSE;
@@ -586,7 +586,7 @@ CTimeBomb::CTimeBomb() : CProjectile()
 
 DBOOL CTimeBomb::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.001);
@@ -641,7 +641,7 @@ DBOOL CTimeBomb::Update(DVector *pMovement)
 
 void CTimeBomb::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(m_bArmed)
@@ -695,7 +695,7 @@ void CTimeBomb::HandleTouch(HOBJECT hObj)
 
 void CTimeBomb::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_DEFAULT_SMALL;
@@ -728,7 +728,7 @@ END_CLASS_DEFAULT_FLAGS(CProximityBomb, CProjectile, NULL, NULL, CF_HIDDEN)
 
 CProximityBomb::CProximityBomb() : CProjectile()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_bShockwave			= DFALSE;
@@ -771,7 +771,7 @@ CProximityBomb::CProximityBomb() : CProjectile()
 
 DBOOL CProximityBomb::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.001);
@@ -894,7 +894,7 @@ DBOOL CProximityBomb::Update(DVector *pMovement)
 
 void CProximityBomb::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if(!pServerDE) return;
 
 	if(m_bArmed)
@@ -950,7 +950,7 @@ void CProximityBomb::HandleTouch(HOBJECT hObj)
 
 void CProximityBomb::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_DEFAULT_MEDIUM;
@@ -983,7 +983,7 @@ END_CLASS_DEFAULT_FLAGS(CRemoteBomb, CProjectile, NULL, NULL, CF_HIDDEN)
 
 CRemoteBomb::CRemoteBomb() : CProjectile()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_bShockwave			= DFALSE;
@@ -1021,7 +1021,7 @@ CRemoteBomb::CRemoteBomb() : CProjectile()
 
 DBOOL CRemoteBomb::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.001);
@@ -1078,7 +1078,7 @@ DBOOL CRemoteBomb::Update(DVector *pMovement)
 
 void CRemoteBomb::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(m_bArmed)
@@ -1139,7 +1139,7 @@ void CRemoteBomb::HandleTouch(HOBJECT hObj)
 
 void CRemoteBomb::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_DEFAULT_SMALL;
@@ -1195,7 +1195,7 @@ CHowitzerShell::CHowitzerShell() : CProjectile(OT_NORMAL)
 
 DBOOL CHowitzerShell::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	IntersectQuery iq;
@@ -1262,7 +1262,7 @@ DBOOL CHowitzerShell::Update(DVector *pMovement)
 
 void CHowitzerShell::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_HOWITZER_PRIMARY;
@@ -1317,7 +1317,7 @@ CHowitzerAltShell::CHowitzerAltShell() : CProjectile(OT_NORMAL)
 
 DBOOL CHowitzerAltShell::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	IntersectQuery iq;
@@ -1386,7 +1386,7 @@ DBOOL CHowitzerAltShell::Update(DVector *pMovement)
 
 void CHowitzerAltShell::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_HOWITZER_ALT;
@@ -1486,7 +1486,7 @@ CHowitzerAltFrag::CHowitzerAltFrag() : CProjectile(OT_SPRITE)
 
 DBOOL CHowitzerAltFrag::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vPos, vVel, vGravity;
@@ -1526,7 +1526,7 @@ DBOOL CHowitzerAltFrag::Update(DVector *pMovement)
 
 void CHowitzerAltFrag::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	// return if it hit a non solid object
@@ -1571,7 +1571,7 @@ void CHowitzerAltFrag::HandleTouch(HOBJECT hObj)
 
 void CHowitzerAltFrag::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_HOWITZER_MINI;
@@ -1633,7 +1633,7 @@ CNapalmProjectile::CNapalmProjectile() : CProjectile(OT_SPRITE)
 
 DBOOL CNapalmProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	// Create a sound attached to the projectile
@@ -1663,7 +1663,7 @@ DBOOL CNapalmProjectile::Update(DVector *pMovement)
 
 void CNapalmProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(m_hSound)
@@ -1727,7 +1727,7 @@ CNapalmAltProjectile::CNapalmAltProjectile() : CProjectile(OT_SPRITE)
 
 DBOOL CNapalmAltProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	// Create a sound attached to the projectile
@@ -1757,7 +1757,7 @@ DBOOL CNapalmAltProjectile::Update(DVector *pMovement)
 
 void CNapalmAltProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(m_hSound)
@@ -1866,7 +1866,7 @@ CNapalmFireball::CNapalmFireball() : CProjectile(OT_SPRITE)
 
 DBOOL CNapalmFireball::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vScale, vVel, vPos;
@@ -1906,7 +1906,7 @@ DBOOL CNapalmFireball::Update(DVector *pMovement)
 
 void CNapalmFireball::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	// return if it hit a non solid object
@@ -1956,7 +1956,7 @@ void CNapalmFireball::HandleTouch(HOBJECT hObj)
 
 void CNapalmFireball::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_NAPALM_FIREBALL;
@@ -2017,7 +2017,7 @@ CBugSprayProjectile::CBugSprayProjectile() : CProjectile(OT_SPRITE)
 
 DBOOL CBugSprayProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DBOOL bRet = CProjectile::Update(pMovement);
@@ -2036,7 +2036,7 @@ DBOOL CBugSprayProjectile::Update(DVector *pMovement)
 
 void CBugSprayProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_BUGSPRAY_PRIMARY;
@@ -2097,7 +2097,7 @@ CBugSprayAltProjectile::CBugSprayAltProjectile() : CProjectile(OT_SPRITE)
 
 DBOOL CBugSprayAltProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DBOOL bRet = CProjectile::Update(pMovement);
@@ -2116,7 +2116,7 @@ DBOOL CBugSprayAltProjectile::Update(DVector *pMovement)
 
 void CBugSprayAltProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_BUGSPRAY_ALT;
@@ -2175,7 +2175,7 @@ CDeathRayProjectile::CDeathRayProjectile() : CProjectile(OT_NORMAL)
 
 DBOOL CDeathRayProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if(!pServerDE) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.001);
@@ -2303,7 +2303,7 @@ DBOOL CDeathRayProjectile::Update(DVector *pMovement)
 
 void CDeathRayProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_DEATHRAY_PRIMARY;
@@ -2371,7 +2371,7 @@ CLeechPrimeProjectile::CLeechPrimeProjectile() : CProjectile(OT_SPRITE)
 
 DBOOL CLeechPrimeProjectile::InitialUpdate(DVector* vec)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vU, vR, vF;
@@ -2401,7 +2401,7 @@ DBOOL CLeechPrimeProjectile::InitialUpdate(DVector* vec)
 
 DBOOL CLeechPrimeProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DFLOAT		fTime = pServerDE->GetTime();
@@ -2468,7 +2468,7 @@ DBOOL CLeechPrimeProjectile::Update(DVector *pMovement)
 
 void CLeechPrimeProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_LIFELEECH_PRIMARY;
@@ -2520,7 +2520,7 @@ CLeechAltProjectile::CLeechAltProjectile() : CProjectile(OT_NORMAL)
 
 DBOOL CLeechAltProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vPos, vNormal;
@@ -2661,7 +2661,7 @@ CFlareProjectile::CFlareProjectile() : CProjectile(OT_SPRITE)
 
 DBOOL CFlareProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	// Play a sound if we don't have one playing already
@@ -2767,7 +2767,7 @@ DBOOL CFlareProjectile::Update(DVector *pMovement)
 
 void CFlareProjectile::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if(!pServerDE) return;
 
 	if(hObj == m_hFiredFrom) return; // Let it get out of our bounding box...
@@ -2827,7 +2827,7 @@ void CFlareProjectile::HandleTouch(HOBJECT hObj)
 
 void CFlareProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_FLARE_FIZZLE;
@@ -2901,7 +2901,7 @@ CFlareAltProjectile::CFlareAltProjectile() : CProjectile(OT_SPRITE)
 
 DBOOL CFlareAltProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DFLOAT		fTime = pServerDE->GetTime();
@@ -3004,7 +3004,7 @@ DBOOL CFlareAltProjectile::Update(DVector *pMovement)
 
 void CFlareAltProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = m_nExpType;
@@ -3064,7 +3064,7 @@ CFlareBurstProjectile::CFlareBurstProjectile() : CProjectile(OT_SPRITE)
 
 void CFlareBurstProjectile::SetColor(DVector *vColor)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	VEC_COPY(m_vColor, *vColor);
@@ -3083,7 +3083,7 @@ void CFlareBurstProjectile::SetColor(DVector *vColor)
 
 DBOOL CFlareBurstProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DFLOAT		fTime = pServerDE->GetTime();
@@ -3108,7 +3108,7 @@ DBOOL CFlareBurstProjectile::Update(DVector *pMovement)
 
 void CFlareBurstProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_FLARE_FRAG;
@@ -3174,7 +3174,7 @@ COrbProjectile::COrbProjectile() : CProjectile()
 
 DBOOL COrbProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vPos, vU, vR, vF;
@@ -3272,7 +3272,7 @@ DBOOL COrbProjectile::Update(DVector *pMovement)
 
 void COrbProjectile::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(m_hHitObject) return;
@@ -3315,7 +3315,7 @@ void COrbProjectile::HandleTouch(HOBJECT hObj)
 
 void COrbProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_ORB_BREAK;
@@ -3343,7 +3343,7 @@ void COrbProjectile::AddExplosion(DVector vPos, DVector vNormal)
 
 HOBJECT COrbProjectile::FindTrackObj()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return DNULL;
 
 	// Get the head of the list of destructable objects
@@ -3407,7 +3407,7 @@ HOBJECT COrbProjectile::FindTrackObj()
 
 void COrbProjectile::TrackObjInRange()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return;
 
 	DVector		vDir, vOrbPos, vHeadPos, vUp;
@@ -3489,7 +3489,7 @@ COrbAltProjectile::COrbAltProjectile() : CProjectile()
 
 DBOOL COrbAltProjectile::InitialUpdate(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	if(m_dwClientID)
@@ -3515,7 +3515,7 @@ DBOOL COrbAltProjectile::InitialUpdate(DVector *pMovement)
 
 DBOOL COrbAltProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vPos, vU, vR, vF;
@@ -3661,7 +3661,7 @@ DBOOL COrbAltProjectile::Update(DVector *pMovement)
 
 void COrbAltProjectile::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(m_hHitObject) return;
@@ -3750,7 +3750,7 @@ void COrbAltProjectile::HandleTouch(HOBJECT hObj)
 
 void COrbAltProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_ORB_BREAK;
@@ -3811,7 +3811,7 @@ CTeslaProjectile::CTeslaProjectile() : CProjectile(OT_SPRITE)
 
 DBOOL CTeslaProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vScale;
@@ -3841,7 +3841,7 @@ DBOOL CTeslaProjectile::Update(DVector *pMovement)
 
 void CTeslaProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(m_hSound)
@@ -3902,7 +3902,7 @@ CTeslaBoltProjectile::CTeslaBoltProjectile() : CProjectile()
 
 DBOOL CTeslaBoltProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	IntersectQuery iq;
@@ -4001,7 +4001,7 @@ CTeslaBallProjectile::CTeslaBallProjectile() : CProjectile()
 
 DBOOL CTeslaBallProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, 0.1f);
@@ -4090,7 +4090,7 @@ DBOOL CTeslaBallProjectile::Update(DVector *pMovement)
 
 void CTeslaBallProjectile::FireBolt()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return;
 
 	DFLOAT	timeRatio = (pServerDE->GetTime() - m_fStartTime) / TESLABALL_ATTRACT_TIME;
@@ -4160,7 +4160,7 @@ void CTeslaBallProjectile::FireBolt()
 
 void CTeslaBallProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_TESLA_ALT;
@@ -4218,7 +4218,7 @@ CSingularityProjectile::CSingularityProjectile() : CProjectile()
 
 DBOOL CSingularityProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, 0.1f);
@@ -4395,7 +4395,7 @@ DBOOL CSingularityProjectile::Update(DVector *pMovement)
 
 void CSingularityProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_SINGULARITY_PRIMARY;
@@ -4454,7 +4454,7 @@ CSingularityAltProjectile::CSingularityAltProjectile() : CProjectile()
 
 DBOOL CSingularityAltProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, 0.1f);
@@ -4633,7 +4633,7 @@ CEnergyBlastProjectile::CEnergyBlastProjectile() : CProjectile(OT_SPRITE)
 void CEnergyBlastProjectile::Setup(DVector *vDir, DBYTE nType, DFLOAT fDamage, DFLOAT fVelocity,
 									int nRadius, HOBJECT hFiredFrom)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hFiredFrom) return;
 
 	HCLASS hZealot = pServerDE->GetClass("ZealotAI");
@@ -4662,7 +4662,7 @@ void CEnergyBlastProjectile::Setup(DVector *vDir, DBYTE nType, DFLOAT fDamage, D
 
 DBOOL CEnergyBlastProjectile::InitialUpdate(DVector* vec)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	if (m_bZealot)
@@ -4702,7 +4702,7 @@ DBOOL CEnergyBlastProjectile::InitialUpdate(DVector* vec)
 
 DBOOL CEnergyBlastProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vScale;
@@ -4728,7 +4728,7 @@ DBOOL CEnergyBlastProjectile::Update(DVector *pMovement)
 
 void CEnergyBlastProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_TESLA_PRIMARY;
@@ -4800,7 +4800,7 @@ CFireballProjectile::CFireballProjectile() : CProjectile(OT_SPRITE)
 
 DBOOL CFireballProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vScale;
@@ -4860,7 +4860,7 @@ CGroundStrikeProjectile::CGroundStrikeProjectile() : CProjectile(OT_NORMAL)
 
 DBOOL CGroundStrikeProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vScale;
@@ -4887,7 +4887,7 @@ DBOOL CGroundStrikeProjectile::Update(DVector *pMovement)
 
 void CFireballProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_FLAME_SMALL;
@@ -4941,7 +4941,7 @@ CShockwaveProjectile::CShockwaveProjectile() : CProjectile(OT_NORMAL)
 
 DBOOL CShockwaveProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vPos, vNormal;
@@ -5087,7 +5087,7 @@ CBehemothShockwaveProjectile::CBehemothShockwaveProjectile() : CProjectile(OT_NO
 
 DBOOL CBehemothShockwaveProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vPos, vNormal;
@@ -5214,7 +5214,7 @@ CShikariLoogieProjectile::CShikariLoogieProjectile() : CProjectile(OT_NORMAL)
 
 DBOOL CShikariLoogieProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vScale;
@@ -5232,7 +5232,7 @@ DBOOL CShikariLoogieProjectile::Update(DVector *pMovement)
 
 void CShikariLoogieProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	// Placeholder until acid explosion is ready.
@@ -5292,7 +5292,7 @@ CNagaSpikeProjectile::CNagaSpikeProjectile() : CProjectile(OT_MODEL)
 
 DBOOL CNagaSpikeProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DBOOL bRet = CProjectile::Update(pMovement);
@@ -5310,7 +5310,7 @@ DBOOL CNagaSpikeProjectile::Update(DVector *pMovement)
 
 void CNagaSpikeProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_NAGA_SPIKE;
@@ -5366,7 +5366,7 @@ CNagaDebrisProjectile::CNagaDebrisProjectile() : CProjectile(OT_NORMAL)
 
 DBOOL CNagaDebrisProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	int i = pServerDE->IntRandom(3,5);
@@ -5452,7 +5452,7 @@ DBOOL CNagaDebrisProjectile::Update(DVector *pMovement)
 		ocStruct.m_Pos.y -= 50;
 
 		HCLASS hClass = pServerDE->GetClass("NagaCeilingDebris");
-		BaseClass *pObj = pServerDE->CreateObject(hClass, &ocStruct);
+		DEBaseClass *pObj = pServerDE->CreateObject(hClass, &ocStruct);
 
 		// Random rotation
 		DRotation rRot;
@@ -5479,7 +5479,7 @@ DBOOL CNagaDebrisProjectile::Update(DVector *pMovement)
 
 void CNagaDebrisProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_NAGA_POUND_GROUND;
@@ -5578,7 +5578,7 @@ CVomitProjectile::CVomitProjectile() : CProjectile(OT_NORMAL)
 
 DBOOL CVomitProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vScale;
@@ -5645,7 +5645,7 @@ CGooProjectile::CGooProjectile() : CProjectile(OT_NORMAL)
 
 DBOOL CGooProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DBOOL bRet = CProjectile::Update(pMovement);
@@ -5656,7 +5656,7 @@ DBOOL CGooProjectile::Update(DVector *pMovement)
 
 void CGooProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	ObjectCreateStruct ocStruct;
@@ -5715,7 +5715,7 @@ CSkullProjectile::CSkullProjectile() : CProjectile()
 
 DBOOL CSkullProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vU, vR, vF;
@@ -5780,7 +5780,7 @@ DBOOL CSkullProjectile::Update(DVector *pMovement)
 
 void CSkullProjectile::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(m_hHitObject) return;
@@ -5837,7 +5837,7 @@ void CSkullProjectile::HandleTouch(HOBJECT hObj)
 
 void CSkullProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_FLARE_BURST;
@@ -5865,7 +5865,7 @@ void CSkullProjectile::AddExplosion(DVector vPos, DVector vNormal)
 
 HOBJECT CSkullProjectile::FindTrackObj()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return DNULL;
 
 	// Get the head of the list of destructable objects
@@ -5928,7 +5928,7 @@ HOBJECT CSkullProjectile::FindTrackObj()
 
 void CSkullProjectile::TrackObjInRange()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return;
 
 	DVector		vDir, vOrbPos, vHeadPos, vUp;
@@ -6020,7 +6020,7 @@ CFlayerChain::CFlayerChain() : CProjectile()
 
 DBOOL CFlayerChain::InitialUpdate(DVector* vec)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	// Do the normal initial update
@@ -6050,7 +6050,7 @@ DBOOL CFlayerChain::InitialUpdate(DVector* vec)
 
 DBOOL CFlayerChain::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.001);
@@ -6187,7 +6187,7 @@ DBOOL CFlayerChain::Update(DVector *pMovement)
 
 void CFlayerChain::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(!hObj) return;
@@ -6238,7 +6238,7 @@ void CFlayerChain::HandleTouch(HOBJECT hObj)
 
 void CFlayerChain::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_FLAYER_SHATTER;
@@ -6265,7 +6265,7 @@ void CFlayerChain::AddExplosion(DVector vPos, DVector vNormal)
 
 void CFlayerChain::TrackObject()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if(!pServerDE) return;
 
 	DVector		vObjPos, vFlayerPos, vTemp, vU, vR, vF;
@@ -6297,7 +6297,7 @@ void CFlayerChain::TrackObject()
 
 void CFlayerChain::AdjustVelocity()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector vU, vR, vF;
@@ -6323,7 +6323,7 @@ void CFlayerChain::AdjustVelocity()
 
 DBOOL CFlayerChain::DamageAttached()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DFLOAT	fTime = pServerDE->GetTime();
@@ -6373,7 +6373,7 @@ DBOOL CFlayerChain::DamageAttached()
 
 void CFlayerChain::ReleaseChain()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DFLOAT	fTime = pServerDE->GetTime();
@@ -6404,7 +6404,7 @@ void CFlayerChain::ReleaseChain()
 
 void CFlayerChain::HandleAttachedEffects()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DRotation rRot;
@@ -6446,7 +6446,7 @@ void CFlayerChain::HandleAttachedEffects()
 
 void CFlayerChain::CreateAttachedGIB()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector		vOffset;
@@ -6464,7 +6464,7 @@ void CFlayerChain::CreateAttachedGIB()
 	VEC_SET(ocStruct.m_Scale, g_pServerDE->Random(0.5f,0.75f), g_pServerDE->Random(0.5f,0.75f), g_pServerDE->Random(0.4f,0.6f));
 	ocStruct.m_NextUpdate = 0.01f;
 
-	HCLASS hClass = pServerDE->GetClass("BaseClass");
+	HCLASS hClass = pServerDE->GetClass("DEBaseClass");
 	m_hGibObj = pServerDE->CreateObject(hClass, &ocStruct);
 
 	if(m_hGibObj && m_hGibObj->m_hObject)
@@ -6501,7 +6501,7 @@ void CFlayerChain::CreateAttachedGIB()
 
 void CFlayerChain::DeleteAttachedGIB()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(m_hGibAttachment)
@@ -6574,7 +6574,7 @@ CFlayerPortal::CFlayerPortal() : CProjectile()
 
 DBOOL CFlayerPortal::InitialUpdate(DVector *vec)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DVector		vPos, vNormal;
@@ -6610,7 +6610,7 @@ DBOOL CFlayerPortal::InitialUpdate(DVector *vec)
 
 DBOOL CFlayerPortal::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	DFLOAT	fTime = pServerDE->GetTime();
@@ -6756,7 +6756,7 @@ CRockProjectile::CRockProjectile() : CProjectile()
 
 DBOOL CRockProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	// Save position for bounce calculations
@@ -6824,7 +6824,7 @@ DBOOL CRockProjectile::Update(DVector *pMovement)
 
 void CRockProjectile::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if(hObj == m_hFiredFrom) return;	// Let it get out of our bounding box...
@@ -6857,7 +6857,7 @@ void CRockProjectile::HandleTouch(HOBJECT hObj)
 
 	// Compute new velocity reflected off of the surface.
 	DVector vNormal;
-	if( colInfo.m_hPoly )
+	if( colInfo.m_hPoly != INVALID_HPOLY )
 	{
 		VEC_COPY(vNormal, colInfo.m_Plane.m_Normal);
 
@@ -6936,7 +6936,7 @@ CNightmareFireball::CNightmareFireball() : CProjectile(OT_SPRITE)
 
 DBOOL CNightmareFireball::InitialUpdate(DVector* vec)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	// Do the normal initial update
@@ -7001,7 +7001,7 @@ DBOOL CNightmareFireball::InitialUpdate(DVector* vec)
 
 DBOOL CNightmareFireball::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.001);
@@ -7046,7 +7046,7 @@ DBOOL CNightmareFireball::Update(DVector *pMovement)
 
 void CNightmareFireball::TrackObject()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector		vObjPos, vPos, vTemp, vU, vR, vF;
@@ -7086,7 +7086,7 @@ void CNightmareFireball::TrackObject()
 
 void CNightmareFireball::TrackLocation()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector		vPos, vTemp, vU, vR, vF;
@@ -7116,7 +7116,7 @@ void CNightmareFireball::TrackLocation()
 
 void CNightmareFireball::AdjustVelocity()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector vU, vR, vF;
@@ -7142,7 +7142,7 @@ void CNightmareFireball::AdjustVelocity()
 
 void CNightmareFireball::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_LIFELEECH_PRIMARY;

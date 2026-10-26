@@ -35,7 +35,7 @@
 
 BEGIN_CLASS(SeeingEye)
 	ADD_DESTRUCTABLE_AGGREGATE()
-END_CLASS_DEFAULT_FLAGS(SeeingEye, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(SeeingEye, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 #define PINGPERIOD 1.0f
 
@@ -46,7 +46,7 @@ END_CLASS_DEFAULT_FLAGS(SeeingEye, BaseClass, NULL, NULL, CF_HIDDEN)
 //	PURPOSE:	Constructor
 //
 // ----------------------------------------------------------------------- //
-SeeingEye::SeeingEye() : BaseClass(OT_MODEL)
+SeeingEye::SeeingEye() : DEBaseClass(OT_MODEL)
 {
 	AddAggregate(&m_damage);
 	m_hOwner = DNULL;
@@ -77,7 +77,7 @@ SeeingEye::~SeeingEye()
 // ----------------------------------------------------------------------- //
 void SeeingEye::Init(HOBJECT hOwner, HCLIENT hClient)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	m_hOwner = hOwner;
 	if( m_hOwner )
@@ -102,7 +102,7 @@ DDWORD SeeingEye::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	{
 		case MID_PRECREATE:
 		{
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 
 			if( fData != INITIALUPDATE_SAVEGAME )
 				PostPropRead((ObjectCreateStruct*)pData);
@@ -156,7 +156,7 @@ DDWORD SeeingEye::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 // --------------------------------------------------------------------------- //
@@ -183,7 +183,7 @@ DDWORD SeeingEye::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREA
 
 		case MID_DAMAGE:
 		{
-			dwRet = BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+			dwRet = DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 
 			if(m_damage.IsDead() )
 			{
@@ -195,7 +195,7 @@ DDWORD SeeingEye::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREA
 		break;
 	}
 
-	return BaseClass::ObjectMessageFn(hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 // ----------------------------------------------------------------------- //
@@ -254,7 +254,7 @@ void SeeingEye::ObjectTouch (HOBJECT hObj)
 
 		dwFlags = pServerDE->GetObjectFlags( m_hObject );
 
-		if (hObj != hWorld)
+		if (pServerDE->IsWorldObject(hObj) != LT_YES)
 		{
 			m_hStuckObject = hObj;
 

@@ -19,7 +19,7 @@
 
 class AI_Shared;
 
-class SeeingEye : public BaseClass
+class SeeingEye : public DEBaseClass
 {
 	public :
 

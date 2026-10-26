@@ -2,7 +2,7 @@
 //
 // MODULE  : B2BaseClass.CPP
 //
-// PURPOSE : A BaseClass for Blood2 objects
+// PURPOSE : A DEBaseClass for Blood2 objects
 //
 // CREATED : 8/4/98
 //
@@ -25,17 +25,17 @@ BEGIN_CLASS(B2BaseClass)
 		ADD_BOOLPROP_FLAG(TypeBloodBath, DTRUE, PF_GROUP6)
 		ADD_BOOLPROP_FLAG(TypeCTF, DTRUE, PF_GROUP6)
 		ADD_BOOLPROP_FLAG(TypeCoop, DTRUE, PF_GROUP6)
-END_CLASS_DEFAULT_FLAGS(B2BaseClass, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(B2BaseClass, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 
 // Constructor
-B2BaseClass::B2BaseClass(DBYTE nType) : BaseClass(nType)
+B2BaseClass::B2BaseClass(DBYTE nType) : DEBaseClass(nType)
 {
 	m_dwOptFlags = 0;
 }
 
 
-B2BaseClass::B2BaseClass() : BaseClass(OT_NORMAL)
+B2BaseClass::B2BaseClass() : DEBaseClass(OT_NORMAL)
 {
 	m_dwOptFlags = 0;
 }
@@ -75,7 +75,7 @@ DDWORD B2BaseClass::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 

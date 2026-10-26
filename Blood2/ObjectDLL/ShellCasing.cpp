@@ -26,7 +26,7 @@ DDWORD CShellCasing::m_dwNumShells = 0;
 
 
 BEGIN_CLASS(CShellCasing)
-END_CLASS_DEFAULT_FLAGS(CShellCasing, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CShellCasing, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 
 // ----------------------------------------------------------------------- //
@@ -37,7 +37,7 @@ END_CLASS_DEFAULT_FLAGS(CShellCasing, BaseClass, NULL, NULL, CF_HIDDEN)
 //
 // ----------------------------------------------------------------------- //
 
-CShellCasing::CShellCasing() : BaseClass(OT_MODEL)
+CShellCasing::CShellCasing() : DEBaseClass(OT_MODEL)
 {
 	m_hFiredFrom = 0;
 	m_fExpireTime = 0.0f;
@@ -93,7 +93,7 @@ DDWORD CShellCasing::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGE
 		}
 	}
 
-	return BaseClass::ObjectMessageFn (hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn (hSender, messageID, hRead);
 }
 
 
@@ -113,7 +113,7 @@ DDWORD CShellCasing::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lData
 		{
 			if (!Update())
 			{
-				CServerDE* pServerDE = BaseClass::GetServerDE();
+				CServerDE* pServerDE = DEBaseClass::GetServerDE();
 				if (!pServerDE) return 0;
 
 				pServerDE->RemoveObject(m_hObject);
@@ -137,7 +137,7 @@ DDWORD CShellCasing::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lData
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, lData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, lData);
 }
 
 
@@ -151,7 +151,7 @@ DDWORD CShellCasing::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lData
 
 void CShellCasing::Setup(HOBJECT hFiredFrom)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_hFiredFrom = hFiredFrom;
@@ -193,7 +193,7 @@ void CShellCasing::Setup(HOBJECT hFiredFrom)
 
 DBOOL CShellCasing::InitialUpdate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	m_fExpireTime = pServerDE->GetTime() + 20.0f;
@@ -226,7 +226,7 @@ DBOOL CShellCasing::InitialUpdate()
 
 void CShellCasing::Init(DBOOL bFiredFromLeft)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
 	m_bFiredFromLeft = bFiredFromLeft;
@@ -262,7 +262,7 @@ void CShellCasing::Init(DBOOL bFiredFromLeft)
 
 DBOOL CShellCasing::Update()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	DFLOAT fTime = pServerDE->GetTime();
@@ -358,7 +358,7 @@ DBOOL CShellCasing::Update()
 
 void CShellCasing::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
 	// return if it hit a non solid object

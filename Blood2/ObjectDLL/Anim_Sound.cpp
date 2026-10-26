@@ -150,7 +150,7 @@ CAnim_Sound::~CAnim_Sound()
 	
 void CAnim_Sound::SetAnimationIndexes(HOBJECT m_hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
     m_nAnim_IDLE[0]						= pServerDE->GetAnimIndex(m_hObject, ANIM_IDLE1                      );
@@ -445,7 +445,7 @@ void CAnim_Sound::SetAnimationIndexes(HOBJECT m_hObject)
 
 void CAnim_Sound::GenerateHitSpheres(HOBJECT hObject)
 {
-    CServerDE* pServerDE = BaseClass::GetServerDE();
+    CServerDE* pServerDE = DEBaseClass::GetServerDE();
     if (!pServerDE || !hObject) return;
 
 	DVector vNodePos[NUM_STD_NODES];
@@ -503,7 +503,7 @@ void CAnim_Sound::GenerateHitSpheres(HOBJECT hObject)
 
 void CAnim_Sound::ForceAnimation(HOBJECT m_hObject, DDWORD nAni)
 {
-    CServerDE* pServerDE = BaseClass::GetServerDE();
+    CServerDE* pServerDE = DEBaseClass::GetServerDE();
     if (!pServerDE || !m_hObject) return;
 
     // Force to different animation
@@ -547,7 +547,7 @@ void CAnim_Sound::GetSoundPath(char* szSound, int nIndex)
 
 DBOOL CAnim_Sound::PlayVoice(HOBJECT hObject, char* szSound, DFLOAT fRadius, int nVol)
 {
-    CServerDE* pServerDE = BaseClass::GetServerDE();
+    CServerDE* pServerDE = DEBaseClass::GetServerDE();
     if (!pServerDE || !hObject) return DFALSE;
 
 	if(m_hVoxSound)
@@ -579,7 +579,7 @@ DBOOL CAnim_Sound::PlayVoice(HOBJECT hObject, char* szSound, DFLOAT fRadius, int
 
 HSOUNDDE CAnim_Sound::PlaySound(HOBJECT hObject, char* szSound, DFLOAT fRadius, int nVol, DBOOL bGetHandle )
 {
-    CServerDE* pServerDE = BaseClass::GetServerDE();
+    CServerDE* pServerDE = DEBaseClass::GetServerDE();
     if (!pServerDE || !hObject) return DNULL;
 
 	PlaySoundInfo playSoundInfo;

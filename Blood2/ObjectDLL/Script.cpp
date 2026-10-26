@@ -516,7 +516,10 @@ DBOOL Script::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
 
-	char *pCommand = _strupr(g_pServerDE->GetStringData(hMsg));
+	// Upper case a copy since _strupr writes in place and GetStringData returns the engine's own string
+	char szCommand[256];
+	SAFE_STRCPY(szCommand, g_pServerDE->GetStringData(hMsg));
+	char *pCommand = _strupr(szCommand);
 
 	g_pServerDE->BPrint(pCommand);
 
@@ -1304,7 +1307,7 @@ DBOOL Script::ObjectCreateAt()
     // Check to make sure this is a valid class.
     if (pClass)
     {    
-    	LPBASECLASS pObject = g_pServerDE->CreateObject(pClass, &theStruct);
+    	DEBaseClass* pObject = g_pServerDE->CreateObject(pClass, &theStruct);
         
         if (pObject)
         {
@@ -1394,7 +1397,7 @@ DBOOL Script::ObjectCreateNear()
     // Check to make sure this is a valid class.
     if (pClass)
     {    
-    	LPBASECLASS pObject = g_pServerDE->CreateObject(pClass, &theStruct);
+    	DEBaseClass* pObject = g_pServerDE->CreateObject(pClass, &theStruct);
         
         if (pObject)
         {
@@ -1516,7 +1519,7 @@ DBOOL Script::ObjectCreateModelAt()
     m_nObjectIndex = atoi(m_scriptCmdList[m_nCurrLine]->data);
 
 	theStruct.m_ObjectType = OT_MODEL; 
-    _mbscpy((unsigned char*)pClassName, (const unsigned char*)"BaseClass");
+    _mbscpy((unsigned char*)pClassName, (const unsigned char*)"DEBaseClass");
 
     // Arg1 = ModelFileName
     m_nCurrLine++;
@@ -1561,7 +1564,7 @@ DBOOL Script::ObjectCreateModelAt()
     // Check to make sure this is a valid class.
     if (pClass)
     {    
-    	LPBASECLASS pObject = g_pServerDE->CreateObject(pClass, &theStruct);
+    	DEBaseClass* pObject = g_pServerDE->CreateObject(pClass, &theStruct);
         
         if (pObject)
         {
@@ -1666,7 +1669,7 @@ DBOOL Script::ObjectCreateModelNear()
         theStruct.m_NextUpdate = 0.01f;
 
     	theStruct.m_ObjectType = OT_MODEL; 
-        _mbscpy((unsigned char*)pClassName, (const unsigned char*)"BaseClass");
+        _mbscpy((unsigned char*)pClassName, (const unsigned char*)"DEBaseClass");
 
         // Arg2 = ModelFileName
         m_nCurrLine++;
@@ -1695,7 +1698,7 @@ DBOOL Script::ObjectCreateModelNear()
         // Check to make sure this is a valid class.
         if (pClass)
         {    
-        	LPBASECLASS pObject = g_pServerDE->CreateObject(pClass, &theStruct);
+        	DEBaseClass* pObject = g_pServerDE->CreateObject(pClass, &theStruct);
         
             if (pObject)
             {

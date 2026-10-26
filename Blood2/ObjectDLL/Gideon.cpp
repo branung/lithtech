@@ -220,7 +220,7 @@ void Gideon::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL Gideon::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
     if(m_bLoadAnims)
@@ -810,7 +810,7 @@ DBOOL Gideon::Fire(DBOOL bAltFire)
 
 void Gideon::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	pServerDE->WriteToMessageFloat(hWrite, m_fShieldDuration);
@@ -821,7 +821,7 @@ void Gideon::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void Gideon::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_fShieldDuration = pServerDE->ReadFromMessageFloat(hRead);

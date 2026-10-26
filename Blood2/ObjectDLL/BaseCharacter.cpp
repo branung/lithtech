@@ -110,7 +110,7 @@ void CBaseCharacter::OnStringKey(ArgList* pArgList)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
-	char* pKey = pArgList->argv[0];
+	const char* pKey = pArgList->argv[0];
 	if (!pKey) return;
 
 	// get rotation

@@ -148,7 +148,7 @@ class CInvKey : public CInvItem
 
 		DBOOL Setup(HSTRING hstrIconFile, HSTRING hstrHiIconFile, HSTRING hstrItemName, HSTRING hstrDisplayName, DBYTE byCount)
 		{
-			CServerDE* pServerDE = BaseClass::GetServerDE();
+			CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			if (!pServerDE) return DFALSE;
 
 			m_hstrPic = pServerDE->CopyString(hstrIconFile);

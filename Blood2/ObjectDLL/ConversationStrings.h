@@ -159,11 +159,11 @@ static ConversationEntry s_ConversationStringMap[] =
 //
 // ----------------------------------------------------------------------- //
 
-static char* ConvertFullPathToFilename(char* pPath)
+static const char* ConvertFullPathToFilename(const char* pPath)
 {
 	if (!pPath) return DNULL;
 
-	char* pFilename = pPath;
+	const char* pFilename = pPath;
 	int nLen = _mbstrlen(pPath);
 
 	for (int i=nLen-1; i >= 0; i--)
@@ -191,10 +191,10 @@ char* FilenameToText(HSTRING hFileName)
 {
 	if (!g_pServerDE || !hFileName) return DNULL;
 
-	char* pFullFilename = g_pServerDE->GetStringData(hFileName);
+	const char* pFullFilename = g_pServerDE->GetStringData(hFileName);
 	if (!pFullFilename) return DNULL;
 
-	char* pFilename = ConvertFullPathToFilename(pFullFilename);
+	const char* pFilename = ConvertFullPathToFilename(pFullFilename);
 	if (!pFilename) return DNULL;
 
 	ConversationEntry *pEntry = &s_ConversationStringMap[0];

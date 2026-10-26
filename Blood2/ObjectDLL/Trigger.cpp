@@ -29,7 +29,7 @@ extern CPlayerObj* g_pPlayerObj;
 	Trigger helper functions
 */
 
-inline void SendTriggerMsgToObject(LPBASECLASS pSender, HOBJECT hObj, DBOOL bRemoveObject, HSTRING hMsg)
+inline void SendTriggerMsgToObject(DEBaseClass* pSender, HOBJECT hObj, DBOOL bRemoveObject, HSTRING hMsg)
 {
 	if (!g_pServerDE) return;
 
@@ -49,14 +49,14 @@ inline void SendTriggerMsgToObject(LPBASECLASS pSender, HOBJECT hObj, DBOOL bRem
 }
 
 
-void SendTriggerMsgToObjects(LPBASECLASS pSender, HSTRING hName, HSTRING hMsg)
+void SendTriggerMsgToObjects(DEBaseClass* pSender, HSTRING hName, HSTRING hMsg)
 {
 	if (!g_pServerDE) return;
 
 	DBOOL bRemoveObject = DFALSE;
 
-	char* pMsg  = g_pServerDE->GetStringData(hMsg);
-	char* pName = g_pServerDE->GetStringData(hName);
+	const char* pMsg  = g_pServerDE->GetStringData(hMsg);
+	const char* pName = g_pServerDE->GetStringData(hName);
 
 	if (!pMsg || !pName || !pName[0]) return;
 
@@ -85,13 +85,13 @@ void SendTriggerMsgToObjects(LPBASECLASS pSender, HSTRING hName, HSTRING hMsg)
 
 
 // Sends a trigger message to all objects of a class
-void SendTriggerMsgToClass(LPBASECLASS pSender, HCLASS hClass, HSTRING hMsg)
+void SendTriggerMsgToClass(DEBaseClass* pSender, HCLASS hClass, HSTRING hMsg)
 {
 	if (!g_pServerDE) return;
 
 	DBOOL bRemoveObject = DFALSE;
 
-	char* pMsg = g_pServerDE->GetStringData(hMsg);
+	const char* pMsg = g_pServerDE->GetStringData(hMsg);
 
 	if (!pMsg || !hClass ) return;
 
@@ -731,11 +731,11 @@ void Trigger::HandleKeyQueryResponse(HOBJECT hSender, HMESSAGEREAD hRead)
 
 void Trigger::HandleTriggerMsg(HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_bActive) return;
 
 	HSTRING hMsg = pServerDE->ReadFromMessageHString(hRead);
-	char *pMsg = pServerDE->GetStringData(hMsg);
+	const char *pMsg = pServerDE->GetStringData(hMsg);
 	
 	if (pMsg)
 	{
@@ -792,7 +792,7 @@ void Trigger::HandleTriggerMsg(HOBJECT hSender, HMESSAGEREAD hRead)
 		{
 			if (m_hstrUnlockedSound && m_bLocked)
 			{
-				char *pSound = pServerDE->GetStringData(m_hstrUnlockedSound);
+				const char *pSound = pServerDE->GetStringData(m_hstrUnlockedSound);
 				if (!pSound)
 				{
 					g_pServerDE->FreeString( hMsg );
@@ -871,7 +871,7 @@ void Trigger::PlayActivationSound()
 {
 	if (!m_hstrActivationSound || !g_pServerDE) return;
 
-	char* pSound = g_pServerDE->GetStringData(m_hstrActivationSound);
+	const char* pSound = g_pServerDE->GetStringData(m_hstrActivationSound);
 	if (pSound && pSound[0] != '\0')
 	{
 		PlaySoundFromObject(m_hObject, pSound, m_fSoundRadius, SOUNDPRIORITY_MISC_MEDIUM);
@@ -908,7 +908,7 @@ DBOOL Trigger::ValidateSender(HOBJECT hObj)
 			if (m_bLocked && m_hstrKeyName)
 			{
 				// See if he has the key we need to unlock.. Trigger should become unlocked.
-				HMESSAGEWRITE hMessage = g_pServerDE->StartMessageToObject((LPBASECLASS)this, hObj, MID_KEYQUERY);
+				HMESSAGEWRITE hMessage = g_pServerDE->StartMessageToObject((DEBaseClass*)this, hObj, MID_KEYQUERY);
 				g_pServerDE->WriteToMessageHString(hMessage, m_hstrKeyName);
 				g_pServerDE->EndMessage(hMessage);
 			}
@@ -927,7 +927,7 @@ DBOOL Trigger::ValidateSender(HOBJECT hObj)
 					}
 					else
 					{
-						char *pSound = g_pServerDE->GetStringData(m_hstrLockedSound);
+						const char *pSound = g_pServerDE->GetStringData(m_hstrLockedSound);
 						PlaySoundFromObject(hObj, pSound, 200.0f, SOUNDPRIORITY_MISC_HIGH);
 					}
 				}

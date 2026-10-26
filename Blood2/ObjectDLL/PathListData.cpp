@@ -45,7 +45,7 @@ PathListData::~PathListData()
 
 DBOOL PathListData::Copy(HOBJECT hPathPoint)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!hPathPoint || !pServerDE) return DFALSE;
 
     // Get the Object Position
@@ -84,7 +84,7 @@ DBOOL PathListData::Copy(HOBJECT hPathPoint)
 
 void PathListData::Save(HMESSAGEWRITE hWrite)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageVector(hWrite, &m_vPos);
@@ -104,7 +104,7 @@ void PathListData::Save(HMESSAGEWRITE hWrite)
 
 void PathListData::Load(HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromMessageVector(hRead, &m_vPos);

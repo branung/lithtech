@@ -386,7 +386,7 @@ void Explosion::CreateExplosion(DVector *pvPos)
 	g_pServerDE->GetObjectPos(m_hObject, &vPos);
 	if ( m_hstrSound )
 	{
-		char* pSound = g_pServerDE->GetStringData(m_hstrSound);
+		const char* pSound = g_pServerDE->GetStringData(m_hstrSound);
 		if (pSound) PlaySoundFromPos(&vPos, pSound, m_fSoundRadius, SOUNDPRIORITY_MISC_HIGH );
 	}	
 }
@@ -414,10 +414,10 @@ void Explosion::CreateLight( DVector *pvPos )
 	ocStruct.m_ObjectType = OT_LIGHT; 
 	VEC_COPY(ocStruct.m_Pos, *pvPos);
 
-	HCLASS hClass = g_pServerDE->GetClass("BaseClass");
+	HCLASS hClass = g_pServerDE->GetClass("DEBaseClass");
 	if (!hClass) return;
 
-	LPBASECLASS	pLight = g_pServerDE->CreateObject(hClass, &ocStruct);
+	DEBaseClass*	pLight = g_pServerDE->CreateObject(hClass, &ocStruct);
 	if (!pLight) return;
 
 	m_hLight = pLight->m_hObject;
@@ -468,7 +468,7 @@ CImpact* Explosion::CreateImpact(ObjectCreateStruct & ocStruct, HSTRING hstrFile
 //void CWeapon::CreateFX(DBYTE nFX, DVector vPos, DVector vFire, DVector vNormal, DFLOAT fDamage, HOBJECT hObject, SurfaceType eType)
 void Explosion::CreateFX(DVector *vPos)
 {
-/*	CServerDE* pServerDE = BaseClass::GetServerDE();
+/*	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (eType == SURFTYPE_STONE || eType == SURFTYPE_METAL || 

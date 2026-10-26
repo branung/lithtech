@@ -17,7 +17,7 @@
 #include <mbstring.h>
 #include "SoundTypes.h"
 
-void SendTriggerMsgToObjects(LPBASECLASS pSender, HSTRING hName, HSTRING hMsg);
+void SendTriggerMsgToObjects(DEBaseClass* pSender, HSTRING hName, HSTRING hMsg);
 
 BEGIN_CLASS(CinematicTrigger)
 	ADD_REALPROP(Delay1, 0.0f)
@@ -372,7 +372,7 @@ void CinematicTrigger::SendMessage()
 
 void CinematicTrigger::StartSound()
 {
-	char *pName;
+	const char *pName;
 	if (!g_pServerDE || m_nCurMessage >= MAX_CT_MESSAGES) return;
 
 	if (m_hCurSound)
@@ -403,7 +403,7 @@ void CinematicTrigger::StartSound()
 	}
 
 
-	char* pSound = g_pServerDE->GetStringData(m_hstrSound[m_nCurMessage]);
+	const char* pSound = g_pServerDE->GetStringData(m_hstrSound[m_nCurMessage]);
 	if (!pSound) return;
 
 	DFLOAT fRadius = 1000.0f;
@@ -426,7 +426,7 @@ void CinematicTrigger::StartSound()
 //
 // ----------------------------------------------------------------------- //
 
-HOBJECT CinematicTrigger::PlayedBy( char *pszName )
+HOBJECT CinematicTrigger::PlayedBy( const char *pszName )
 {
 	if (!g_pServerDE || m_nCurMessage >= MAX_CT_MESSAGES) return m_hObject;
 	if( !pszName )

@@ -44,12 +44,16 @@ CMusic::~CMusic( )
 //				the "Music" argument in the string.
 //
 // ----------------------------------------------------------------------- //
-DBOOL CMusic::HandleMusicMessage( char *pMsg )
+DBOOL CMusic::HandleMusicMessage( const char *pMsg )
 {
 	if( !pMsg )
 		return DFALSE;
 
-	char *pMsgType = strtok( pMsg, " " );
+	// Tokenize a copy, since strtok writes into the string and GetStringData returns the engine's own
+	char buf[256];
+	SAFE_STRCPY( buf, pMsg );
+
+	char *pMsgType = strtok( buf, " " );
 	if( pMsgType )
 	{
 		// Handle music level change...

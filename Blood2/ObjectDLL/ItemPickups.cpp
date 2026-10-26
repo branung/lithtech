@@ -406,7 +406,7 @@ DDWORD KeyPickup::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 
 			if (m_hstrFilename && m_hstrSkinName)
 			{
-				char *pszTemp;
+				const char *pszTemp;
 				pszTemp = g_pServerDE->GetStringData(m_hstrFilename);
 				if( pszTemp )
 					_mbscpy((unsigned char*)pStruct->m_Filename, (const unsigned char*)pszTemp);

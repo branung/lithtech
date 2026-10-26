@@ -155,7 +155,7 @@ void DrudgePriest::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL DrudgePriest::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
     if(m_bLoadAnims)
@@ -241,7 +241,7 @@ void DrudgePriest::MC_Taunt_Bold()
 			ROT_COPY( ocStruct.m_Rotation, m_MoveObj.GetRotation());
 
 			// Create the object...
-			BaseClass *pObj = g_pServerDE->CreateObject( hClass, &ocStruct);
+			DEBaseClass *pObj = g_pServerDE->CreateObject( hClass, &ocStruct);
 
 			m_fLastSpawn = m_pServerDE->GetTime();
 		}

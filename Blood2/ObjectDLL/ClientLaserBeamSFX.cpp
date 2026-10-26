@@ -171,7 +171,7 @@ void CClientLaserBeamSFX::ReadProp(ObjectCreateStruct *pData)
 void CClientLaserBeamSFX::HandleTrigger(HOBJECT hSender, HMESSAGEREAD hRead)
 {
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pszMessage = g_pServerDE->GetStringData(hMsg);
+	const char *pszMessage = g_pServerDE->GetStringData(hMsg);
 
 	if((_mbsncmp((const unsigned char*)pszMessage, (const unsigned char*)"FIRE", 4) == 0))
 	{
@@ -195,7 +195,7 @@ void CClientLaserBeamSFX::HandleTrigger(HOBJECT hSender, HMESSAGEREAD hRead)
 
 void CClientLaserBeamSFX::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageVector(hWrite, &clb.vSource);
@@ -219,7 +219,7 @@ void CClientLaserBeamSFX::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CClientLaserBeamSFX::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromMessageVector(hRead, &clb.vSource);

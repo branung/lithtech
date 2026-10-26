@@ -50,8 +50,8 @@ DFLOAT AI_Mgr::m_fLastFrame = 0;
 extern CBloodServerShell* g_pBloodServerShell;
 extern CPlayerObj* g_pPlayerObj;
 
-extern DBOOL LiquidFilterFn(HOBJECT hObj, void *pUserData);
-extern DBOOL CharacterFilterFn(HOBJECT hObj, void *pUserData);
+extern bool LiquidFilterFn(HOBJECT hObj, void *pUserData);
+extern bool CharacterFilterFn(HOBJECT hObj, void *pUserData);
 
 // Used by the player object to set the view if a camera is active
 extern HOBJECT g_hActiveCamera;
@@ -288,12 +288,16 @@ DBOOL AI_Mgr::InitStatics(CAnim_Sound* pAnim_Sound)
 // PARAMS		: char *pState
 // ----------------------------------------------------------------------- //
 
-int AI_Mgr::StateStrToInt(char *pState)
+int AI_Mgr::StateStrToInt(const char *pState)
 {
     int m_nRetState = STATE_Inactive;
 
-     // Make sure its Upper case
- 	_strupr(pState);
+    // Make sure its Upper case
+    // On a copy since _strupr writes in place and pState points into Parse's token buffer
+    char szState[128];
+    SAFE_STRCPY(szState, pState);
+    _strupr(szState);
+    pState = szState;
 
 
     if ( _mbsncmp((const unsigned char*)pState, (const unsigned char*)"INACTIVE", 8) == 0)
@@ -809,13 +813,13 @@ DDWORD AI_Mgr::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD h
 // ROUTINE		: AI_Mgr::ReadProp
 // DESCRIPTION	: read properties from ED file
 // RETURN TYPE	: DBOOL 
-// PARAMS		: BaseClass *pObject
+// PARAMS		: DEBaseClass *pObject
 // PARAMS		: ObjectCreateStruct *pStruct
 // ----------------------------------------------------------------------- //
 
 DBOOL AI_Mgr::ReadProp(ObjectCreateStruct *pStruct)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pStruct) return DFALSE;	
 
 	char buf[MAX_CS_FILENAME_LEN];
@@ -877,7 +881,7 @@ void AI_Mgr::OnStringKey(ArgList* pArgList)
 {
 	if (!m_pServerDE || !pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
-	char* pKey = pArgList->argv[0];
+	const char* pKey = pArgList->argv[0];
 	if (!pKey) return;
 
 	char szTemp[32];
@@ -991,13 +995,13 @@ DBOOL AI_Mgr::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 	HSTRING hMsg = m_pServerDE->ReadFromMessageHString(hRead);
 
 //	char *pCommand = _strupr(m_pServerDE->GetStringData(hMsg));
-	char *pCommand = m_pServerDE->GetStringData(hMsg);
+	const char *pCommand = m_pServerDE->GetStringData(hMsg);
 	    
 	int nArgs;
     
     char tokenSpace[64*20];
-    char *pTokens[64];
-    char *pCommandPos;
+    const char *pTokens[64];
+    const char *pCommandPos;
 
 	// got a plain trigger message, relay it..
 	if (_mbsicmp((const unsigned char*)TRIGGER, (const unsigned char*)pCommand) == 0 && m_hstrTriggerRelayTarget)
@@ -1115,7 +1119,7 @@ DBOOL AI_Mgr::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
     	else if (_mbsicmp((const unsigned char*)TRIGGER_PLAY_SOUND, (const unsigned char*)pTokens[0]) == 0 && nArgs > 1)
 	    {
     		// Get sound name from message...
-	    	char* pSoundName = pTokens[1];
+	    	const char* pSoundName = pTokens[1];
 
 		    if (pSoundName)
     		{
@@ -1137,7 +1141,7 @@ DBOOL AI_Mgr::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
     	{
 	    	// Get state name from message...
 
-		    char* pStateName = pTokens[1];
+		    const char* pStateName = pTokens[1];
     		if (pStateName)
 	    	{
                 SetNewState(StateStrToInt(pStateName));
@@ -1149,7 +1153,7 @@ DBOOL AI_Mgr::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
     	{
 	    	// Get target name from message...
 
-		    char* pName = pTokens[1];
+		    const char* pName = pTokens[1];
     		if (pName)
 	    	{
 		    	SetTarget(pName);
@@ -1162,7 +1166,7 @@ DBOOL AI_Mgr::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 	    {
     		// Get ani name from message...
 
-	    	char* pName = pTokens[1];
+	    	const char* pName = pTokens[1];
 		    if (pName)
     		{
 	    		PlayAnimation(pName);
@@ -1178,7 +1182,7 @@ DBOOL AI_Mgr::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 
 			if (nArgs > 1)
 			{
-				char* pType = pTokens[1];
+				const char* pType = pTokens[1];
 				if (pType)
 				{
 					if (_mbsicmp((const unsigned char*)TRIGGER_STYPE_INTERRUPTABLE, (const unsigned char*)pType) == 0)
@@ -1217,7 +1221,7 @@ DBOOL AI_Mgr::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 
         		pCmd->command = StringToAIScriptCmdType(pTokens[0]);
 
-		        char* pArgs = pTokens[1];
+		        const char* pArgs = pTokens[1];
         		if (pArgs) _mbsncpy((unsigned char*)pCmd->args, (const unsigned char*)pArgs, MAX_AI_ARGS_LENGTH);
 
 		        m_scriptCmdList.Add(pCmd);
@@ -1252,7 +1256,7 @@ DBOOL AI_Mgr::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 // PARAMS		: char* pAniName
 // ----------------------------------------------------------------------- //
 
-void AI_Mgr::PlayAnimation(char* pAniName)
+void AI_Mgr::PlayAnimation(const char* pAniName)
 {
 	DDWORD dwAniIndex = m_pServerDE->GetAnimIndex(m_hObject, pAniName);
 
@@ -1268,7 +1272,7 @@ void AI_Mgr::PlayAnimation(char* pAniName)
 // PARAMS		: char* pTargetName
 // ----------------------------------------------------------------------- //
 
-void AI_Mgr::SetTarget(char* pTargetName)
+void AI_Mgr::SetTarget(const char* pTargetName)
 {
 	ObjectList*	pList = m_pServerDE->FindNamedObjects(pTargetName);
 	if (!pList) return;
@@ -1836,8 +1840,8 @@ DBOOL AI_Mgr::HandleDamage()
 			m_pServerDE->GetModelNodeTransform(m_hObject, "torso",&ocStruct.m_Pos,&ocStruct.m_Rotation);
 			ocStruct.m_Flags = FLAG_FORCECLIENTUPDATE;
 			
-			HCLASS hClass = m_pServerDE->GetClass("BaseClass");
-			BaseClass* pObj = m_pServerDE->CreateObject(hClass, &ocStruct);
+			HCLASS hClass = m_pServerDE->GetClass("DEBaseClass");
+			DEBaseClass* pObj = m_pServerDE->CreateObject(hClass, &ocStruct);
 
 			if(pObj)
 			{
@@ -2638,7 +2642,8 @@ int AI_Mgr::CalculateObstruction(IntersectInfo* IInfo)
 	vStart[2].y -= vDims.y - 1.0f;		vStart[5].y -= vDims.y - 1.0f;	vStart[8].y -= vDims.y - 1.0f;
 
 	//initialize the end positions
-	for(int i = 0; i < 9; i++)
+	int i;
+	for (i= 0; i < 9; i++)
 	{
 		VEC_COPY(vEnd[i],vStart[i]);
 		VEC_ADDSCALED(vEnd[i],vEnd[i], m_MoveObj.GetForwardVector(),fFeeler);
@@ -2706,7 +2711,7 @@ DFLOAT AI_Mgr::CalculateTurn(IntersectInfo* IInfo)
 	//look through the intersections to get a poly normal for the obstacle
 	for(int i = 0; i < 12; i++)
 	{
-		if(IInfo[i].m_hPoly)
+		if(IInfo[i].m_hPoly != INVALID_HPOLY)
 		{
 			VEC_MULSCALAR(vNormal,IInfo[i].m_Plane.m_Normal,-1.0f);
 			break;
@@ -2746,7 +2751,8 @@ DFLOAT AI_Mgr::CalculateTurn(IntersectInfo* IInfo)
 
 	VEC_MULSCALAR(vEnd,vForward,fMaxWidth + 5.0f);
 
-	for(float fWidth = fMaxWidth; !(fWidth >= fRightDist && fWidth >= fLeftDist); fWidth += fMaxWidth)
+	float fWidth;
+	for(fWidth = fMaxWidth; !(fWidth >= fRightDist && fWidth >= fLeftDist); fWidth += fMaxWidth)
 	{
 		//Check the right side
 		if(fWidth < fRightDist)
@@ -2958,7 +2964,7 @@ HOBJECT AI_Mgr::FindObjectInRadius(HCLASS hObjectTest, DFLOAT fRange, DDWORD dwF
 		pLink = pLinkHead->m_pNext;
 
 	if(pLink && (pLink != pLinkHead))
-		hObject = m_pServerDE->ObjectToHandle((BaseClass*)pLink->m_pData);
+		hObject = m_pServerDE->ObjectToHandle((DEBaseClass*)pLink->m_pData);
 	else
 		return DNULL;
 
@@ -3057,7 +3063,7 @@ HOBJECT AI_Mgr::FindObjectInRadius(HCLASS hObjectTest, DFLOAT fRange, DDWORD dwF
 		pLink = pLink->m_pNext;
 
 		if(pLink != pLinkHead)
-			hObject = m_pServerDE->ObjectToHandle((BaseClass*)pLink->m_pData);
+			hObject = m_pServerDE->ObjectToHandle((DEBaseClass*)pLink->m_pData);
 		else
 		{
 			return hExitObj;
@@ -3788,7 +3794,7 @@ DBOOL AI_Mgr::CreateCorpse()
 	theStruct.m_UserData = (DDWORD)(m_pAnim_Sound->GetSoundRoot());
 
 	// Allocate an object...
-	BaseClass* pObj = m_pServerDE->CreateObject( hClass, &theStruct );
+	DEBaseClass* pObj = m_pServerDE->CreateObject( hClass, &theStruct );
 	if( !pObj )	return DFALSE;
 
 	//shoudl we limb loss while corpse?
@@ -6758,7 +6764,7 @@ void AI_Mgr::AI_STATE_RunToPos()
 
 void AI_Mgr::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	DFLOAT fTime = pServerDE->GetTime();
@@ -6853,7 +6859,7 @@ void AI_Mgr::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void AI_Mgr::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	DFLOAT fTime = pServerDE->GetTime();

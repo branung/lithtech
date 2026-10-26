@@ -208,7 +208,7 @@ void Fanatic::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL Fanatic::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
 	//Load up animation indexes if first model instance
@@ -617,8 +617,8 @@ void Fanatic::AI_STATE_Special1()
 					g_pServerDE->GetModelNodeTransform(m_hObject, "torso_extra1",&ocStruct.m_Pos,&ocStruct.m_Rotation);
 					ocStruct.m_Flags = FLAG_FORCECLIENTUPDATE;
 					
-					HCLASS hClass = g_pServerDE->GetClass("BaseClass");
-					BaseClass* pObj = g_pServerDE->CreateObject(hClass, &ocStruct);
+					HCLASS hClass = g_pServerDE->GetClass("DEBaseClass");
+					DEBaseClass* pObj = g_pServerDE->CreateObject(hClass, &ocStruct);
 
 					if(pObj)
 					{
@@ -742,7 +742,7 @@ void Fanatic::AI_STATE_Dying()
 
 void Fanatic::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	pServerDE->WriteToMessageFloat(hWrite, m_fStartTime);
@@ -750,7 +750,7 @@ void Fanatic::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void Fanatic::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_fStartTime = pServerDE->ReadFromMessageFloat(hRead);
@@ -766,8 +766,8 @@ void Fanatic::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 		g_pServerDE->GetModelNodeTransform(m_hObject, "torso_extra1",&ocStruct.m_Pos,&ocStruct.m_Rotation);
 		ocStruct.m_Flags = FLAG_FORCECLIENTUPDATE;
 		
-		HCLASS hClass = g_pServerDE->GetClass("BaseClass");
-		BaseClass* pObj = g_pServerDE->CreateObject(hClass, &ocStruct);
+		HCLASS hClass = g_pServerDE->GetClass("DEBaseClass");
+		DEBaseClass* pObj = g_pServerDE->CreateObject(hClass, &ocStruct);
 
 		if(pObj)
 		{

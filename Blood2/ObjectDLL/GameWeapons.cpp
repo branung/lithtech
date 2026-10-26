@@ -37,7 +37,7 @@
 // ----------------------------------------------------------------------- //
 DDWORD CShikariClaw::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -73,7 +73,7 @@ DDWORD CShikariClaw::Fire()
 // ----------------------------------------------------------------------- //
 DDWORD CSoulCrowbar::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -98,7 +98,7 @@ DDWORD CSoulCrowbar::Fire()
 // ----------------------------------------------------------------------- //
 DDWORD CSoulAxe::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -123,7 +123,7 @@ DDWORD CSoulAxe::Fire()
 // ----------------------------------------------------------------------- //
 DDWORD CSoulPipe::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -149,7 +149,7 @@ DDWORD CSoulPipe::Fire()
 
 DDWORD CSoulHook::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -172,7 +172,7 @@ DDWORD CSoulHook::Fire()
 // ----------------------------------------------------------------------- //
 DDWORD CBehemothClaw::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -195,7 +195,7 @@ DDWORD CBehemothClaw::Fire()
 // ----------------------------------------------------------------------- //
 DDWORD CNightmareBite::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -219,7 +219,7 @@ DDWORD CNightmareBite::Fire()
 // ----------------------------------------------------------------------- //
 DDWORD CThiefSuck::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -244,7 +244,7 @@ DDWORD CThiefSuck::Fire()
 // ----------------------------------------------------------------------- //
 DDWORD CBoneleechSuck::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -268,7 +268,7 @@ DDWORD CBoneleechSuck::Fire()
 // ----------------------------------------------------------------------- //
 DDWORD CEnergyBlast::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -291,7 +291,7 @@ DDWORD CEnergyBlast::Fire()
 // ----------------------------------------------------------------------- //
 CProjectile *CEnergyBlast::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(pProject->m_hObject);
@@ -311,7 +311,7 @@ CProjectile *CEnergyBlast::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAl
 // ----------------------------------------------------------------------- //
 DDWORD CGroundStrike::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -329,7 +329,7 @@ DDWORD CGroundStrike::Fire()
 // ----------------------------------------------------------------------- //
 CProjectile *CGroundStrike::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(pProject->m_hObject);
@@ -350,7 +350,7 @@ CProjectile *CGroundStrike::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bA
 // ----------------------------------------------------------------------- //
 DDWORD CFireball::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -368,7 +368,7 @@ DDWORD CFireball::Fire()
 // ----------------------------------------------------------------------- //
 CProjectile *CFireball::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(pProject->m_hObject);
@@ -387,7 +387,7 @@ CProjectile *CFireball::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFi
 // ----------------------------------------------------------------------- //
 DDWORD CShockwave::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -405,7 +405,7 @@ DDWORD CShockwave::Fire()
 // ----------------------------------------------------------------------- //
 CProjectile *CShockwave::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(pProject->m_hObject);
@@ -424,7 +424,7 @@ CProjectile *CShockwave::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltF
 // ----------------------------------------------------------------------- //
 DDWORD CBehemothShockwave::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -442,7 +442,7 @@ DDWORD CBehemothShockwave::Fire()
 // ----------------------------------------------------------------------- //
 CProjectile *CBehemothShockwave::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(pProject->m_hObject);
@@ -461,7 +461,7 @@ CProjectile *CBehemothShockwave::FireProjectile(DVector *vFire, DFLOAT dist, DBO
 // ----------------------------------------------------------------------- //
 DDWORD CHandSqueeze::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -489,7 +489,7 @@ DDWORD CHandSqueeze::Fire()
 void CFlareGun::FireSpread(Spread *spread, DDWORD shots, DFLOAT range, DBOOL bAltFire, DVector *rDir)
 {
 	//***** Make sure the server and inventory systems are valid *****//
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_pInventoryMgr)		return;
 
 	//***** Variables to calculate the spread of the weapon fire *****//
@@ -555,7 +555,7 @@ void CFlareGun::FireSpread(Spread *spread, DDWORD shots, DFLOAT range, DBOOL bAl
 
 DBOOL CVoodooDoll::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if(!pServerDE)	return DFALSE;
 
 	switch(m_nHitFX)
@@ -582,7 +582,7 @@ DBOOL CVoodooDoll::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 		if (!WonkyThemAll(WONKY_VISION_DEFAULT_TIME))
 		{
 			// If you miss everyone with the alt fire, you just explode cause you suck
-			BaseClass *ffObj = pServerDE->HandleToObject(m_hOwner);
+			DEBaseClass *ffObj = pServerDE->HandleToObject(m_hOwner);
 			DVector		vFire, vPos;
 
 			VEC_SET(vFire, 0.0f, -1.0f, 0.0f);
@@ -611,12 +611,12 @@ DBOOL CVoodooDoll::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 
 DBOOL CVoodooDoll::SendDamageMsg(HOBJECT firedTo, DVector vPoint, int nNode, DVector *vFire, DFLOAT m_nDamage)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (!pServerDE)
 		return DFALSE;
 
-	BaseClass *ffObj = pServerDE->HandleToObject(m_hOwner);
+	DEBaseClass *ffObj = pServerDE->HandleToObject(m_hOwner);
 
 	// Send a damage message to the object
 	HMESSAGEWRITE hMsg = pServerDE->StartMessageToObject(ffObj, firedTo, MID_DAMAGE);
@@ -641,7 +641,7 @@ DBOOL CVoodooDoll::SendDamageMsg(HOBJECT firedTo, DVector vPoint, int nNode, DVe
 
 DBOOL CVoodooDoll::DamageClosestInFOV()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return DNULL;
 
 	// Get the head of the list of destructable objects
@@ -811,7 +811,7 @@ DBOOL CVoodooDoll::DamageClosestInFOV()
 
 DBOOL CVoodooDoll::WonkyThemAll(DFLOAT fWonkyTime)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return DNULL;
 
 	// Get the head of the list of destructable objects
@@ -946,7 +946,7 @@ DBOOL CVoodooDoll::WonkyThemAll(DFLOAT fWonkyTime)
 
 DDWORD CShotgun::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return DFALSE;
 
@@ -1034,7 +1034,7 @@ DDWORD CShotgun::Fire()
 
 CProjectile* CNapalmCannon::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	// Primary fire has rocket projectiles, so turn off gravity
@@ -1069,8 +1069,8 @@ CDeathRay::CDeathRay() : CWeapon(WEAP_DEATHRAY)
 	ocStruct.m_ObjectType = OT_NORMAL; 
 	ocStruct.m_Flags = FLAG_FORCECLIENTUPDATE;
 
-	HCLASS hClass = g_pServerDE->GetClass("BaseClass");
-	m_pRotModel = (BaseClass*)g_pServerDE->CreateObject(hClass, &ocStruct);
+	HCLASS hClass = g_pServerDE->GetClass("DEBaseClass");
+	m_pRotModel = (DEBaseClass*)g_pServerDE->CreateObject(hClass, &ocStruct);
 }
 
 
@@ -1102,7 +1102,7 @@ CDeathRay::~CDeathRay()
 
 DDWORD CDeathRay::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if(!pServerDE)	return 0;
 
 	if(m_eState == WS_ALT_FIRING)
@@ -1170,7 +1170,7 @@ DDWORD CDeathRay::Fire()
 
 void CDeathRay::DamageObjectsInFOV(DFLOAT fRange, DFLOAT fFOV)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return;
 
 	// Get the head of the list of destructable objects
@@ -1273,7 +1273,7 @@ void CDeathRay::DamageObjectsInFOV(DFLOAT fRange, DFLOAT fFOV)
 
 CProjectile* CFlayer::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 /*	DVector		vNormal;
@@ -1310,7 +1310,7 @@ CProjectile* CFlayer::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire
 
 DDWORD CTeslaCannon::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	if(m_eState == WS_ALT_FIRING)
@@ -1337,7 +1337,7 @@ DDWORD CTeslaCannon::Fire()
 
 CProjectile* CTeslaCannon::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	if(bAltFire)
@@ -1386,7 +1386,7 @@ CProjectile* CTeslaCannon::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAl
 // ----------------------------------------------------------------------- //
 CProjectile* CSingularity::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	IntersectQuery	iq;
@@ -1432,7 +1432,7 @@ CProjectile* CSingularity::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAl
 
 CProjectile* CWeapProximityBomb::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return DNULL;
 
 	CProjectile *pProject = 0;
@@ -1490,7 +1490,7 @@ CProjectile* CWeapProximityBomb::FireProjectile(DVector *vFire, DFLOAT dist, DBO
 
 CProjectile* CWeapRemoteBomb::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = 0;
 
 	// If we held onto the bomb too long and it should explode in our hand
@@ -1553,7 +1553,7 @@ CProjectile* CWeapRemoteBomb::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL 
 
 CProjectile* CWeapTimeBomb::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return DNULL;
 
 	CProjectile *pProject = 0;
@@ -1613,7 +1613,7 @@ CProjectile* CWeapTimeBomb::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bA
 
 DBOOL CDrudgeLightning::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return DFALSE;
 
 	IntersectQuery	iq;
@@ -1660,7 +1660,7 @@ DBOOL CDrudgeLightning::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 
 CDeathShroudZap::CDeathShroudZap() : CWeapon(WEAP_DEATHSHROUD_ZAP)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return;
 }
 
@@ -1674,7 +1674,7 @@ CDeathShroudZap::CDeathShroudZap() : CWeapon(WEAP_DEATHSHROUD_ZAP)
 
 DDWORD CDeathShroudZap::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	return CWeapon::Fire();
@@ -1690,7 +1690,7 @@ DDWORD CDeathShroudZap::Fire()
 
 DBOOL CDeathShroudZap::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return DFALSE;
 
 	IntersectQuery	iq;
@@ -1754,7 +1754,7 @@ DBOOL CDeathShroudZap::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 
 CZealotHeal::CZealotHeal() : CWeapon(WEAP_ZEALOT_HEAL)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return;
 }
 
@@ -1768,7 +1768,7 @@ CZealotHeal::CZealotHeal() : CWeapon(WEAP_ZEALOT_HEAL)
 
 DDWORD CZealotHeal::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	return CWeapon::Fire();
@@ -1784,7 +1784,7 @@ DDWORD CZealotHeal::Fire()
 
 DBOOL CZealotHeal::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return DFALSE;
 
 	DVector		offset;
@@ -1817,7 +1817,7 @@ DBOOL CZealotHeal::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 
 CZealotShield::CZealotShield() : CWeapon(WEAP_ZEALOT_SHIELD)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return;
 }
 
@@ -1831,7 +1831,7 @@ CZealotShield::CZealotShield() : CWeapon(WEAP_ZEALOT_SHIELD)
 
 DDWORD CZealotShield::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	return CWeapon::Fire();
@@ -1848,7 +1848,7 @@ DDWORD CZealotShield::Fire()
 
 DBOOL CZealotShield::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return DFALSE;
 
 	IntersectQuery	iq;
@@ -1913,7 +1913,7 @@ DBOOL CZealotShield::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 // ----------------------------------------------------------------------- //
 DDWORD CShikariSpit::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -1929,7 +1929,7 @@ DDWORD CShikariSpit::Fire()
 // ----------------------------------------------------------------------- //
 CProjectile *CShikariSpit::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(pProject->m_hObject);
@@ -1939,7 +1939,7 @@ CProjectile *CShikariSpit::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAl
 	return pProject;
 }
 
-DBOOL IgnoreTypeFilterFn(HOBJECT hObj, void *pUserData)
+bool IgnoreTypeFilterFn(HOBJECT hObj, void *pUserData)
 {
 	if (!hObj || !g_pServerDE) return DFALSE;
 
@@ -1964,7 +1964,7 @@ DBOOL IgnoreTypeFilterFn(HOBJECT hObj, void *pUserData)
 
 DBOOL CNagaEyes::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	IntersectQuery	iq;
@@ -2024,7 +2024,7 @@ DBOOL CNagaEyes::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 // ----------------------------------------------------------------------- //
 DDWORD CNagaSpike::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -2046,7 +2046,7 @@ DDWORD CNagaSpike::Fire()
 // ----------------------------------------------------------------------- //
 CProjectile *CNagaSpike::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(pProject->m_hObject);
@@ -2065,7 +2065,7 @@ CProjectile *CNagaSpike::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltF
 // ----------------------------------------------------------------------- //
 DDWORD CNagaDebris::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -2081,7 +2081,7 @@ DDWORD CNagaDebris::Fire()
 // ----------------------------------------------------------------------- //
 CProjectile *CNagaDebris::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(pProject->m_hObject);
@@ -2103,7 +2103,7 @@ CProjectile *CNagaDebris::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAlt
 
 CGideonShield::CGideonShield() : CWeapon(WEAP_GIDEON_SHIELD)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return;
 }
 
@@ -2117,7 +2117,7 @@ CGideonShield::CGideonShield() : CWeapon(WEAP_GIDEON_SHIELD)
 
 DDWORD CGideonShield::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	return CWeapon::Fire();
@@ -2133,7 +2133,7 @@ DDWORD CGideonShield::Fire()
 
 DBOOL CGideonShield::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return DFALSE;
 
 	DVector		offset;
@@ -2166,7 +2166,7 @@ DBOOL CGideonShield::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 
 CGideonWind::CGideonWind() : CWeapon(WEAP_GIDEON_WIND)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return;
 }
 
@@ -2180,7 +2180,7 @@ CGideonWind::CGideonWind() : CWeapon(WEAP_GIDEON_WIND)
 
 DDWORD CGideonWind::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	return CWeapon::Fire();
@@ -2196,7 +2196,7 @@ DDWORD CGideonWind::Fire()
 
 DBOOL CGideonWind::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return DFALSE;
 
 	DVector vPos;
@@ -2260,7 +2260,7 @@ DBOOL CGideonWind::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 // ----------------------------------------------------------------------- //
 DDWORD CVomit::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -2276,7 +2276,7 @@ DDWORD CVomit::Fire()
 // ----------------------------------------------------------------------- //
 CProjectile *CVomit::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(pProject->m_hObject);
@@ -2296,7 +2296,7 @@ CProjectile *CVomit::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 // ----------------------------------------------------------------------- //
 DDWORD CGooSpit::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -2312,7 +2312,7 @@ DDWORD CGooSpit::Fire()
 // ----------------------------------------------------------------------- //
 CProjectile *CGooSpit::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CProjectile *pProject = CWeapon::FireProjectile(vFire, dist, bAltFire);
 
 	DDWORD dwFlags = pServerDE->GetObjectFlags(pProject->m_hObject);
@@ -2333,7 +2333,7 @@ CProjectile *CGooSpit::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFir
 
 DBOOL CGideonSpear::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	IntersectQuery	iq;
@@ -2358,7 +2358,7 @@ DBOOL CGideonSpear::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 			HCLASS hPlayer = pServerDE->GetClass("CPlayerObj");
 			HCLASS hClass = pServerDE->GetObjectClass(hObj);
 
-			LPBASECLASS pObj = pServerDE->HandleToObject(m_hOwner);
+			DEBaseClass* pObj = pServerDE->HandleToObject(m_hOwner);
 
 			if (pServerDE->IsKindOf(hClass,hPlayer))
 			{
@@ -2373,14 +2373,14 @@ DBOOL CGideonSpear::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 }
 
 
-DBOOL AncientOneFilterFn(HOBJECT hObj, void *pUserData)
+bool AncientOneFilterFn(HOBJECT hObj, void *pUserData)
 {
 	if (!hObj || !g_pServerDE) return DFALSE;
 
 	HCLASS hObjClass	= g_pServerDE->GetObjectClass(hObj);
 	DBOOL bKeep = DTRUE;
 
-	BaseClass* pObj = (BaseClass*)g_pServerDE->HandleToObject(hObj);			
+	DEBaseClass* pObj = (DEBaseClass*)g_pServerDE->HandleToObject(hObj);			
 
 	HCLASS hCharacter = g_pServerDE->GetClass("AncientOneTentacle");
 
@@ -2401,7 +2401,7 @@ DBOOL AncientOneFilterFn(HOBJECT hObj, void *pUserData)
 
 DBOOL CAncientOneBeam::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)		return 0;
 
 	IntersectQuery	iq;
@@ -2502,7 +2502,7 @@ DBOOL CAncientOneBeam::FireVector(DVector *vFire, DFLOAT dist, DBOOL bTracer)
 // ----------------------------------------------------------------------- //
 DDWORD CAncientOneTentacle::Fire()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)
 		return 0;
 
@@ -2539,7 +2539,7 @@ DDWORD CAncientOneTentacle::Fire()
 
 void CSkull::UpdateFiringState(DVector *firedPos, DRotation *rotP, DBOOL bFiring, DBOOL bAltFiring)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE)	return;
 
 	CWeapon::UpdateFiringState(firedPos, rotP, bFiring, bAltFiring);
@@ -2559,7 +2559,7 @@ void CSkull::UpdateFiringState(DVector *firedPos, DRotation *rotP, DBOOL bFiring
 // ----------------------------------------------------------------------- //
 CProjectile *CGremlinRock::FireProjectile(DVector *vFire, DFLOAT dist, DBOOL bAltFire)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	m_fProjVelocity = pServerDE->Random(500.0f, 1000.0f);
 	m_fAltProjVelocity = m_fProjVelocity;

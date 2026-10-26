@@ -116,8 +116,8 @@ inline void Trigger::SetMessageName(int index, char *szMessage)
 	m_hstrMessageName[index] = g_pServerDE->CreateString(szMessage);
 }
 
-void SendTriggerMsgToObjects(LPBASECLASS pSender, HSTRING hName, HSTRING hMsg);
-void SendTriggerMsgToClass(LPBASECLASS pSender, HCLASS hClass, HSTRING hMsg);
+void SendTriggerMsgToObjects(DEBaseClass* pSender, HSTRING hName, HSTRING hMsg);
+void SendTriggerMsgToClass(DEBaseClass* pSender, HCLASS hClass, HSTRING hMsg);
 
 
 

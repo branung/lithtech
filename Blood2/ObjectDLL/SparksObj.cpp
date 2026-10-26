@@ -152,7 +152,7 @@ DDWORD SparksObj::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREA
 void SparksObj::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 {
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pszMessage = g_pServerDE->GetStringData( hMsg );
+	const char *pszMessage = g_pServerDE->GetStringData( hMsg );
 
     if ( _mbsncmp((const unsigned char*)pszMessage, (const unsigned char*)"SWITCH", 6) == 0)
     {
@@ -324,7 +324,7 @@ void SparksObj::Update()
 void SparksObj::AddSparks(DVector vPos, DVector vNormal, DFLOAT fCount, SurfaceType eType, 
                                                 DFLOAT fDuration, DFLOAT fEmissionRadius)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	ObjectCreateStruct ocStruct;
@@ -387,7 +387,7 @@ void SparksObj::PlaySparkSound()
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
     
-	char *sound;
+	const char *sound;
 	sound = pServerDE->GetStringData(m_hstrSparkSound);
 
     DVector vPos;

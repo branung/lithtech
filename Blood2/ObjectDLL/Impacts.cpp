@@ -18,7 +18,7 @@
 
 
 BEGIN_CLASS(CImpact)
-END_CLASS_DEFAULT_FLAGS(CImpact, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CImpact, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 
 // ----------------------------------------------------------------------- //
@@ -29,7 +29,7 @@ END_CLASS_DEFAULT_FLAGS(CImpact, BaseClass, NULL, NULL, CF_HIDDEN)
 //
 // ----------------------------------------------------------------------- //
 
-CImpact::CImpact() : BaseClass(OT_SPRITE)
+CImpact::CImpact() : DEBaseClass(OT_SPRITE)
 {
 	m_bPlaySound	= DTRUE;
 	m_bUpdateScale	= DTRUE;
@@ -63,7 +63,7 @@ CImpact::~CImpact()
 {
 	if (m_hSoundName)
 	{
-		CServerDE* pServerDE = BaseClass::GetServerDE();
+		CServerDE* pServerDE = DEBaseClass::GetServerDE();
 		if (!pServerDE) return;
 		
 		pServerDE->FreeString(m_hSoundName);
@@ -87,7 +87,7 @@ DDWORD CImpact::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lData)
 		{
 			if (!Update((DVector *)pData))
 			{
-				CServerDE* pServerDE = BaseClass::GetServerDE();
+				CServerDE* pServerDE = DEBaseClass::GetServerDE();
 				if (!pServerDE) return 0;
 
 				pServerDE->RemoveObject(m_hObject);
@@ -122,7 +122,7 @@ DDWORD CImpact::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lData)
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, lData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, lData);
 }
 
 
@@ -137,7 +137,7 @@ DDWORD CImpact::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lData)
 void CImpact::Setup(DVector vNormal, DVector vScaleMin, DVector vScaleMax, char* pSound,
 					DFLOAT fSoundVol, DFLOAT fDuration, DBOOL bRotateable, DBOOL bFade)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
 	VEC_COPY(m_vScaleMin, vScaleMin);
@@ -168,7 +168,7 @@ void CImpact::Setup(DVector vNormal, DVector vScaleMin, DVector vScaleMax, char*
 
 void CImpact::UpdateScale()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
 	DFLOAT fDeltaTime = pServerDE->GetTime() - m_fStartTime;
@@ -206,7 +206,7 @@ void CImpact::UpdateScale()
 
 DBOOL CImpact::InitialUpdate(DVector*)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.1);
@@ -230,14 +230,14 @@ DBOOL CImpact::InitialUpdate(DVector*)
 
 void CImpact::FirstUpdate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_fStartTime = pServerDE->GetTime();
 
 	if(m_hSoundName)
 	{
-		char* pSoundFile = pServerDE->GetStringData(m_hSoundName);
+		const char* pSoundFile = pServerDE->GetStringData(m_hSoundName);
 
 		DVector vPos;
 		pServerDE->GetObjectPos(m_hObject, &vPos);
@@ -260,7 +260,7 @@ void CImpact::FirstUpdate()
 
 DBOOL CImpact::Update(DVector* pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if(!pServerDE || !m_hObject) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.1);
@@ -303,7 +303,7 @@ void impactric_PostPropRead(CImpactRicochet *pObj, ObjectCreateStruct *pStruct)
 
 DBOOL impactric_InitialUpdate(CImpactRicochet *pImpact, DVector *pMovement)
 {
-	HOBJECT hObj = ((BaseClass*)pImpact)->m_hObject;
+	HOBJECT hObj = ((DEBaseClass*)pImpact)->m_hObject;
 	DVector scale;
 
 	VEC_SET(scale, 0.250f, 0.250f, 0.250f)
@@ -336,9 +336,9 @@ DBOOL impactric_InitialUpdate(CImpactRicochet *pImpact, DVector *pMovement)
 
 DBOOL impactric_Update(CImpactRicochet *pImpact, DVector *pMovement)
 {
-	HOBJECT hObj = ((BaseClass*)pImpact)->m_hObject;
+	HOBJECT hObj = ((DEBaseClass*)pImpact)->m_hObject;
 
-	g_pServerDE->SetNextUpdate(((BaseClass*)pImpact)->m_hObject, .1f);
+	g_pServerDE->SetNextUpdate(((DEBaseClass*)pImpact)->m_hObject, .1f);
 	return ((g_pServerDE->GetTime() - pImpact->m_StartTime) < pImpact->m_duration);
 }
 
@@ -362,19 +362,19 @@ DDWORD impactric_EngineMessageFn(CImpactRicochet *pObj, DDWORD messageID, void *
 	}
 
 	if (bResult)
-		return bc_EngineMessageFn((BaseClass*)pObj, messageID, pData, lData);
+		return ((DEBaseClass*)pObj)->DEBaseClass::EngineMessageFn(messageID, pData, lData);
 	else
-		g_pServerDE->RemoveObject(((BaseClass*)pObj)->m_hObject);
+		g_pServerDE->RemoveObject(((DEBaseClass*)pObj)->m_hObject);
 	return bResult;
 }
 
 DDWORD impactric_ObjectMessageFn(CImpactRicochet *pObj, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
 {
-	return bc_ObjectMessageFn((BaseClass*)pObj, hSender, messageID, hRead);
+	return ((DEBaseClass*)pObj)->DEBaseClass::ObjectMessageFn(hSender, messageID, hRead);
 }
 
 
 
 BEGIN_CLASS(CImpactRicochet)
-END_CLASS_DEFAULT_FLAGS(CImpactRicochet, BaseClass, impactric_EngineMessageFn, impactric_ObjectMessageFn, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CImpactRicochet, DEBaseClass, impactric_EngineMessageFn, impactric_ObjectMessageFn, CF_HIDDEN)
 

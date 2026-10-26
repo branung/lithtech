@@ -15,7 +15,7 @@
 
 
 BEGIN_CLASS(CModelObject)
-END_CLASS_DEFAULT_FLAGS(CModelObject, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CModelObject, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 
 // ----------------------------------------------------------------------- //
@@ -26,7 +26,7 @@ END_CLASS_DEFAULT_FLAGS(CModelObject, BaseClass, NULL, NULL, CF_HIDDEN)
 //
 // ----------------------------------------------------------------------- //
 
-CModelObject::CModelObject() : BaseClass(OT_MODEL)
+CModelObject::CModelObject() : DEBaseClass(OT_MODEL)
 {
 	m_bFirstUpdate = DTRUE;
 
@@ -94,7 +94,7 @@ DDWORD CModelObject::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT lData
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, lData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, lData);
 }
 
 

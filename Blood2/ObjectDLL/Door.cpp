@@ -357,7 +357,7 @@ void Door::PostPropRead(ObjectCreateStruct *pStruct)
 	pStruct->m_SkinName[0] = '\0';
 	pStruct->m_Flags |= FLAG_GOTHRUWORLD | FLAG_FULLPOSITIONRES | FLAG_MODELGOURAUDSHADE;
 	pStruct->m_Flags |= FLAG_FULLPOSITIONRES | FLAG_GOTHRUWORLD | FLAG_DONTFOLLOWSTANDING | (m_bBoxPhysics ? FLAG_BOXPHYSICS : 0);
-	pStruct->m_fDeactivationTime = DOOR_DEFAULT_DEACTIVATION_TIME;
+	// Jupiter's ObjectCreateStruct has no m_fDeactivationTime as the engine handles deactivation itself
 
 	if (m_fClosingSpeed == 0.0f)
 		m_fClosingSpeed = m_fSpeed;
@@ -867,7 +867,7 @@ DDWORD Door::EngineMessageFn(DDWORD messageID, void *pData, float fData)
 void Door::TriggerMsg(HOBJECT hSender, HSTRING hMsg)
 {
 	CServerDE* pServerDE = GetServerDE();
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (!pMsg) return;
 
 	// Make sure the door is active...
@@ -947,7 +947,7 @@ void Door::StartSound(HSTRING hstrSoundName, DBOOL bLoop)
 
 	if (!hstrSoundName) return;
 
-	char *pSoundName = pServerDE->GetStringData(hstrSoundName);
+	const char *pSoundName = pServerDE->GetStringData(hstrSoundName);
 	if (!pSoundName) return;
 
 	PlaySoundInfo playSoundInfo;
@@ -991,17 +991,17 @@ void Door::SetPortalState(DBOOL bOpen)
 
 	if (m_hstrPortal)
 	{
-		DDWORD dwPortalFlags = 0;
-		DRESULT res;
-		if ((res = pServerDE->GetPortalFlags(pServerDE->GetStringData(m_hstrPortal), &dwPortalFlags)) == LT_OK)
-		{
-			if (bOpen)
-				dwPortalFlags |= PORTAL_OPEN;
-			else
-				dwPortalFlags &= ~PORTAL_OPEN;
-
-			pServerDE->SetPortalFlags(pServerDE->GetStringData(m_hstrPortal), dwPortalFlags);
-		}
+		// Jupiter has no portal API, so the doorway behaves as permanently open.
+		// Kept for whoever restores portal control:
+		//	DDWORD dwPortalFlags = 0;
+		//	if (pServerDE->GetPortalFlags(pServerDE->GetStringData(m_hstrPortal), &dwPortalFlags) == LT_OK)
+		//	{
+		//		if (bOpen)
+		//			dwPortalFlags |= PORTAL_OPEN;
+		//		else
+		//			dwPortalFlags &= ~PORTAL_OPEN;
+		//		pServerDE->SetPortalFlags(pServerDE->GetStringData(m_hstrPortal), dwPortalFlags);
+		//	}
 	}
 }
 
@@ -1059,7 +1059,7 @@ void Door::CacheFiles()
 	if(!(pServerDE->GetServerFlags() & SS_CACHING))
 		return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 
 	if (m_hstrOpenBusySound)
 	{

@@ -314,7 +314,7 @@ DBOOL CameraObj::InitialUpdate()
 			HCONVAR hTempVar = g_pServerDE->GetGameConVar(g_szVarWorldName);
 			if (hTempVar)
 			{
-				char* sTempString = g_pServerDE->GetVarValueString(hTempVar);
+				const char* sTempString = g_pServerDE->GetVarValueString(hTempVar);
 				if (sTempString)
 				{
 					SAFE_STRCPY( szWorldName, sTempString);
@@ -556,7 +556,7 @@ void CameraObj::HandleTrigger(HOBJECT hSender, HSTRING hMsg)
 {
 	if (!g_pServerDE) return;
 
-	char* pMsg = g_pServerDE->GetStringData(hMsg);
+	const char* pMsg = g_pServerDE->GetStringData(hMsg);
 	if (!pMsg) return;
 
 	// Turn the camera on

@@ -32,7 +32,7 @@
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL LiquidFilterFn(HOBJECT hObj, void *pUserData)
+bool LiquidFilterFn(HOBJECT hObj, void *pUserData)
 {
 	if (!hObj || !g_pServerDE) return DFALSE;
 
@@ -241,7 +241,7 @@ void CraneControl::UpdatePhysics(ContainerPhysics* pCPStruct)
 //	if (m_bLocked)
 //	{
 		// See if they have the key we need to unlock
-//		HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject((LPBASECLASS)this, pCPStruct->m_hObject, MID_KEYQUERY);
+//		HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject((DEBaseClass*)this, pCPStruct->m_hObject, MID_KEYQUERY);
 //		pServerDE->WriteToMessageHString(hMessage, m_hstrKeyName);
 //		pServerDE->EndMessage(hMessage);
 //		return;
@@ -278,7 +278,7 @@ void CraneControl::UpdatePhysics(ContainerPhysics* pCPStruct)
 				// Check to make sure this is a valid class.
 				if (pClass)
 				{    
-    				LPBASECLASS pObject = pServerDE->CreateObject(pClass, &theStruct);
+    				DEBaseClass* pObject = pServerDE->CreateObject(pClass, &theStruct);
         
 					if (pObject)
 					{
@@ -472,7 +472,7 @@ void Minefield::Damage( HOBJECT hObj )
 
 void Minefield::AddExplosion(DVector &vPos)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_GRENADE;

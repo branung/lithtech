@@ -17,7 +17,7 @@
 
 class CWeapon;
 
-class CViewWeaponModel : public BaseClass
+class CViewWeaponModel : public DEBaseClass
 {
 	public :
 

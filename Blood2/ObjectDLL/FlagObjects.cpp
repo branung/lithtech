@@ -268,7 +268,7 @@ DDWORD FlagObject::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGERE
 			HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
 			if (hMsg)
 			{
-				char* sMsg = g_pServerDE->GetStringData(hMsg);
+				const char* sMsg = g_pServerDE->GetStringData(hMsg);
 				if (sMsg)
 				{
 					// Check if we should return to the flag stand...

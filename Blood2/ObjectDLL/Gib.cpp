@@ -221,7 +221,7 @@ DDWORD CGib::EngineMessageFn(DDWORD messageID, void *pData, float fData)
 
 DDWORD CGib::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead )
 {
-	CServerDE* g_pServerDE = GetServerDE();
+	// g_pServerDE is a macro over the engine's pointer now (de_server.h), so the old local copy of it is gone
 	if (!g_pServerDE) return 0;
 
 	switch(messageID)
@@ -663,7 +663,7 @@ DBOOL CGib::Update()
 
 void CGib::HandleTouch(HOBJECT hObj, DFLOAT fData)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 
@@ -841,7 +841,7 @@ void CGib::Damage(DVector vDir)
 
 void CGib::CreateGibs(HOBJECT hObject, DDWORD dwGibType, DBYTE dmgType, DVector vDmgDir, int nNumDebris)
 {
-	CServerDE* g_pServerDE = GetServerDE();
+	// g_pServerDE is a macro over the engine's pointer now (de_server.h), so the old local copy of it is gone
 
 	int nItem;
 	HCLASS hClass;
@@ -886,7 +886,7 @@ void CGib::CreateGibs(HOBJECT hObject, DDWORD dwGibType, DBYTE dmgType, DVector 
 		ROT_COPY(theStruct.m_Rotation,rRot);
 
 		// Allocate an object...
-		BaseClass* pObj = g_pServerDE->CreateObject( hClass, &theStruct );
+		DEBaseClass* pObj = g_pServerDE->CreateObject( hClass, &theStruct );
 		if( !pObj )
 			break;
 

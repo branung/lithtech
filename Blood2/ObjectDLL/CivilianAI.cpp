@@ -156,7 +156,7 @@ DDWORD CivilianAI::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGERE
  		case MID_TRIGGER:
 		{
 			HSTRING hMsg = m_pServerDE->ReadFromMessageHString(hRead);
-			char *pCommand = m_pServerDE->GetStringData(hMsg);
+			const char *pCommand = m_pServerDE->GetStringData(hMsg);
 
 			/* 01/15/1999 Be VERY sure we should run this. -- Loki */
 			if ((m_nState != STATE_Escape_Hide) && 
@@ -300,7 +300,7 @@ void CivilianAI::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL CivilianAI::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
 	//Load up animation indexes if first model instance

@@ -67,7 +67,7 @@ class CInvItem
 
 		virtual void	Update()
 		{
-			CServerDE* pServerDE = BaseClass::GetServerDE();
+			CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			if (!pServerDE) return;
 
 			if (!m_bInitialized)
@@ -83,7 +83,7 @@ class CInvItem
         
 		virtual DBOOL ActivateItem(char *msgbuf)
 		{
-			CServerDE* pServerDE = BaseClass::GetServerDE();
+			CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			if (!pServerDE) return DFALSE;
 
 			_mbscpy((unsigned char*)msgbuf, (const unsigned char*)GetName());
@@ -92,7 +92,7 @@ class CInvItem
 				if( Activate())
 				{
 					HSTRING on = pServerDE->FormatString(IDS_GENERAL_ON);
-					char *pszOn;
+					const char *pszOn;
 					pszOn = pServerDE->GetStringData(on);
 					if( pszOn )
 						_mbscat((unsigned char*)msgbuf, ( const unsigned char * )pszOn );
@@ -107,7 +107,7 @@ class CInvItem
 				Deactivate();
 
 				HSTRING off = pServerDE->FormatString(IDS_GENERAL_OFF);
-				char *pszOff;
+				const char *pszOff;
 				pszOff = pServerDE->GetStringData(off);
 				_mbscat((unsigned char*)msgbuf, ( const unsigned char * )pszOff );
 //				_mbscat((unsigned char*)msgbuf, (const unsigned char*)" off");
@@ -126,8 +126,8 @@ class CInvItem
         
 		DBOOL	IsActive() { return m_bIsActive; }
 
-		char*	GetName() { return m_hstrItemName ? g_pServerDE->GetStringData(m_hstrItemName) : DNULL; }
-		char*	GetDisplayName() { return m_hstrDisplayName ? g_pServerDE->GetStringData(m_hstrDisplayName) : DNULL; }
+		const char*	GetName() { return m_hstrItemName ? g_pServerDE->GetStringData(m_hstrItemName) : DNULL; }
+		const char*	GetDisplayName() { return m_hstrDisplayName ? g_pServerDE->GetStringData(m_hstrDisplayName) : DNULL; }
 		DBYTE	GetCount();
 		void	SetCount(DBYTE byCount) { m_nCount = byCount; }
 
@@ -180,7 +180,7 @@ inline DBYTE CInvItem::GetCount( )
 
 inline void CInvItem::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToLoadSaveMessageObject(hWrite, m_hOwner);
@@ -206,7 +206,7 @@ inline void CInvItem::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 inline void CInvItem::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	HOBJECT hTmp;

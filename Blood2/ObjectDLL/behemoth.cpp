@@ -148,7 +148,7 @@ void Behemoth::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL Behemoth::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
 	//Load up animation indexes if first model instance

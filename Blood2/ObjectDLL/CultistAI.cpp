@@ -209,7 +209,7 @@ void CultistAI::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL CultistAI::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
 #ifndef _ADD_ON

@@ -104,7 +104,7 @@ CDestructable::CDestructable() : Aggregate()
 
 CDestructable::~CDestructable()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hstrDamageTriggerTarget)
@@ -148,7 +148,7 @@ CDestructable::~CDestructable()
 //
 // ----------------------------------------------------------------------- //
 		
-DDWORD CDestructable::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData)
+DDWORD CDestructable::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData)
 {
 	if (!g_pServerDE) return 0;
 
@@ -208,7 +208,7 @@ DDWORD CDestructable::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, voi
 //
 // ----------------------------------------------------------------------- //
 
-DDWORD CDestructable::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
+DDWORD CDestructable::ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead)
 {
 	switch(messageID)
 	{
@@ -251,10 +251,10 @@ DDWORD CDestructable::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWO
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL CDestructable::ReadProp(BaseClass *pObject, ObjectCreateStruct *pStruct)
+DBOOL CDestructable::ReadProp(DEBaseClass *pObject, ObjectCreateStruct *pStruct)
 {
 	GenericProp genProp;
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pStruct || !pServerDE) return DFALSE;
 
 	char buf[MAX_CS_FILENAME_LEN];
@@ -311,7 +311,7 @@ DBOOL CDestructable::ReadProp(BaseClass *pObject, ObjectCreateStruct *pStruct)
 
 DBOOL CDestructable::Init(HOBJECT hObject, CInventoryMgr* pInv, CAnim_Sound* pAnimSound)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!hObject || !pServerDE) return DFALSE;
 
 	m_hObject = hObject;
@@ -366,7 +366,7 @@ void CDestructable::CalculateResistance(DBYTE nResistValue)
 
 void CDestructable::SetMass(DFLOAT fMass)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
 	m_fMass = fMass;
@@ -394,7 +394,7 @@ void CDestructable::SetMass(DFLOAT fMass)
 
 void CDestructable::HandleDamage(HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector vDir,vPos;
@@ -681,7 +681,7 @@ void CDestructable::HandleDamage(HOBJECT hSender, HMESSAGEREAD hRead)
 
 	if( m_bDestructable && m_hstrDamageTriggerTarget && m_hstrDamageTriggerMessage )
 	{
-		LPBASECLASS pD = pServerDE->HandleToObject(m_hObject);
+		DEBaseClass* pD = pServerDE->HandleToObject(m_hObject);
 		SendTriggerMsgToObjects(pD, m_hstrDamageTriggerTarget, m_hstrDamageTriggerMessage);
 	}
 
@@ -711,19 +711,19 @@ void CDestructable::HandleDamage(HOBJECT hSender, HMESSAGEREAD hRead)
 
 void CDestructable::HandleTrigger(HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	HSTRING hMsg = pServerDE->ReadFromMessageHString(hRead);
 
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (!pMsg || !pMsg[0]) return;
 
 	if (_mbsicmp((const unsigned char*)pMsg, (const unsigned char*)TRIGGER_MSG_KILL) == 0)
 	{
 		DVector vTmp;
 		VEC_INIT(vTmp);
-		BaseClass *ffObj = pServerDE->HandleToObject(hSender);
+		DEBaseClass *ffObj = pServerDE->HandleToObject(hSender);
 		DamageObject(hSender, ffObj, m_hObject, 1, vTmp, vTmp, DAMAGE_TYPE_DEATH);
 	}
 	pServerDE->FreeString(hMsg);
@@ -772,7 +772,7 @@ int CDestructable::SetProperNode(int nNode)
 
 int CDestructable::CalculateHitLimb(DVector vDir, DVector vPos, DFLOAT fDamage)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject || !m_pInventoryMgr || !m_pAnim_Sound) return -1;
 
 	int nNode = -1;
@@ -887,7 +887,7 @@ int CDestructable::CalculateHitLimb(DVector vDir, DVector vPos, DFLOAT fDamage)
 
 void CDestructable::ApplyDamagePhysics(DFLOAT fDamage, DVector *pvDir)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject || !pvDir) return;
 
 	// Don't apply damage physics if the object is a trapped character (Andy 2/22/99)
@@ -935,12 +935,12 @@ void CDestructable::ApplyDamagePhysics(DFLOAT fDamage, DVector *pvDir)
 
 void CDestructable::HandleDestruction()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hstrDeathTriggerTarget)
 	{
-		LPBASECLASS pD = pServerDE->HandleToObject(m_hObject);
+		DEBaseClass* pD = pServerDE->HandleToObject(m_hObject);
 		SendTriggerMsgToObjects(pD, m_hstrDeathTriggerTarget, m_hstrDeathTriggerMessage);
 	}
 
@@ -968,7 +968,7 @@ void CDestructable::HandleDestruction()
 
 void CDestructable::HandleHeal(HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DFLOAT fAmount = pServerDE->ReadFromMessageFloat(hRead);
@@ -1057,7 +1057,7 @@ DBOOL CDestructable::MegaHeal(DFLOAT fAmount)
 
 void CDestructable::HandleRepair(HOBJECT hSender, HMESSAGEREAD hRead)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DFLOAT fAmount = pServerDE->ReadFromMessageFloat(hRead);
@@ -1133,7 +1133,7 @@ void CDestructable::Reset()
 
 void CDestructable::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 	pServerDE->WriteToMessageDWord(hWrite, 0xcececece);
 
@@ -1188,7 +1188,7 @@ void CDestructable::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CDestructable::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	DDWORD dwTest						= pServerDE->ReadFromMessageDWord(hRead);

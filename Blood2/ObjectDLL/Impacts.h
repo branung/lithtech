@@ -9,7 +9,7 @@
 //#include "InventoryMgr.h"
 
 
-class CImpact : public BaseClass
+class CImpact : public DEBaseClass
 {
 	public :
 
@@ -72,7 +72,7 @@ class CImpact : public BaseClass
 
 typedef struct CImpactRicochet_t
 {
-	BaseClass m_BaseObject;
+	DEBaseClass m_BaseObject;
 
 	DFLOAT 	m_StartTime;
 	DFLOAT	m_duration;

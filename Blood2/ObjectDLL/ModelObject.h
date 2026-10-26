@@ -13,7 +13,7 @@
 
 #include "cpp_engineobjects_de.h"
 
-class CModelObject : public BaseClass
+class CModelObject : public DEBaseClass
 {
 	public :
 

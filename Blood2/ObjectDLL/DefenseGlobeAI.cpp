@@ -387,7 +387,7 @@ void AI_DefenseGlobe::AI_STATE_AttackEnemy()
 // ----------------------------------------------------------------------- //
 void AI_DefenseGlobe::AI_STATE_Dying()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return;
      
 //

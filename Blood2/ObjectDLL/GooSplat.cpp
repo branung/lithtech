@@ -41,7 +41,7 @@ DDWORD GooSplat::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 
 DBOOL GooSplat::InitialUpdate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	// Align the sprite to the surface directly along the forward vector
@@ -83,7 +83,7 @@ DBOOL GooSplat::InitialUpdate()
 
 void GooSplat::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 	
 	if (hObj)

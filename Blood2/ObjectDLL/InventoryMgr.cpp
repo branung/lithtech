@@ -172,7 +172,7 @@ CInventoryMgr::~CInventoryMgr()
 
 void CInventoryMgr::Init(HOBJECT hObject, HCLIENT hClient)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	m_hOwner = hObject;
 
@@ -184,8 +184,8 @@ void CInventoryMgr::Init(HOBJECT hObject, HCLIENT hClient)
 
 		ocStruct.m_ObjectType = OT_LIGHT; 
 
-		HCLASS hClass = pServerDE->GetClass("BaseClass");
-		if (LPBASECLASS pFlash = pServerDE->CreateObject(hClass, &ocStruct))
+		HCLASS hClass = pServerDE->GetClass("DEBaseClass");
+		if (DEBaseClass* pFlash = pServerDE->CreateObject(hClass, &ocStruct))
 		{
 			m_hMuzzleFlash = pFlash->m_hObject;
 			pServerDE->CreateInterObjectLink( m_hOwner, m_hMuzzleFlash );
@@ -257,7 +257,7 @@ void CInventoryMgr::SetClient(HCLIENT hClient)
 
 void CInventoryMgr::Term()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	int i;
 	for (i=0; i < SLOTCOUNT_TOTALWEAPONS; i++)
@@ -358,7 +358,7 @@ void CInventoryMgr::HandleDestruction()
 
 CViewWeaponModel* CInventoryMgr::CreateViewModel(HATTACHMENT *phAttachment)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DNULL;
 
 	HCLASS hOwnerClass = pServerDE->GetObjectClass(m_hOwner);
@@ -783,7 +783,8 @@ int CInventoryMgr::ChangeWeapon(DDWORD nWeapon)
 //		return CHWEAP_WEAPONBUSY;
 
 	w = NULL;
-	for (int i=0;i < SLOTCOUNT_WEAPONS; i++)
+	int i;
+	for (i=0;i < SLOTCOUNT_WEAPONS; i++)
 	{
 		w = m_Weapons[i];
 		if (w && w->GetType() == nWeapon)
@@ -851,7 +852,7 @@ int CInventoryMgr::ChangeWeaponSlot(DBYTE nSlot)
 
 	if(m_hClient != DNULL)
 	{
-		CServerDE* pServerDE = BaseClass::GetServerDE();
+		CServerDE* pServerDE = DEBaseClass::GetServerDE();
 		CPlayerObj *pObj = (CPlayerObj*)pServerDE->HandleToObject(m_hOwner);
 		pObj->SetZoomMode(DFALSE);
 	}
@@ -945,7 +946,7 @@ CWeapon* CInventoryMgr::FindBestWeapon(DFLOAT fTargetDist)
 
 int CInventoryMgr::SelectNextWeapon()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	CWeapon *w;
 
@@ -988,7 +989,7 @@ int CInventoryMgr::SelectNextWeapon()
 
 int CInventoryMgr::SelectPrevWeapon()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	CWeapon *w;
 
@@ -1036,7 +1037,7 @@ int CInventoryMgr::SelectPrevWeapon()
 
 int CInventoryMgr::DropWeapon(DBYTE slot)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 /*
 	// Only drop weapons in single player
 	if (g_pBloodServerShell->GetGameType() != GAMETYPE_SINGLE)
@@ -1124,7 +1125,7 @@ int CInventoryMgr::DropWeapon(DBYTE slot)
 
 int CInventoryMgr::DropCurrentWeapon()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	// Only drop weapons in single player
 	if (g_pBloodServerShell->GetGameType() != GAMETYPE_SINGLE)
@@ -1592,13 +1593,13 @@ void CInventoryMgr::SelectItem(int nItemType )
 
 void CInventoryMgr::UpdateClient( )
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	DBYTE nCurrentItemCharge, nPrevItemCharge, nNextItemCharge;
 	CInvItem *pCurrentItem, *pPrevItem, *pNextItem;
 	DBYTE nChangeFlags;
 	HMESSAGEWRITE hMsg;
 	CPlayerObj *pPlayerObj;
-	char *pCurName;
+	const char *pCurName;
 
 	if( !IsPlayer( m_hOwner ))
 		return;
@@ -1813,7 +1814,7 @@ int CInventoryMgr::SelectInventoryWeapon(DDWORD nWeapon)
 
 	if(!GetAmmoCount(w->GetAmmoType(DFALSE)))
 	{
-		CServerDE* pServerDE = BaseClass::GetServerDE();
+		CServerDE* pServerDE = DEBaseClass::GetServerDE();
 		pServerDE->CPrint("No ammo for this inventory weapon...");
 		return CHWEAP_NOAMMO;
 	}
@@ -1897,7 +1898,7 @@ int CInventoryMgr::SetActiveItem(DBYTE nItemType)
 // ----------------------------------------------------------------------- //
 int CInventoryMgr::DropItem(DBYTE slot)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CInvItem *iToDrop = m_InvItems[slot];
 
 	if(!iToDrop)	return	0;
@@ -1923,7 +1924,7 @@ int CInventoryMgr::DropItem(DBYTE slot)
 // ----------------------------------------------------------------------- //
 int CInventoryMgr::DeleteItem(DBYTE slot)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CInvItem *iToDrop = m_InvItems[slot];
 
 	if(!iToDrop)	return	0;
@@ -2022,7 +2023,7 @@ int CInventoryMgr::RemoveItem( CInvItem *pItem )
 
 int CInventoryMgr::AddKey(HSTRING hstrItemName, HSTRING hstrDisplayName, HSTRING hstrIconFile, HSTRING hstrIconFileH, DBYTE byUseCount)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hstrItemName || !hstrDisplayName || !hstrIconFile || !hstrIconFileH || byUseCount ==0 ) return CHWEAP_NOMESSAGE;
 
 	// See if we have it already
@@ -2035,7 +2036,7 @@ int CInventoryMgr::AddKey(HSTRING hstrItemName, HSTRING hstrDisplayName, HSTRING
 		pItem = (CInvItem*) pLink->m_pData;
 		if (pItem && pItem->GetType() == INV_KEY)
 		{
-			char *pName = pItem->GetName();
+			const char *pName = pItem->GetName();
 			if ( _mbsicmp((const unsigned char*)pName, (const unsigned char*)pServerDE->GetStringData(hstrItemName)) == 0 )
 				return CHWEAP_ALREADYHAVE;
 		}
@@ -2078,7 +2079,7 @@ int CInventoryMgr::AddKey(HSTRING hstrItemName, HSTRING hstrDisplayName, HSTRING
 
 int CInventoryMgr::RemoveKey(HSTRING hstrItemName)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hstrItemName) return CHWEAP_NOMESSAGE;
 
 	// See if we have it
@@ -2111,7 +2112,7 @@ int CInventoryMgr::RemoveKey(HSTRING hstrItemName)
 
 int CInventoryMgr::QueryKey(HSTRING hstrItemName)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hstrItemName) return CHWEAP_NOMESSAGE;
 
 	// See if we have it
@@ -2122,8 +2123,8 @@ int CInventoryMgr::QueryKey(HSTRING hstrItemName)
 		pItem = (CInvItem*) pLink->m_pData;
 		if (pItem && pItem->GetType() == INV_KEY)
 		{
-			char *pName = pItem->GetName();
-			char *pOldName = pServerDE->GetStringData(hstrItemName);
+			const char *pName = pItem->GetName();
+			const char *pOldName = pServerDE->GetStringData(hstrItemName);
 			if ( _mbsicmp((const unsigned char*)pName, (const unsigned char*)pOldName) == 0 )
 			{
 				// Found it, decrement it's use
@@ -2287,7 +2288,7 @@ int CInventoryMgr::SetActiveSpell(DBYTE nSpellSlot)
 // ----------------------------------------------------------------------- //
 int CInventoryMgr::DeleteSpell(DBYTE slot)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	CInvItem *sToDrop = m_InvSpells[slot];
 
 	if(!sToDrop)	return	0;
@@ -2338,7 +2339,7 @@ void CInventoryMgr::SetAmmoCount(DBYTE nAmmoType, DFLOAT fAmmoCount)
 {
 	CInvItem *pInvItem = DNULL;
 	CWeapon *pWeapon;
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if(nAmmoType <= AMMO_NONE || nAmmoType > AMMO_MAXAMMOTYPES)
 		return;
@@ -2401,12 +2402,12 @@ void CInventoryMgr::SetAmmoCount(DBYTE nAmmoType, DFLOAT fAmmoCount)
 
 void CInventoryMgr::SendPickedUpMessage(HOBJECT hObject, int iRet)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	// Tell the item we picked it up
 	if (iRet == CHWEAP_OK)
 	{
-		HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject((LPBASECLASS)this, hObject, MID_PICKEDUP);
+		HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject((DEBaseClass*)this, hObject, MID_PICKEDUP);
 		pServerDE->WriteToMessageFloat(hMessage, -1.0f);
 		pServerDE->EndMessage(hMessage);
 	}
@@ -2421,14 +2422,14 @@ void CInventoryMgr::SendPickedUpMessage(HOBJECT hObject, int iRet)
 			PickupObject *pObj = (PickupObject*)pServerDE->HandleToObject(hObject);
 			if (pObj)
 			{
-				char *szObject = pServerDE->GetStringData(pObj->GetDisplayName());
+				const char *szObject = pServerDE->GetStringData(pObj->GetDisplayName());
 				_mbscpy((unsigned char*)msgbuf, (const unsigned char*)"");
 				switch(iRet)
 				{
 					case CHWEAP_OK:
 					{
 						HSTRING hstr = pServerDE->FormatString(IDS_GENERAL_PICKUP_1, szObject);
-						char *pszTemp = pServerDE->GetStringData(hstr);
+						const char *pszTemp = pServerDE->GetStringData(hstr);
 						if( pszTemp )
 							_mbscpy((unsigned char*)msgbuf, (const unsigned char*)pszTemp );
 						pServerDE->FreeString(hstr);
@@ -2449,7 +2450,7 @@ void CInventoryMgr::SendPickedUpMessage(HOBJECT hObject, int iRet)
 						if (hObject != m_hLastPickupObject && iRet != m_nLastPickupResult)
 						{
 							HSTRING hstr = pServerDE->FormatString(IDS_GENERAL_PICKUP_2, szObject);
-							char *pszTemp = pServerDE->GetStringData(hstr);
+							const char *pszTemp = pServerDE->GetStringData(hstr);
 							if( pszTemp )
 								_mbscpy((unsigned char*)msgbuf, (const unsigned char*)pszTemp);
 							pServerDE->FreeString(hstr);
@@ -2460,7 +2461,7 @@ void CInventoryMgr::SendPickedUpMessage(HOBJECT hObject, int iRet)
 						if (hObject != m_hLastPickupObject && iRet != m_nLastPickupResult)
 						{
 							HSTRING hstr = pServerDE->FormatString(IDS_GENERAL_PICKUP_3, szObject);
-							char *pszTemp = pServerDE->GetStringData(hstr);
+							const char *pszTemp = pServerDE->GetStringData(hstr);
 							if( pszTemp )
 								_mbscpy((unsigned char*)msgbuf, (const unsigned char*)pszTemp );
 							pServerDE->FreeString(hstr);
@@ -2490,11 +2491,11 @@ void CInventoryMgr::SendPickedUpMessage(HOBJECT hObject, int iRet)
 
 void CInventoryMgr::SendKeyQueryResponse(HOBJECT hObject, HSTRING hstrItemName, int iRet)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hObject || !hstrItemName) return;
 
 	// Tell the item we picked it up
-	HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject((LPBASECLASS)this, hObject, MID_KEYQUERYRESPONSE);
+	HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject((DEBaseClass*)this, hObject, MID_KEYQUERYRESPONSE);
 	pServerDE->WriteToMessageHString(hMessage, hstrItemName);
 	pServerDE->WriteToMessageByte(hMessage, (DBYTE) (iRet == CHWEAP_OK));
 	pServerDE->EndMessage(hMessage);
@@ -2512,7 +2513,7 @@ void CInventoryMgr::SendKeyQueryResponse(HOBJECT hObject, HSTRING hstrItemName, 
 
 void CInventoryMgr::SendClientItemMsg(DBYTE nMessageID, DBYTE nItem)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hClient) return;
 
 	// Tell the item we picked it up
@@ -2531,7 +2532,7 @@ void CInventoryMgr::SendClientItemMsg(DBYTE nMessageID, DBYTE nItem)
 //
 // ----------------------------------------------------------------------- //
 		
-DDWORD CInventoryMgr::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData)
+DDWORD CInventoryMgr::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData)
 {
 	switch(messageID)
 	{
@@ -2575,7 +2576,7 @@ DDWORD CInventoryMgr::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, voi
 
 void CInventoryMgr::UpdateCurrentWeaponFiring(DVector *firedPos, DVector *lFiredPos, DRotation *rotP, DBOOL bFiring, DBOOL bAltFiring)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	CWeapon *pWeap = m_Weapons[m_nCurWeaponSlot];
@@ -2653,7 +2654,7 @@ void CInventoryMgr::UpdateCurrentWeaponFiring(DVector *firedPos, DVector *lFired
 
 void CInventoryMgr::Update()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 	unsigned long i;
 	DFLOAT  fTime = pServerDE->GetTime();
@@ -2752,7 +2753,7 @@ void CInventoryMgr::Update()
 
 void CInventoryMgr::SetForceUpdateList(ForceUpdate* pFU)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (!pFU || !pFU->m_Objects) return;
@@ -2842,7 +2843,7 @@ DBYTE CInventoryMgr::GetItemCharges( CInvItem *pItem )
 
 void CInventoryMgr::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	DFLOAT fTime = pServerDE->GetTime();
@@ -2928,7 +2929,7 @@ void CInventoryMgr::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveType)
 
 void CInventoryMgr::Load(HMESSAGEREAD hRead, DDWORD dwLoadType)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	Term();		// Get rid of any data that was added in initial update..

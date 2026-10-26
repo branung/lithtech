@@ -256,7 +256,7 @@ class CDeathRay : public CWeapon
 		void	DamageObjectsInFOV(DFLOAT fRange, DFLOAT fFOV);
 
 		DFLOAT		m_fLastDamageTime;
-		BaseClass	*m_pRotModel;
+		DEBaseClass	*m_pRotModel;
 };
 
 //*****************************************************************************//

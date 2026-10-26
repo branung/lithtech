@@ -52,8 +52,8 @@ class Rotating : public Aggregate
 
 		enum	RWMState { RWM_OFF, RWM_NORMAL, RWM_SPINUP, RWM_SPINDOWN };
 
-		DDWORD	EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData);
-		DDWORD	ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
+		DDWORD	EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData);
+		DDWORD	ObjectMessageFn(DEBaseClass* pObject, HOBJECT hSender, DDWORD messageID, HMESSAGEREAD hRead);
 	
 		HOBJECT	m_hObject; 
 

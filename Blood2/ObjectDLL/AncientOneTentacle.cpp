@@ -148,7 +148,7 @@ void AncientOneTentacle::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL AncientOneTentacle::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
 	m_hObject = m_pServerDE->ObjectToHandle(this);
@@ -568,7 +568,7 @@ void AncientOneTentacle::MC_Dead()
 
 void AncientOneTentacle::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	pServerDE->WriteToMessageFloat(hWrite, m_fTimeOfDeath);
@@ -579,7 +579,7 @@ void AncientOneTentacle::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void AncientOneTentacle::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_fTimeOfDeath = pServerDE->ReadFromMessageFloat(hRead);

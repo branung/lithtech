@@ -32,7 +32,7 @@ class CDestructableModel : public B2BaseClass
 		void	Update( );
 		void	InitialUpdate( DDWORD nData );
 
-		void	HandleTriggerMessage( char *pMsg );
+		void	HandleTriggerMessage( const char *pMsg );
 		void	Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags);
 		void	Load(HMESSAGEREAD hWrite, DDWORD dwLoadFlags);
 		void	HandleDamage();

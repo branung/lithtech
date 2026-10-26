@@ -67,7 +67,7 @@ CDebris::CDebris() : Aggregate()
 
 CDebris::~CDebris()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hstrSound)
@@ -102,7 +102,7 @@ CDebris::~CDebris()
 //
 // ----------------------------------------------------------------------- //
 
-DDWORD CDebris::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData)
+DDWORD CDebris::EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData)
 {
 	switch(messageID)
 	{
@@ -157,7 +157,7 @@ DDWORD CDebris::EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pDa
 
 DBOOL CDebris::ReadProp(ObjectCreateStruct *)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	long nLongVal;
@@ -245,7 +245,7 @@ DBOOL CDebris::ReadProp(ObjectCreateStruct *)
 
 DBOOL CDebris::Init(HOBJECT hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!hObject || !pServerDE) return DFALSE;
 
 	m_hObject = hObject;
@@ -264,7 +264,7 @@ DBOOL CDebris::Init(HOBJECT hObject)
 
 void CDebris::InitialUpdate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_bStone)
@@ -427,7 +427,7 @@ void CDebris::Create(DVector vDir, DFLOAT fDamage)
 
 void CDebris::AddExplosion(DVector &vPos)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_GRENADE;
@@ -461,7 +461,7 @@ void CDebris::AddExplosion(DVector &vPos)
 
 void CDebris::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToLoadSaveMessageObject(hWrite, m_hObject);
@@ -500,7 +500,7 @@ void CDebris::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CDebris::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromLoadSaveMessageObject(hRead, &m_hObject);

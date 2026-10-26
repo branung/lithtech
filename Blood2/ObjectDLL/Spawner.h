@@ -15,7 +15,7 @@
 #include "B2BaseClass.h"
 
 
-HOBJECT SpawnObject( char *pszSpawnString, DVector *pvPos, DRotation *prRot, DVector *pvVel );
+HOBJECT SpawnObject( const char *pszSpawnString, DVector *pvPos, DRotation *prRot, DVector *pvVel );
 
 
 class Spawner : public B2BaseClass

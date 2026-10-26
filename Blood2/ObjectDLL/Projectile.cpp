@@ -28,7 +28,7 @@
 void BPrint(char*);
 
 BEGIN_CLASS(CProjectile)
-END_CLASS_DEFAULT_FLAGS(CProjectile, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CProjectile, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 
 // ----------------------------------------------------------------------- //
@@ -39,7 +39,7 @@ END_CLASS_DEFAULT_FLAGS(CProjectile, BaseClass, NULL, NULL, CF_HIDDEN)
 //
 // ----------------------------------------------------------------------- //
 
-CProjectile::CProjectile(DBYTE nType) : BaseClass(nType)
+CProjectile::CProjectile(DBYTE nType) : DEBaseClass(nType)
 {
 	AddAggregate(&m_damage);
 	m_fVelocity				= 0.0f;
@@ -106,7 +106,7 @@ CProjectile::CProjectile(DBYTE nType) : BaseClass(nType)
 
 CProjectile::~CProjectile()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hLight)
@@ -139,7 +139,7 @@ DDWORD CProjectile::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		{
 			if (!Update((DVector *)pData))
 			{
-				CServerDE* pServerDE = BaseClass::GetServerDE();
+				CServerDE* pServerDE = DEBaseClass::GetServerDE();
 				if (!pServerDE) return 0;
 
 				pServerDE->RemoveObject(m_hObject);		
@@ -153,7 +153,7 @@ DDWORD CProjectile::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 			m_dwClientID = ocs->m_UserData;
 			ocs = DNULL;
 
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 
 			if (fData != PRECREATE_SAVEGAME)
 				PostPropRead((ObjectCreateStruct*)pData);
@@ -193,7 +193,7 @@ DDWORD CProjectile::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -225,7 +225,7 @@ void CProjectile::BreakLink(HOBJECT hObj)
 void CProjectile::Setup(DVector *vDir, DBYTE nType, DFLOAT fDamage, DFLOAT fVelocity,
 						int nRadius, HOBJECT hFiredFrom)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	VEC_COPY(m_vDir, *vDir);
@@ -292,7 +292,7 @@ void CProjectile::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL CProjectile::InitialUpdate(DVector*)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.001);
@@ -344,7 +344,7 @@ DBOOL CProjectile::InitialUpdate(DVector*)
 
 DBOOL CProjectile::Update(DVector *pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.001);
@@ -395,7 +395,7 @@ DBOOL CProjectile::Update(DVector *pMovement)
 
 void CProjectile::HandleTouch(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (hObj == m_hFiredFrom) return; // Let it get out of our bounding box...
@@ -479,7 +479,7 @@ void CProjectile::Explode()
 
 void CProjectile::DamageObjectsWithinRadius()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DVector vPos;
@@ -541,7 +541,7 @@ void CProjectile::AddImpact(DVector vPoint, DVector vNormal, HOBJECT hObj)
 
 	if(m_bClientFX)
 	{
-		CServerDE* pServerDE = BaseClass::GetServerDE();
+		CServerDE* pServerDE = DEBaseClass::GetServerDE();
 		if (!pServerDE) return;
 
 /*		ObjectCreateStruct theStruct;
@@ -577,7 +577,7 @@ void CProjectile::AddImpact(DVector vPoint, DVector vNormal, HOBJECT hObj)
 
 void CProjectile::AddBloodImpact(DVector *vPos, DVector *vNormal, DFLOAT fDamage)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 /*	ObjectCreateStruct theStruct;
@@ -613,7 +613,7 @@ void CProjectile::AddBloodImpact(DVector *vPos, DVector *vNormal, DFLOAT fDamage
 
 void CProjectile::AddExplosion(DVector vPos, DVector vNormal)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	DDWORD		nType = EXP_GRENADE;
@@ -643,7 +643,7 @@ void CProjectile::AddExplosion(DVector vPos, DVector vNormal)
 
 void CProjectile::AddSmokeTrail(DVector vVel)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	ObjectCreateStruct theStruct;
@@ -680,7 +680,7 @@ void CProjectile::AddSmokeTrail(DVector vVel)
 
 void CProjectile::AddLight(DFLOAT fRadius, DFLOAT fRed, DFLOAT fGreen, DFLOAT fBlue)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_vLightColor.x = fRed;
@@ -695,8 +695,8 @@ void CProjectile::AddLight(DFLOAT fRadius, DFLOAT fRed, DFLOAT fGreen, DFLOAT fB
 		ocStruct.m_Flags = FLAG_VISIBLE;
 		ocStruct.m_ObjectType = OT_LIGHT; 
 
-		HCLASS hClass = pServerDE->GetClass("BaseClass");
-		LPBASECLASS	pFlash = pServerDE->CreateObject(hClass, &ocStruct);
+		HCLASS hClass = pServerDE->GetClass("DEBaseClass");
+		DEBaseClass*	pFlash = pServerDE->CreateObject(hClass, &ocStruct);
 
 		if (pFlash)
 		{
@@ -719,7 +719,7 @@ void CProjectile::AddLight(DFLOAT fRadius, DFLOAT fRed, DFLOAT fGreen, DFLOAT fB
 
 void CProjectile::AddSparks(DVector vPos, DVector vNormal, DFLOAT fDamage, HOBJECT hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	ObjectCreateStruct ocStruct;
@@ -742,7 +742,7 @@ void CProjectile::AddSparks(DVector vPos, DVector vNormal, DFLOAT fDamage, HOBJE
 		char* pFile;
 		DBYTE nSparks = (DBYTE)fDamage;
 
-		SurfaceType eType = GetSurfaceType(hObject, DNULL);
+		SurfaceType eType = GetSurfaceType(hObject, INVALID_HPOLY);
 
 		switch(eType)
 		{
@@ -784,7 +784,7 @@ void CProjectile::AddSparks(DVector vPos, DVector vNormal, DFLOAT fDamage, HOBJE
 
 SurfaceType CProjectile::GetSurfaceType(HOBJECT hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hObject) return ST_UNKNOWN;
 	
 	SurfaceType eType = ST_UNKNOWN;
@@ -811,7 +811,7 @@ SurfaceType CProjectile::GetSurfaceType(HOBJECT hObject)
 
 void CProjectile::SetFlags(DDWORD dwFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	m_dwFlags = dwFlags;

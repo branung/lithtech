@@ -147,7 +147,7 @@ void SoulDrudge::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL SoulDrudge::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
     if(m_bLoadAnims)

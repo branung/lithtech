@@ -75,7 +75,7 @@ inline void AISCRIPTCMD::Load(HMESSAGEREAD hRead)
 
 	if (hstr)
 	{
-		char* pData = g_pServerDE->GetStringData(hstr);
+		const char* pData = g_pServerDE->GetStringData(hstr);
 		if (pData && pData[0])
 		{
 			_mbscpy((unsigned char*)args, (const unsigned char*)pData);
@@ -240,7 +240,7 @@ inline void CAIScriptList::Load(HMESSAGEREAD hRead)
 	}
 }
 
-inline AIScriptCmdType StringToAIScriptCmdType(char* pCmdName)
+inline AIScriptCmdType StringToAIScriptCmdType(const char* pCmdName)
 {
 	if (!pCmdName) return AI_SCMD_DONE;
 

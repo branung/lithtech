@@ -46,7 +46,7 @@ KeyData::KeyData()
 
 KeyData::~KeyData()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (pServerDE)
 	{
 		if (m_hstrSoundName) pServerDE->FreeString (m_hstrSoundName);
@@ -67,7 +67,7 @@ KeyData::~KeyData()
 
 DBOOL KeyData::Copy(Key* pKey)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pKey || !pServerDE) return DFALSE;
 
 	pServerDE->GetObjectRotation(pServerDE->ObjectToHandle(pKey), &m_rRot);
@@ -120,7 +120,7 @@ DBOOL KeyData::Copy(Key* pKey)
 
 void KeyData::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageRotation(hWrite, &m_rRot);
@@ -147,7 +147,7 @@ void KeyData::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void KeyData::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	pServerDE->ReadFromMessageRotation(hRead, &m_rRot);
@@ -174,14 +174,14 @@ void KeyData::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 
 void KeyData::CacheFiles()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	// {MD 9/23/98}
 	if(!(pServerDE->GetServerFlags() & SS_CACHING))
 		return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 	if (m_hstrSoundName)
 	{
 		pFile = pServerDE->GetStringData(m_hstrSoundName);

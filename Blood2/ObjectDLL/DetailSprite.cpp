@@ -64,7 +64,7 @@ DetailSprite::DetailSprite() : B2BaseClass(OT_SPRITE)
 
 DetailSprite::~DetailSprite()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hstrFilename)
@@ -88,7 +88,7 @@ DDWORD DetailSprite::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData
 	{
 		case MID_PRECREATE:
 		{
-			CServerDE* pServerDE = BaseClass::GetServerDE();
+			CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			if (!pServerDE) break;
 
 			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
@@ -109,14 +109,12 @@ DDWORD DetailSprite::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData
 						pStruct->m_Flags |= FLAG_ROTATEABLESPRITE;
 					}
 
-					if (m_bChromaKey)
-					{
-						pStruct->m_Flags |= FLAG_SPRITECHROMAKEY;
-					}
+					// LT1's FLAG_SPRITECHROMAKEY did nothing ("Disabled.. doesn't do anything anymore").
+					// Its bit is Jupiter's FLAG_SPRITE_NOZ, so nothing is set here
 
 					if (m_hstrFilename)
 					{
-						char* pFilename = pServerDE->GetStringData(m_hstrFilename);
+						const char* pFilename = pServerDE->GetStringData(m_hstrFilename);
 						if (pFilename)
 						{
 							_mbscpy((unsigned char*)pStruct->m_Filename, (const unsigned char*)pFilename);
@@ -160,7 +158,7 @@ DDWORD DetailSprite::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData
 
 void DetailSprite::ReadProp(ObjectCreateStruct *pStruct)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !pStruct) return;
 
 	char buf[MAX_CS_FILENAME_LEN];
@@ -195,7 +193,7 @@ void DetailSprite::ReadProp(ObjectCreateStruct *pStruct)
 
 DBOOL DetailSprite::InitialUpdate(DVector*)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.0);
@@ -287,7 +285,7 @@ DBOOL DetailSprite::InitialUpdate(DVector*)
 
 void DetailSprite::CreateAnotherSprite(DVector *pvPos, DRotation *prRot)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject || !m_hstrFilename) return;
 
 	ObjectCreateStruct ocStruct;

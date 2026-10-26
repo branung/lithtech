@@ -254,7 +254,7 @@ DDWORD ClientLightFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fDat
 		{
     		if (!Update()) 
             {
-		    	CServerDE* pServerDE = BaseClass::GetServerDE();
+		    	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			    if (pServerDE) pServerDE->RemoveObject(m_hObject);
             }
 		}
@@ -327,7 +327,7 @@ DDWORD ClientLightFX::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAG
 void ClientLightFX::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 {
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pszMessage = g_pServerDE->GetStringData( hMsg );
+	const char *pszMessage = g_pServerDE->GetStringData( hMsg );
 
 	DDWORD dwUsrFlags = g_pServerDE->GetObjectUserFlags(m_hObject);
 
@@ -681,7 +681,7 @@ void ClientLightFX::CacheFiles()
 	if(!(pServerDE->GetServerFlags() & SS_CACHING))
 		return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 
 	if (m_hstrRampUpSound)
 	{

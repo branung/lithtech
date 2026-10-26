@@ -766,7 +766,7 @@ class CFlayerChain : public CProjectile
 		{
 			if(m_bState == FLAYER_STATE_TRACKING)
 			{
-				CServerDE* pServerDE = BaseClass::GetServerDE();
+				CServerDE* pServerDE = DEBaseClass::GetServerDE();
 				if (!pServerDE) return;
 				m_hTrackObj = hObj;
 				pServerDE->CreateInterObjectLink(m_hObject, m_hTrackObj);
@@ -805,7 +805,7 @@ class CFlayerChain : public CProjectile
 		DFLOAT		m_fStretchedLength;
 
 		HATTACHMENT	m_hGibAttachment;
-		BaseClass	*m_hGibObj;
+		DEBaseClass	*m_hGibObj;
 
 		DBOOL		m_bFirstUpdate;
 };
@@ -866,7 +866,7 @@ class CNightmareFireball : public CProjectile
 
 		void	SetTarget(HOBJECT hObj)
 		{
-			CServerDE* pServerDE = BaseClass::GetServerDE();
+			CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			if (!pServerDE) return;
 			m_hTrackObj = hObj;
 			pServerDE->CreateInterObjectLink(m_hObject, m_hTrackObj);

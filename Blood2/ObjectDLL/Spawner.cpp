@@ -217,7 +217,7 @@ DDWORD Spawner::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAGEREAD
 
 			if (hMsg)
 			{
-				char* sMsg = g_pServerDE->GetStringData(hMsg);
+				const char* sMsg = g_pServerDE->GetStringData(hMsg);
 
 				// Look for an "activate" message
 				if (sMsg)
@@ -271,15 +271,20 @@ DDWORD Spawner::ObjectMessageFn( HOBJECT hSender, DDWORD messageID, HMESSAGEREAD
 //
 // ----------------------------------------------------------------------- //
 
-HOBJECT SpawnObject( char *pszSpawnString, DVector *pvPos, DRotation *prRot, DVector *pvVel )
+HOBJECT SpawnObject( const char *pszSpawnString, DVector *pvPos, DRotation *prRot, DVector *pvVel )
 {
 	char *pszObjClass = NULL;
 
 	if( !g_pServerDE || !pszSpawnString )
 		return DNULL;
 
+	// Work on a copy, since strtok writes into the string and callers pass the engine's own string data
+	char szSpawnString[512];
+	SAFE_STRCPY( szSpawnString, pszSpawnString );
+	char *pszRest = szSpawnString;
+
 	// Class name should be the first token in the string, validate it
-	pszObjClass = strtok( pszSpawnString, " " );
+	pszObjClass = strtok( pszRest, " " );
 	if( !pszObjClass )	return DNULL;
 
 	HCLASS hClass = g_pServerDE->GetClass( pszObjClass );
@@ -292,11 +297,11 @@ HOBJECT SpawnObject( char *pszSpawnString, DVector *pvPos, DRotation *prRot, DVe
 	ROT_COPY( ocStruct.m_Rotation, *prRot );
 
 	// Remainder of the string could be string props
-	pszSpawnString = strtok( NULL, "" );
+	pszRest = strtok( NULL, "" );
 
 	// Create the object...
 	HOBJECT hObj = DNULL;
-	if (BaseClass *pObj = g_pServerDE->CreateObjectProps( hClass, &ocStruct, pszSpawnString ))
+	if (DEBaseClass *pObj = (DEBaseClass*)g_pServerDE->CreateObjectProps( hClass, &ocStruct, pszRest ))
 		hObj = g_pServerDE->ObjectToHandle(pObj);
 
 	// Set it's initial velocity
@@ -377,7 +382,7 @@ DBOOL Spawner::SpawnObject(HOBJECT hSender)
 	// Now spawn objects specified in the properties
 	if (m_hstrSpawnObject)
 	{
-		char *pString = g_pServerDE->GetStringData(m_hstrSpawnObject);
+		const char *pString = g_pServerDE->GetStringData(m_hstrSpawnObject);
 		if (!pString) return(DFALSE);
 
 		_mbsncpy((unsigned char*)szSpawn, (const unsigned char*)pString, MAX_GP_STRING_LEN);
@@ -406,7 +411,7 @@ DBOOL Spawner::SpawnObject(HOBJECT hSender)
 	// Play spawn sound
 	if( m_hstrSound )
 	{
-		char* pSound = g_pServerDE->GetStringData(m_hstrSound);
+		const char* pSound = g_pServerDE->GetStringData(m_hstrSound);
 		if (pSound)
 		{
 			PlaySoundFromPos( &vPos, pSound, m_fSoundRadius, SOUNDPRIORITY_MISC_LOW );

@@ -202,7 +202,7 @@ void TheHandAI::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL TheHandAI::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
 	//Load up animation indexes if first model instance
@@ -407,7 +407,7 @@ void TheHandAI::AI_STATE_EnemyAttach()
 						}
 						else if(m_pServerDE->GetTime() - m_fLastDmgTime >= 1.0f)
 						{
-							BaseClass *ffObj = m_pServerDE->HandleToObject(m_hObject);
+							DEBaseClass *ffObj = m_pServerDE->HandleToObject(m_hObject);
 							DFLOAT fDamage = (DFLOAT)m_pServerDE->IntRandom(MAX_DAMAGE/2, MAX_DAMAGE);
 
 							DamageObject(m_hObject, ffObj, m_hEnemyAttach, fDamage * m_InventoryMgr.GetDamageMultiplier(), 

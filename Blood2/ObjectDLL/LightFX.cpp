@@ -70,9 +70,9 @@ BEGIN_CLASS(LightFX)
         ADD_STRINGPROP(RampUpSound,   "")    
         ADD_STRINGPROP(RampDownSound, "")  
 #ifdef RIOT_BUILD
-END_CLASS_DEFAULT_FLAGS(LightFX, BaseClass, NULL, NULL, CF_ALWAYSLOAD)
+END_CLASS_DEFAULT_FLAGS(LightFX, DEBaseClass, NULL, NULL, CF_ALWAYSLOAD)
 #else
-END_CLASS_DEFAULT_FLAGS(LightFX, BaseClass, NULL, NULL, CF_ALWAYSLOAD | CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(LightFX, DEBaseClass, NULL, NULL, CF_ALWAYSLOAD | CF_HIDDEN)
 #endif
 
 void BPrint(char*);
@@ -85,7 +85,7 @@ void BPrint(char*);
 //
 // ----------------------------------------------------------------------- //
 
-LightFX::LightFX() : BaseClass(OT_LIGHT)
+LightFX::LightFX() : DEBaseClass(OT_LIGHT)
 {
 	AddAggregate(&m_damage);
 
@@ -185,7 +185,7 @@ DDWORD LightFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 	{
 		case MID_PRECREATE:
 		{
-			DDWORD dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
+			DDWORD dwRet = DEBaseClass::EngineMessageFn(messageID, pData, fData);
 
 			if (fData == 1.0f || fData == 2.0f)
 			{
@@ -209,7 +209,7 @@ DDWORD LightFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		{
     		if (!Update()) 
             {
-		    	CServerDE* pServerDE = BaseClass::GetServerDE();
+		    	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 			    if (pServerDE) pServerDE->RemoveObject(m_hObject);
             }
 		}
@@ -218,7 +218,7 @@ DDWORD LightFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		default : break;
 	}
 
-	return BaseClass::EngineMessageFn(messageID, pData, fData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -242,7 +242,7 @@ DDWORD LightFX::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD 
     
 		case MID_DAMAGE:
 		{
-			DDWORD dwRet = BaseClass::ObjectMessageFn (hSender, messageID, hRead);
+			DDWORD dwRet = DEBaseClass::ObjectMessageFn (hSender, messageID, hRead);
 			if (m_damage.IsDead())
 			{
 				g_pServerDE->RemoveObject(m_hObject);
@@ -253,7 +253,7 @@ DDWORD LightFX::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD 
 		default : break;
 	}
 
-	return BaseClass::ObjectMessageFn (hSender, messageID, hRead);
+	return DEBaseClass::ObjectMessageFn (hSender, messageID, hRead);
 }
 
 
@@ -270,7 +270,7 @@ DDWORD LightFX::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGEREAD 
 void LightFX::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 {
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pszMessage = g_pServerDE->GetStringData( hMsg );
+	const char *pszMessage = g_pServerDE->GetStringData( hMsg );
 
     if ( _mbsncmp((const unsigned char*)pszMessage, (const unsigned char*)"SWITCH", 6) == 0)
     {
@@ -1125,7 +1125,7 @@ void LightFX::PlayRampSound(int nDirection)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
     
-	char *sound = DNULL;
+	const char *sound = DNULL;
     
     // Set the char pointer    
 	if (nDirection == 1 && m_hstrRampUpSound)

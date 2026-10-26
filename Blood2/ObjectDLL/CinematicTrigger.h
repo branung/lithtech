@@ -40,7 +40,7 @@ class CinematicTrigger : public B2BaseClass
 		DBOOL	Update();
 		void	SendMessage();
 		void	StartSound();
-		HOBJECT	PlayedBy( char *pszName );
+		HOBJECT	PlayedBy( const char *pszName );
 
 		DFLOAT		m_fDelay[MAX_CT_MESSAGES];
 		HSTRING		m_hstrSound[MAX_CT_MESSAGES];

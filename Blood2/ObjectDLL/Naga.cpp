@@ -215,7 +215,7 @@ void Naga::PostPropRead(ObjectCreateStruct *pStruct)
 
 DBOOL Naga::InitialUpdate(DVector *pMovement)
 {
-	m_pServerDE = BaseClass::GetServerDE();
+	m_pServerDE = DEBaseClass::GetServerDE();
 	if (!m_pServerDE) return DFALSE;
 
     if(m_bLoadAnims)
@@ -239,7 +239,7 @@ DBOOL Naga::InitialUpdate(DVector *pMovement)
 	sprintf(ocStruct.m_SkinName,"Skins\\Powerups\\Nagaspike_pu.dtx");
 
 	HCLASS hClass = m_pServerDE->GetClass("Model");
-	BaseClass* pObj = m_pServerDE->CreateObject(hClass, &ocStruct);
+	DEBaseClass* pObj = m_pServerDE->CreateObject(hClass, &ocStruct);
 	m_hSpike = pObj->m_hObject;
 
 	// Hide the Naga

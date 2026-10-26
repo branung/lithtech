@@ -24,7 +24,7 @@ typedef struct HandModelData_t
 
 class CWeapon;
 
-class CHandWeaponModel : public BaseClass
+class CHandWeaponModel : public DEBaseClass
 {
 	public :
 

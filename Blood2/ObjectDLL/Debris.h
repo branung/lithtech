@@ -50,7 +50,7 @@ class CDebris : public Aggregate
 
 	protected :
 
-		DDWORD EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT fData);
+		DDWORD EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT fData);
 	
 		HOBJECT	m_hObject; 
 

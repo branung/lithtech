@@ -68,7 +68,7 @@ DVector AI_Shared::GetEyeLevel(HOBJECT m_hObject)
 	DVector vPos, vDims;
 	VEC_INIT(vPos);
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return vPos;
 
 	pServerDE->GetObjectDims(m_hObject, &vDims);
@@ -93,7 +93,7 @@ DFLOAT AI_Shared::DistToWorld(HOBJECT m_hObject, DVector vDir)
 {
 	DVector vPos = GetEyeLevel(m_hObject);
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return MAX_DISTANCE;
 
 	IntersectQuery IQuery;
@@ -122,7 +122,7 @@ DFLOAT AI_Shared::DistToWorld(HOBJECT m_hObject, DVector vDir)
 
 DBOOL AI_Shared::TurnToClear(HOBJECT hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hObject) return DFALSE;
 
 	DRotation rRot;
@@ -190,7 +190,7 @@ DBOOL AI_Shared::IsLedge(HOBJECT m_hObject, DFLOAT m_fDist)
 	VEC_INIT(vDir);
 	VEC_INIT(vTemp);
     
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	DRotation rRot;
@@ -245,7 +245,7 @@ DBOOL AI_Shared::IsLedge(HOBJECT m_hObject, DFLOAT m_fDist)
 // ----------------------------------------------------------------------- //
 DFLOAT AI_Shared::DistToWorldForward(HOBJECT m_hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	DRotation rRot;
@@ -270,7 +270,7 @@ DFLOAT AI_Shared::DistToWorldForward(HOBJECT m_hObject)
 
 DFLOAT AI_Shared::DistToWorldBackward(HOBJECT m_hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	DRotation rRot;
@@ -299,7 +299,7 @@ DFLOAT AI_Shared::DistToWorldBackward(HOBJECT m_hObject)
 // ----------------------------------------------------------------------- //
 DFLOAT AI_Shared::DistToWorldRight(HOBJECT m_hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	DRotation rRot;
@@ -325,7 +325,7 @@ DFLOAT AI_Shared::DistToWorldRight(HOBJECT m_hObject)
 // ----------------------------------------------------------------------- //
 DFLOAT AI_Shared::DistToWorldLeft(HOBJECT m_hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	DRotation rRot;
@@ -355,7 +355,7 @@ DFLOAT AI_Shared::DistToWorldLeft(HOBJECT m_hObject)
 // ----------------------------------------------------------------------- //
 DBOOL AI_Shared::IsObjectVisible(HOBJECT m_hObject, HOBJECT hTestObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject || !hTestObj) return DFALSE;
 
 	DVector vOurPos, vTheirPos;
@@ -397,7 +397,7 @@ DBOOL AI_Shared::IsObjectVisible(HOBJECT m_hObject, HOBJECT hTestObj)
 // ----------------------------------------------------------------------- //
 DBOOL AI_Shared::IsObjectVisibleToAI(HOBJECT m_hObject, HOBJECT hTestObj, DFLOAT m_fSeeingDist)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject || !hTestObj) return DFALSE;
 
 	DVector vOurPos, vTheirPos;
@@ -467,7 +467,7 @@ DBOOL AI_Shared::IsObjectVisibleToAI(HOBJECT m_hObject, HOBJECT hTestObj, DFLOAT
 // ----------------------------------------------------------------------- //
 HOBJECT AI_Shared::SenseForEnemy(HOBJECT m_hObject, DFLOAT fRange)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return DFALSE;
     
 	HCLASS hPlayerTest = pServerDE->GetClass("CPlayerObj");
@@ -497,7 +497,7 @@ HOBJECT AI_Shared::SenseForEnemy(HOBJECT m_hObject, DFLOAT fRange)
 // ----------------------------------------------------------------------- //
 HOBJECT AI_Shared::SmellForEnemy(HOBJECT m_hObject, DFLOAT fRange)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return DFALSE;
 
 	HCLASS hPlayerTest = pServerDE->GetClass("CPlayerObj");
@@ -527,7 +527,7 @@ HOBJECT AI_Shared::SmellForEnemy(HOBJECT m_hObject, DFLOAT fRange)
 // ----------------------------------------------------------------------- //
 HOBJECT AI_Shared::LookForEnemy(HOBJECT m_hObject, DFLOAT fRange)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return DFALSE;
 
     // Get the Rotation
@@ -592,7 +592,7 @@ HOBJECT AI_Shared::LookForEnemy(HOBJECT m_hObject, DFLOAT fRange)
 HOBJECT AI_Shared::FindObjectInRadius(HOBJECT m_hObject, HCLASS hObjectTest, DFLOAT fRange, DBOOL bCheckVisible, char* sObjName, DBOOL bNear)
 {
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return DNULL;
 
     DFLOAT fObjDist, fSaveDist = 0;
@@ -762,7 +762,7 @@ HOBJECT AI_Shared::FindObjectInRadius(HOBJECT m_hObject, HCLASS hObjectTest, DFL
 DBOOL AI_Shared::CheckForProjectile(HOBJECT m_hObject)
 {
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return DNULL;
 
     HOBJECT hFoundObj = DNULL;
@@ -841,7 +841,7 @@ DBOOL AI_Shared::CheckForProjectile(HOBJECT m_hObject)
 // ----------------------------------------------------------------------- //
 void AI_Shared::FacePosition(HOBJECT m_hObject, DVector vTargetPos)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return;
 
 	DVector vDir, vPos;
@@ -883,7 +883,7 @@ void AI_Shared::FacePosition(HOBJECT m_hObject, DVector vTargetPos)
 // ----------------------------------------------------------------------- //
 DFLOAT AI_Shared::PitchToObject(HOBJECT m_hObject, HOBJECT hPTarget)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject || !hPTarget) return 0;
 
 	DVector vTargetPos, vPos;
@@ -935,7 +935,7 @@ void AI_Shared::Strafe(HOBJECT m_hObject, DFLOAT m_strafeSpeed)
 	DVector vAccel;
    	DVector vPos;
 
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return;
     
 	// Zero our acceleration
@@ -1005,7 +1005,7 @@ void AI_Shared::Strafe(HOBJECT m_hObject, DFLOAT m_strafeSpeed)
 // ----------------------------------------------------------------------- //
 DBOOL AI_Shared::Jump(HOBJECT m_hObject, DFLOAT m_YjumpSpeed, DFLOAT m_ZjumpSpeed)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return DFALSE;
 
 	DVector vPos;
@@ -1075,7 +1075,7 @@ DBOOL AI_Shared::Jump(HOBJECT m_hObject, DFLOAT m_YjumpSpeed, DFLOAT m_ZjumpSpee
 // MoveBackward
 int AI_Shared::MoveBackward(HOBJECT m_hObject, DFLOAT m_fSpeed, int m_theAnima)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return 0;
 
 // get rotation
@@ -1127,7 +1127,7 @@ int AI_Shared::MoveBackward(HOBJECT m_hObject, DFLOAT m_fSpeed, int m_theAnima)
 // 
 int AI_Shared::WalkThisWay(HOBJECT m_hObject, DFLOAT m_fSpeed, int m_theAnima)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return 0;
 
 // get rotation
@@ -1216,7 +1216,7 @@ int AI_Shared::WalkThisWay(HOBJECT m_hObject, DFLOAT m_fSpeed, int m_theAnima)
 
 DBOOL AI_Shared::StuckOnSomething(HOBJECT m_hObject, DFLOAT m_fSpeed, DVector m_vLastPos)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
     if (!pServerDE || !m_hObject ) return DFALSE;
 
 	DVector vPos, vTemp;
@@ -1237,7 +1237,7 @@ DBOOL AI_Shared::StuckOnSomething(HOBJECT m_hObject, DFLOAT m_fSpeed, DVector m_
 
 void AI_Shared::Roll(HOBJECT m_hObject, DVector vDir, DFLOAT fSpeed)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
     if (!pServerDE || !m_hObject ) return;
 
 	DVector vPos, vTemp, vLastPos;
@@ -1262,7 +1262,7 @@ void AI_Shared::Roll(HOBJECT m_hObject, DVector vDir, DFLOAT fSpeed)
 // ----------------------------------------------------------------------- //
 void AI_Shared::TurnRorL(HOBJECT m_hObject, DFLOAT m_fRadius)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return;
     
 	// Pick a direction to turn
@@ -1296,7 +1296,7 @@ void AI_Shared::TurnRorL(HOBJECT m_hObject, DFLOAT m_fRadius)
 // ----------------------------------------------------------------------- //
 void AI_Shared::TurnR(HOBJECT m_hObject, DFLOAT m_fRadius)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return;
 
 //	DFLOAT m_fTurn = -0.35f;  // Right
@@ -1321,7 +1321,7 @@ void AI_Shared::TurnR(HOBJECT m_hObject, DFLOAT m_fRadius)
 // ----------------------------------------------------------------------- //
 void AI_Shared::TurnL(HOBJECT m_hObject, DFLOAT m_fRadius)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject ) return;
 
 //	DFLOAT m_fTurn = 0.35f;  // Left
@@ -1345,7 +1345,7 @@ void AI_Shared::TurnL(HOBJECT m_hObject, DFLOAT m_fRadius)
 // ----------------------------------------------------------------------- //
 DBOOL AI_Shared::FaceTarget(HOBJECT m_hObject, HOBJECT m_hTarget)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject || !m_hTarget) 
     {
         return DFALSE;
@@ -1388,7 +1388,7 @@ DBOOL AI_Shared::FaceTarget(HOBJECT m_hObject, HOBJECT m_hTarget)
 
 void AI_Shared::CreateGibs(HOBJECT hObject,DDWORD dwFlags,int nCorpse, int nNode)
 {
-	CServerDE* g_pServerDE = BaseClass::GetServerDE();
+	// g_pServerDE is a macro over the engine's pointer now (de_server.h), so the old local copy of it is gone
 
 	DVector vPos, vVel, vParentDims, vRotationPeriods;
 
@@ -1418,7 +1418,7 @@ void AI_Shared::CreateGibs(HOBJECT hObject,DDWORD dwFlags,int nCorpse, int nNode
 											   theStruct.m_SkinName,MAX_CS_FILENAME_LEN+1);
 
 		// Allocate an object...
-		BaseClass* pObj = g_pServerDE->CreateObject( hClass, &theStruct );
+		DEBaseClass* pObj = g_pServerDE->CreateObject( hClass, &theStruct );
 		if( !pObj )
 			return;
 
@@ -1523,11 +1523,13 @@ void AI_Shared::CreateGibs(HOBJECT hObject,DDWORD dwFlags,int nCorpse, int nNode
 									   g_pServerDE->Random( -1.0f, 1.0f ), 
 									   g_pServerDE->Random( -1.0f, 1.0f ));
 
-			//Copy the rotation vector
-			VEC_COPY(theStruct.m_Rotation.m_Vec,vRotationPeriods);
+			// Copy the rotation vector. LT1's m_Vec is LTRotation's m_Quat[0..2]
+			theStruct.m_Rotation.m_Quat[0] = vRotationPeriods.x;
+			theStruct.m_Rotation.m_Quat[1] = vRotationPeriods.y;
+			theStruct.m_Rotation.m_Quat[2] = vRotationPeriods.z;
 				
 			// Allocate an object...
-			BaseClass* pObj = g_pServerDE->CreateObject( hClass, &theStruct );
+			DEBaseClass* pObj = g_pServerDE->CreateObject( hClass, &theStruct );
 			if( !pObj )
 				break;
 
@@ -1556,7 +1558,7 @@ void AI_Shared::CreateGibs(HOBJECT hObject,DDWORD dwFlags,int nCorpse, int nNode
 
 void AI_Shared::CreateLimb(HOBJECT hObject, int nNode, DVector vDir)
 {
-	CServerDE* g_pServerDE = BaseClass::GetServerDE();
+	// g_pServerDE is a macro over the engine's pointer now (de_server.h), so the old local copy of it is gone
 
 	DVector vPos, vVel, vParentDims;
 	DRotation rRot;
@@ -1670,7 +1672,7 @@ void AI_Shared::CreateLimb(HOBJECT hObject, int nNode, DVector vDir)
 
 DBOOL AI_Shared::HideLimb(HOBJECT hObject, int nNode, DBOOL bInverse)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	//is torso or pelvis?
 	if(nNode == 2 || nNode == 3)
@@ -1748,7 +1750,7 @@ DBOOL AI_Shared::HideLimb(HOBJECT hObject, int nNode, DBOOL bInverse)
 
 DBOOL AI_Shared::HideNodeAndSubNodes(HOBJECT hObject, int nNode, DBOOL bHide)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	if (!pServerDE || !hObject || nNode >= NUM_ALL_NODES) return DFALSE;
 
@@ -1777,7 +1779,7 @@ DBOOL AI_Shared::HideNodeAndSubNodes(HOBJECT hObject, int nNode, DBOOL bHide)
 
 void AI_Shared::ResetNodes(HOBJECT hObject)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	for(int i = 0; i < NUM_ALL_NODES; i++)
 	{
@@ -1794,7 +1796,7 @@ void AI_Shared::ResetNodes(HOBJECT hObject)
 // ----------------------------------------------------------------------- //
 //void AI_Shared::SetAnimation(HOBJECT m_hObject, int nAni)
 //{
-//    CServerDE* pServerDE = BaseClass::GetServerDE();
+//    CServerDE* pServerDE = DEBaseClass::GetServerDE();
 //    if (!pServerDE || !m_hObject) return;
 //
 //    // only set the animation if it has not been set yet...
@@ -1808,7 +1810,7 @@ void AI_Shared::ResetNodes(HOBJECT hObject)
 
 //void AI_Shared::ForceAnimation(HOBJECT m_hObject, int nAni)
 //{
-//    CServerDE* pServerDE = BaseClass::GetServerDE();
+//    CServerDE* pServerDE = DEBaseClass::GetServerDE();
 //    if (!pServerDE || !m_hObject) return;
 //
 //    // Force to different animation

@@ -19,7 +19,7 @@ DDWORD SmellHint::m_dwNumSmells = 0;
 
 DDWORD SmellHint::EngineMessageFn(DDWORD messageID, void *pData, float fData)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return 0;
 
 	switch(messageID)
@@ -48,7 +48,7 @@ DDWORD SmellHint::EngineMessageFn(DDWORD messageID, void *pData, float fData)
 
 DLink* SmellHint::HandleToLink(HOBJECT hObj)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return DNULL;
 
 	DLink* pLink = m_SmellHead.m_pNext;

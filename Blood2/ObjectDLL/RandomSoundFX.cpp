@@ -202,7 +202,7 @@ DDWORD RandomSoundFX::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAG
 void RandomSoundFX::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 {
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pszMessage = g_pServerDE->GetStringData( hMsg );
+	const char *pszMessage = g_pServerDE->GetStringData( hMsg );
 
     if ( _mbsncmp((const unsigned char*)pszMessage, (const unsigned char*)"TOGGLE", 6) == 0)
     {
@@ -343,7 +343,7 @@ DBOOL RandomSoundFX::Update()
 	// Get a sound..
 	if (m_nNumSounds < 1) return DFALSE;
 
-	char *pSound = DNULL;
+	const char *pSound = DNULL;
 
 	int n;
 	if (!m_bSequentialPlay)
@@ -531,7 +531,7 @@ void RandomSoundFX::CacheFiles()
 	if(!(pServerDE->GetServerFlags() & SS_CACHING))
 		return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 
 	for (int i = 0; i < RS_NUMSOUNDS; i++)
 		if (m_hstrSoundFile[i])

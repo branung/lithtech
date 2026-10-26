@@ -15,7 +15,6 @@
 #include <mbstring.h>
 #include "SoundTypes.h"
 #include "ObjectUtilities.h"
-#include "LMessage.h"
 #include "ClientGibFx.h"
 #include "ClientServerShared.h"
 #include "Trigger.h"
@@ -33,11 +32,9 @@
 
 //////////////////// SOCCER GOAL ///////////////////////////
 
-DList SoccerGoal::m_GoalList =
-{
-	0, 
-	{ DNULL, DNULL, DNULL }
-};
+// LT1's DList was a plain struct that started empty with a {0, NULL...} initializer.
+// LTList's constructor ties its head off against itself, which the dl_* functions expect
+DList SoccerGoal::m_GoalList;
 
 BEGIN_CLASS(SoccerGoal)
 	ADD_LONGINTPROP( TeamID, 1 )
@@ -302,7 +299,6 @@ void SoccerGoal::OnTouchNotify( HOBJECT hObj )
 	SoccerBall *pSoccerBall;
 	DVector vPos, vDir, vDims;
 	HOBJECT hPlayer;
-	LMessage *pMsg;
 	
 	if( g_pServerDE->IsKindOf( g_pServerDE->GetObjectClass(hObj), m_hSoccerBall ))
 	{
@@ -335,14 +331,21 @@ void SoccerGoal::OnTouchNotify( HOBJECT hObj )
 		{
 			if(( hPlayer = pSoccerBall->GetLastPlayerTouched( )) == DNULL )
 				return;
-			// Send message to player and ball
-			if( g_pServerDE->Common( )->CreateMessage( pMsg ) != LT_OK )
-				return;
-			pMsg->WriteByte( m_nTeamID );
-			g_pServerDE->SendToObject( *pMsg, MID_GOAL, m_hObject, hPlayer, 0 );
-			g_pServerDE->SendToObject( *pMsg, MID_GOAL, m_hObject, hObj, 0 );
+			// Send message to player and ball.
+			// Through DECompat's LT1 messages rather than the CommonLT/LMessage ones this used, one per destination.
+			HMESSAGEWRITE hMsg = g_pServerDE->StartMessageToObject( this, hPlayer, MID_GOAL );
+			if( hMsg )
+			{
+				g_pServerDE->WriteToMessageByte( hMsg, m_nTeamID );
+				g_pServerDE->EndMessage( hMsg );
+			}
 
-			pMsg->Release();
+			hMsg = g_pServerDE->StartMessageToObject( this, hObj, MID_GOAL );
+			if( hMsg )
+			{
+				g_pServerDE->WriteToMessageByte( hMsg, m_nTeamID );
+				g_pServerDE->EndMessage( hMsg );
+			}
 
 			// Create special effects
 			g_pServerDE->GetObjectPos( hObj, &vPos );
@@ -913,10 +916,10 @@ void SoccerBall::CreateLight( )
 	ocStruct.m_Flags = FLAG_VISIBLE;
 	ocStruct.m_ObjectType = OT_LIGHT; 
 
-	HCLASS hClass = g_pServerDE->GetClass("BaseClass");
+	HCLASS hClass = g_pServerDE->GetClass("DEBaseClass");
 	if (!hClass) return;
 
-	LPBASECLASS	pLight = g_pServerDE->CreateObject(hClass, &ocStruct);
+	DEBaseClass*	pLight = g_pServerDE->CreateObject(hClass, &ocStruct);
 	if (!pLight) return;
 
 	m_hLight = pLight->m_hObject;

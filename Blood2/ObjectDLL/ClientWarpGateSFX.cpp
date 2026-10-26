@@ -442,7 +442,7 @@ void CClientWarpGateSFX::ReadProp(ObjectCreateStruct *pData)
 void CClientWarpGateSFX::HandleTrigger(HOBJECT hSender, HMESSAGEREAD hRead)
 {
 	HSTRING hMsg = g_pServerDE->ReadFromMessageHString(hRead);
-	char *pszMessage = g_pServerDE->GetStringData(hMsg);
+	const char *pszMessage = g_pServerDE->GetStringData(hMsg);
 	DDWORD dwUsrFlags = g_pServerDE->GetObjectUserFlags(m_hObject);
 
     if( _mbsncmp((const unsigned char*)pszMessage, (const unsigned char*)"TOGGLE", 6) == 0)
@@ -467,7 +467,7 @@ void CClientWarpGateSFX::HandleTrigger(HOBJECT hSender, HMESSAGEREAD hRead)
 
 void CClientWarpGateSFX::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hWrite) return;
 
 	pServerDE->WriteToMessageFloat(hWrite, fRampUpTime);
@@ -544,7 +544,7 @@ void CClientWarpGateSFX::Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags)
 
 void CClientWarpGateSFX::Load(HMESSAGEREAD hRead, DDWORD dwLoadFlags)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !hRead) return;
 
 	fRampUpTime			= pServerDE->ReadFromMessageFloat(hRead);

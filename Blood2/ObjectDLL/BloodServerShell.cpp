@@ -53,33 +53,15 @@ extern	int		g_nLevelChangeCharacter;
 
 
 SETUP_SERVERSHELL()
-DEFINE_CLASSES()
+
+// DEFINE_CLASSES() was here. It can appear once per DLL, and sdk/inc/ltengineobjects.cpp already expands it
+
+// LT1's CreateServerShell exports are gone as the engine creates the server shell through define_interface.
+// That also drops the SShellMaker list a mod could use to pick the shell. g_pBloodServerShell is set in the constructor
+define_interface(CBloodServerShell, IServerShell);
+
 
 CBloodServerShell* g_pBloodServerShell = DNULL;
-
-ServerShellDE* CreateServerShell(ServerDE *pServerDE)
-{
-	g_pServerDE = pServerDE;
-
-	CBloodServerShell *pShell = new CBloodServerShell;
-
-	g_pBloodServerShell = pShell;
-
-	return (ServerShellDE*)pShell;
-}
-
-
-void DeleteServerShell(ServerShellDE *pInputShell)
-{
-	CBloodServerShell *pShell = (CBloodServerShell*)pInputShell;
-
-	// Only set to NULL if we are deleting what we think is the current server shell..
-	// gk
-//	if (g_pBloodServerShell == pShell)
-//		g_pBloodServerShell = DNULL;
-
-	delete pShell;
-}
 
 
 
@@ -94,6 +76,9 @@ void DeleteServerShell(ServerShellDE *pInputShell)
 
 CBloodServerShell::CBloodServerShell()
 {
+	// CreateServerShell used to set it
+	g_pBloodServerShell = this;
+
 	memset(&m_GameInfo, 0, sizeof(NetGame));
 
 	m_hstrStartPointName = DNULL;
@@ -189,11 +174,11 @@ void CBloodServerShell::OnRemoveClient(HCLIENT hClient)
 //
 // ----------------------------------------------------------------------- //
 
-BaseClass* CBloodServerShell::OnClientEnterWorld(HCLIENT hClient, void* pClientData, DDWORD dwClientDataLen)
+DEBaseClass* CBloodServerShell::OnClientEnterWorld(HCLIENT hClient, void* pClientData, DDWORD dwClientDataLen)
 {
 	if (!g_pServerDE || !hClient) return DNULL;
 
-	BaseClass* pObject  = DNULL;
+	DEBaseClass* pObject  = DNULL;
 	DBOOL bFoundClient = DFALSE;
 
 	char szClientName[MAX_CLIENT_NAME_LENGTH];
@@ -702,7 +687,7 @@ void CBloodServerShell::FragStatus()
 //
 // ----------------------------------------------------------------------- //
 
-BaseClass* CBloodServerShell::CreatePlayer(HCLIENT hClient)
+DEBaseClass* CBloodServerShell::CreatePlayer(HCLIENT hClient)
 {
 	if (!g_pServerDE) return DNULL;
 
@@ -716,7 +701,7 @@ BaseClass* CBloodServerShell::CreatePlayer(HCLIENT hClient)
 
 	HCLASS hClass = g_pServerDE->GetClass("CPlayerObj");
 
-	BaseClass* pClass = NULL;
+	DEBaseClass* pClass = NULL;
 	if (hClass)
 	{
 		pClass = g_pServerDE->CreateObject(hClass, &ocStruct);
@@ -743,7 +728,7 @@ BaseClass* CBloodServerShell::CreatePlayer(HCLIENT hClient)
 //
 // ----------------------------------------------------------------------- //
 
-void CBloodServerShell::RespawnPlayer(BaseClass* pBaseObject, HCLIENT hClient)
+void CBloodServerShell::RespawnPlayer(DEBaseClass* pBaseObject, HCLIENT hClient)
 {
 	if (!pBaseObject || !hClient) return;
 
@@ -1241,7 +1226,8 @@ void CBloodServerShell::SetGameInfo(DBYTE nGameType, DBYTE nDifficulty)
 void CBloodServerShell::CacheFiles()
 {
 	// Cache models...
-	for (int i=0; i < NUM_CACHED_MODELS; i++)
+	int i;
+	for (i=0; i < NUM_CACHED_MODELS; i++)
 	{
 		g_pServerDE->CacheFile(FT_MODEL, g_pCachedModels[i]);
 	}
@@ -1471,7 +1457,7 @@ void CBloodServerShell::Update(DFLOAT timeElapsed)
 	}
 	else
 	{
-		char *sSay = g_SayTrack.GetStr("");
+		const char *sSay = g_SayTrack.GetStr("");
 
 		if (sSay && sSay[0] != 0)
 		{
@@ -1899,7 +1885,8 @@ void CBloodServerShell::StartNextMultiplayerLevelAck()
 
 
 	// Clear player frags...
-	for (int i = 0; i < MAX_CLIENTS; i++)
+	int i;
+	for (i= 0; i < MAX_CLIENTS; i++)
 	{
 		CPlayerObj* pPlayer = GetPlayerFromClientList(m_aClients[i]);
 		if (pPlayer)

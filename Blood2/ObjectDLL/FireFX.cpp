@@ -76,7 +76,7 @@ FireFX::FireFX() : B2BaseClass(OT_NORMAL)
 
 FireFX::~FireFX()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	if (m_hstrAttachTo)
@@ -102,7 +102,7 @@ DDWORD FireFX::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT fData)
 		{
 			if (!Update((DVector *)pData))
 			{
-				CServerDE* pServerDE = BaseClass::GetServerDE();
+				CServerDE* pServerDE = DEBaseClass::GetServerDE();
 				if (!pServerDE) return 0;
 
 				pServerDE->RemoveObject(m_hObject);
@@ -196,7 +196,7 @@ DBOOL FireFX::ReadProp(ObjectCreateStruct *pStruct)
 
 DBOOL FireFX::InitialUpdate(DVector*)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.1);
@@ -215,7 +215,7 @@ DBOOL FireFX::InitialUpdate(DVector*)
 
 void FireFX::FirstUpdate()
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE) return;
 
 	// Can Create Up to 5 Fire Object at a Time....
@@ -284,11 +284,11 @@ void FireFX::FirstUpdate()
            //	VEC_COPY(theStruct.m_Pos, *pvPos);
             pServerDE->GetObjectPos(m_hObject, &theStruct.m_Pos);
 
-        	HCLASS hClass = pServerDE->GetClass("BaseClass");
+        	HCLASS hClass = pServerDE->GetClass("DEBaseClass");
         
             if (hClass)
             {
-                LPBASECLASS	pLight = pServerDE->CreateObject(hClass, &theStruct);
+                DEBaseClass*	pLight = pServerDE->CreateObject(hClass, &theStruct);
                 if (pLight)
                 {
             	    m_hLight = pLight->m_hObject;
@@ -311,7 +311,7 @@ void FireFX::FirstUpdate()
 
 DBOOL FireFX::Update(DVector* pMovement)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	if (!pServerDE || !m_hObject) return DFALSE;
 
 	pServerDE->SetNextUpdate(m_hObject, (DFLOAT)0.01);
@@ -468,11 +468,11 @@ DBOOL FireFX::Update(DVector* pMovement)
 		        	_mbscpy((unsigned char*)theStruct.m_Filename, (const unsigned char*)"Sprites\\gibflame.spr");
 				    VEC_COPY(theStruct.m_Scale, m_vScale)
 
-                    HCLASS hClass = pServerDE->GetClass("BaseClass");
+                    HCLASS hClass = pServerDE->GetClass("DEBaseClass");
         
                     if (hClass)
                     {
-                	    LPBASECLASS	pSprite = pServerDE->CreateObject(hClass, &theStruct);
+                	    DEBaseClass*	pSprite = pServerDE->CreateObject(hClass, &theStruct);
                         m_hSprite[x] = pSprite->m_hObject;
 
                         if (!m_hLinkObject) return DFALSE;

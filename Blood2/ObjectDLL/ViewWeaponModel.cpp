@@ -24,7 +24,7 @@
 
 
 BEGIN_CLASS(CViewWeaponModel)
-END_CLASS_DEFAULT_FLAGS(CViewWeaponModel, BaseClass, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CViewWeaponModel, DEBaseClass, NULL, NULL, CF_HIDDEN)
 
 
 // ----------------------------------------------------------------------- //
@@ -35,7 +35,7 @@ END_CLASS_DEFAULT_FLAGS(CViewWeaponModel, BaseClass, NULL, NULL, CF_HIDDEN)
 //
 // ----------------------------------------------------------------------- //
 
-CViewWeaponModel::CViewWeaponModel() : BaseClass(OT_MODEL)
+CViewWeaponModel::CViewWeaponModel() : DEBaseClass(OT_MODEL)
 {
 	m_pParent		= DNULL;
 	m_hLoopSound	= DNULL;
@@ -99,7 +99,7 @@ DDWORD CViewWeaponModel::EngineMessageFn(DDWORD messageID, void *pData, DFLOAT l
 	}
 
 
-	return BaseClass::EngineMessageFn(messageID, pData, lData);
+	return DEBaseClass::EngineMessageFn(messageID, pData, lData);
 }
 
 
@@ -117,7 +117,7 @@ void CViewWeaponModel::OnStringKey(ArgList* pArgList)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE || !pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
-	char*	pKey;
+	const char*	pKey;
 	int		count = pArgList->argc;
 
 	for(int i = 0; i < count; i++)
@@ -132,7 +132,7 @@ void CViewWeaponModel::OnStringKey(ArgList* pArgList)
 		}
 		else if(_mbsicmp((const unsigned char*)pKey, (const unsigned char*)WEAPON_KEY_SOUND) == 0)
 		{
-			char*	pSound = pArgList->argv[++i];
+			const char*	pSound = pArgList->argv[++i];
 			char	pDir[100];
 
 			if(pSound)
@@ -145,7 +145,7 @@ void CViewWeaponModel::OnStringKey(ArgList* pArgList)
 		}
 		else if(_mbsicmp((const unsigned char*)pKey, (const unsigned char*)WEAPON_KEY_SOUNDLOOP) == 0)
 		{
-			char*	pSound = pArgList->argv[++i];
+			const char*	pSound = pArgList->argv[++i];
 			char	pDir[100];
 
 			if(pSound && !m_hLoopSound)
@@ -163,7 +163,7 @@ void CViewWeaponModel::OnStringKey(ArgList* pArgList)
 		}
 		else if(_mbsicmp((const unsigned char*)pKey, (const unsigned char*)WEAPON_KEY_HIDE) == 0)
 		{
-			char*	pNode = pArgList->argv[++i];
+			const char*	pNode = pArgList->argv[++i];
 			DBOOL	nodeStat;
 			pServerDE->GetModelNodeHideStatus(this->m_hObject, pNode, &nodeStat);
 
@@ -172,7 +172,7 @@ void CViewWeaponModel::OnStringKey(ArgList* pArgList)
 		}
 		else if(_mbsicmp((const unsigned char*)pKey, (const unsigned char*)WEAPON_KEY_SHOW) == 0)
 		{
-			char*	pNode = pArgList->argv[++i];
+			const char*	pNode = pArgList->argv[++i];
 			DBOOL	nodeStat;
 			pServerDE->GetModelNodeHideStatus(this->m_hObject, pNode, &nodeStat);
 

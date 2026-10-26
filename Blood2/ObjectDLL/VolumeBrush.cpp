@@ -246,7 +246,7 @@ DDWORD VolumeBrush::ObjectMessageFn(HOBJECT hSender, DDWORD messageID, HMESSAGER
 				// Key is no longer needed, tell the sender to remove it
 //				if (m_bUnlockKeyRemove)
 //				{
-//					HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject((LPBASECLASS)this, hSender, MID_KEYREMOVE);
+//					HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject((DEBaseClass*)this, hSender, MID_KEYREMOVE);
 //					pServerDE->WriteToMessageHString(hMessage, m_hstrKeyName);
 //					pServerDE->EndMessage(hMessage);
 // 				}
@@ -274,7 +274,7 @@ void VolumeBrush::HandleTrigger(HOBJECT hSender, HSTRING hMsg)
 	CServerDE* pServerDE = GetServerDE();
 	if (!pServerDE) return;
 
-	char* pMsg = pServerDE->GetStringData(hMsg);
+	const char* pMsg = pServerDE->GetStringData(hMsg);
 	if (!pMsg || !pMsg[0]) return;
 
 	DBOOL bToggle = DFALSE;
@@ -580,7 +580,7 @@ void VolumeBrush::UpdatePhysics(ContainerPhysics* pCPStruct)
 			if (m_bLocked)
 			{
 				// See if they have the key we need to unlock
-				HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject((LPBASECLASS)this, pCPStruct->m_hObject, MID_KEYQUERY);
+				HMESSAGEWRITE hMessage = pServerDE->StartMessageToObject((DEBaseClass*)this, pCPStruct->m_hObject, MID_KEYQUERY);
 				pServerDE->WriteToMessageHString(hMessage, m_hstrKeyName);
 				pServerDE->EndMessage(hMessage);
 			}
@@ -735,7 +735,7 @@ void VolumeBrush::CacheFiles()
 	if(!(pServerDE->GetServerFlags() & SS_CACHING))
 		return;
 
-	char* pFile = DNULL;
+	const char* pFile = DNULL;
 	if (m_hstrSurfaceSprite)
 	{
 		pFile = pServerDE->GetStringData(m_hstrSurfaceSprite);

@@ -31,7 +31,7 @@ class CBaseCharacter : public B2BaseClass
 {
 	public :
 
-		CBaseCharacter(DBYTE nType=OT_MODEL); // : BaseClass(nType) {}
+		CBaseCharacter(DBYTE nType=OT_MODEL); // : DEBaseClass(nType) {}
 		virtual ~CBaseCharacter() {};
 
         DBOOL       IsDead() const { return m_damage.IsDead(); }

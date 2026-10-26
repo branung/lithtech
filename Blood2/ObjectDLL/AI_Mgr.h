@@ -346,7 +346,7 @@ public : // Member functions
 	void			SetJumpSpeed(DFLOAT fSpeed)					{ m_fJumpSpeed = fSpeed; }
 	void			SetRollSpeed(DFLOAT fSpeed)					{ m_fRollSpeed = fSpeed; }
 					
-    virtual int		StateStrToInt(char *pState);
+    virtual int		StateStrToInt(const char *pState);
     virtual DDWORD	WeaponStrToInt(char *pWeapon);
 
 	void			DetachFromEnemy()							{ m_hEnemyAttach = DNULL; }
@@ -380,8 +380,8 @@ protected :
 					}
 
 	//Scripting functions
-    void			PlayAnimation(char* pAniName);
-    void			SetTarget(char* pTargetName);
+    void			PlayAnimation(const char* pAniName);
+    void			SetTarget(const char* pTargetName);
     void			SetNewTarget(HOBJECT hNewTarget);
     // Scripting Stuff
     void			UpdateScriptCommand();

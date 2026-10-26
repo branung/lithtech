@@ -120,7 +120,7 @@ class CInventoryMgr : public Aggregate
 
 	protected:
 
-		DDWORD		EngineMessageFn(LPBASECLASS pObject, DDWORD messageID, void *pData, DFLOAT lData);
+		DDWORD		EngineMessageFn(DEBaseClass* pObject, DDWORD messageID, void *pData, DFLOAT lData);
 		void		SendConsoleMessageToClient(char *msg);
 		void		SetForceUpdateList(ForceUpdate* pFU);
 		void		Save(HMESSAGEWRITE hWrite, DDWORD dwSaveFlags);
@@ -247,7 +247,7 @@ inline DDWORD CInventoryMgr::FireCurrentWeapon(DVector *firedPos, DRotation *rot
 	DDWORD dwRetval = 0;
 
 	//SCHLEGZ 4/27/98 1:59:35 PM: GetAIWeaponPos does not work like you would think
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	CWeapon *pWeap = m_Weapons[m_nCurWeaponSlot];
 	CWeapon *pLWeap = m_LWeapons[m_nCurWeaponSlot];
@@ -280,7 +280,7 @@ inline DDWORD CInventoryMgr::FireCurrentWeapon(DVector *firedPos, DRotation *rot
 
 inline void CInventoryMgr::SetCurrentWeaponSpecialData(DDWORD dwSpecial, DFLOAT fSpecial)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 
 	CWeapon *pWeap = m_Weapons[m_nCurWeaponSlot];
 	CWeapon *pLWeap = m_LWeapons[m_nCurWeaponSlot];
@@ -339,7 +339,7 @@ inline void CInventoryMgr::ShowViewWeapons(DBOOL bVisible)
 
 inline void CInventoryMgr::SendConsoleMessageToClient(char *msg)
 {
-	CServerDE* pServerDE = BaseClass::GetServerDE();
+	CServerDE* pServerDE = DEBaseClass::GetServerDE();
 	HMESSAGEWRITE hMsg;
 	
 	if (!m_hClient)
