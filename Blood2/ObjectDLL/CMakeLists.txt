@@ -83,6 +83,7 @@ add_library(${PROJECT_NAME} SHARED
 	KeyFramer.cpp
 	LightFX.cpp
 	MadScientistAI.cpp
+	LT1EngineClasses.cpp
 	ModelObject.cpp
 	movement.cpp
 	Music.cpp
