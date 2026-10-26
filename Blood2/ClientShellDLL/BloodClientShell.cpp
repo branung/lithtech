@@ -1760,7 +1760,7 @@ void CBloodClientShell::SendPlayerUpdateMessage(DBOOL bSendAll)
 
 	// Determine the update flags we want...
 
-	DBYTE byUpdateFlags = 0;
+	D_WORD byUpdateFlags = 0;   // A word, as PLAYERUPDATE_COMMANDS is bit 8
 
 	// HACK - send container code to server that is just below our eye
 	DVector vPos;
@@ -1838,15 +1838,18 @@ void CBloodClientShell::SendPlayerUpdateMessage(DBOOL bSendAll)
 	}
 	else	// Send all params.
 	{
-		byUpdateFlags = 0xff;
+		byUpdateFlags = PLAYERUPDATE_ALL;
 	}
 
 	// Send the stuff.
 	if (byUpdateFlags)
 	{
+		// Every update carries the held commands
+		byUpdateFlags |= PLAYERUPDATE_COMMANDS;
+
 		HMESSAGEWRITE hMsg = pClientDE->StartMessage(CMSG_PLAYERUPDATE);
 
-		pClientDE->WriteToMessageByte(hMsg, byUpdateFlags);				// Tell what we are updating
+		pClientDE->WriteToMessageWord(hMsg, byUpdateFlags);				// Tell what we are updating
 
 		if (byUpdateFlags & PLAYERUPDATE_FLAGS)
 			pClientDE->WriteToMessageByte(hMsg, cdata.byFlags);			// Flags
@@ -1889,6 +1892,20 @@ void CBloodClientShell::SendPlayerUpdateMessage(DBOOL bSendAll)
 		if (byUpdateFlags & PLAYERUPDATE_CONTAINERATBOTTOM )
 		{
 			pClientDE->WriteToMessageObject(hMsg, cdata.hContainerAtBottom );
+		}
+
+
+		// Held commands, last, as the server reads them last
+		if (byUpdateFlags & PLAYERUPDATE_COMMANDS)
+		{
+			DDWORD nCommands[4] = { 0, 0, 0, 0 };
+			for (int nCmd = 0; nCmd < PLAYER_COMMAND_BITS; ++nCmd)
+			{
+				if (pClientDE->IsCommandOn(nCmd))
+					nCommands[nCmd >> 5] |= ((DDWORD)1) << (nCmd & 31);
+			}
+			for (int nWord = 0; nWord < 4; ++nWord)
+				pClientDE->WriteToMessageDWord(hMsg, nCommands[nWord]);
 		}
 
 		pClientDE->EndMessage(hMsg);

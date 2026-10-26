@@ -77,6 +77,16 @@ class CPlayerObj : public CBaseCharacter
 
 		void		SetClient(HCLIENT hClient) { m_hClient = hClient; m_InventoryMgr.SetClient(hClient); }
 		HCLIENT		GetClient() const		{ return m_hClient; }
+		// LT1 asked the engine with pServerDE->IsCommandOn(m_hClient, id), which Jupiter's server can't answer,
+		// so the client sends its held commands in CMSG_PLAYERUPDATE
+		DBOOL IsCommandOn(int nCommand) const
+		{
+			if (nCommand < 0 || nCommand >= PLAYER_COMMAND_BITS)
+				return DFALSE;
+			return (m_nCommandBits[nCommand >> 5] &
+					(((DDWORD)1) << (nCommand & 31))) ? DTRUE : DFALSE;
+		}
+
 		DBYTE		GetCharacter() const	{ return m_nCharacter; }
 		void		SetCharacter(DBYTE nCharacter);
 		DBOOL		IsActivated() { return m_bActivated; }
@@ -272,6 +282,9 @@ class CPlayerObj : public CBaseCharacter
 		DVector		m_vlGunMuzzlePos;
 		HSTRING		m_hstrPlayerName;
 		DBYTE		m_byFlags;
+
+		// The client's held commands, a bit per COMMAND_*
+		DDWORD		m_nCommandBits[4];
 		DFLOAT		m_fMouseAxis0;
 		DFLOAT		m_fMouseAxis1;
 

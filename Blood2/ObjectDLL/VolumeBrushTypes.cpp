@@ -336,13 +336,13 @@ void CraneControl::UpdatePhysics(ContainerPhysics* pCPStruct)
 				return;
 
 
-			if (pServerDE->IsCommandOn(pPlayer->GetClient(), COMMAND_LEFT) || pServerDE->IsCommandOn(pPlayer->GetClient(), COMMAND_STRAFELEFT))
+			if (pPlayer->IsCommandOn(COMMAND_LEFT) || pPlayer->IsCommandOn(COMMAND_STRAFELEFT))
 			{
 				m_fCamYaw -= CRANE_ROTATE_SPEED;
 				if (m_fCamYaw < MIN_CRANE_YAW)
 					m_fCamYaw = MIN_CRANE_YAW;
 			}
-			else if (pServerDE->IsCommandOn(pPlayer->GetClient(), COMMAND_RIGHT) || pServerDE->IsCommandOn(pPlayer->GetClient(), COMMAND_STRAFERIGHT))
+			else if (pPlayer->IsCommandOn(COMMAND_RIGHT) || pPlayer->IsCommandOn(COMMAND_STRAFERIGHT))
 			{
 				m_fCamYaw += CRANE_ROTATE_SPEED;
 				if (m_fCamYaw > MAX_CRANE_YAW)

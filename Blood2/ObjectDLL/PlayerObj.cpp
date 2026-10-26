@@ -324,6 +324,7 @@ CPlayerObj::CPlayerObj() : CBaseCharacter(OT_MODEL)
 	ROT_INIT(m_rRotation);
 	VEC_INIT(m_vForward);
 	m_byFlags			= CDATA_SHOWGUN;
+	m_nCommandBits[0] = m_nCommandBits[1] = m_nCommandBits[2] = m_nCommandBits[3] = 0;
 	m_fMouseAxis0		= 0.0;
 	m_fMouseAxis1		= 0.0;
 
@@ -766,72 +767,72 @@ void CPlayerObj::UpdateControlFlags()
 
 	// Determine what commands are currently on...
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_RUN) || m_byFlags & CDATA_RUNLOCK)
+	if (IsCommandOn(COMMAND_RUN) || m_byFlags & CDATA_RUNLOCK)
 	{
 		m_dwControlFlags |= CTRLFLAG_RUN;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_JUMP))
+	if (IsCommandOn(COMMAND_JUMP))
 	{
 		m_dwControlFlags |= CTRLFLAG_JUMP;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_DUCK))
+	if (IsCommandOn(COMMAND_DUCK))
 	{
 		m_dwControlFlags |= CTRLFLAG_CROUCH;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_FORWARD))
+	if (IsCommandOn(COMMAND_FORWARD))
 	{
 		m_dwControlFlags |= CTRLFLAG_FORWARD;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_BACKWARD))
+	if (IsCommandOn(COMMAND_BACKWARD))
 	{
 		m_dwControlFlags |= CTRLFLAG_BACKWARD;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_LEFT))
+	if (IsCommandOn(COMMAND_LEFT))
 	{
 		m_dwControlFlags |= CTRLFLAG_LEFT;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_RIGHT))
+	if (IsCommandOn(COMMAND_RIGHT))
 	{
 		m_dwControlFlags |= CTRLFLAG_RIGHT;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_STRAFE))
+	if (IsCommandOn(COMMAND_STRAFE))
 	{
 		m_dwControlFlags |= CTRLFLAG_STRAFE;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_STRAFERIGHT))
+	if (IsCommandOn(COMMAND_STRAFERIGHT))
 	{
 		m_dwControlFlags |= CTRLFLAG_STRAFERIGHT;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_STRAFELEFT))
+	if (IsCommandOn(COMMAND_STRAFELEFT))
 	{
 		m_dwControlFlags |= CTRLFLAG_STRAFELEFT;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_FIRE))
+	if (IsCommandOn(COMMAND_FIRE))
 	{
 		m_dwControlFlags |= CTRLFLAG_FIRE;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_ALTFIRE))
+	if (IsCommandOn(COMMAND_ALTFIRE))
 	{
 		m_dwControlFlags |= CTRLFLAG_ALTFIRE;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_GRAB))
+	if (IsCommandOn(COMMAND_GRAB))
 	{
 		m_dwControlFlags |= CTRLFLAG_GRAB;
 	}
 
-	if (pServerDE->IsCommandOn(m_hClient, COMMAND_TAUNT))
+	if (IsCommandOn(COMMAND_TAUNT))
 	{
 		m_dwControlFlags |= CTRLFLAG_TAUNT;
 	}
@@ -2522,7 +2523,7 @@ void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 
 			m_eLastContainerCode = m_eContainerCode;
 
-			DBYTE byUpdateFlags		= pServerDE->ReadFromMessageByte(hMsg);
+			D_WORD byUpdateFlags	= pServerDE->ReadFromMessageWord(hMsg);
 			if (byUpdateFlags & PLAYERUPDATE_FLAGS)
 				m_byFlags	= pServerDE->ReadFromMessageByte(hMsg);
 
@@ -2564,6 +2565,13 @@ void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 					hMsg = g_pServerDE->StartMessageToObject( this, hContainer, MID_INCONTAINER );
 					g_pServerDE->EndMessage( hMsg );
 				}
+			}
+
+			// Held commands, last, as the client writes them last
+			if (byUpdateFlags & PLAYERUPDATE_COMMANDS)
+			{
+				for (int nWord = 0; nWord < 4; ++nWord)
+					m_nCommandBits[nWord] = pServerDE->ReadFromMessageDWord(hMsg);
 			}
 
 			// Update the rotation

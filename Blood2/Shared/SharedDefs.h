@@ -150,7 +150,15 @@ enum ClientServerMsgs
 #define PLAYERUPDATE_LMUZZLE			16
 #define PLAYERUPDATE_MOUSE				32
 #define PLAYERUPDATE_CONTAINER			64	
-#define PLAYERUPDATE_CONTAINERATBOTTOM	128	
+#define PLAYERUPDATE_CONTAINERATBOTTOM	128
+
+// The client's held commands, for CPlayerObj::IsCommandOn.
+// The flags no longer fit a byte, so they're a word and send all is 0xffff
+#define PLAYERUPDATE_COMMANDS			256
+#define PLAYERUPDATE_ALL				0xffff
+
+// Blood II's command ids run to 79, so all 128 bits are sent
+#define PLAYER_COMMAND_BITS				128
 
 // Player stats flags
 #define PLAYERSTATS_TOOKDAMAGE	(1<<0)
