@@ -15,12 +15,7 @@
 
 
 // Libs...
-
-#ifdef _DEBUG
-#pragma comment (lib, "BareList.lib")
-#else
-#pragma comment (lib, "BareList.lib")
-#endif
+// BareList.lib is a 1998 x86 library a 64-bit build can't link. Its five functions are in BareList.cpp
 
 
 // Classes...

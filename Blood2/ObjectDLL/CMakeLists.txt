@@ -142,6 +142,7 @@ add_library(${PROJECT_NAME} SHARED
 	# Shared with ClientShellDLL
 	../Shared/TeamMgr.cpp
 	../Shared/WeaponDefs.cpp
+	../Misc/BareList.cpp
 	../../sdk/inc/ltmodule.cpp
 	../../sdk/inc/iltbaseclass.cpp
 	# Server object class registration (BaseClass and the BEGIN_CLASS/END_CLASS objects)

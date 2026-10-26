@@ -99,6 +99,7 @@ add_library(${PROJECT_NAME} SHARED
 	# Shared with ObjectDLL
 	../Shared/TeamMgr.cpp
 	../Shared/WeaponDefs.cpp
+	../Misc/BareList.cpp
 	../../sdk/inc/ltmodule.cpp
 	../../sdk/inc/iltbaseclass.cpp
 	../../sdk/inc/ltobjref.cpp
