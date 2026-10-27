@@ -59,7 +59,7 @@ DBOOL CBulletImpactSFX::CreateObject(CClientDE *pClientDE)
 
 	createStruct.m_ObjectType = OT_SPRITE;
 	_mbscpy((unsigned char*)createStruct.m_Filename, (const unsigned char*)m_pClientDE->GetStringData( m_hstrMarkSprite ));
-	createStruct.m_Flags	  = FLAG_VISIBLE | FLAG_ROTATEABLESPRITE | FLAG_SPRITECHROMAKEY;
+	createStruct.m_Flags	  = FLAG_VISIBLE | FLAG_ROTATEABLESPRITE;
 	VEC_COPY(createStruct.m_Pos, vPos);
 	ROT_COPY( createStruct.m_Rotation, m_Rotation );
 

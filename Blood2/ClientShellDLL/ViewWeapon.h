@@ -6,7 +6,8 @@
 #include "SharedDefs.h"
 #include "WeaponDefs.h"
 
-#define MAX_CS_FILENAME_LEN 100
+// MAX_CS_FILENAME_LEN isn't redefined here. LT1's is 100 and Jupiter's 127, and ObjectCreateStruct is laid out from it,
+// so redefining it moved the skin name and the gun drew white
 
 #define FIREMSG_SPECIAL_DWORD	0x04
 #define FIREMSG_SPECIAL_FLOAT	0x08

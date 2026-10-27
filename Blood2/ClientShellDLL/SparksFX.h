@@ -35,7 +35,7 @@ struct SCREATESTRUCT : public SFXCREATESTRUCT
 inline SCREATESTRUCT::SCREATESTRUCT()
 {
 	memset(this, 0, sizeof(SCREATESTRUCT));
-	rRot.m_Spin = 1.0f;
+	rRot.m_Quat[3] = 1.0f;   // LT1's m_Spin; after the memset this makes rRot the identity
 }
 
 

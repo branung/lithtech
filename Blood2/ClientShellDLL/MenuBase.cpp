@@ -709,13 +709,15 @@ FileEntry* CMenuBase::SortFileList(FileEntry *pfe)
 		m_pClientDE->FreeFileList(pfindex);
 	}
 
-	for (int i = nCount / 2; i > 0; i = (i == 2) ? 1 : (int) (i / 2.2))
+	int i;
+	for (i= nCount / 2; i > 0; i = (i == 2) ? 1 : (int) (i / 2.2))
 	{
 		for (int j = i; j < nCount; j++)
 		{
 			FileEntry *pfTemp = pfList[j];
 			
-			for (int k = j; k >= i && _mbsicmp((const unsigned char*)pfTemp->m_pBaseFilename, (const unsigned char*)pfList[k - i]->m_pBaseFilename) < 0; k -= i)
+			int k;
+			for (k= j; k >= i && _mbsicmp((const unsigned char*)pfTemp->m_pBaseFilename, (const unsigned char*)pfList[k - i]->m_pBaseFilename) < 0; k -= i)
 			{
 				pfList[k] = pfList[k - i];
 			}

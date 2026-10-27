@@ -712,8 +712,8 @@ void CMainMenus::DrawVersionString(HSURFACE hSurf)
 		return;
 	}
 
-	DWORD dwScreenWidth=0;
-	DWORD dwScreenHeight=0;
+	DDWORD dwScreenWidth=0;   // GetSurfaceDims wants uint32*; DWORD is unsigned long on MSVC
+	DDWORD dwScreenHeight=0;
 	m_pClientDE->GetSurfaceDims (hSurf, &dwScreenWidth, &dwScreenHeight);
 		
 	int y=dwScreenHeight-pFont->GetHeight();

@@ -102,7 +102,7 @@ class CMessageMgr
 
 		void		Enable( DBOOL bEnabled );
 
-		void		AddLine( char *szMsg, DBYTE dbMessageFlag = MESSAGEFLAGS_MASK );
+		void		AddLine( const char *szMsg, DBYTE dbMessageFlag = MESSAGEFLAGS_MASK );
 		void		AddLine( HSTRING hMsg, DBYTE dbMessageFlag = MESSAGEFLAGS_MASK );
 		void		Clear( void );
 		void		Draw( void );

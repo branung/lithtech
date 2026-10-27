@@ -72,8 +72,8 @@ class CMenuCharacter : public CMenuBase
 
 		// Extra member functions for file control
 		DBOOL	SaveB2CFile(char *szFile);
-		DBOOL	LoadB2CFile(char *szFile);
-		DBOOL	DeleteB2CFile(char *szFile);
+		DBOOL	LoadB2CFile(const char *szFile);
+		DBOOL	DeleteB2CFile(const char *szFile);
 
 		void	UpdateScreenFromStruct();
 

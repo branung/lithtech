@@ -677,7 +677,13 @@ DBOOL CCredits::Init(CClientDE* pClientDE, CBloodClientShell* pClientShell, int 
 	m_hScreen = m_pClientDE->GetScreenSurface();
 	if (!m_hScreen) return(DFALSE);
 
-	m_pClientDE->GetSurfaceDims(m_hScreen, &m_szScreen.cx, &m_szScreen.cy);
+	{
+		// CSize holds LONGs and GetSurfaceDims writes uint32s
+		DDWORD dwW = 0, dwH = 0;
+		m_pClientDE->GetSurfaceDims(m_hScreen, &dwW, &dwH);
+		m_szScreen.cx = dwW;
+		m_szScreen.cy = dwH;
+	}
 
 
 	// Add all the credit objects...

@@ -53,7 +53,7 @@ DBOOL CTeamPlayer::Init(DDWORD dwPlayerID, DDWORD dwFlags)
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL CTeam::Init(DDWORD dwTeamID, char* sTeamName, DDWORD dwFlags)
+DBOOL CTeam::Init(DDWORD dwTeamID, const char *sTeamName, DDWORD dwFlags)
 {
 	// Clear simple members...
 
@@ -644,7 +644,7 @@ CTeam* CTeamMgr::GetTeamFromPlayerID(DDWORD dwPlayerID)
 //
 // ----------------------------------------------------------------------- //
 
-CTeam* CTeamMgr::AddTeam(DDWORD dwTeamID, char* sTeamName, DDWORD dwFlags)
+CTeam* CTeamMgr::AddTeam(DDWORD dwTeamID, const char *sTeamName, DDWORD dwFlags)
 {
 	// Make sure this team doesn't already exist...
 

@@ -96,7 +96,8 @@ DBOOL CIKChainFX::CreateObject(CClientDE *pClientDE)
 	CSpecialFX::CreateObject(pClientDE);
 
 	// Add in all the links
-	for(DBYTE i = 0; i < m_byNumLinks; i++)
+	DBYTE i;
+	for (i= 0; i < m_byNumLinks; i++)
 	{
 		m_hLinks[i] = AddLink();
 

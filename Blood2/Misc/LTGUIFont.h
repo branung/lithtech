@@ -18,10 +18,10 @@ public:
 	virtual ~CLTGUIFont();
 
 	// Initialize a bitmap font
-	DBOOL	Init(CClientDE *pClientDE, char *lpszBitmapFile, char *lpszFontWidths);
+	DBOOL	Init(CClientDE *pClientDE, const char *lpszBitmapFile, const char *lpszFontWidths);
 
 	// Initialize an engine font
-	DBOOL	Init(CClientDE *pClientDE, char *pFontName, int nWidth, int nHeight, 
+	DBOOL	Init(CClientDE *pClientDE, const char *pFontName, int nWidth, int nHeight, 
 				 DBOOL bItalic, DBOOL bUnderline, DBOOL bBold);
 
 	// Termination

@@ -118,7 +118,8 @@ CMenuCharacter::~CMenuCharacter()
 
 	if(m_hExtraNumCtrl)	delete m_hExtraNumCtrl;
 
-	for(int i = 0; i < 4; i++)
+	int i;
+	for (i= 0; i < 4; i++)
 		if(m_hStats[i])		delete m_hStats[i];
 
 	for(i = 0; i < 10; i++)
@@ -363,7 +364,8 @@ void CMenuCharacter::Render(HSURFACE hDestSurf)
 	m_hExtraNumCtrl->Render(hDestSurf);
 	m_hWeaponsCtrl->Render(hDestSurf);
 
-	for(int i = 0; i < 4; i++)
+	int i;
+	for (i= 0; i < 4; i++)
 		m_hStats[i]->Render(hDestSurf);
 
 	for(i = 0; i < 10; i++)
@@ -541,7 +543,7 @@ DBOOL CMenuCharacter::SaveB2CFile(char *szFile)
 
 //*************************************************************************
 
-DBOOL CMenuCharacter::LoadB2CFile(char *szFile)
+DBOOL CMenuCharacter::LoadB2CFile(const char *szFile)
 {
 	FILE	*file = 0;
 	char	str1[128];
@@ -561,7 +563,7 @@ DBOOL CMenuCharacter::LoadB2CFile(char *szFile)
 
 //*************************************************************************
 
-DBOOL CMenuCharacter::DeleteB2CFile(char *szFile)
+DBOOL CMenuCharacter::DeleteB2CFile(const char *szFile)
 {
 	char	str1[128];
 
@@ -637,7 +639,8 @@ void CMenuCharacter::UpdateCharacterStruct()
 
 void CMenuCharacter::SetPlayerIndexFromStruct()
 {
-	for(int i = 0; i < MAX_CHARACTER_INFO; i++)
+	int i;
+	for (i= 0; i < MAX_CHARACTER_INFO; i++)
 	{
 		if(m_Player.dwCharacter == g_CharacterMenuInfo[i].nCharacter)
 			if(m_Player.dwColor == g_CharacterMenuInfo[i].nColor)

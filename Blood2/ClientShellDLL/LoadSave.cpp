@@ -108,7 +108,7 @@ void CSavedGameInfo::LoadInfo()
 			if ( hFile == INVALID_HANDLE_VALUE )
 				continue;
 
-			DDWORD dwBytesRead;
+			DWORD dwBytesRead;   // ReadFile wants LPDWORD; DDWORD is uint32, not DWORD, on 64-bit MSVC
 			// WARNING: ASSUMES game options are saved first in the file
 			SavedInfo savedinfo;
 			if ( !ReadFile(hFile, 
@@ -218,7 +218,7 @@ void CSavedGameInfo::SaveInfo(int nIndex, int nGameType, int nCharacter)
 	}
 
 	// Write the data
-	DDWORD dwBytesWritten;
+	DWORD dwBytesWritten;   // WriteFile wants LPDWORD; same reason
 	if ( !WriteFile(hFile, 
 					&savedinfo, 
 					(unsigned)sizeof(SavedInfo),
@@ -422,7 +422,7 @@ void CSavedGameInfo::CopySlot(int nSrcIndex, int nDestIndex)
 //
 // ----------------------------------------------------------------------- //
 
-void CSavedGameInfo::SetSlotName(int nIndex, char *pName)
+void CSavedGameInfo::SetSlotName(int nIndex, const char *pName)
 {
 	// If this is to set a name for an actual slot, use the 
 	// name already in the Current info and just append a timestamp.

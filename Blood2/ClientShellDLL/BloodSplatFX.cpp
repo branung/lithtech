@@ -17,11 +17,8 @@
 #define REGION_DIAMETER			100.0f  // Squared distance actually
 #define MAX_SPLATS_IN_REGION	10
 
-DList CBloodSplatFX::m_BloodSplatList =
-{
-	0,
-	{ DNULL, DNULL, DNULL }
-};
+// LTList's constructor starts it empty, which LT1's DList did with an initializer
+DList CBloodSplatFX::m_BloodSplatList;
 
 // ----------------------------------------------------------------------- //
 //

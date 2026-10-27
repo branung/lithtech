@@ -90,7 +90,7 @@ void PrintError(char* pError, ...)
 // Return:
 //		Handle to sound, if bHandle was set to TRUE.
 //-------------------------------------------------------------------------------------------
-HSOUNDDE PlaySoundFromObject(HOBJECT hObject, char *pSoundName, DFLOAT fRadius, 
+HSOUNDDE PlaySoundFromObject(HOBJECT hObject, const char *pSoundName, DFLOAT fRadius, 
 						  DBYTE nSoundPriority, DBOOL bLoop, DBOOL bHandle, DBOOL bTime, DBYTE nVolume )
 {
 	CBloodClientShell *pShell = (CBloodClientShell*)g_pClientDE->GetClientShell();
@@ -136,7 +136,7 @@ HSOUNDDE PlaySoundFromObject(HOBJECT hObject, char *pSoundName, DFLOAT fRadius,
 // Return:
 //		Handle to sound, if bHandle was set to TRUE.
 //-------------------------------------------------------------------------------------------
-HSOUNDDE PlaySoundFromPos(DVector *vPos, char *pSoundName, DFLOAT fRadius, 
+HSOUNDDE PlaySoundFromPos(DVector *vPos, const char *pSoundName, DFLOAT fRadius, 
 						  DBYTE nSoundPriority, DBOOL bLoop, DBOOL bHandle, DBOOL bTime, DBYTE nVolume )
 {
 	CBloodClientShell *pShell = (CBloodClientShell*)g_pClientDE->GetClientShell();
@@ -183,7 +183,7 @@ HSOUNDDE PlaySoundFromPos(DVector *vPos, char *pSoundName, DFLOAT fRadius,
 // Return:
 //		Handle to sound, if bHandle was set to TRUE.
 //-------------------------------------------------------------------------------------------
-HSOUNDDE PlaySoundLocal(char *pSoundName, BYTE nSoundPriority, DBOOL bLoop, DBOOL bHandle, 
+HSOUNDDE PlaySoundLocal(const char *pSoundName, BYTE nSoundPriority, DBOOL bLoop, DBOOL bHandle, 
 						DBOOL bTime, DBOOL bStream, DBYTE nVolume)
 {
 	CBloodClientShell *pShell = (CBloodClientShell*)g_pClientDE->GetClientShell();
@@ -230,7 +230,7 @@ SurfaceType GetSurfaceType(HOBJECT hObject, HPOLY hPoly)
 
 	// First see if we hit the world
 	DDWORD dwFlags;
-	if (hPoly && g_pClientDE->GetPolyTextureFlags(hPoly, &dwFlags) == DE_OK)
+	if (hPoly != INVALID_HPOLY && g_pClientDE->GetPolyTextureFlags(hPoly, &dwFlags) == DE_OK)
 	{
 		eType = (SurfaceType)dwFlags;
 	}
@@ -286,7 +286,7 @@ void TiltVectorToPlane(DVector *pVec, DVector *pNormal)
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL ObjListFilterFn(HLOCALOBJ hTest, void *pUserData)
+bool ObjListFilterFn(HLOCALOBJ hTest, void *pUserData)
 {
 	HOBJECT *hList;
 

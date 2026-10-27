@@ -159,7 +159,7 @@ void CCommLink::Term()
 //*****	Details:	Setup the communication and turn it on
 //*************************************************************************
 
-char CCommLink::StartCommunication(DBYTE nPic, char *szFile, char *szText)
+char CCommLink::StartCommunication(DBYTE nPic, const char *szFile, const char *szText)
 {
 	if(!m_pClientDE || m_nCommLevel)	return	COMM_BUSY;
 
@@ -217,7 +217,7 @@ char CCommLink::StartCommunication(DBYTE nPic, char *szFile, char *szText)
 //*****	Details:	Setup the communication and turn it on
 //*************************************************************************
 
-char CCommLink::StartCommunication(char *szPic, char *szFile, char *szText)
+char CCommLink::StartCommunication(const char *szPic, const char *szFile, const char *szText)
 {
 	if(!m_pClientDE || m_nCommLevel)	return	COMM_BUSY;
 

@@ -249,7 +249,7 @@ DBOOL CExplosionSpriteFX::CreateObject(CClientDE *pClientDE)
 	INIT_OBJECTCREATESTRUCT(ocStruct);
 
 	ocStruct.m_ObjectType = OT_SPRITE;
-	ocStruct.m_Flags = FLAG_VISIBLE | FLAG_SPRITECHROMAKEY;
+	ocStruct.m_Flags = FLAG_VISIBLE;
 	VEC_COPY(ocStruct.m_Pos, m_vPos);
 
 	if(m_bAlign)
@@ -716,7 +716,7 @@ DBOOL CExplosionWaveFX::CreateObject(CClientDE *pClientDE)
 	INIT_OBJECTCREATESTRUCT(ocStruct);
 
 	ocStruct.m_ObjectType = OT_SPRITE;
-	ocStruct.m_Flags = FLAG_VISIBLE | FLAG_SPRITECHROMAKEY | FLAG_ROTATEABLESPRITE;
+	ocStruct.m_Flags = FLAG_VISIBLE | FLAG_ROTATEABLESPRITE;
 	VEC_COPY(ocStruct.m_Pos, m_vPos);
 
 	DVector	vUp;
@@ -2288,7 +2288,8 @@ DBOOL CExplosionFX::CreateObject(CClientDE *pClientDE)
 				erCS.bAlign		= 1;
 				erCS.szParticle	= pClientDE->CreateString("SpriteTextures\\lightn32.dtx");
 
-				for(int i = 0; i < 2; i++)
+				int i;
+				for (i= 0; i < 2; i++)
 				{
 					erCS.fDelay		+= 0.15f;
 					erCS.fRadius	+= 1000.0f;
@@ -4914,7 +4915,8 @@ DBOOL CExplosionFX::CreateObject(CClientDE *pClientDE)
 				erCS.bAlign		= 1;
 				erCS.szParticle	= pClientDE->CreateString("SpriteTextures\\lightn32.dtx");
 
-				for(int i = 0; i < 1; i++)
+				int i;
+				for (i= 0; i < 1; i++)
 				{
 					erCS.fDelay		+= 0.225f;
 					erCS.fRadius	+= 1500.0f;

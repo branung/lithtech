@@ -53,7 +53,7 @@ class CIpMgr;
 DBOOL NetStart_DoWizard(CClientDE* pClientDE);
 DBOOL NetStart_DoWizard(CClientDE* pClient, NetStart* pNetStart, int nJoinHost);
 DBOOL NetStart_DoLobbyLaunchWizard(CClientDE* pClientDE);
-DBOOL NetStart_DoConsoleConnect(CClientDE* pClientDE, char* sAddress);
+DBOOL NetStart_DoConsoleConnect(CClientDE* pClientDE, const char *sAddress);
 DBOOL NetStart_MinimizeMainWnd(CClientDE* pClient);
 DBOOL NetStart_RestoreMainWnd();
 DBOOL NetStart_RunServerOptions(CClientDE* pClientDE, ServerOptions* pServerOptions);

@@ -230,7 +230,7 @@ void CMessageMgr::Enable( DBOOL bEnabled )
 //
 // ----------------------------------------------------------------------- //
 			
-void CMessageMgr::AddLine( char *szMsg, DBYTE uMessageFlag )
+void CMessageMgr::AddLine( const char *szMsg, DBYTE uMessageFlag )
 {
 	if (szMsg)
 	{

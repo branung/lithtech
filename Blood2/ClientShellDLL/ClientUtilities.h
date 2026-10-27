@@ -34,13 +34,13 @@ void PrintError(char *pMsg, ...);
 #define INTERPOLATE(a,b,c)  (a*(1.0f-c) + b*c)
 
 
-HSOUNDDE PlaySoundFromObject( HOBJECT hObject, char *pSoundName, DFLOAT fRadius, 
+HSOUNDDE PlaySoundFromObject( HOBJECT hObject, const char *pSoundName, DFLOAT fRadius, 
 						  DBYTE nSoundPriority, DBOOL bLoop = DFALSE, DBOOL bHandle = DFALSE, DBOOL bTime = DFALSE, DBYTE nVolume = 100 );
 
-HSOUNDDE PlaySoundFromPos( DVector *vPos, char *pSoundName, DFLOAT fRadius, 
+HSOUNDDE PlaySoundFromPos( DVector *vPos, const char *pSoundName, DFLOAT fRadius, 
 						  DBYTE nSoundPriority, DBOOL bLoop = DFALSE, DBOOL bHandle = DFALSE, DBOOL bTime = DFALSE, DBYTE nVolume = 100 );
 
-HSOUNDDE PlaySoundLocal( char *pSoundName, DBYTE nSoundPriority, 
+HSOUNDDE PlaySoundLocal( const char *pSoundName, DBYTE nSoundPriority, 
 						DBOOL bLoop = DFALSE, DBOOL bHandle = DFALSE, DBOOL bTime = DFALSE, DBOOL bStream = DFALSE, DBYTE nVolume = 100 );
 
 SurfaceType GetSurfaceType(HOBJECT hObject, HPOLY hPoly);
@@ -53,6 +53,6 @@ inline DBOOL IsRandomChance(int percent)
 
 void TiltVectorToPlane(DVector *pVec, DVector *pNormal);
 
-DBOOL ObjListFilterFn(HLOCALOBJ hTest, void *pUserData);
+bool ObjListFilterFn(HLOCALOBJ hTest, void *pUserData);
 
 #endif // __CLIENT_UTILITIES_H__

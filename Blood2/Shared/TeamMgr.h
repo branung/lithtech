@@ -93,7 +93,7 @@ public:
 	CTeam() { Clear(); }
 	~CTeam() { Term(); }
 
-	DBOOL					Init(DDWORD dwTeamID, char* sTeamName = NULL, DDWORD dwFlags = 0);
+	DBOOL					Init(DDWORD dwTeamID, const char *sTeamName = NULL, DDWORD dwFlags = 0);
 	void					Term();
 	void					Clear();
 
@@ -187,7 +187,7 @@ public:
 	DBOOL					SetTeamScore(char* sTeamName, int nScore);
 	DBOOL					SetTeamScore(CTeam* pTeam, int nScore);
 
-	CTeam*					AddTeam(DDWORD dwTeamID, char* sTeamName = NULL, DDWORD dwFlags = 0);
+	CTeam*					AddTeam(DDWORD dwTeamID, const char *sTeamName = NULL, DDWORD dwFlags = 0);
 
 	CTeamPlayer*			AddPlayer(DDWORD dwTeamID, DDWORD dwPlayerID, DDWORD dwFlags = 0);
 	CTeamPlayer*			AddPlayer(char* sTeamName, DDWORD dwPlayerID, DDWORD dwFlags = 0);

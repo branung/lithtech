@@ -21,7 +21,7 @@
 #include "IpMgr.h"
 #include "Sparam.h"
 #include "ConfigMgr.h"
-#include "dplobby.h"
+// #include "dplobby.h"
 #include "..\Shared\ClientRes.h"
 #include <mbstring.h>
 
@@ -864,7 +864,7 @@ void GetConsoleString(char* sKey, char* sDest, char* sDefault)
 		HCONSOLEVAR hVar = s_pClient->GetConsoleVar(sKey);
 		if (hVar)
 		{
-			char* sValue = s_pClient->GetVarValueString(hVar);
+			const char* sValue = s_pClient->GetVarValueString(hVar);
 			if (sValue)
 			{
 				strcpy(sDest, sValue);
@@ -963,6 +963,9 @@ void NetStart_DisplayError(HINSTANCE hInst)
 
 DBOOL NetStart_DoLobbyLaunchWizard(CClientDE* pClient)
 {
+	// DirectPlay lobby launching is gone (no dplobby.h, no dplay2 driver), as in Shogo
+	return(DFALSE);
+
 	// Sanity checks...
 
 	if (!pClient) return(DFALSE);
@@ -1047,7 +1050,9 @@ DBOOL NetStart_DoLobbyLaunchWizard(CClientDE* pClient)
 		return(DFALSE);
 	}
 
-	LPDPLCONNECTION pDplConn = (LPDPLCONNECTION)pLobbyLaunchInfo;
+	// Was LPDPLCONNECTION. DPLCONNECTION_CREATESESSION is 1
+	struct { DWORD dwFlags; } *pDplConn = (decltype(pDplConn))pLobbyLaunchInfo;
+	const DWORD DPLCONNECTION_CREATESESSION = 0x00000001;
 
 
 	// Read some default values from the console...
@@ -1075,15 +1080,7 @@ DBOOL NetStart_DoLobbyLaunchWizard(CClientDE* pClient)
 
 	// Update info from the lobby info...
 
-	if (strlen(pDplConn->lpSessionDesc->lpszSessionNameA) > 0)
-	{
-		strcpy(s_sSessionName, pDplConn->lpSessionDesc->lpszSessionNameA);
-	}
-
-	if (strlen(pDplConn->lpPlayerName->lpszShortNameA) > 0)
-	{
-		strcpy(s_sPlayerName, pDplConn->lpPlayerName->lpszShortNameA);
-	}
+	// This read the session and player names out of the DPLCONNECTION
 
 	PostProcessName(s_sPlayerName);
 
@@ -1246,7 +1243,7 @@ DBOOL NetStart_MinimizeMainWnd(CClientDE* pClient)
 
 	s_hMainWnd = NULL;
 
-	DRESULT dr = pClient->GetEngineHook("HWND", &s_hMainWnd);
+	DRESULT dr = pClient->GetEngineHook("HWND", (void**)&s_hMainWnd);
 	if (dr != LT_OK || !s_hMainWnd)
 	{
 		s_hMainWnd = GetActiveWindow();
@@ -1796,7 +1793,7 @@ int NetStart_FillSessionList(HWND hDlg)
 	{
 		// Add a new net game via the manager...
 
-		CNinfoGame* pGame = s_NinfoMgr.AddGame(pCur->m_sName, pCur, pCur->m_dwCurPlayers);
+		CNinfoGame* pGame = s_NinfoMgr.AddGame(pCur->m_sName, pCur, pCur->m_dwCurConnections);
 		if (pGame)
 		{
 			int iItem = SendMessage(hList, LB_ADDSTRING, 0, (LPARAM)(LPCSTR)pGame->GetName());
@@ -2124,7 +2121,7 @@ BOOL NetStart_HostSession2(HWND hDlg)
 
 	memset(&s_pNetStart->m_NetHost, 0, sizeof(NetHost));
 
-	s_pNetStart->m_NetHost.m_dwMaxPlayers = s_nMaxPlayers;
+	s_pNetStart->m_NetHost.m_dwMaxConnections = s_nMaxPlayers;
 	strcpy(s_pNetStart->m_NetHost.m_sName, sString);
 	s_pNetStart->m_NetHost.m_Port = g_HostPort;
 
@@ -2153,7 +2150,7 @@ BOOL CALLBACK NetDlg_Sessions(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		case WM_INITDIALOG:
 		{
 			bFirstFill = TRUE;
-			hCurCursor = (HCURSOR)GetClassLong(hDlg, GCL_HCURSOR);
+			hCurCursor = (HCURSOR)GetClassLongPtr(hDlg, GCLP_HCURSOR);
 
 			ForceActiveFocus(hDlg);
 
@@ -3192,7 +3189,7 @@ int NetStart_GetConnectCommands(CClientDE* pClient, NetStart* pNetStart)
 	HCONSOLEVAR hVar = pClient->GetConsoleVar("Connect");
 	if (hVar)
 	{
-		char* sAddress = pClient->GetVarValueString(hVar);
+		const char* sAddress = pClient->GetVarValueString(hVar);
 		if (!sAddress) return(CONNECT_FULL);
 		if (strcmp(sAddress, "0") == 0) return(CONNECT_FULL);
 
@@ -3216,7 +3213,7 @@ int NetStart_GetConnectCommands(CClientDE* pClient, NetStart* pNetStart)
 	hVar = pClient->GetConsoleVar("ConnectPlr");
 	if (hVar)
 	{
-		char* sAddress = pClient->GetVarValueString(hVar);
+		const char* sAddress = pClient->GetVarValueString(hVar);
 		if (!sAddress) return(CONNECT_FULL);
 		if (strcmp(sAddress, "0") == 0) return(CONNECT_FULL);
 
@@ -3314,7 +3311,7 @@ BOOL CALLBACK NetDlg_NoSessions(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL NetStart_DoConsoleConnect(CClientDE* pClientDE, char* sAddress)
+DBOOL NetStart_DoConsoleConnect(CClientDE* pClientDE, const char *sAddress)
 {
 	// Sanity checks...
 
@@ -3330,7 +3327,8 @@ DBOOL NetStart_DoConsoleConnect(CClientDE* pClientDE, char* sAddress)
 
 	// Tweak the address if necessary...
 
-	if (strcmp(sAddress, "*") == 0) strcpy(sAddress, "");
+	// "*" means the local net. LT1 blanked the caller's buffer, which can be the engine's own string, so it's mapped here
+	if (strcmp(sAddress, "*") == 0) sAddress = "";
 
 
 	// Clear our static player and game structures...
@@ -4219,7 +4217,7 @@ int NetStart_FillSessionListTcpIp(HWND hDlg)
 	{
 		// Add a new net game via the manager...
 
-		CNinfoGame* pGame = s_NinfoMgr.AddGame(pCur->m_sName, pCur, pCur->m_dwCurPlayers);
+		CNinfoGame* pGame = s_NinfoMgr.AddGame(pCur->m_sName, pCur, pCur->m_dwCurConnections);
 		if (pGame)
 		{
 			int iItem = SendMessage(hList, LB_ADDSTRING, 0, (LPARAM)(LPCSTR)pGame->GetNameWithPing());

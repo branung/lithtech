@@ -117,11 +117,14 @@ class CBloodClientShell : public CClientShellDE
 {
     public:
 
+        // Pairs with define_interface in BloodClientShell.cpp
+        declare_interface(CBloodClientShell);
+
         CBloodClientShell();
         ~CBloodClientShell();
-		void			CSPrint (char* msg, ...);
+		void			CSPrint (const char* msg, ...);
 		void			CSPrint (int nStringID);
-		void			CSPrint2 (char* msg);
+		void			CSPrint2 (const char* msg);
 
 		CVoiceMgr*		GetVoiceMgr() { return &m_VoiceMgr; }
 		CTeamMgr*		GetTeamMgr() { return &m_TeamMgr; }
@@ -142,8 +145,8 @@ class CBloodClientShell : public CClientShellDE
 
 		void			RemoveCreature()		{delete m_pCreature; m_pCreature = DNULL;}
 
-		void			StartNewGame(char *pszWorld);
-		DBOOL			StartNewWorld(char *pszWorld, DBYTE nGameType, DBYTE nLoadType, DBYTE nDifficulty = DIFFICULTY_EASY);
+		void			StartNewGame(const char *pszWorld);
+		DBOOL			StartNewWorld(const char *pszWorld, DBYTE nGameType, DBYTE nLoadType, DBYTE nDifficulty = DIFFICULTY_EASY);
 		DRESULT			InitSound();
 
 		HSOUNDDE		PlaySound(char* sSound, DBOOL bStream=DFALSE, DBOOL bLoop=DFALSE, DBOOL bGetHandle=DFALSE);
@@ -189,7 +192,7 @@ class CBloodClientShell : public CClientShellDE
 		DBOOL			MenuHelp();
 		DBOOL			MenuLoadGame(int nSlot);
 		DBOOL			MenuSaveGame(int nSlot, DBYTE bySaveType = SAVETYPE_CURRENT);
-		DBOOL			MenuLoadCustomLevel(char* sLevel, int nDifficulty);
+		DBOOL			MenuLoadCustomLevel(const char *sLevel, int nDifficulty);
 		DBOOL			MenuReturnToGame();
 		DBOOL			MenuSetDetail();
 
@@ -213,7 +216,7 @@ class CBloodClientShell : public CClientShellDE
 
 		// Puts a message box on the screen.  It is removed when ENTER, ESC, or SPACE is pressed
 		// or on the next page flip if bAsync is FALSE.
-		void			DoMessageBox(char *lpszMessage, DBOOL bAsync=DTRUE);
+		void			DoMessageBox(const char *lpszMessage, DBOOL bAsync=DTRUE);
 		
 		// Kills the message box on the screen
 		void			KillMessageBox();
@@ -311,7 +314,7 @@ class CBloodClientShell : public CClientShellDE
 		void			UpdateContainerFX();
 		void			UpdateUnderWaterFX(DBOOL bUpdate=DTRUE);
 		void			HandleExitWorld(HMESSAGEREAD hMessage);
-		DBOOL			StartNewGame(char *pszWorldName, DBYTE nStartType, DBYTE nGameType, DBYTE nLoadType, DBYTE nDifficulty);
+		DBOOL			StartNewGame(const char *pszWorldName, DBYTE nStartType, DBYTE nGameType, DBYTE nLoadType, DBYTE nDifficulty);
 		void			ShowPlayer(DBOOL bShow);
 		void			DrawLoadingScreen();
 		DBOOL			DoMultiplayer(DBOOL bMinimize, DBOOL bHost);
@@ -362,7 +365,7 @@ class CBloodClientShell : public CClientShellDE
 		void			CalculateCameraRotation();
 		void			UpdateCameraRotation();
 		void			ResetGlobalFog();
-		void			GetWorldTitle(char *pWorldFile);
+		void			GetWorldTitle(const char *pWorldFile);
 #ifdef BRANDED
 		void			CreateBrandSurface();
 		void			DrawBrandString(HSURFACE hScreenSurface);

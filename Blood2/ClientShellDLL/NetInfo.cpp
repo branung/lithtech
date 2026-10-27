@@ -175,7 +175,8 @@ CNinfoGame* CNinfoMgr::AddGame(const char* sInfo, NetSession* pNetSession, DWORD
 	int nLen   = strlen(sBuf);
 	int nIndex = 0;
 
-	for (int i = nLen-2; i > 0; i--)
+	int i;
+	for (i= nLen-2; i > 0; i--)
 	{
 		if (sBuf[i] == '\\' || sBuf[i] == '/')
 		{
@@ -451,7 +452,7 @@ BOOL CNinfoGame::Init(CClientDE* pClientDE, char* sName, char* sHost, char* sLev
 
 	// Calculate a CRC value...
 
-	m_dwCRC = m_pNetSession->m_guidInst.a;
+	m_dwCRC = m_pNetSession->m_guidInst.guid.a;   // LTGUID is a union around the windows-ish struct LT1's DGUID was
 
 
 	// All done...

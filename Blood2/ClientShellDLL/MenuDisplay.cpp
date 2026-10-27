@@ -197,8 +197,8 @@ void CMenuDisplay::BuildRendererArray()
 		{
 			MenuDisplayRenderer renderer;
 
-			renderer.m_bHardware=pCurrentMode->m_bHardware;
-			_mbscpy((unsigned char*)renderer.m_renderDll, (const unsigned char*)pCurrentMode->m_RenderDLL);
+			renderer.m_bHardware = DTRUE;   // one renderer, always hardware; Jupiter's RMode carries no such flag
+			_mbscpy((unsigned char*)renderer.m_renderDll, (const unsigned char*)pCurrentMode->m_InternalName);
 			_mbscpy((unsigned char*)renderer.m_description, (const unsigned char*)pCurrentMode->m_Description);
 			_mbscpy((unsigned char*)renderer.m_internalName, (const unsigned char*)pCurrentMode->m_InternalName);
 
@@ -276,7 +276,7 @@ int CMenuDisplay::GetRendererIndex(RMode *pMode)
 	for (i=0; i < m_rendererArray.GetSize(); i++)
 	{
 		if (_mbsicmp((const unsigned char*)m_rendererArray[i].m_description, (const unsigned char*)pMode->m_Description) == 0 &&
-			_mbsicmp((const unsigned char*)m_rendererArray[i].m_renderDll, (const unsigned char*)pMode->m_RenderDLL) == 0)
+			_mbsicmp((const unsigned char*)m_rendererArray[i].m_renderDll, (const unsigned char*)pMode->m_InternalName) == 0)
 		{
 			nRenderIndex=i;
 			break;
@@ -317,7 +317,7 @@ DBOOL CMenuDisplay::SetRenderer(int nRendererIndex, int nResolutionIndex)
 
 	// Write the renderer information to the autoexec.cfg file
 	char szTemp[256];
-	sprintf(szTemp, "++RenderDll %s\0", newMode.m_RenderDLL);
+	sprintf(szTemp, "++RenderDll %s\0", newMode.m_InternalName);
 	m_pClientDE->RunConsoleString(szTemp);
 
 	sprintf(szTemp, "++CardDesc %s\0", newMode.m_InternalName);
@@ -340,9 +340,9 @@ RMode CMenuDisplay::GetRendererModeStruct(int nRendererIndex, int nResolutionInd
 {
 	// Copy the renderer information from the renderer structure to the temporary RMode structure
 	RMode mode;
-	mode.m_bHardware=m_rendererArray[nRendererIndex].m_bHardware;	
+	// Jupiter's RMode has no hardware flag
 	
-	_mbscpy((unsigned char*)mode.m_RenderDLL, (const unsigned char*)m_rendererArray[nRendererIndex].m_renderDll);
+	_mbscpy((unsigned char*)mode.m_InternalName, (const unsigned char*)m_rendererArray[nRendererIndex].m_renderDll);
 	_mbscpy((unsigned char*)mode.m_InternalName, (const unsigned char*)m_rendererArray[nRendererIndex].m_internalName);
 	_mbscpy((unsigned char*)mode.m_Description, (const unsigned char*)m_rendererArray[nRendererIndex].m_description);
 
@@ -362,7 +362,7 @@ DBOOL CMenuDisplay::IsRendererEqual(RMode *pRenderer1, RMode *pRenderer2)
 	assert(pRenderer1);
 	assert(pRenderer2);
 
-	if (_mbsicmp((const unsigned char*)pRenderer1->m_RenderDLL, (const unsigned char*)pRenderer2->m_RenderDLL) != 0)
+	if (_mbsicmp((const unsigned char*)pRenderer1->m_InternalName, (const unsigned char*)pRenderer2->m_InternalName) != 0)
 	{
 		return DFALSE;
 	}

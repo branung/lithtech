@@ -100,6 +100,21 @@ add_library(${PROJECT_NAME} SHARED
 	../Shared/TeamMgr.cpp
 	../Shared/WeaponDefs.cpp
 	../Misc/BareList.cpp
+	# The menu system, in place of the 1998 x86 LTGUIMgr.lib
+	../Misc/CoolFont.cpp
+	../Misc/LTGUIColumnTextCtrl.cpp
+	../Misc/LTGUICommandHandler.cpp
+	../Misc/LTGUICtrl.cpp
+	../Misc/LTGUIEditCtrl.cpp
+	../Misc/LTGUIFadeColorCtrl.cpp
+	../Misc/LTGUIFadeItemCtrl.cpp
+	../Misc/LTGUIFont.cpp
+	../Misc/LTGUIListCtrl.cpp
+	../Misc/LTGUIMessageBox.cpp
+	../Misc/LTGUIMgr.cpp
+	../Misc/LTGUIOnOffCtrl.cpp
+	../Misc/LTGUISliderCtrl.cpp
+	../Misc/LTGUITextItemCtrl.cpp
 	../../sdk/inc/ltmodule.cpp
 	../../sdk/inc/iltbaseclass.cpp
 	../../sdk/inc/ltobjref.cpp
@@ -119,9 +134,12 @@ include_directories(.
 	../Misc
 	../ClientRes
 	../../sdk/inc
+	../../libs/DECompat
+	../../libs/DECompat/lt1      # LT1 include names
 	${SDL2_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME}
+	LIB_DECompatClient
 	${SDL2_LIBRARIES})
 
 if(WIN32)

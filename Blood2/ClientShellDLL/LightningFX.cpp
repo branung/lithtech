@@ -177,7 +177,8 @@ DBOOL CLightningBoltFX::CreateLightning()
 	if(m_nShape == LIGHTNING_SHAPE_RANDOM)	m_nShape = GetRandom(LIGHTNING_SHAPE_MIN, LIGHTNING_SHAPE_MAX);
 	if(m_nForm == LIGHTNING_FORM_RANDOM)	m_nType = GetRandom(LIGHTNING_FORM_MIN, LIGHTNING_FORM_MAX);
 
-	for(DDWORD i = 0; i < m_nNumSegments; i++)
+	DDWORD i;
+	for (i= 0; i < m_nNumSegments; i++)
 	{
 		// Set the variables values for the type of lightning to use
 		switch(m_nForm)

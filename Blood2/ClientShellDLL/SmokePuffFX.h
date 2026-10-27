@@ -34,7 +34,7 @@ struct SMPCREATESTRUCT : public SFXCREATESTRUCT
 	DFLOAT	fMaxAlpha;
 	DBYTE	nNumParticles;
 	DBOOL	bIgnoreWind;
-	char*	pTexture;
+	const char*	pTexture;
 };
 
 inline SMPCREATESTRUCT::SMPCREATESTRUCT()
@@ -92,7 +92,7 @@ class CSmokePuffFX : public CBaseParticleSystemFX
 		DFLOAT	m_fMinParticleLife;		// Minimum lifetime of a particle
 		DFLOAT	m_fMaxAlpha;			// Max value to use for alpha
 		DFLOAT	m_fCreateLifetime;		// Percentage of lifetime to create particles
-		char*	m_pTexture;				// Texture to sprite to use
+		const char*	m_pTexture;				// Texture to sprite to use
 
 		DBOOL	m_bIgnoreWind;			// Ignore world wind
 };

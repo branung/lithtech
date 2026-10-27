@@ -21,7 +21,7 @@ class CBaseLineSystemFX : public CSpecialFX
 		{
 			VEC_INIT(m_vPos);
 			ROT_INIT(m_rRot);
-			m_rRot.m_Spin = 0.0f;
+			m_rRot.m_Quat[3] = 0.0f;   // LT1's m_Spin: a w of 0 is this class's "no rotation set" sentinel, tested in Init()
 		}
 
 		virtual DBOOL Init(SFXCREATESTRUCT* psfxCreateStruct);

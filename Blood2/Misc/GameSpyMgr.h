@@ -33,7 +33,7 @@
 
 #pragma comment (lib, "winmm.lib")
 
-#pragma comment (lib, "GameSpyMgr.lib")
+// #pragma comment (lib, "GameSpyMgr.lib"), a 1998 x86 library a 64-bit build can't link
 
 // Classes...
 

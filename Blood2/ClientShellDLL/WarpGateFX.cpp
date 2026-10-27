@@ -60,7 +60,7 @@ DBOOL CWarpGateSpriteFX::CreateObject(CClientDE *pClientDE)
 	INIT_OBJECTCREATESTRUCT(ocStruct);
 
 	ocStruct.m_ObjectType = OT_SPRITE;
-	ocStruct.m_Flags = FLAG_VISIBLE | FLAG_SPRITECHROMAKEY;
+	ocStruct.m_Flags = FLAG_VISIBLE;
 
 	m_pClientDE->GetObjectPos(m_hObj, &ocStruct.m_Pos);
 

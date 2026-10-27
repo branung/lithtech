@@ -127,25 +127,15 @@ static char *s_szBooSounds[] =
 CBloodClientShell	*g_pBloodClientShell = DNULL;
 
 // Prototypes..
-DBOOL ConnectToTcpIpAddress(CClientDE* pClientDE, char* sAddress);
+DBOOL ConnectToTcpIpAddress(CClientDE* pClientDE, const char *sAddress);
 
 // Setup..
 
 SETUP_CLIENTSHELL();
 
-ClientShellDE* CreateClientShell(ClientDE *pClientDE)
-{
-	g_pClientDE = pClientDE;
-	return (ClientShellDE*)(new CBloodClientShell);
-}
-
-void DeleteClientShell(ClientShellDE *pInputShell)
-{
-	if (pInputShell)
-	{
-		delete ((CBloodClientShell*)pInputShell);
-	}
-}
+// LT1's CreateClientShell exports are gone as the engine creates the shell through define_interface.
+// g_pClientDE is now a read-only macro over a holder (de_client.h)
+define_interface(CBloodClientShell, IClientShell);
 
 void CShell_GetConsoleString(char* sKey, char* sDest, char* sDefault)
 {
@@ -154,7 +144,7 @@ void CShell_GetConsoleString(char* sKey, char* sDest, char* sDefault)
 		HCONSOLEVAR hVar = g_pClientDE->GetConsoleVar(sKey);
 		if (hVar)
 		{
-			char* sValue = g_pClientDE->GetVarValueString(hVar);
+			const char* sValue = g_pClientDE->GetVarValueString(hVar);
 			if (sValue)
 			{
 				strcpy(sDest, sValue);
@@ -166,9 +156,9 @@ void CShell_GetConsoleString(char* sKey, char* sDest, char* sDefault)
 	strcpy(sDest, sDefault);
 }
 
-static DBOOL LoadLeakFile(ClientDE *pClientDE, char *pFilename);
+static DBOOL LoadLeakFile(ClientDE *pClientDE, const char *pFilename);
 
-void LeakFileFn(int argc, char **argv)
+void LeakFileFn(int argc, const char **argv)
 {
 	if (argc < 0)
 	{
@@ -186,7 +176,7 @@ void LeakFileFn(int argc, char **argv)
 	}
 }
 
-void ConnectFn(int argc, char **argv)
+void ConnectFn(int argc, const char **argv)
 {
 	if (argc <= 0)
 	{
@@ -197,7 +187,7 @@ void ConnectFn(int argc, char **argv)
 	ConnectToTcpIpAddress(g_pBloodClientShell->GetClientDE(), argv[0]);
 }
 
-void NextLevelFn(int argc, char **argv)
+void NextLevelFn(int argc, const char **argv)
 {
 	if (g_bIsHost)
 	{
@@ -214,7 +204,7 @@ void NextLevelFn(int argc, char **argv)
 	}
 }
 
-void LoadLevelFn(int argc, char **argv)
+void LoadLevelFn(int argc, const char **argv)
 {
 	if (argc >= 1 && argv[0])
 	{
@@ -226,7 +216,7 @@ void LoadLevelFn(int argc, char **argv)
 	}
 }
 
-void CBloodClientShell::StartNewGame(char *pszWorld)
+void CBloodClientShell::StartNewGame(const char *pszWorld)
 {
 	if (!pszWorld) return;
 
@@ -241,7 +231,7 @@ void CBloodClientShell::StartNewGame(char *pszWorld)
 	}
 }
 
-void FragSelfFn(int argc, char **argv)
+void FragSelfFn(int argc, const char **argv)
 {
 	ClientDE *pClientDE;
 	HMESSAGEWRITE hWrite;
@@ -251,7 +241,7 @@ void FragSelfFn(int argc, char **argv)
 	pClientDE->EndMessage(hWrite);
 }
 
-void InitSoundFn(int argc, char **argv)
+void InitSoundFn(int argc, const char **argv)
 {
 	if( g_pBloodClientShell )
 		g_pBloodClientShell->InitSound( );
@@ -267,7 +257,7 @@ void InitSoundFn(int argc, char **argv)
 //
 // --------------------------------------------------------------------------- //
 
-void AuraModelHook (struct ModelHookData_t *pData, void *pUser)
+void AuraModelHook (ModelHookData_t *pData, void *pUser)
 {
 	CClientDE* pClientDE = (CClientDE*) pUser;
 	if (!pClientDE ) return;
@@ -276,10 +266,10 @@ void AuraModelHook (struct ModelHookData_t *pData, void *pUser)
 	pClientDE->GetObjectUserFlags (pData->m_hObject, &nUserFlags);
 	if (nUserFlags & FLAG_BASECHARACTER)
 	{
-		pData->m_Flags &= ~MHF_USETEXTURE;
-		if (pData->m_LightAdd)
+		pData->m_HookFlags &= ~MHF_USETEXTURE;
+		// m_LightAdd is a value now, not a pointer
 		{
-			VEC_SET (*pData->m_LightAdd, 255.0f, 255.0f, 255.0f);
+			VEC_SET (pData->m_LightAdd, 255.0f, 255.0f, 255.0f);
 		}
 	}
 }
@@ -293,7 +283,7 @@ void AuraModelHook (struct ModelHookData_t *pData, void *pUser)
 //
 // --------------------------------------------------------------------------- //
 
-void DefaultModelHook (struct ModelHookData_t *pData, void *pUser)
+void DefaultModelHook (ModelHookData_t *pData, void *pUser)
 {
 	DDWORD nUserFlags;
 	DFLOAT fGlowValue, fGlowFactor;
@@ -302,45 +292,45 @@ void DefaultModelHook (struct ModelHookData_t *pData, void *pUser)
 
 	if( g_pBloodClientShell->NightGogglesActive( ) && nUserFlags & USERFLG_NIGHTGOGGLESGLOW )
 	{
-		pData->m_Flags &= ~MHF_USETEXTURE;
-		if (pData->m_LightAdd)
+		pData->m_HookFlags &= ~MHF_USETEXTURE;
+		// m_LightAdd is a value now, not a pointer
 		{
-			VEC_SET (*pData->m_LightAdd, 0.0f, 255.0f, 0.0f);
+			VEC_SET (pData->m_LightAdd, 0.0f, 255.0f, 0.0f);
 		}
 	}
 	else if( nUserFlags & USRFLG_GLOW )
 	{
-		if( pData->m_LightAdd )
+		// m_LightAdd is a value now, not a pointer
 		{
 			// Cycle the glow with a period of 2 seconds...
 			fGlowFactor = ( DFLOAT )sin( g_pClientDE->GetTime( ) * MATH_CIRCLE / 2.0f );
 			fGlowValue = 128.0f + 128.0f * fGlowFactor;
 			fGlowValue = DCLAMP( fGlowValue, 0.0f, 255.0f );
-			VEC_SET( *pData->m_LightAdd, fGlowValue, fGlowValue, fGlowValue );
+			VEC_SET (pData->m_LightAdd, fGlowValue, fGlowValue, fGlowValue );
 		}
 	}
 	// Glow red for anger
 	else if (nUserFlags & USRFLG_ANGERGLOW)	
 	{
-		if( pData->m_LightAdd )
+		// m_LightAdd is a value now, not a pointer
 		{
 			// Cycle the glow with a period of 0.5 seconds...
 			fGlowFactor = ( DFLOAT )sin( g_pClientDE->GetTime( ) * MATH_CIRCLE * 6.0f );
 			fGlowValue = 192.0f + 64.0f * fGlowFactor;
 			fGlowValue = DCLAMP( fGlowValue, 0.0f, 255.0f );
-			VEC_SET( *pData->m_LightAdd, fGlowValue, 255.0 - fGlowValue, 255.0 - fGlowValue );
+			VEC_SET (pData->m_LightAdd, fGlowValue, 255.0 - fGlowValue, 255.0 - fGlowValue );
 		}
 	}
 	// Glow green for willpower
 	else if (nUserFlags & USRFLG_WILLPOWERGLOW)
 	{
-		if( pData->m_LightAdd )
+		// m_LightAdd is a value now, not a pointer
 		{
 			// Cycle the glow with a period of 0.5 seconds...
 			fGlowFactor = ( DFLOAT )sin( g_pClientDE->GetTime( ) * MATH_CIRCLE * 6.0f );
 			fGlowValue = 192.0f + 64.0f * fGlowFactor;
 			fGlowValue = DCLAMP( fGlowValue, 0.0f, 255.0f );
-			VEC_SET( *pData->m_LightAdd, 255.0 - fGlowValue, fGlowValue, 255.0 - fGlowValue );
+			VEC_SET (pData->m_LightAdd, 255.0 - fGlowValue, fGlowValue, 255.0 - fGlowValue );
 		}
 	}
 }
@@ -633,7 +623,7 @@ DRESULT CBloodClientShell::InitSound()
 	if( !pClientDE )
 		return LT_ERROR;
 
-	INITSOUNDINFO_INIT(soundInfo);
+	soundInfo.Init();
 
 	// Reload the sounds if there are any
 	soundInfo.m_dwFlags				= INITSOUNDINFOFLAG_RELOADSOUNDS;
@@ -736,7 +726,8 @@ DRESULT CBloodClientShell::InitSound()
 		fMinStreamSoundTime = (fMinStreamSoundTime < 0.2f ? 0.2f :
 							   (fMinStreamSoundTime > 1.5f ? 1.5f : fMinStreamSoundTime));
 	}
-	soundInfo.m_fMinStreamTime = fMinStreamSoundTime;
+	// Jupiter's InitSoundInfo has no m_fMinStreamTime
+	(void)fMinStreamSoundTime;
 	soundInfo.m_fDistanceFactor = 1.0f / 64.0f;
 
 	// Go initialize the sounds.
@@ -773,7 +764,7 @@ DRESULT CBloodClientShell::InitSound()
 //
 // ----------------------------------------------------------------------- //
 
-void CBloodClientShell::CSPrint (char* msg, ...)
+void CBloodClientShell::CSPrint (const char* msg, ...)
 {
 	CClientDE* pClientDE = GetClientDE();
 
@@ -804,7 +795,7 @@ void CBloodClientShell::CSPrint(int nStringID)
 	pClientDE->FreeString(hString);
 }
 
-void CBloodClientShell::CSPrint2(char* msg)
+void CBloodClientShell::CSPrint2(const char* msg)
 {
 	CClientDE* pClientDE = GetClientDE();
 	if (!pClientDE) return;
@@ -862,7 +853,7 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	DBOOL bPlayingMovies = DFALSE;
 	DRESULT resInitSound;
 	HSTRING hstrError;
-	char *pszError;
+	const char *pszError;
 
 	// Set the guid...
 
@@ -1038,14 +1029,14 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	hVar = pClientDE->GetConsoleVar("ConnectPlr");
 	if (hVar)
 	{
-		char* sVar = pClientDE->GetVarValueString(hVar);
+		const char* sVar = pClientDE->GetVarValueString(hVar);
 		if (sVar && sVar[0] != '\0' && _mbscmp((const unsigned char*)sVar, (const unsigned char*)"0") != 0) bDoNetStuff = DTRUE;
 	}
 
 	hVar = pClientDE->GetConsoleVar("Connect");
 	if (hVar)
 	{
-		char* sVar = pClientDE->GetVarValueString(hVar);
+		const char* sVar = pClientDE->GetVarValueString(hVar);
 		if (sVar && sVar[0] != '\0' && _mbscmp((const unsigned char*)sVar, (const unsigned char*)"0") != 0) bDoNetStuff = DTRUE;
 	}
 
@@ -1078,19 +1069,13 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 		rMode.m_Width		= 640;
 		rMode.m_Height		= 480;
 		rMode.m_BitDepth	= 16;
-		rMode.m_bHardware	= pMode->m_bHardware;
-
-		sprintf(rMode.m_RenderDLL, "%s", pMode->m_RenderDLL);
+		// Jupiter's RMode has no m_bHardware or m_RenderDLL
 		sprintf(rMode.m_InternalName, "%s", pMode->m_InternalName);
 		sprintf(rMode.m_Description, "%s", pMode->m_Description);
 
 		if (pClientDE->SetRenderMode(&rMode) != LT_OK)
 		{
-			// Okay, that didn't work, looks like we're stuck with software...
-		
-			rMode.m_bHardware = DFALSE;
-
-			sprintf(rMode.m_RenderDLL, "soft.ren");
+			// LT1 fell back to the software renderer here, which doesn't exist, so this only retries at 640x480x16
 			sprintf(rMode.m_InternalName, "");
 			sprintf(rMode.m_Description, "");
 
@@ -1336,7 +1321,7 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 		// Get the command line world, if found
 		if (hVar = pClientDE->GetConsoleVar("runworld"))
 		{
-			char *pWorldName = pClientDE->GetVarValueString(hVar);
+			const char *pWorldName = pClientDE->GetVarValueString(hVar);
 
 			StartNewGame(pWorldName, STARTGAME_NORMAL, GAMETYPE_CUSTOM, LOADTYPE_NEW_GAME, DIFFICULTY_MEDIUM);
 			m_bFirstWorld = DTRUE;
@@ -3740,7 +3725,7 @@ void CBloodClientShell::OnKeyDown(int key, int rep)
 			HCONSOLEVAR hVar;
 			if (hVar = pClientDE->GetConsoleVar (msgbuf))
 			{
-				char* sVar = pClientDE->GetVarValueString(hVar);
+				const char* sVar = pClientDE->GetVarValueString(hVar);
 				if (sVar && sVar[0] != '\0')
 				{
 					// Send the macro...
@@ -3924,7 +3909,7 @@ void CBloodClientShell::OnKeyDown(int key, int rep)
 //
 // --------------------------------------------------------------------------- //
 
-DBOOL CBloodClientShell::StartNewGame(char *pszWorldName, DBYTE nStartType, DBYTE nGameType, DBYTE nLoadType, DBYTE nDifficulty)
+DBOOL CBloodClientShell::StartNewGame(const char *pszWorldName, DBYTE nStartType, DBYTE nGameType, DBYTE nLoadType, DBYTE nDifficulty)
 {
 	CClientDE* pClientDE = GetClientDE();
 	HCONSOLEVAR hVar;
@@ -4611,7 +4596,7 @@ void CBloodClientShell::OnMessage(DBYTE messageID, HMESSAGEREAD hMessage)
 			if (IsMultiplayerGame())
 			{
 				DDWORD nID   = pClientDE->ReadFromMessageDWord(hMessage);
-				char*  sName = m_FragInfo.GetPlayerName(nID);
+				const char*  sName = m_FragInfo.GetPlayerName(nID);
 
 				if (sName && strlen(sName) > 0)
 				{
@@ -4653,8 +4638,8 @@ void CBloodClientShell::OnMessage(DBYTE messageID, HMESSAGEREAD hMessage)
 
 				VoiceEntry *pve = DNULL;
 
-				char *pKiller = m_FragInfo.GetPlayerName(nKiller);
-				char *pVictim = m_FragInfo.GetPlayerName(nVictim);
+				const char *pKiller = m_FragInfo.GetPlayerName(nKiller);
+				const char *pVictim = m_FragInfo.GetPlayerName(nVictim);
 
 				if (pKiller && pVictim)
 				{
@@ -4764,7 +4749,7 @@ void CBloodClientShell::OnMessage(DBYTE messageID, HMESSAGEREAD hMessage)
 			m_FragInfo.AddFrags(dwLocalID, dwFlagger, nFrags);
 			m_TeamMgr.AddPlayerFrags(dwFlagger, nFrags);
 
-			char* sFlagger = m_FragInfo.GetPlayerName(dwFlagger);
+			const char* sFlagger = m_FragInfo.GetPlayerName(dwFlagger);
 			if (sFlagger)
 			{
 				char sMsg[256];
@@ -6305,7 +6290,7 @@ void CBloodClientShell::HandleExitWorld(HMESSAGEREAD hMessage)
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL CBloodClientShell::StartNewWorld(char *pszWorld, DBYTE nGameType, DBYTE nLoadType, DBYTE nDifficulty)
+DBOOL CBloodClientShell::StartNewWorld(const char *pszWorld, DBYTE nGameType, DBYTE nLoadType, DBYTE nDifficulty)
 {
 	CClientDE* pClientDE = GetClientDE();
 	if (!pClientDE) return DFALSE;
@@ -7130,7 +7115,7 @@ void CBloodClientShell::UpdateCameraRotation()
 //
 // ----------------------------------------------------------------------- //
 
-void CBloodClientShell::GetWorldTitle(char *pWorldFile)
+void CBloodClientShell::GetWorldTitle(const char *pWorldFile)
 {
 	CClientDE* pClientDE = GetClientDE();
 	if (!pClientDE || !pWorldFile) return;
@@ -7164,19 +7149,13 @@ void CBloodClientShell::GetWorldTitle(char *pWorldFile)
 	{
 		int nArgs;
     
-		char tokenSpace[64*20];
-		char *pTokens[64];
-		char *pCommand = szWorldInfo;
-		char *pCommandPos;
-
-		DBOOL bDone = DFALSE;
-		while (!bDone)
+		// LT1's five-argument Parse, as ConParse.
+		// GetWorldInfoString always fails here (de_client.h), so this never runs
+		ConParse parse(szWorldInfo);
+		while (pClientDE->Common()->Parse(&parse) == LT_OK)
 		{
-			if (!pClientDE->Parse(pCommand, &pCommandPos, tokenSpace, pTokens, &nArgs))
-				bDone = DTRUE;
-			else
-				pCommand = pCommandPos;
-
+			nArgs = parse.m_nArgs;
+			const char **pTokens = parse.m_Args;
 			for(int i = 0; i < nArgs; i++)
 			{
 				if(pTokens[i])
@@ -7238,7 +7217,7 @@ void CBloodClientShell::GetWorldTitle(char *pWorldFile)
 //
 // --------------------------------------------------------------------------- //
 
-DBOOL LoadLeakFile(ClientDE *pClientDE, char *pFilename)
+DBOOL LoadLeakFile(ClientDE *pClientDE, const char *pFilename)
 {
 	FILE *fp;
 	char line[256];
@@ -7566,7 +7545,7 @@ void CBloodClientShell::DrawBrandString(HSURFACE hScreenSurface)
 //
 // --------------------------------------------------------------------------- //
 
-DBOOL ConnectToTcpIpAddress(CClientDE* pClientDE, char* sAddress)
+DBOOL ConnectToTcpIpAddress(CClientDE* pClientDE, const char *sAddress)
 {
 	// Sanity checks...
 
@@ -8479,7 +8458,7 @@ DBOOL CBloodClientShell::MenuSaveGame(int nSlot, DBYTE bySaveType)
 //
 // ----------------------------------------------------------------------- //
 
-DBOOL CBloodClientShell::MenuLoadCustomLevel(char* sLevel, int nDifficulty)
+DBOOL CBloodClientShell::MenuLoadCustomLevel(const char *sLevel, int nDifficulty)
 {
 	// Sanity checks...
 
@@ -8856,7 +8835,7 @@ void CBloodClientShell::SetKeyboardTurnRate(float fRate)
 //				or SPACE is pressed or on the next page flip if bAsync is FALSE.
 //
 // ----------------------------------------------------------------------- //
-void CBloodClientShell::DoMessageBox(char *lpszMessage, DBOOL bAsync)
+void CBloodClientShell::DoMessageBox(const char *lpszMessage, DBOOL bAsync)
 {	
 	// TODO: Make this localizable
 	ClientDE *pClientDE=GetClientDE();

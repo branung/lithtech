@@ -55,8 +55,8 @@ class CCommLink
 		void	Term();
 
 		// Setup the communication
-		char	StartCommunication(DBYTE nPic, char *szFile, char *szText);
-		char	StartCommunication(char *szPic, char *szFile, char *szText);
+		char	StartCommunication(DBYTE nPic, const char *szFile, const char *szText);
+		char	StartCommunication(const char *szPic, const char *szFile, const char *szText);
 
 		// Animation and drawing functions
 		void	Draw(DBOOL bDrawBar);

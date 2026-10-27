@@ -45,7 +45,7 @@ class CBaseParticleSystemFX : public CSpecialFX
 
 	protected :
 
-		char*	m_pTextureName;			// Name of the particle texture
+		const char*	m_pTextureName;			// Name of the particle texture
 		DFLOAT	m_fGravity;				// Gravity of particle system 
 		DFLOAT	m_fRadius;				// Radius of particle system
 		DDWORD	m_dwFlags;				// Particle system setup flags

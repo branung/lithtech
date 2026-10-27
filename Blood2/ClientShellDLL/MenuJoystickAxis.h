@@ -17,7 +17,7 @@
 class CMenuJoystickAxisInfo
 {
 public:
-	void	Init(char* sName, DDWORD nType, float fRangeLow, float fRangeHigh);
+	void	Init(const char *sName, DDWORD nType, float fRangeLow, float fRangeHigh);
 
 	char*	GetName() { return m_sName; };
 	DDWORD	GetType() { return m_nType; };

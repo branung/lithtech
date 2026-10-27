@@ -131,10 +131,11 @@ DBOOL CMusic::InitPlayLists( )
 		pCommand = m_pClientDE->GetServerConVarValueString( "InstrumentFiles" );
 		if( !pCommand )
 			return DFALSE;
-		m_pClientDE->Parse( pCommand, &pCommandPos, tokenSpace, pTokens, &nArgs );
-		if( nArgs != 2 )
+		// LT1's five-argument Parse, as ConParse, as in Shogo's Music.cpp
+		ConParse parse( pCommand );
+		if( m_pClientDE->Common()->Parse( &parse ) != LT_OK || parse.m_nArgs != 2 )
 			return DFALSE;
-		if( !m_pClientDE->InitInstruments( pTokens[0], pTokens[1] ))
+		if( !m_pClientDE->InitInstruments( parse.m_Args[0], parse.m_Args[1] ))
 			return DFALSE;
 
 		if( !InitTrans( g_szAmbientTrans ))
@@ -180,17 +181,22 @@ DBOOL CMusic::InitTrans( char szTransitions[4][PARSE_MAXTOKENSIZE] )
 DBOOL CMusic::InitList( char *szWorldProp,
 	char argBuffer[PARSE_MAXTOKENS*(PARSE_MAXTOKENSIZE+1)], char * argPointers[PARSE_MAXTOKENS] )
 {
-	char *pCommandPos, *pCommand;
-	int nArgs, i;
+	const char *pCommand;
 
 	pCommand = m_pClientDE->GetServerConVarValueString( szWorldProp );
 	if( !pCommand )
 		return DFALSE;
-	m_pClientDE->Parse( pCommand, &pCommandPos, argBuffer, argPointers, &nArgs );
-	for( i = 0; i < nArgs; i++ )
+
+	// LT1's five-argument Parse, as ConParse, as in Shogo's Music.cpp
+	(void)argBuffer; (void)argPointers;
+	ConParse parse( pCommand );
+	while( m_pClientDE->Common()->Parse( &parse ) == LT_OK )
 	{
-		if( !m_pClientDE->AddSongToPlayList( szWorldProp, argPointers[i] ))
-			return DFALSE;
+		for( int i = 0; i < parse.m_nArgs; i++ )
+		{
+			if( !m_pClientDE->AddSongToPlayList( szWorldProp, parse.m_Args[i] ))
+				return DFALSE;
+		}
 	}
 
 	return DTRUE;

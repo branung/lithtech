@@ -337,7 +337,7 @@ void CLightFX::UpdateLightIntensity()
 // ----------------------------------------------------------------------- //
 void CLightFX::PlayRampSound(int nDirection)
 {
-	char *sound = DNULL;
+	const char *sound = DNULL;
     
     // Set the char pointer    
 	if (nDirection == 1 && m_hstrRampUpSound)

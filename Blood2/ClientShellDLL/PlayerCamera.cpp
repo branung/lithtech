@@ -43,8 +43,8 @@ DBOOL Equal(DRotation & r1, DRotation & r2)
 {
 	DBOOL bRet = DTRUE;
 
-	if (r1.m_Vec.x != r2.m_Vec.x || r1.m_Vec.y != r2.m_Vec.y ||
-		r1.m_Vec.z != r2.m_Vec.z || r1.m_Spin != r2.m_Spin)
+	if (r1.m_Quat[0] != r2.m_Quat[0] || r1.m_Quat[1] != r2.m_Quat[1] ||
+		r1.m_Quat[2] != r2.m_Quat[2] || r1.m_Quat[3] != r2.m_Quat[3])
 	{
 		bRet = DFALSE;
 	}

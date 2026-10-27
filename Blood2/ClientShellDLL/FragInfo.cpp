@@ -382,7 +382,7 @@ DDWORD CFragInfo::GetNumClients()
 
 //*********************************************************************************
 
-char* CFragInfo::GetPlayerName (DDWORD nID)
+const char* CFragInfo::GetPlayerName (DDWORD nID)
 {
 	if (!m_pClientDE) return DNULL;
 

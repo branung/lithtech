@@ -66,7 +66,7 @@ class CFragInfo
 		void	UpdatePlayerPing(DDWORD dwPlayerID, int nPing);
 		
 		DDWORD	GetNumClients();
-		char*	GetPlayerName (DDWORD nID);
+		const char* GetPlayerName (DDWORD nID);
 		DBYTE	GetPlayerCharacter(DDWORD nID);
 		CLIENT_INFO*	GetClientInfo(DDWORD dwID);
 		char*	GetDisplayPingAndName(CLIENT_INFO* pClient, char* sBuf);

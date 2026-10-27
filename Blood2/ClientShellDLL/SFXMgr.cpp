@@ -1233,7 +1233,8 @@ void CSFXMgr::UpdateSpecialFX()
 
 	int nNumSFX = m_staticSFXList.GetSize();
 	
-	for (int i=0; i < nNumSFX; i++)
+	int i;
+	for (i=0; i < nNumSFX; i++)
 	{
 		if (m_staticSFXList[i]) 
 		{
@@ -1305,7 +1306,8 @@ void CSFXMgr::RemoveSpecialFX(HLOCALOBJ hObj)
 
 	int nNumSFX = m_staticSFXList.GetSize();
 
-	for (int i=0; i < nNumSFX; i++)
+	int i;
+	for (i=0; i < nNumSFX; i++)
 	{
 		if (m_staticSFXList[i] && m_staticSFXList[i]->GetServerObj() == hObj)
 		{
@@ -1352,7 +1354,8 @@ void CSFXMgr::RemoveAll()
 
 	int nNumSFX = m_staticSFXList.GetSize();
 
-	for (int i=0; i < nNumSFX; i++)
+	int i;
+	for (i=0; i < nNumSFX; i++)
 	{
 		m_staticSFXList.Remove(m_staticSFXList[i]);
 	}

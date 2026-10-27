@@ -43,9 +43,9 @@
 
 
 	#ifdef _DEBUG
-		#pragma comment (lib, "StdLith.lib")
+		// #pragma comment (lib, "StdLith.lib"), a 1998 x86 library a 64-bit build can't link
 	#else
-		#pragma comment (lib, "StdLith.lib")
+		// #pragma comment (lib, "StdLith.lib"), a 1998 x86 library a 64-bit build can't link
 	#endif
 
 

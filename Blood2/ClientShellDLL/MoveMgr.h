@@ -18,7 +18,7 @@
 enum ModelSize { MS_NORMAL=0, MS_SMALL, MS_LARGE, NUM_MODELSIZES };
 
 	
-	class CPhysicsLT;
+	// CPhysicsLT comes from de_client.h now
 	class CBloodClientShell;
 
 	

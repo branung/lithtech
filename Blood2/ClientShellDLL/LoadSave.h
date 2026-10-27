@@ -46,7 +46,7 @@ class CSavedGameInfo
 		void	CopySlot(int nSrcIndex, int nDestIndex);
 		int		GetReservedSlot() { return m_nReservedSlot; }
 		void	SetReservedSlot(int nSlot) { m_nReservedSlot = nSlot; }
-		void	SetSlotName(int nSlot, char *pName);
+		void	SetSlotName(int nSlot, const char *pName);
 
 		static  SavedInfo gQuickSaveInfo;
 		static  SavedInfo gCurrentSaveInfo;

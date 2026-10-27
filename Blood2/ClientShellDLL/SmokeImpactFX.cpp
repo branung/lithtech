@@ -106,7 +106,7 @@ DBOOL CSmokeImpactFX::CreateObject(CClientDE* pClientDE)
 
 	// Setup the object creation structure
 	createStruct.m_ObjectType = OT_SPRITE;
-	createStruct.m_Flags = FLAG_VISIBLE | FLAG_SPRITECHROMAKEY;
+	createStruct.m_Flags = FLAG_VISIBLE;
 	_mbscpy((unsigned char*)createStruct.m_Filename, (const unsigned char*)m_pSpriteFile);
 	VEC_COPY(createStruct.m_Pos, m_vPos);
 

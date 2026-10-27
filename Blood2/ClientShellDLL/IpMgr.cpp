@@ -32,7 +32,7 @@
 //
 // ----------------------------------------------------------------------- //
 
-BOOL CIp::Init(char* sIp)
+BOOL CIp::Init(const char *sIp)
 {
 	// Sanity checks...
 
@@ -115,7 +115,7 @@ void CIpMgr::Term()
 //
 // ----------------------------------------------------------------------- //
 
-BOOL CIpMgr::ExistIp(char* sIp)
+BOOL CIpMgr::ExistIp(const char *sIp)
 {
 	// Sanity checks...
 
@@ -151,7 +151,7 @@ BOOL CIpMgr::ExistIp(char* sIp)
 //
 // ----------------------------------------------------------------------- //
 
-BOOL CIpMgr::AddIp(char* sIp)
+BOOL CIpMgr::AddIp(const char *sIp)
 {
 	// Sanity checks...
 
@@ -545,7 +545,7 @@ int CIpMgr::ReadIps()
 		HCONSOLEVAR hVar = m_pClientDE->GetConsoleVar(sKey);
 		if (hVar)
 		{
-			char* sValue = m_pClientDE->GetVarValueString(hVar);
+			const char* sValue = m_pClientDE->GetVarValueString(hVar);
 			if (sValue)
 			{
 				if (AddIp(sValue)) count++;

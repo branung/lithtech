@@ -31,7 +31,7 @@ protected:
 	DDWORD	OnCommand(DDWORD dwCommand, DDWORD dwParam1, DDWORD dwParam2);
 
 	// Starts the game
-	void	StartGame(DWORD dwDifficulty);
+	void	StartGame(DDWORD dwDifficulty);   // was DWORD; the definition says DDWORD, and on 64-bit MSVC those differ
 
 protected:
 	DBOOL	m_bStoryMode;	// TRUE if we are to start a game in story mode

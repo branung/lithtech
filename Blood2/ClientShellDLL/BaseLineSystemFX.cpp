@@ -55,7 +55,7 @@ DBOOL CBaseLineSystemFX::CreateObject(CClientDE *pClientDE)
 	DRotation rRot;
 	ROT_COPY(rRot, m_rRot);
 
-	if (m_rRot.m_Spin == 0.0f)
+	if (m_rRot.m_Quat[3] == 0.0f)
 	{
 		if (m_hServerObject)
 		{

@@ -908,7 +908,7 @@ void CNewStatusBar::ToggleObjectives()
 //*****	Details:	Change the current objective
 //*************************************************************************
 
-void CNewStatusBar::UpdateObjectives(char *title, char *string)
+void CNewStatusBar::UpdateObjectives(const char *title, const char *string)
 {
 	if(!m_pClientDE || !m_hObjectives)	return;
 

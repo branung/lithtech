@@ -1432,7 +1432,7 @@ DBOOL CViewWeapon::PlayAnimation(DDWORD dwNewAni)
 
 void CViewWeapon::OnModelKey(HLOCALOBJ hObj, ArgList* pArgList)
 {
-	char*	pKey;
+	const char*	pKey;
 	int		count = pArgList->argc;
 
 	CBloodClientShell *pShell = (CBloodClientShell*)g_pClientDE->GetClientShell();
@@ -1448,7 +1448,7 @@ void CViewWeapon::OnModelKey(HLOCALOBJ hObj, ArgList* pArgList)
 		}
 		else if(_mbsicmp((const unsigned char*)pKey, (const unsigned char*)WEAPON_KEY_SOUND) == 0)
 		{
-			char*	pSound = pArgList->argv[++i];
+			const char*	pSound = pArgList->argv[++i];
 			char	pDir[100];
 
 			if(pSound)
@@ -1463,7 +1463,7 @@ void CViewWeapon::OnModelKey(HLOCALOBJ hObj, ArgList* pArgList)
 		}
 		else if(_mbsicmp((const unsigned char*)pKey, (const unsigned char*)WEAPON_KEY_SOUNDLOOP) == 0)
 		{
-			char*	pSound = pArgList->argv[++i];
+			const char*	pSound = pArgList->argv[++i];
 			char	pDir[100];
 
 			if(pSound && !m_hLoopSound)
@@ -1485,7 +1485,7 @@ void CViewWeapon::OnModelKey(HLOCALOBJ hObj, ArgList* pArgList)
 		}
 		else if(_mbsicmp((const unsigned char*)pKey, (const unsigned char*)WEAPON_KEY_HIDE) == 0)
 		{
-			char*	pNode = pArgList->argv[++i];
+			const char*	pNode = pArgList->argv[++i];
 			DBOOL	nodeStat;
 			m_pClientDE->GetModelNodeHideStatus(m_hObject, pNode, &nodeStat);
 
@@ -1494,7 +1494,7 @@ void CViewWeapon::OnModelKey(HLOCALOBJ hObj, ArgList* pArgList)
 		}
 		else if(_mbsicmp((const unsigned char*)pKey, (const unsigned char*)WEAPON_KEY_SHOW) == 0)
 		{
-			char*	pNode = pArgList->argv[++i];
+			const char*	pNode = pArgList->argv[++i];
 			DBOOL	nodeStat;
 			m_pClientDE->GetModelNodeHideStatus(m_hObject, pNode, &nodeStat);
 

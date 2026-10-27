@@ -86,7 +86,7 @@ class CSmokeFX : public CSpecialFX
 		DVector m_vMaxDriftVel;	// Max Drift velocity
 		DVector m_vPos;
 
-		char*	m_pTextureName;
+		const char*	m_pTextureName;
 		DFLOAT	m_fRadius;
 		DFLOAT	m_fGravity;
 

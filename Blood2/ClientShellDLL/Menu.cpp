@@ -19,7 +19,7 @@
 #include "LoadSave.h"
 #include "BloodClientShell.h"
 
-#define MAX_CS_FILENAME_LEN	100
+// MAX_CS_FILENAME_LEN isn't redefined, as in ViewWeapon.h
 
 #define FONT_HEIGHT		40
 #define FONT_WIDTH		20
@@ -1985,7 +1985,7 @@ void	CMenu::DrawOptions(HSURFACE hScreen)
 		
 						m_pMenuCursor->SetJustify(CF_JUSTIFY_CENTER);
 						m_pMenuCursor->DrawSolid(tempStr1, 0, m_pMenuCursor->GetHeight() * 5, white);
-						m_pMenuCursor->DrawSolid(modeIndex->m_RenderDLL, 0, m_pMenuCursor->GetHeight() * 6, white);
+						m_pMenuCursor->DrawSolid(modeIndex->m_InternalName, 0, m_pMenuCursor->GetHeight() * 6, white);
 					}
 					break;
 			}

@@ -69,8 +69,9 @@ DBOOL CBaseParticleSystemFX::CreateObject(CClientDE *pClientDE)
 
 	// Use the specified rotation if applicable
 
-	if (m_rRot.m_Vec.x != 0.0f || m_rRot.m_Vec.y != 0.0f || 
-		m_rRot.m_Vec.z != 0.0f || m_rRot.m_Spin != 1.0f)
+	// LT1's m_Vec/m_Spin are m_Quat[0..3]. This asks whether it isn't the identity
+	if (m_rRot.m_Quat[0] != 0.0f || m_rRot.m_Quat[1] != 0.0f ||
+		m_rRot.m_Quat[2] != 0.0f || m_rRot.m_Quat[3] != 1.0f)
 	{
 		ROT_COPY(rRot, m_rRot);
 	}

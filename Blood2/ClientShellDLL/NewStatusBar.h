@@ -178,7 +178,7 @@ class CNewStatusBar
 
 		// Objective screen functions
 		void	ToggleObjectives();
-		void	UpdateObjectives(char *title, char *string);
+		void	UpdateObjectives(const char *title, const char *string);
 
 		// Power bar functions
 		void	SetPowerBarLevel(DBYTE nBar, DFLOAT fPercent);

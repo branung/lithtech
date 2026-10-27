@@ -94,7 +94,7 @@ DBOOL CRippleFX::CreateObject(CClientDE* pClientDE)
 
 	// Setup the object creation structure
 	createStruct.m_ObjectType = OT_SPRITE;
-	createStruct.m_Flags = FLAG_VISIBLE | FLAG_ROTATEABLESPRITE | FLAG_SPRITECHROMAKEY;
+	createStruct.m_Flags = FLAG_VISIBLE | FLAG_ROTATEABLESPRITE;
 	_mbscpy((unsigned char*)createStruct.m_Filename, (const unsigned char*)m_pSpriteFile);
 	VEC_SET(vUp, 0.0f, 1.0f, 0.0f);
 	m_pClientDE->AlignRotation(&rot, &m_vNormal, &vUp);

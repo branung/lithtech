@@ -143,7 +143,7 @@ DBOOL CPolyGridFX::CreateObject(CClientDE *pClientDE)
 
 	if (m_hstrSurfaceSprite)
 	{
-		char* pSpriteName = m_pClientDE->GetStringData(m_hstrSurfaceSprite);
+		const char* pSpriteName = m_pClientDE->GetStringData(m_hstrSurfaceSprite);
 		if (pSpriteName && pSpriteName[0])
 		{
 			m_pClientDE->SetPolyGridTexture(m_hObject, pSpriteName);

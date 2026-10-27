@@ -19,7 +19,8 @@ CSpecialFX* CSpecialFXList::Add(CSpecialFX* pFX, CSpecialFX* pParentFX)
 
 	if (!m_pArray || !m_pAgeArray) return DNULL;
 
-	for (unsigned int i=0; i < m_nArraySize; i++)
+	unsigned int i;
+	for (i=0; i < m_nArraySize; i++)
 	{
 		if (!m_pArray[i] && !bFoundSlot)
 		{

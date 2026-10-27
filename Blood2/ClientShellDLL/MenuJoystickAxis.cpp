@@ -37,7 +37,7 @@ void FindMouseControls(CClientDE *pClientDE)
 // Joystick Axis info class
 /**************************************************************************/
 
-void CMenuJoystickAxisInfo::Init(char* sName, DDWORD nType, float fRangeLow, float fRangeHigh)
+void CMenuJoystickAxisInfo::Init(const char *sName, DDWORD nType, float fRangeLow, float fRangeHigh)
 {
 	if (sName == NULL) m_sName[0] = '\0';
 	else 
@@ -274,7 +274,7 @@ BOOL CMenuJoystickAxisBase::SetDeviceName(CClientDE *pClientDE)
 	m_sDeviceName[0] = '\0';
 
 	// read in the joystick device to use from the JOYSTICKDEVICENAME console variable or set the default
-	char* sValue = NULL;
+	const char *sValue = NULL;
 	HCONSOLEVAR hVar = pClientDE->GetConsoleVar( "JOYSTICKDEVICENAME");
 	if (hVar != NULL) sValue = pClientDE->GetVarValueString(hVar);
 	if (sValue != NULL)
