@@ -340,6 +340,33 @@ void CD3D_Shell::GetSupportedModes(RMode*& pGlobalModeList)
 		{
 			for (vector<D3DModeInfo>::iterator itMode = itDevice->Modes.begin(); itMode != itDevice->Modes.end(); ++itMode) 
 			{
+				uint32 iBitDepth   = 0;
+				switch (itMode->Format)
+				{
+				case D3DFMT_R8G8B8	 : iBitDepth = 24; break;
+				case D3DFMT_X8R8G8B8 :
+				case D3DFMT_A8R8G8B8 : iBitDepth = 32; break;
+				case D3DFMT_R5G6B5   : iBitDepth = 16; break;
+				default				 : assert(0);
+				}
+
+				// List each mode once. This loop runs per adapter (each monitor output) and per device (HAL and REF),
+				// so a mode used to be listed once for each. LT1 shells trust the list as it is, and NOLF2 dedups it itself
+				bool bDuplicate = false;
+				for (RMode* pSeen = pGlobalModeList; pSeen; pSeen = pSeen->m_pNext)
+				{
+					if (pSeen->m_Width == itMode->Width && pSeen->m_Height == itMode->Height &&
+						pSeen->m_BitDepth == iBitDepth && pSeen->m_bHWTnL == itMode->bHWTnL &&
+						strcmp(pSeen->m_InternalName, itAdapter->AdapterID.Driver) == 0 &&
+						strcmp(pSeen->m_Description,  itAdapter->AdapterID.Description) == 0)
+					{
+						bDuplicate = true;
+						break;
+					}
+				}
+				if (bDuplicate)
+					continue;
+
 				RMode* pMode = NULL;
 				LT_MEM_TRACK_ALLOC(pMode = new RMode, LT_MEM_TYPE_RENDERER);
 
@@ -349,16 +376,6 @@ void CD3D_Shell::GetSupportedModes(RMode*& pGlobalModeList)
 
 				LTStrCpy(pMode->m_InternalName, itAdapter->AdapterID.Driver,      sizeof(pMode->m_InternalName));
 				LTStrCpy(pMode->m_Description,  itAdapter->AdapterID.Description, sizeof(pMode->m_Description));
-
-				uint32 iBitDepth   = 0;
-				switch (itMode->Format) 
-				{
-				case D3DFMT_R8G8B8	 : iBitDepth = 24; break;
-				case D3DFMT_X8R8G8B8 : 
-				case D3DFMT_A8R8G8B8 : iBitDepth = 32; break;
-				case D3DFMT_R5G6B5   : iBitDepth = 16; break; 
-				default				 : assert(0); 
-				}
 
 				pMode->m_BitDepth  = iBitDepth;
 

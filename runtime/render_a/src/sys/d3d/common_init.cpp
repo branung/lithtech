@@ -216,7 +216,9 @@ int d3d_Init(RenderStructInit *pInit)
 	g_Device.RestoreDevObjects();					// Let the render objects restore their D3D data (if there is any already created)...
 
 	// Copy the info for the device we used into the RMode.
-	LTStrCpy(pInit->m_Mode.m_InternalName, pDeviceInfo->strDesc, sizeof(pInit->m_Mode.m_InternalName));
+	// The adapter's driver name, as GetSupportedModes names every listed mode, rather than the device's "HAL".
+	// LT1 shells find the current mode by comparing this against the list, so their display menus opened on 640x480
+	LTStrCpy(pInit->m_Mode.m_InternalName, pAdapterInfo->AdapterID.Driver, sizeof(pInit->m_Mode.m_InternalName));
 	LTStrCpy(pInit->m_Mode.m_Description,  pAdapterInfo->AdapterID.Description, sizeof(pInit->m_Mode.m_Description));
 
 	// Finish initializing...

@@ -875,6 +875,14 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	// 01_SUBWAYA's tunnel is lit by lights swept past the train
 	pClientDE->RunConsoleString("-DynamicLightWorld 1");
 
+	// LT1 splits WorldModels by polygon 0's SURF_TRANSPARENT: translucent ones draw last and aren't culled.
+	// Jupiter's split never puts LT1 glass in the translucent pass, so it was painted over
+	pClientDE->RunConsoleString("-LT1WorldCull 1");
+	pClientDE->RunConsoleString("-LT1WorldSort 1");
+
+	// Jupiter's CLightTable::GetLightVal blends its rows backwards, which LT1's coarse grid shows
+	pClientDE->RunConsoleString("-LT1LightTableY 1");
+
 	// LT1's box collision: pushback along the normal, slide with a 0.1 gap, the 0.1 recheck against every plane touched,
 	// the sweep rebuilt after each resolution, and LT1's polygon test. Without them a crouched player grinds in vents (both sides)
 	pClientDE->RunConsoleString("-LT1IntersectPushback 1");

@@ -30,6 +30,43 @@ static	DBOOL		s_bExit     = DFALSE;
 static	CClientDE*	s_pClientDE = DNULL;
 
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Splash_FitRect
+//
+//	PURPOSE:	The largest centered rectangle with the bitmap's aspect
+//				ratio that fits the screen
+//
+// ----------------------------------------------------------------------- //
+
+static void Splash_FitRect(DDWORD nScreenW, DDWORD nScreenH,
+                           DDWORD nBmpW, DDWORD nBmpH, DRect& rcDst)
+{
+	DDWORD nFitW = nScreenW;
+	DDWORD nFitH = nScreenH;
+
+	if (nBmpW > 0 && nBmpH > 0)
+	{
+		// The screen is wider than the bitmap when screenW/screenH > bmpW/bmpH
+		if (nScreenW * nBmpH > nScreenH * nBmpW)
+		{
+			nFitH = nScreenH;
+			nFitW = (nBmpW * nScreenH) / nBmpH;
+		}
+		else
+		{
+			nFitW = nScreenW;
+			nFitH = (nBmpH * nScreenW) / nBmpW;
+		}
+	}
+
+	rcDst.left   = (nScreenW - nFitW) / 2;
+	rcDst.top    = (nScreenH - nFitH) / 2;
+	rcDst.right  = rcDst.left + nFitW;
+	rcDst.bottom = rcDst.top  + nFitH;
+}
+
+
 // Functions...
 
 // ----------------------------------------------------------------------- //
@@ -159,22 +196,23 @@ void Splash_Update()
 
 	// Draw our bitmap to the screen, scaling as necessary...
 
-	DDWORD nWidth = 0;
-	DDWORD nHeight = 0;
-	
-	s_pClientDE->GetSurfaceDims(hScreen, &nWidth, &nHeight);
-	DRect rcDst;
-	rcDst.left   = 0;
-	rcDst.top    = 0;
-	rcDst.right  = nWidth;
-	rcDst.bottom = nHeight;
+	DDWORD nScreenW = 0, nScreenH = 0, nBmpW = 0, nBmpH = 0;
 
-	s_pClientDE->GetSurfaceDims(s_hBitmap, &nWidth, &nHeight);
+	s_pClientDE->GetSurfaceDims(hScreen, &nScreenW, &nScreenH);
+	s_pClientDE->GetSurfaceDims(s_hBitmap, &nBmpW, &nBmpH);
+
 	DRect rcSrc;
 	rcSrc.left   = 0;
 	rcSrc.top    = 0;
-	rcSrc.right  = nWidth;
-	rcSrc.bottom = nHeight;
+	rcSrc.right  = nBmpW;
+	rcSrc.bottom = nBmpH;
+
+	// Fit the bitmap without stretching it. 1998 drew it to the whole screen, which only fits at 640x480
+	DRect rcDst;
+	Splash_FitRect(nScreenW, nScreenH, nBmpW, nBmpH, rcDst);
+
+	// Cleared every frame, as the fitted rectangle doesn't cover the screen
+	s_pClientDE->ClearScreen(DNULL, CLEARSCREEN_SCREEN);
 
 	s_pClientDE->Start3D();
 	s_pClientDE->StartOptimized2D();
@@ -248,23 +286,20 @@ HSURFACE Splash_Display(CClientDE* pClientDE, char* sScreen, DBOOL bStretch)
 
 	if (bStretch)
 	{
-		DDWORD nWidth = 0;
-		DDWORD nHeight = 0;
-		
-		pClientDE->GetSurfaceDims(hScreen, &nWidth, &nHeight);
-		
-		DRect rcDst;
-		rcDst.left   = 0;
-		rcDst.top    = 0;
-		rcDst.right  = nWidth;
-		rcDst.bottom = nHeight;
+		DDWORD nScreenW = 0, nScreenH = 0, nBmpW = 0, nBmpH = 0;
 
-		pClientDE->GetSurfaceDims(hBitmap, &nWidth, &nHeight);
+		pClientDE->GetSurfaceDims(hScreen, &nScreenW, &nScreenH);
+		pClientDE->GetSurfaceDims(hBitmap, &nBmpW, &nBmpH);
+
 		DRect rcSrc;
 		rcSrc.left   = 0;
 		rcSrc.top    = 0;
-		rcSrc.right  = nWidth;
-		rcSrc.bottom = nHeight;
+		rcSrc.right  = nBmpW;
+		rcSrc.bottom = nBmpH;
+
+		// Fit the bitmap without stretching it, as above
+		DRect rcDst;
+		Splash_FitRect(nScreenW, nScreenH, nBmpW, nBmpH, rcDst);
 
 		pClientDE->ClearScreen(DNULL, CLEARSCREEN_SCREEN);
 		pClientDE->Start3D();
