@@ -563,6 +563,12 @@ static LTRESULT UnpackObjectChange( CClientShell *pShell,
 			{
 				pInst->m_HiddenPieces[nCurrPiece] = cPacket.Readuint32();
 			}
+
+			// Hidden nodes, written by s_net.cpp right after the pieces
+			for(uint32 nCurrNode = 0; nCurrNode < MAX_HIDEABLE_MODEL_NODES / 32; nCurrNode++)
+			{
+				pInst->m_HiddenNodes[nCurrNode] = cPacket.Readuint32();
+			}
         }
     }
 

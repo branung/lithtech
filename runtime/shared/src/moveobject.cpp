@@ -39,12 +39,15 @@ public:
 	MoveState	*m_pState;
 	LTObject	**m_pObjects;
 	int32		m_nObjects;
+	// Physical candidates that didn't fit, reported once per query
+	int32		m_nOverflow;
 	LTObject	*m_DefaultArray[MAX_INTERSECTING_OBJECTS];
 
 	IntersectingObjectArray()
 	{
 		m_pObjects = m_DefaultArray;
 		m_nObjects = 0;
+		m_nOverflow = 0;
 	}
 };
 
@@ -510,7 +513,9 @@ static LTBOOL DoSolidWMCollision
 	bCollision = false;
 
 	// Worldmodel moving into an object...
-	if( HasWorldModel(pState->m_pObj) )
+	// but not into the main world, which a moving door can't push and kept failing to.
+	// The else branch collides it against the world's BSP instead
+	if( HasWorldModel(pState->m_pObj) && !pTestObj->IsMainWorldModel() )
 	{
 		// pInputObj is pushing pTestObj.
 		pos2 = pTestObj->GetPos();
@@ -994,21 +999,27 @@ inline LTBOOL CheckIntersectOnMovement(MoveState *pState, LTObject *pTestObj)
 					// change it...
 					vTempDestPos = pState->m_vDestPos;
 
+					// LT1BoxSlide: LT1 slides unless the mover has FLAG_NOSLIDING, which leaves its 0.1 gap.
+					// Clipping to exact contact embedded a crouched player in a vent ceiling
+					const LTBOOL bLT1Slide = g_bLT1BoxSlide
+						? (LTBOOL)!(pState->m_pObj->m_Flags & FLAG_NOSLIDING)
+						: LTFALSE;
+
 					if(HasWorldModel(pTestObj) && !(pTestObj->m_Flags & FLAG_BOXPHYSICS))
 					{
-						bStopped = CollideAgainstWorld(	pState, 
-														pTestObj->ToWorldModel()->m_pValidBsp, 
+						bStopped = CollideAgainstWorld(	pState,
+														pTestObj->ToWorldModel()->m_pValidBsp,
 														pTestObj,
 														pState->m_pObj, pState->m_vStartPos, vTempDestPos,
-														LTFALSE );
+														bLT1Slide );
 					}
 					else if(HasWorldModel(pState->m_pObj) && !(pState->m_pObj->m_Flags & FLAG_BOXPHYSICS))
 					{
-						bStopped = CollideAgainstWorld(	pState, 
-														pState->m_pObj->ToWorldModel()->m_pValidBsp, 
+						bStopped = CollideAgainstWorld(	pState,
+														pState->m_pObj->ToWorldModel()->m_pValidBsp,
 														pState->m_pObj,
 														pTestObj, pState->m_vStartPos, vTempDestPos,
-														LTFALSE );
+														bLT1Slide );
 					}
 					// Adjust the delta position based on the collision.
 					// Under LT1TunnelNonsolid, which is what brings a non solid mover here, LT1 only sends the touch
@@ -1202,8 +1213,15 @@ static void FindObjectsCB(WorldTreeObj *pTreeObj, void *pCBUser)
 	}
 	else
 	{
-		dsi_ConsolePrint("FindObjectsCB: Overflowed (more than %d intersecting objects)!",
-			MAX_INTERSECTING_OBJECTS);
+		// Counted, not printed: one line per dropped object flooded the console.
+		// Same filter as above, so only physical candidates count
+		if(pObject == pArray->m_pState->m_pObj)
+			return;
+
+		if(!IsPhysical(pObject->m_Flags, pArray->m_pState->m_bServer) && !( pObject->m_Flags & FLAG_TOUCHABLE ))
+			return;
+
+		pArray->m_nOverflow++;
 	}
 }
 
@@ -1241,6 +1259,17 @@ static void DetectAndProcessCollisions
 	{
 		pState->m_pWorldTree->FindObjectsInBox(&pState->m_vMoveMin, &pState->m_vMoveMax,
 			FindObjectsCB, &objectArray);
+	}
+
+	if(objectArray.m_nOverflow > 0)
+	{
+		static uint32 s_nOverflowReports = 0;
+		if(s_nOverflowReports < 40)
+		{
+			++s_nOverflowReports;
+			dsi_ConsolePrint("FindObjectsCB: Overflowed (more than %d intersecting objects), %d dropped",
+				MAX_INTERSECTING_OBJECTS, (int)objectArray.m_nOverflow);
+		}
 	}
 
 	pHitObjects[0] = pHitObjects[1] = LTNULL;
@@ -1760,7 +1789,11 @@ void MoveObject
 
 	// Check collisions with other objects.  We still do this even if teleporting, cuz we need
 	// to be put into containers...
-	if (IsPhysical(pState->m_pObj->m_Flags, pState->m_bServer))
+	// An object under gravity always collides, even when it isn't solid, or nothing
+	// stops it falling. Blood 2's corpses are non-solid on purpose
+	const LTBOOL bFalling = (pState->m_pObj->m_Flags & FLAG_GRAVITY) != 0;
+
+	if (IsPhysical(pState->m_pObj->m_Flags, pState->m_bServer) || bFalling)
 	{
 		// LT1MoveAxisMin: LT1 drops any axis of the move shorter than 0.001 and rebuilds the destination as start + delta.
 		// Without it a player pressed against a wall creeps into the wall's 0.1 clearance

@@ -762,6 +762,13 @@ bool FillPacketFromInfo(Client *pClient, LTObject *pObj, ObjInfo *pInfo, CPacket
 			{
 				cPacket.Writeuint32(ToModel(pObj)->m_HiddenPieces[nCurrPiece]);
 			}
+
+			// Hidden nodes ride with the hidden pieces, since the client draws the model.
+			// Keep this in step with shellnet.cpp's read
+			for (uint32 nCurrNode = 0; nCurrNode < MAX_HIDEABLE_MODEL_NODES / 32; nCurrNode++)
+			{
+				cPacket.Writeuint32(ToModel(pObj)->m_HiddenNodes[nCurrNode]);
+			}
         }
     }
 

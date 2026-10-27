@@ -109,6 +109,8 @@ int32	g_bLT1CreateInPlace = 0; // Placement move before InitialUpdate, so a new 
 int32	g_bLT1ModelAnimNoRestart = 0; // Ignore a request for the animation already playing.
 int32	g_bLT1CalcMotion = 0; // LT1's motion for a standing object in place of Jupiter's. Set on both client and server
 int32	g_bLT1StandVelStore = 0; // LT1CalcMotion's object keeps its clipped velocity when there's no friction, as LT1's does. Set on both client and server
+int32	g_bLT1StandGravity = 0; // A standing object keeps gravity's push into the floor, as LT1's does, so its move reaches the floor. Set on both client and server
+int32	g_bLT1BoxSlide = 0; // A box physics object stopped by a world model slides, leaving LT1's 0.1 gap, unless it has FLAG_NOSLIDING. Set on both client and server
 int32	g_bLT1DimsDetach = 0; // An object whose box changes size is detached from what it stood on, as in LT1. Set on both client and server
 int32	g_bLT1StairSwept = 0; // The stair step's box covers the whole move and moves with each push. Needs LT1StairStep and goes with LT1WorldOnce. Set on both client and server
 int32	g_bLT1WorldOnce = 0; // MoveObject collides with the main world once, after the other objects. Set on both client and server
@@ -448,6 +450,8 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1VirtualKeys", &g_bLT1VirtualKeys),
 	EV_LONG("LT1ClientIDFromOne", &g_bLT1ClientIDFromOne),
 	EV_LONG("LT1StairStep", &g_bLT1StairStep),
+	EV_LONG("LT1StandGravity", &g_bLT1StandGravity),
+	EV_LONG("LT1BoxSlide", &g_bLT1BoxSlide),
 	EV_LONG("LT1StairDamp", &g_bLT1StairDamp),
 	EV_LONG("LT1IntersectPushback", &g_bLT1IntersectPushback),
 	EV_LONG("LT1PlaneRecheck", &g_bLT1PlaneRecheck),

@@ -288,9 +288,11 @@ static void d3d_DrawRotatableSprite(const ViewParams& Params, SpriteInstance *pI
 	SpriteVerts[3].SetupVert(vPos - vRight - vUp, nColor, 0.0f, 1.0f);
 
 
-	//figure out our final vertices to use
-	CSpriteVertex	*pPoints;
-	uint32			nPoints;
+	//figure out our final vertices to use.
+	//The clipper reads these as its input too, so they're set before the call.
+	//Left unset, a clipped sprite overran ClippedSpriteVerts
+	CSpriteVertex	*pPoints = SpriteVerts;
+	uint32			nPoints  = 4;
 	CSpriteVertex	ClippedSpriteVerts[40 + 5];
 
 	if(pInstance->m_ClipperPoly != INVALID_HPOLY)
@@ -299,11 +301,6 @@ static void d3d_DrawRotatableSprite(const ViewParams& Params, SpriteInstance *pI
 		{
 			return;
 		}
-	}
-	else
-	{
-		pPoints = SpriteVerts;
-		nPoints = 4;
 	}
 
 	if((pInstance->m_Flags & FLAG_SPRITEBIAS) && !(pInstance->m_Flags & FLAG_REALLYCLOSE))

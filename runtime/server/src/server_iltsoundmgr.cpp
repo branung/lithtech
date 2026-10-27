@@ -169,8 +169,29 @@ LTRESULT CLTSoundMgrServer::PlaySound(PlaySoundInfo *pPlaySoundInfo, HLTSOUND &h
     return LT_OK;
 }
 
+// A HLTSOUND is a raw CSoundTrack*, freed back to its bank when the sound ends.
+// Blood 2 kills sounds through handles that have long finished
+static bool sound_IsLiveTrack(HLTSOUND hSound)
+{
+	if (!hSound || !g_pServerMgr)
+		return false;
+
+	LTLink *pHead = &g_pServerMgr->m_SoundTrackList.m_Head;
+	for (LTLink *pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
+	{
+		if (pCur->m_pData == (void *)hSound)
+			return true;
+	}
+
+	return false;
+}
+
 LTRESULT CLTSoundMgrServer::GetSoundDuration(HLTSOUND hSound, LTFLOAT &fDuration) {
     CSoundTrack *pSoundTrack;
+
+    if (!sound_IsLiveTrack(hSound)) {
+        RETURN_ERROR(1, CLTSoundMgrServer::GetSoundDuration, LT_INVALIDPARAMS);
+    }
 
     pSoundTrack = (CSoundTrack *)hSound;
     if (!pSoundTrack || !pSoundTrack->IsTrackTime()) {
@@ -185,6 +206,10 @@ LTRESULT CLTSoundMgrServer::GetSoundDuration(HLTSOUND hSound, LTFLOAT &fDuration
 LTRESULT CLTSoundMgrServer::IsSoundDone(HLTSOUND hSound, bool &bDone) {
     CSoundTrack *pSoundTrack;
 
+    if (!sound_IsLiveTrack(hSound)) {
+        RETURN_ERROR(1, CLTSoundMgrServer::IsSoundDone, LT_INVALIDPARAMS);
+    }
+
     pSoundTrack = (CSoundTrack *)hSound;
     if (!pSoundTrack) {
         RETURN_ERROR(1, CLTSoundMgrServer::IsSoundDone, LT_INVALIDPARAMS);
@@ -197,6 +222,10 @@ LTRESULT CLTSoundMgrServer::IsSoundDone(HLTSOUND hSound, bool &bDone) {
 
 LTRESULT CLTSoundMgrServer::KillSound(HLTSOUND hSound) {
     CSoundTrack *pSoundTrack;
+
+    if (!sound_IsLiveTrack(hSound)) {
+        RETURN_ERROR(1, CLTSoundMgrServer::KillSound, LT_INVALIDPARAMS);
+    }
 
     pSoundTrack = (CSoundTrack *)hSound;
     if (!pSoundTrack) {
@@ -215,6 +244,10 @@ LTRESULT CLTSoundMgrServer::KillSound(HLTSOUND hSound) {
 
 LTRESULT CLTSoundMgrServer::KillSoundLoop(HLTSOUND hSound) {
     CSoundTrack *pSoundTrack;
+
+    if (!sound_IsLiveTrack(hSound)) {
+        RETURN_ERROR(1, CLTSoundMgrServer::KillSoundLoop, LT_INVALIDPARAMS);
+    }
 
     pSoundTrack = (CSoundTrack *)hSound;
     if (!pSoundTrack) {

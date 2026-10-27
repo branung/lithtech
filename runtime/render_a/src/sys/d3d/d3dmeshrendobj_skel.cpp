@@ -657,8 +657,11 @@ void CD3DSkelMesh::BeginRender(DDMatrix* pD3DTransforms, CD3DRenderStyle* pRende
 		}
 		break;
 	case eD3DRenderMatrixPalettes	:
-		// Note: I am multiplying by two because the spec sais, if you're doing normals as well, it's half of the cap sais...
-		if ((m_iMaxBone-m_iMinBone)*2+1 > g_Device.GetDeviceCaps()->MaxVertexBlendMatrixIndex)
+		// The cap limits the highest index, and these indices are absolute node indices.
+		// The old test used the span, so a piece with few but high bones drew nothing.
+		// The spec's halving for normals isn't applied: index 8 against a cap of 8 draws.
+		// Only converted ABC models take this path
+		if (m_iMaxBone > (uint32)g_Device.GetDeviceCaps()->MaxVertexBlendMatrixIndex)
 		{
 			bSoftwareProcessing = true;
 		}

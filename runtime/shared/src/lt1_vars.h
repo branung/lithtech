@@ -33,6 +33,7 @@ extern int32 g_bLT1ClientIDFromOne;
 // Motion and stairs
 extern int32 g_bLT1CalcMotion;
 extern int32 g_bLT1StandVelStore;
+extern int32 g_bLT1StandGravity;
 extern int32 g_bLT1StairStep;
 extern int32 g_bLT1StairSwept;
 extern int32 g_bLT1StairDamp;
@@ -59,6 +60,7 @@ extern int32 g_bLT1MoveAxisMin;
 extern int32 g_bLT1PointBoxTouch;
 extern int32 g_bLT1ContainerBSP;
 extern int32 g_bLT1BoxBSPProbes;
+extern int32 g_bLT1BoxSlide;
 
 // Rays
 extern int32 g_bLT1IntersectLeaf;

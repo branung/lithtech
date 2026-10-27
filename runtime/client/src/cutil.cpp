@@ -748,6 +748,14 @@ void CClientMgr::UpdateModelDims( ModelInstance *pInstance )
 }
 
 
+// A model caches its node transforms for the frame, and nothing cleared that cache
+// when the model moved, so a node query followed by a move drew it at the old spot
+static void InvalidateCachedTransforms(LTObject *pObject)
+{
+	if (pObject && pObject->m_ObjectType == OT_MODEL)
+		pObject->ToModel()->ResetCachedTransformNodeStates();
+}
+
 void CClientMgr::MoveObject(LTObject *pObject, const LTVector *pNewPos, bool bForce)
 {
     LTVector vDiff;
@@ -760,6 +768,7 @@ void CClientMgr::MoveObject(LTObject *pObject, const LTVector *pNewPos, bool bFo
     }
 
     pObject->SetPos(*pNewPos);
+    InvalidateCachedTransforms(pObject);
 
     // Do special stuff if it's a WorldModel.
     if (pObject->HasWorldModel())
@@ -781,6 +790,7 @@ void CClientMgr::RotateObject(LTObject *pObject, const LTRotation *pNewRot)
 {
 	//set rotation
     pObject->m_Rotation = *pNewRot;
+    InvalidateCachedTransforms(pObject);
 
     // Do special stuff if it's a WorldModel.
     if (pObject->HasWorldModel())
@@ -804,6 +814,7 @@ void CClientMgr::MoveAndRotateObject(LTObject *pObject, const LTVector *pNewPos,
 {
     pObject->SetPos(*pNewPos);
     pObject->m_Rotation = *pNewRot;
+    InvalidateCachedTransforms(pObject);
 
     // Do special stuff for a WorldModel.
     if (pObject->HasWorldModel())

@@ -247,11 +247,20 @@ void CalcMotion
 
 						bFriction = LTTRUE;
 
+						// LT1 adds the force here too, see below
+						if (g_bLT1StandGravity)
+							a += *n * n->Dot(vForce);
+
 						// dsi_ConsolePrint("Downhill");
 					}
 					else
 					{
 						bFriction = LTTRUE;
+
+						// LT1 keeps gravity's into-plane part on a standing object, and Jupiter drops it.
+						// Without it the move never reaches the floor and the object flickers on and off the ground
+						if (g_bLT1StandGravity)
+							a += *n * n->Dot(vForce);
 
 						// dsi_ConsolePrint("Walk");
 					}
