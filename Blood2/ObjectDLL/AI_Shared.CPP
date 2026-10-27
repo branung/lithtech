@@ -1570,7 +1570,11 @@ void AI_Shared::CreateLimb(HOBJECT hObject, int nNode, DVector vDir)
 	// Get dims of this gib...
 	g_pServerDE->GetObjectDims( hObject, &vParentDims );
 
-	g_pServerDE->GetModelNodeTransform(hObject,szNodes[nNode],&vPos,&rRot);
+	// A failed lookup leaves vPos unset, and a gib born at a NaN position touches every box in the level.
+	// A model without the node has no limb gib
+	if (!g_pServerDE->GetModelNodeTransform(hObject,szNodes[nNode],&vPos,&rRot))
+		return;
+
 	g_pServerDE->GetObjectRotation( hObject, &rRot );	//temp
 	
 	ObjectCreateStruct theStruct;
@@ -1585,6 +1589,25 @@ void AI_Shared::CreateLimb(HOBJECT hObject, int nNode, DVector vDir)
 		case NODE_RLEG:		theStruct.m_UserData = GIB_LEG;		break;
 		default:	return;
 	}
+
+	// A gib is the whole character model, posed by a limb animation with the rest hidden.
+	// Without that animation it spawns T-posed, and most enemy models have none, so no gib
+	char *pszLimbAnim = DNULL;
+	switch(nNode)
+	{
+		case NODE_NECK:	pszLimbAnim = ANIM_LIMB_HEAD;	break;
+		case NODE_RARM:
+		case NODE_LARM:	pszLimbAnim = ANIM_LIMB_ARM;	break;
+		case NODE_LLEG:
+		case NODE_RLEG:	pszLimbAnim = ANIM_LIMB_LEG;	break;
+	}
+
+	HMODELANIM hLimbAnim = pszLimbAnim
+		? g_pServerDE->GetAnimIndex(hObject, pszLimbAnim)
+		: (HMODELANIM)-1;
+
+	if (hLimbAnim == (HMODELANIM)-1)
+		return;
 
 	g_pServerDE->GetModelFilenames(hObject,theStruct.m_Filename,MAX_CS_FILENAME_LEN+1,
 										   theStruct.m_SkinName,MAX_CS_FILENAME_LEN+1);
@@ -1617,23 +1640,11 @@ void AI_Shared::CreateLimb(HOBJECT hObject, int nNode, DVector vDir)
 	if( !pObj )
 		return;
 
-	//Set the right animation
-	if(nNode == NODE_NECK)
-	{
-		g_pServerDE->SetModelAnimation(pObj->m_hObject, g_pServerDE->GetAnimIndex(pObj->m_hObject,ANIM_LIMB_HEAD));
-	}
-	else if(nNode == NODE_RARM || nNode == NODE_LARM)
-	{
+	//Set the right animation, found above
+	if(nNode != NODE_NECK)
 		pObj->SetKickable(DFALSE);
-		g_pServerDE->SetModelAnimation(pObj->m_hObject, g_pServerDE->GetAnimIndex(pObj->m_hObject,ANIM_LIMB_ARM));
-	}
-	else if(nNode == NODE_LLEG || nNode == NODE_RLEG)
-	{
-		pObj->SetKickable(DFALSE);
-		g_pServerDE->SetModelAnimation(pObj->m_hObject, g_pServerDE->GetAnimIndex(pObj->m_hObject,ANIM_LIMB_LEG));
-	}
-	else 
-		return;
+
+	g_pServerDE->SetModelAnimation(pObj->m_hObject, hLimbAnim);
 
     g_pServerDE->SetModelLooping(pObj->m_hObject, DFALSE);
 
@@ -1650,10 +1661,15 @@ void AI_Shared::CreateLimb(HOBJECT hObject, int nNode, DVector vDir)
 	}
 
 	//SCHLEGZ 3/11/98 7:27:09 PM: set the dims correctly
+	//Starts from the object's own dims, as the query leaves them unset when it fails
 	DVector vDims;
-	g_pServerDE->GetModelAnimUserDims(pObj->m_hObject, &vDims, g_pServerDE->GetModelAnimation(pObj->m_hObject));
+	g_pServerDE->GetObjectDims(pObj->m_hObject, &vDims);
 
-	g_pServerDE->SetObjectDims(pObj->m_hObject,&vDims);
+	if(g_pServerDE->GetModelAnimUserDims(pObj->m_hObject, &vDims,
+			g_pServerDE->GetModelAnimation(pObj->m_hObject)) == DE_OK)
+	{
+		g_pServerDE->SetObjectDims(pObj->m_hObject,&vDims);
+	}
 
 	//throw the limb out there
 	g_pServerDE->SetVelocity( pObj->m_hObject, &vVel );

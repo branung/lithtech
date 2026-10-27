@@ -122,6 +122,28 @@ LTRESULT CBloodServerShell::OnServerInitialized()
 	// The shared LT1 engine defaults. Each side has its own copy of the engine variables
 	DECompat_ApplyLT1ServerDefaults(g_pServerDE);
 
+	// LT1's box collision: pushback along the normal, slide with a 0.1 gap, the 0.1 recheck against every plane touched,
+	// the sweep rebuilt after each resolution, and LT1's polygon test. Without them a crouched player grinds in vents (client too)
+	g_pServerDE->RunGameConString("LT1IntersectPushback 1");
+	g_pServerDE->RunGameConString("LT1BoxSlide 1");
+	g_pServerDE->RunGameConString("LT1PlaneRecheck 1");
+	g_pServerDE->RunGameConString("LT1SweepRebuild 1");
+	g_pServerDE->RunGameConString("LT1PolyTest 1");
+
+	// A third repeat hit keeps the resolved progress, and the main world is walked after the object loop (client too)
+	g_pServerDE->RunGameConString("LT1StrikeKeep 1");
+	g_pServerDE->RunGameConString("LT1WorldAfterObjects 1");
+
+	// LT1 stair step, and gravity's push into the floor on a standing object (client too)
+	g_pServerDE->RunGameConString("LT1StairStep 1");
+	g_pServerDE->RunGameConString("LT1StandGravity 1");
+
+	// Platforms carry riders as LT1's do: no nudge into the platform, tiny moves ignored,
+	// and a rotating platform doesn't refuse its riders (client too)
+	g_pServerDE->RunGameConString("LT1CarryNoNudge 1");
+	g_pServerDE->RunGameConString("LT1MinMove 1");
+	g_pServerDE->RunGameConString("LT1RotateNoMovingFlag 1");
+
 	// Moved from the constructor
 	// Reset the goto-start-point game con var...
 	g_pServerDE->SetGameConVar(g_szVarGotoStartpoint, "1");

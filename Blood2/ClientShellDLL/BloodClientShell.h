@@ -595,6 +595,7 @@ class CBloodClientShell : public CClientShellDE
 		// Mouse
 		DBOOL			m_bMouseInvertYAxis;
 		DBOOL			m_bMouseLook;
+		DDWORD			m_nLastSentCommandBits[4];	// The held commands last sent, so a change forces an update
 		DBOOL			m_bLookSpring;
 
 		// Joystick

@@ -59,6 +59,7 @@ CViewWeapon::CViewWeapon()
 	VEC_INIT(m_vViewModelOffset);
 	VEC_INIT(m_vFlashPos);
 	VEC_INIT(m_vAdjFlashPos);
+	VEC_INIT(m_vWorldPos);
 	m_fViewKick			= 0;
 	m_bCumulativeKick	= DFALSE;
 	m_bLeftHand			= DFALSE;
@@ -345,7 +346,8 @@ void CViewWeapon::AdjustAngleAndSetPos(DFLOAT fPitch, DFLOAT fYaw, DVector *pos)
 	// Compute offset for gun &
 	// Move gun to correct position
 	m_pClientDE->SetupEuler(&rotGun, fPitch, fYaw, (float)0);
-	m_pClientDE->SetObjectRotation(m_hObject, &rotGun);
+
+	// The world rotation and position are still worked out, for the world space effects and the muzzle position
 	ROT_COPY(g_rotGun, rotGun);
 
 	m_pClientDE->GetRotationVectors(&rotGun, &vU, &vR, &vF);
@@ -359,7 +361,20 @@ void CViewWeapon::AdjustAngleAndSetPos(DFLOAT fPitch, DFLOAT fYaw, DVector *pos)
 	VEC_ADD(myPos, myPos, vR);
 	VEC_ADD(myPos, myPos, vF);
 
-	m_pClientDE->SetObjectPos(m_hObject, &myPos);
+	// Update reads this, since the object no longer carries a world position
+	VEC_COPY(m_vWorldPos, myPos);
+
+	// The object is FLAG_REALLYCLOSE, which in Jupiter is camera space, while LT1 drew it in world space.
+	// The offset is already in camera space's (right, up, forward) order, so it's used as it is, as Shogo does
+	DRotation rIdentity;
+	ROT_INIT(rIdentity);
+	m_pClientDE->SetObjectRotation(m_hObject, &rIdentity);
+
+	DVector vLocalPos;
+	VEC_SET(vLocalPos, m_vViewModelOffset.x + m_fBobWidth,
+					   m_vViewModelOffset.y + m_fBobHeight,
+					   m_vViewModelOffset.z);
+	m_pClientDE->SetObjectPos(m_hObject, &vLocalPos);
 }
 
 
@@ -406,7 +421,8 @@ void CViewWeapon::Update(DFLOAT fPitch, DFLOAT fYaw, DVector *pos)
 	AdjustAngleAndSetPos(fPitch, fYaw, pos);
 
 	// Now figure out the muzzle position for the flash.
-	m_pClientDE->GetObjectPos(m_hObject, &myPos);
+	// The world position, as the object now carries a camera space one
+	VEC_COPY(myPos, m_vWorldPos);
 	m_pClientDE->SetupEuler(&rot, fPitch, fYaw, (float)0);
 	m_pClientDE->GetRotationVectors(&rot, &vU, &vR, &vF);
 

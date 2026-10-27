@@ -93,6 +93,7 @@ class CViewWeapon
 //		DVector		m_Recoil;			// Gun's recoil
 		DVector		m_vFlashPos;		// Flash position
 		DVector		m_vAdjFlashPos;		// Adjusted flash position
+		DVector		m_vWorldPos;		// World space gun position, as the object carries a camera space one
 //		DFLOAT		m_fViewKick;		// How much to adjust perspective when firing
 //		DBOOL		m_bCumulativeKick;	// Kick effect is Cumulative
 

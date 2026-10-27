@@ -1474,7 +1474,14 @@ void AI_Mgr::UpdateFollowPathCmd()
 	}
 
 	DFLOAT fDistLeft = VEC_DIST(vTargetPos, vPos);
-	DFLOAT fDistPredict = m_pServerDE->GetFrameTime() * fSpeed;
+	// The arrival tolerance is a frame's travel, so it shrinks above 30fps and an AI can miss its waypoint.
+	// Floored at 30fps, as Shogo's BaseAI::UpdateScriptMovement does
+	const DFLOAT kMinArrivalFrameTime = 1.0f / 30.0f;
+	DFLOAT fArrivalFrameTime = m_pServerDE->GetFrameTime();
+	if (fArrivalFrameTime < kMinArrivalFrameTime)
+		fArrivalFrameTime = kMinArrivalFrameTime;
+
+	DFLOAT fDistPredict = fArrivalFrameTime * fSpeed;
 
 	if (fDistLeft <= fDistPredict * 2.0f)
 	{
@@ -1605,7 +1612,13 @@ void AI_Mgr::UpdateMoveToObjectCmd()
 			}
 
 			DFLOAT fDistLeft = VEC_DIST(*m_MoveObj.GetNextPathPoint(), vPos);
-			DFLOAT fDistPredict = m_pServerDE->GetFrameTime() * fSpeed;
+			// The same 30fps floor as UpdateFollowPathCmd's
+			const DFLOAT kMinArrivalFrameTime = 1.0f / 30.0f;
+			DFLOAT fArrivalFrameTime = m_pServerDE->GetFrameTime();
+			if (fArrivalFrameTime < kMinArrivalFrameTime)
+				fArrivalFrameTime = kMinArrivalFrameTime;
+
+			DFLOAT fDistPredict = fArrivalFrameTime * fSpeed;
 
 			if (fDistLeft <= fDistPredict * 2.0f)
 			{
@@ -3817,22 +3830,57 @@ DBOOL AI_Mgr::CreateCorpse()
 		((CCorpse*)pObj)->Setup(m_hFireSource, DFALSE);
 	}
 
-	//sanity check for a bug I can't find :)
-	if(m_nCorpseType < m_pAnim_Sound->m_nAnim_DEATH[0])
-		m_nCorpseType = m_pAnim_Sound->m_nAnim_DEATH[m_pServerDE->IntRandom(0,11)];
+	// Pick a death animation this model has. 1998 picked from all twelve death slots,
+	// and most models leave some of them -1, so the corpse got garbage dims and fell through the floor
+	{
+		HMODELANIM nValid[12];
+		int nNumValid = 0;
+
+		for (int nD = 0; nD < 12; nD++)
+		{
+			if (m_pAnim_Sound->m_nAnim_DEATH[nD] != (HMODELANIM)-1)
+				nValid[nNumValid++] = m_pAnim_Sound->m_nAnim_DEATH[nD];
+		}
+
+		// Is the one the damage handler chose actually usable?
+		DBOOL bHaveType = DFALSE;
+		for (int nV = 0; nV < nNumValid; nV++)
+		{
+			if (nValid[nV] == m_nCorpseType)
+			{
+				bHaveType = DTRUE;
+				break;
+			}
+		}
+
+		if (!bHaveType)
+		{
+			m_nCorpseType = nNumValid
+				? nValid[m_pServerDE->IntRandom(0, nNumValid - 1)]
+				: (HMODELANIM)-1;
+		}
+	}
 
 	//Set the animation to the corpse animation
-	m_pServerDE->SetModelAnimation(pObj->m_hObject,m_nCorpseType);
-    m_pServerDE->SetModelLooping(pObj->m_hObject, DFALSE);
+	if (m_nCorpseType != (HMODELANIM)-1)
+	{
+		m_pServerDE->SetModelAnimation(pObj->m_hObject,m_nCorpseType);
+		m_pServerDE->SetModelLooping(pObj->m_hObject, DFALSE);
+	}
 
-	//Get the corpses dims
-	m_pServerDE->GetModelAnimUserDims(pObj->m_hObject, &vDims, m_nCorpseType);
-
-	//Put the corpse on the floor
 	m_pServerDE->ScaleObject(pObj->m_hObject,&m_vScale);
-	m_pServerDE->SetObjectDims2(pObj->m_hObject,&vDims);
 
-	vPos.y -= (vAI_Dims.y - vDims.y) - 0.001f;
+	//Get the corpses dims. Starts from the object's own dims, as the query leaves them unset when it fails
+	m_pServerDE->GetObjectDims(pObj->m_hObject, &vDims);
+
+	if (m_nCorpseType != (HMODELANIM)-1 &&
+	    m_pServerDE->GetModelAnimUserDims(pObj->m_hObject, &vDims, m_nCorpseType) == DE_OK)
+	{
+		//Put the corpse on the floor
+		m_pServerDE->SetObjectDims2(pObj->m_hObject,&vDims);
+
+		vPos.y -= (vAI_Dims.y - vDims.y) - 0.001f;
+	}
 
 	m_pServerDE->SetObjectPos(pObj->m_hObject,&vPos);
 
@@ -5601,6 +5649,16 @@ void AI_Mgr::MC_FacePos(DVector vPos)
 	DVector vDir;
 
 	VEC_SUB(vDir, vPos, m_MoveObj.GetPos());
+
+	// VEC_NORM has no zero guard.
+	// Facing a position the AI already occupies would store a NaN rotation for good, and a path's first point is often on the AI.
+	// LT1 has no guard either, so this is a deliberate change
+	if (VEC_MAGSQR(vDir) <= 0.0f)
+	{
+		Metacmd++;
+		return;
+	}
+
 	VEC_NORM(vDir);
 
 	DFLOAT fAmount = (DFLOAT) atan2(vDir.x, vDir.z);

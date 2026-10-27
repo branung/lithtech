@@ -867,6 +867,36 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	// The shared LT1 engine defaults
 	DECompat_ApplyLT1ClientDefaults(pClientDE);
 
+	// Blood 2's near clip for player view models is 0.01. The far clip only has to clear the deepest one
+	pClientDE->RunConsoleString("-reallyclose_near 0.01");
+	pClientDE->RunConsoleString("-reallyclose_far 20.0");
+
+	// LT1 dynamic lights light the world, and Jupiter's only opt in is a flag LT1 games don't have.
+	// 01_SUBWAYA's tunnel is lit by lights swept past the train
+	pClientDE->RunConsoleString("-DynamicLightWorld 1");
+
+	// LT1's box collision: pushback along the normal, slide with a 0.1 gap, the 0.1 recheck against every plane touched,
+	// the sweep rebuilt after each resolution, and LT1's polygon test. Without them a crouched player grinds in vents (both sides)
+	pClientDE->RunConsoleString("-LT1IntersectPushback 1");
+	pClientDE->RunConsoleString("-LT1BoxSlide 1");
+	pClientDE->RunConsoleString("-LT1PlaneRecheck 1");
+	pClientDE->RunConsoleString("-LT1SweepRebuild 1");
+	pClientDE->RunConsoleString("-LT1PolyTest 1");
+
+	// A third repeat hit keeps the resolved progress, and the main world is walked after the object loop (both sides)
+	pClientDE->RunConsoleString("-LT1StrikeKeep 1");
+	pClientDE->RunConsoleString("-LT1WorldAfterObjects 1");
+
+	// LT1 stair step, and gravity's push into the floor on a standing object (both sides)
+	pClientDE->RunConsoleString("-LT1StairStep 1");
+	pClientDE->RunConsoleString("-LT1StandGravity 1");
+
+	// Platforms carry riders as LT1's do: no nudge into the platform, tiny moves ignored,
+	// and a rotating platform doesn't refuse its riders (both sides)
+	pClientDE->RunConsoleString("-LT1CarryNoNudge 1");
+	pClientDE->RunConsoleString("-LT1MinMove 1");
+	pClientDE->RunConsoleString("-LT1RotateNoMovingFlag 1");
+
 	// Init Move mgr...
 	m_pMoveMgr = new CMoveMgr(this);
 	if(!m_pMoveMgr)
@@ -1556,6 +1586,9 @@ void CBloodClientShell::OnEnterWorld()
 
 	ROT_INIT(m_Rotation)
 
+	m_nLastSentCommandBits[0] = m_nLastSentCommandBits[1] =
+		m_nLastSentCommandBits[2] = m_nLastSentCommandBits[3] = 0;
+
 	// Sky panning
 	m_bPanSky			= DFALSE;
 	m_fPanSkyOffsetX	= 1.0f;
@@ -1834,11 +1867,32 @@ void CBloodClientShell::SendPlayerUpdateMessage(DBOOL bSendAll)
 		byUpdateFlags = PLAYERUPDATE_ALL;
 	}
 
+	// A change in the held commands is a reason to send on its own, as the server finds the presses from them.
+	// Otherwise a player standing still and pressing Use sends nothing
+	DDWORD nCurCommandBits[4] = { 0, 0, 0, 0 };
+	for (int nCmdBit = 0; nCmdBit < PLAYER_COMMAND_BITS; ++nCmdBit)
+	{
+		if (pClientDE->IsCommandOn(nCmdBit))
+			nCurCommandBits[nCmdBit >> 5] |= ((DDWORD)1) << (nCmdBit & 31);
+	}
+
+	for (int nCmdWord = 0; nCmdWord < 4; ++nCmdWord)
+	{
+		if (nCurCommandBits[nCmdWord] != m_nLastSentCommandBits[nCmdWord])
+		{
+			byUpdateFlags |= PLAYERUPDATE_COMMANDS;
+			break;
+		}
+	}
+
 	// Send the stuff.
 	if (byUpdateFlags)
 	{
 		// Every update carries the held commands
 		byUpdateFlags |= PLAYERUPDATE_COMMANDS;
+
+		for (int nCmdWord = 0; nCmdWord < 4; ++nCmdWord)
+			m_nLastSentCommandBits[nCmdWord] = nCurCommandBits[nCmdWord];
 
 		HMESSAGEWRITE hMsg = pClientDE->StartMessage(CMSG_PLAYERUPDATE);
 

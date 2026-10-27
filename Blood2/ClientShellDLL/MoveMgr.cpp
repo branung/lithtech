@@ -92,6 +92,10 @@ DBOOL CMoveMgr::Init(ClientDE *pClientDE)
 	m_bBodyInLiquid = DFALSE;
 	m_bBodyOnLadder = DFALSE;
 	m_bBodyOnConveyor = DFALSE;
+
+	// Nothing sets m_bSlowMode, but left uninitialized it could halve the player's speed from spawn
+	m_bSlowMode = DFALSE;
+	m_fSlowTime = 0.0f;
 	m_bOnGround = DTRUE;
 	m_nMouseStrafeFlags = 0;
 	m_bSwimmingOnSurface = DFALSE;
@@ -401,6 +405,31 @@ void CMoveMgr::UpdateOnGround(CollisionInfo *pInfo)
 	if (pInfo->m_hObject) 
 	{
 		m_bOnGround = DTRUE;
+
+		// Landing ends the fall. The player's collision never changes its velocity,
+		// so the fall speed kept building on the floor until falling damage killed the player.
+		// Only the part into the floor is cleared, along its normal, so a jump keeps its speed
+		// and a player standing on a ramp isn't carried up it
+		m_pPhysicsLT->GetVelocity(m_hObject, &vVel);
+		{
+			const DVector &n = pInfo->m_Plane.m_Normal;
+			if (n.y > 0.001f)
+			{
+				const DFLOAT fInto = VEC_DOT(vVel, n);
+				if (fInto < 0.0f)
+				{
+					DVector vInto;
+					VEC_MULSCALAR(vInto, n, fInto);
+					VEC_SUB(vVel, vVel, vInto);
+					m_pPhysicsLT->SetVelocity(m_hObject, &vVel);
+				}
+			}
+			else if (vVel.y < 0.0f)
+			{
+				vVel.y = 0.0f;
+				m_pPhysicsLT->SetVelocity(m_hObject, &vVel);
+			}
+		}
 
 		// Get the last surface type (for footsteps, etc)
 		m_eLastSurface = ::GetSurfaceType(pInfo->m_hObject, pInfo->m_hPoly);
