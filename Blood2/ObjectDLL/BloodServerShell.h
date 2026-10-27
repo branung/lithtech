@@ -33,6 +33,9 @@ class CBloodServerShell : public CServerShellDE
 		declare_interface(CBloodServerShell);
 
 		CBloodServerShell();
+
+		// The first point at which g_pServerDE is valid
+		virtual LTRESULT OnServerInitialized();
 		~CBloodServerShell();
         
 		void		FragStatus();

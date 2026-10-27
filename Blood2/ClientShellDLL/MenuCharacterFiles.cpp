@@ -35,6 +35,10 @@ CMenuCharacterFiles::CMenuCharacterFiles()
 
 CMenuCharacterFiles::~CMenuCharacterFiles()
 {
+	// Destroyed at unload, after the engine interface is gone (see ~CBloodClientShell)
+	if (!g_pClientDE)
+		return;
+
 	// Delete the surface of the file field
 	if(m_hFileField)
 		{ m_pClientDE->DeleteSurface(m_hFileField); m_hFileField = 0; }

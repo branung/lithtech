@@ -27,6 +27,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 add_library(LIB_DECompatClient STATIC
 	de_client.cpp)
+target_link_libraries(LIB_DECompatClient PUBLIC LIB_DECompatDefaults)
 
 if(LINUX)
     set_target_properties(LIB_DECompatClient PROPERTIES COMPILE_FLAGS "-fPIC")

@@ -14,6 +14,7 @@
 #include "serverobj_de.h"
 #include "BaseCharacter.h"
 #include "PlayerObj.h"
+#include "de_commandedges.h"
 #include "Commands.h"
 #include "BloodServerShell.h"
 #include "ObjectUtilities.h"
@@ -2510,6 +2511,15 @@ void CPlayerObj::ObjectCrush(HOBJECT hObj, DFLOAT fData)
 //	PURPOSE:	Processes a message from the client.
 //
 // --------------------------------------------------------------------------- //
+
+// Callback for DECompat_FireCommandEdges
+static void lt1_FireCommandOn(void *pContext, int nCommand)
+{
+	CPlayerObj *pPlayer = (CPlayerObj*)pContext;
+	if (pPlayer)
+		pPlayer->OnCommandOn((DDWORD)nCommand);
+}
+
 void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 {
 	CServerDE* pServerDE = GetServerDE();
@@ -2567,11 +2577,17 @@ void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 				}
 			}
 
-			// Held commands, last, as the client writes them last
+			// Held commands, last, as the client writes them last.
+			// LT1's engine called OnCommandOn for each new press, and Jupiter's doesn't, so the presses are found here
 			if (byUpdateFlags & PLAYERUPDATE_COMMANDS)
 			{
+				DDWORD nOldBits[4];
 				for (int nWord = 0; nWord < 4; ++nWord)
+				{
+					nOldBits[nWord] = m_nCommandBits[nWord];
 					m_nCommandBits[nWord] = pServerDE->ReadFromMessageDWord(hMsg);
+				}
+				DECompat_FireCommandEdges(nOldBits, m_nCommandBits, 4, lt1_FireCommandOn, this);
 			}
 
 			// Update the rotation

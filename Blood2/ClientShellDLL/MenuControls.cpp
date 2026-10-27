@@ -504,6 +504,14 @@ DBOOL CMenuControls::HandleDeviceTrack(DeviceInput *pInput, DDWORD dwNumDevices)
 			continue;
 		}
 
+		// Take the press, not the release. TrackDevice reports both, and the release of the key
+		// that chose this entry would otherwise be bound before the player pressed anything
+		if (!pInput->m_InputValue)
+		{
+			pInput++;
+			continue;
+		}
+
 		if (pInput->m_DeviceType == DEVICETYPE_KEYBOARD)
 		{
 			// Ignore the next keyboard message

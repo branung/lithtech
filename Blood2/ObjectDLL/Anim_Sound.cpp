@@ -136,6 +136,10 @@ CAnim_Sound::CAnim_Sound()
 
 CAnim_Sound::~CAnim_Sound()
 {
+	// AI classes hold these as static members, which are destroyed at DLL unload after g_pServerDE is cleared
+	if (!g_pServerDE)
+		return;
+
 	if( m_hVoxSound )
 		g_pServerDE->KillSound( m_hVoxSound );
 }

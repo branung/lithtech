@@ -200,7 +200,8 @@ class CCheatMgr
 
 		struct CheatInfo
 		{
-			char			*pzText;
+			// An array, where 1998 had a char*. Decrypt() rewrites it in place, and string literals are read-only now
+			char			pzText[32];
 			DBOOL			bActive;
 		};
 

@@ -30,6 +30,11 @@ PathListData::PathListData()
 
 PathListData::~PathListData()
 {
+	// PathMgr lives in the static server shell, so this can run at DLL unload after g_pServerDE is cleared.
+	// LT1 destroyed the shell while the engine was still running
+	if (!g_pServerDE)
+		return;
+
 	g_pServerDE->FreeString( m_hstrName );
 	g_pServerDE->FreeString( m_hstrActionTarget	);
 	g_pServerDE->FreeString( m_hstrActionMessage );

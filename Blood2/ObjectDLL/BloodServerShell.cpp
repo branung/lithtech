@@ -9,6 +9,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "BloodServerShell.h"
+#include "de_lt1defaults.h"
 #include "PlayerObj.h"
 #include "cpp_server_de.h"
 #include "PathMgr.h"
@@ -76,7 +77,8 @@ CBloodServerShell* g_pBloodServerShell = DNULL;
 
 CBloodServerShell::CBloodServerShell()
 {
-	// CreateServerShell used to set it
+	// The shell is a static object, so this runs when Object.lto loads, before the engine sets g_pServerDE.
+	// Anything that uses the engine goes in OnServerInitialized
 	g_pBloodServerShell = this;
 
 	memset(&m_GameInfo, 0, sizeof(NetGame));
@@ -91,20 +93,47 @@ CBloodServerShell::CBloodServerShell()
 
 	ClearClientList();
 
-	SetupGameInfo();
-
 	m_bBlood2ServHosted = DFALSE;
 	m_nCurLevel			 = 0;
 
+	// Both do nothing without the engine interface
 	if (!m_VoiceMgr.IsInited())
 	{
 		m_VoiceMgr.Init(g_pServerDE);
 	}
 
 	g_SayTrack.Term();
+}
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CBloodServerShell::OnServerInitialized()
+//
+//	PURPOSE:	Initialization that needs g_pServerDE
+//
+// ----------------------------------------------------------------------- //
+
+LTRESULT CBloodServerShell::OnServerInitialized()
+{
+	// IServerShellStub's version is private and only returns LT_OK
+	if (!g_pServerDE) return LT_ERROR;
+
+	// The shared LT1 engine defaults. Each side has its own copy of the engine variables
+	DECompat_ApplyLT1ServerDefaults(g_pServerDE);
+
+	// Moved from the constructor
 	// Reset the goto-start-point game con var...
 	g_pServerDE->SetGameConVar(g_szVarGotoStartpoint, "1");
+
+	if (!m_VoiceMgr.IsInited())
+	{
+		m_VoiceMgr.Init(g_pServerDE);
+	}
+
+	SetupGameInfo();
+
+	return LT_OK;
 }
 
 
@@ -118,6 +147,10 @@ CBloodServerShell::CBloodServerShell()
 
 CBloodServerShell::~CBloodServerShell()
 {
+	// Runs at DLL unload, after g_pServerDE is cleared
+	if (!g_pServerDE)
+		return;
+
 	if (!g_pServerDE) return;
 
 	// Tell all clients that we are shutting down

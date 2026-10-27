@@ -1136,10 +1136,21 @@ char* CWeaponFX::GetImpactSound(DBYTE nWeaponType, DBYTE nAmmoType, SurfaceType 
 
 	if(calc)
 	{
-		int length = _mbstrlen(pSoundFile);
-		int nMax = NRES(4) - 1;
-		int random = GetRandom(0,nMax);
-		pSoundFile[length - 5] = '1' + random;
+		// This wrote the digit into pSoundFile, a string literal, which crashes now that literals are read-only.
+		// It patches a copy instead, static because the caller keeps the pointer
+		static char s_szImpactSound[128];
+
+		LTStrCpy(s_szImpactSound, pSoundFile, sizeof(s_szImpactSound));
+
+		int length = (int)strlen(s_szImpactSound);
+		if (length >= 5)
+		{
+			int nMax = NRES(4) - 1;
+			int random = GetRandom(0,nMax);
+			s_szImpactSound[length - 5] = (char)('1' + random);
+		}
+
+		return s_szImpactSound;
 	}
 
 	return pSoundFile;

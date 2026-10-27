@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include "BloodClientShell.h"
+#include "de_lt1defaults.h"
 #include "ViewWeapon.h"
 #include "Commands.h"
 #include "VKDefs.h"
@@ -540,6 +541,10 @@ CBloodClientShell::~CBloodClientShell()
 {
 	CClientDE* pClientDE = GetClientDE();
 
+	// The shell is a static object, so this runs at DLL unload after the engine has cleared g_pClientDE.
+	// The process is exiting, so the handles aren't freed
+	if (!pClientDE)
+		return;
 
 	if (m_pMoveMgr)
 	{
@@ -858,6 +863,9 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	// Set the guid...
 
 	*pAppGuid = BLOOD2GUID;
+
+	// The shared LT1 engine defaults
+	DECompat_ApplyLT1ClientDefaults(pClientDE);
 
 	// Init Move mgr...
 	m_pMoveMgr = new CMoveMgr(this);

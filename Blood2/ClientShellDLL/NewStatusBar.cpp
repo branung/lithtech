@@ -132,6 +132,10 @@ CNewStatusBar::CNewStatusBar()
 
 CNewStatusBar::~CNewStatusBar()
 {
+	// Destroyed at unload, after the engine interface is gone (see ~CBloodClientShell)
+	if (!g_pClientDE)
+		return;
+
 	for(int i = 0; i < 10; i++)
 	{
 		if( m_pWeapPics[i] )

@@ -772,6 +772,10 @@ void CDestructableModel::HandleTriggerMessage( const char *pMsg )
 	{
 		bMore = g_pServerDE->Parse( pMsg, &pCommandPos, tokenSpace, pTokens, &nArgs );
 
+		// As in AI_Mgr::HandleTrigger, pTokens[0] is uninitialized when there are no tokens
+		if( nArgs < 1 )
+			break;
+
 		// Handle the alpha change command...
 		if( _mbsicmp((const unsigned char*) pTokens[0], (const unsigned char*)"Alpha" ) == 0 && nArgs > 1 )
 		{

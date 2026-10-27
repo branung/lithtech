@@ -361,6 +361,10 @@ CStatusBar::CStatusBar()
 
 CStatusBar::~CStatusBar()
 {
+	// Destroyed at unload, after the engine interface is gone (see ~CBloodClientShell)
+	if (!g_pClientDE)
+		return;
+
 	if( m_sCommSound )
 	{
 		g_pClientDE->KillSound( m_sCommSound );

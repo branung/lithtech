@@ -1016,6 +1016,11 @@ DBOOL AI_Mgr::HandleTrigger( HOBJECT hSender, HMESSAGEREAD hRead )
 	{
 		bContinue = m_pServerDE->Parse(pCommand, &pCommandPos, tokenSpace, pTokens, &nArgs);
 
+		// With no tokens pTokens[0] is uninitialized, and the tests below read it before checking nArgs.
+		// A modern CRT's _mbsicmp ends the process on it, so stop here
+		if (nArgs < 1)
+			break;
+
     	// Okay, see if we can handle the message...
 		if(_mbsicmp((const unsigned char*)TRIGGER_SOUND, (const unsigned char*)pTokens[0]) == 0 && nArgs > 1)
 		{
@@ -3791,7 +3796,10 @@ DBOOL AI_Mgr::CreateCorpse()
 		m_nCorpseType = m_pAnim_Sound->m_nAnim_DEATH[m_pServerDE->IntRandom(0,11)];
 	}
 
-	theStruct.m_UserData = (DDWORD)(m_pAnim_Sound->GetSoundRoot());
+	// The sound root goes in a buffer rather than m_UserData, which is 32 bits and truncated the pointer (see corpse.cpp)
+	theStruct.m_UserData = 0;
+	LTStrCpy(g_szPendingCorpseSoundRoot, m_pAnim_Sound->GetSoundRoot(),
+		sizeof(g_szPendingCorpseSoundRoot));
 
 	// Allocate an object...
 	DEBaseClass* pObj = m_pServerDE->CreateObject( hClass, &theStruct );

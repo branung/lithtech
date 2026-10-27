@@ -12,6 +12,8 @@
 #include "ai_mgr.h"
 #include "B2BaseClass.h"
 
+extern char g_szPendingCorpseSoundRoot[256];
+
 class CCorpse : public B2BaseClass
 {
 	public:

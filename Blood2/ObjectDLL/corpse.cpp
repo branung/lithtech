@@ -235,14 +235,24 @@ DBOOL CCorpse::ReadProp(ObjectCreateStruct *pStruct)
 //
 // ----------------------------------------------------------------------- //
 
+// Set before a corpse is created and read by its PostPropRead
+char g_szPendingCorpseSoundRoot[256] = { 0 };
+
+
 void CCorpse::PostPropRead(ObjectCreateStruct *pStruct)
 {
 	if (!pStruct) return;
 
 	pStruct->m_Flags = FLAG_VISIBLE | FLAG_RAYHIT | FLAG_GRAVITY | FLAG_MODELKEYS | FLAG_REMOVEIFOUTSIDE;
 
-	if(pStruct->m_UserData)
-		_mbscpy((unsigned char*)m_szSoundDir, (const unsigned char*)pStruct->m_UserData);
+	// The sound root came as a pointer in m_UserData, which is 32 bits and truncated it on x64.
+	// It can't be widened (Gib and AI_Shared use it as flags), so it comes in g_szPendingCorpseSoundRoot.
+	// CreateObject runs this before it returns, so the value set just before is still current
+	if (g_szPendingCorpseSoundRoot[0] != '\0')
+	{
+		LTStrCpy(m_szSoundDir, g_szPendingCorpseSoundRoot, sizeof(m_szSoundDir));
+		g_szPendingCorpseSoundRoot[0] = '\0';
+	}
 
 	return;
 }

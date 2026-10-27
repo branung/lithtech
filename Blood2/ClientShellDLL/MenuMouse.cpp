@@ -141,19 +141,19 @@ void CMenuMouse::SaveMouseSettings()
 	m_pClientDE->RunConsoleString(strConsole);
 
 	// save bindings for the wheel setting
-	if (m_bOrigUseWheel != m_bUseWheel)
+	// Every time, not only when the setting changed.
+	// 1998 compared against the value from when the menu was built, so turning it off and on again bound nothing
+	if (m_bUseWheel)
 	{
-		if (m_bUseWheel)
-		{
-			sprintf(strConsole, "rangebind \"##Mouse\" \"Wheel\" 0.1 10000.0 \"NextWeapon\" -0.1 -10000.0 \"PrevWeapon\"");
-			m_pClientDE->RunConsoleString(strConsole);
-		}
-		else
-		{
-			sprintf(strConsole, "rangebind \"##Mouse\" \"Wheel\" 0 0");
-			m_pClientDE->RunConsoleString(strConsole);
-		}
+		sprintf(strConsole, "rangebind \"##Mouse\" \"Wheel\" 0.1 10000.0 \"NextWeapon\" -0.1 -10000.0 \"PrevWeapon\"");
+		m_pClientDE->RunConsoleString(strConsole);
 	}
+	else
+	{
+		sprintf(strConsole, "rangebind \"##Mouse\" \"Wheel\" 0 0");
+		m_pClientDE->RunConsoleString(strConsole);
+	}
+	m_bOrigUseWheel = m_bUseWheel;
 
 }
 
