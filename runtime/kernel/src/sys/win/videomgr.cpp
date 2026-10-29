@@ -4,6 +4,9 @@
 
 #include "binkvideomgrimpl.h"
 #include "dshowvideomgrimpl.h"
+#ifdef ENABLE_SMACKER
+#include "smackervideomgrimpl.h"
+#endif
 
 extern int32 g_CV_VideoDebug;
 
@@ -57,6 +60,19 @@ void VideoMgr::OnRenderTerm()
 // -------------------------------------------------------------------------------- //
 VideoMgr* CreateVideoMgr( const char *pszName )
 {
+#ifdef ENABLE_SMACKER
+	// DirectShow, which also plays .smk files
+	if( stricmp( pszName, "SMACKER" ) == 0 )
+	{
+		SmackerVideoMgr* pSmkMgr;
+		LT_MEM_TRACK_ALLOC(pSmkMgr = new SmackerVideoMgr(),LT_MEM_TYPE_MISC);
+		if( pSmkMgr && pSmkMgr->Init() == LT_OK )
+			return pSmkMgr;
+		delete pSmkMgr;
+		return CreateVideoMgr( "DIRECTSHOW" );
+	}
+#endif
+
 	bool want_bink    = (stricmp( pszName, "BINK" ) == 0);
 	bool want_dshow   = (stricmp( pszName, "DIRECTSHOW" ) == 0);
 

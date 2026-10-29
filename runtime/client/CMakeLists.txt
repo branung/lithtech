@@ -252,6 +252,13 @@ else (ENABLE_DIRECTMUSIC)
     )
 endif (ENABLE_DIRECTMUSIC)
 
+if (WIN32 AND ENABLE_SMACKER)
+	set(exec_src ${exec_src}
+		../kernel/src/sys/win/smackervideomgrimpl.cpp)
+	add_definitions(-DENABLE_SMACKER)
+	set(libs ${libs} LIB_Smacker)
+endif()
+
 if (WIN32 OR ENABLE_DXVK)
 	set(exec_src ${exec_src}
 	../model/src/sys/d3d/d3d_model_load.cpp

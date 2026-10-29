@@ -106,6 +106,11 @@ if(LINUX)
     add_subdirectory(json)
 endif(LINUX)
 
+option(ENABLE_SMACKER "Play Smacker (.smk) movies with libsmacker" ON)
+if (ENABLE_SMACKER)
+	add_subdirectory(libsmacker)						# LIB_Smacker
+endif()
+
 if(BUILD_ENGINE)
     add_subdirectory(runtime/ui)						# LIB_UI
     add_subdirectory(runtime/info)						# LIB_Info

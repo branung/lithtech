@@ -367,6 +367,12 @@ LTRESULT CClientMgr::Init(const char **resTrees, uint32 nResTrees, uint32 nNumCo
 //  ROT_INIT(m_rListenerRot);
 //  VEC_INIT(m_vLastListenerPos);
 
+#if defined( ENABLE_SMACKER ) && !defined( IHAVEPURCHASEDBINK )
+
+	m_pVideoMgr = CreateVideoMgr("SMACKER");
+
+#endif
+
     // Tell the client shell that we are ready to rock!
     _GetRModeFromConsoleVariables(&defaultMode);
     dResult = i_client_shell->OnEngineInitialized(&defaultMode, &m_NetMgr.m_guidApp);
@@ -389,6 +395,8 @@ LTRESULT CClientMgr::Init(const char **resTrees, uint32 nResTrees, uint32 nNumCo
 #if defined( IHAVEPURCHASEDBINK )
 
     m_pVideoMgr = CreateVideoMgr("BINK");
+
+#elif defined( ENABLE_SMACKER )
 
 #else
 
