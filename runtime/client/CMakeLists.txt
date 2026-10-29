@@ -259,6 +259,18 @@ if (WIN32 AND ENABLE_SMACKER)
 	set(libs ${libs} LIB_Smacker)
 endif()
 
+if (ENABLE_LT1_MUSIC)
+	set(exec_src ${exec_src}
+		../kernel/src/music_segment.cpp
+		../kernel/src/music_ima.cpp
+		../kernel/src/music_imaseq.cpp
+		../../libs/IMASeq/imaseq.cpp)
+	add_definitions(-DENABLE_LT1_MUSIC)
+	include_directories(../../libs/dmusic/include ../../libs/dmusic/vendor/TinySoundFont
+		../../libs/IMASeq)
+	set(libs ${libs} dmusic)
+endif()
+
 if (WIN32 OR ENABLE_DXVK)
 	set(exec_src ${exec_src}
 	../model/src/sys/d3d/d3d_model_load.cpp

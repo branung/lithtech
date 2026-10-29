@@ -111,6 +111,15 @@ if (ENABLE_SMACKER)
 	add_subdirectory(libsmacker)						# LIB_Smacker
 endif()
 
+# dmusic is static, as Windows ships its own dmusic.dll which a shared build would collide with
+option(ENABLE_LT1_MUSIC "Play LT1 IMA music through the built-in ima.dll driver" ON)
+if (ENABLE_LT1_MUSIC)
+	set(DM_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+	set(DM_ENABLE_ASAN OFF CACHE BOOL "" FORCE)
+	set(DM_BUILD_STATIC ON CACHE BOOL "" FORCE)
+	add_subdirectory(libs/dmusic)						# dmusic, dmusic-tsf
+endif()
+
 if(BUILD_ENGINE)
     add_subdirectory(runtime/ui)						# LIB_UI
     add_subdirectory(runtime/info)						# LIB_Info

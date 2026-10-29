@@ -241,7 +241,7 @@ public:
     DRESULT         SetGlobalPanInfo(DDWORD index, float xOffset, float zOffset,
                                      float xScale, float zScale);
 
-    // LT1's IMA music. Both fail until the engine has the two entry points
+    // LT1's IMA music, onto ILTClient's two entry points.
     // LT1 put InitInstruments on ClientDE, not on Common
     DBOOL           SetMusicDirectory(const char *pDirectory);
     DBOOL           InitInstruments(const char *pDLSFile, const char *pStyleFile);

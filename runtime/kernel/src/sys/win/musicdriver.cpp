@@ -5,6 +5,10 @@
 #include "ltpvalue.h"
 #include "musicdriver.h"
 
+#ifdef ENABLE_LT1_MUSIC
+#include "music_ima.h"
+#endif
+
 
 static HINSTANCE g_hMusicDLL = 0;
 static SMusicMgr *g_pMusicMgr = LTNULL;
@@ -34,6 +38,21 @@ musicdriver_status music_InitDriver( char *pMusicDLLName, SMusicMgr *pMusicMgr )
 
 	music_TermDriver( );
 	pMusicMgr->m_bValid = 0;
+
+#ifdef ENABLE_LT1_MUSIC
+	// The built in replacement for LT1's ima.dll, which is 32 bit and never loaded.
+	if( music_ima_IsBuiltinName( pMusicDLLName ))
+	{
+		music_ima_Install( pMusicMgr );
+		pMusicMgr->ConsolePrint = music_ConsolePrint;
+
+		if( !pMusicMgr->Init( pMusicMgr ))
+			return MUSICDRIVER_INVALIDOPTIONS;
+
+		g_pMusicMgr = pMusicMgr;
+		return MUSICDRIVER_OK;
+	}
+#endif
 
 	g_hMusicDLL = LoadLibrary( pMusicDLLName );
 	if( !g_hMusicDLL )

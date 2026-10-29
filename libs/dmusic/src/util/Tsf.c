@@ -4,6 +4,8 @@
 
 #include <tsf.h>
 
+#include <math.h>
+
 DmArray_DEFINE(SFModulatorList, struct tsf_hydra_imod);
 DmArray_IMPLEMENT(SFModulatorList, struct tsf_hydra_imod, NULL);
 DmArray_DEFINE(SFGeneratorList, struct tsf_hydra_igen);
@@ -174,8 +176,14 @@ static void DmSynth_insertGenerators(SFGeneratorList* gens, DmDlsArticulator* ar
 			gen.genAmount.shortAmount = con->scale >> 16;
 			break;
 		case DmDlsArticulatorDestination_EG1_SUSTAIN_LEVEL: {
+			int32_t tenths = clamp_s32(con->scale >> 16, 0, 1000);
+			int32_t cb = 1000;
+			if (tenths > 0) {
+				cb = (int32_t) (-200.0 * log10((double) tenths / 1000.0) + 0.5);
+				cb = clamp_s32(cb, 0, 1000);
+			}
 			gen.genOper = kSustainVolEnv;
-			gen.genAmount.shortAmount = (tsf_s16) (1000 - clamp_s32(con->scale >> 16, 0, 1000));
+			gen.genAmount.shortAmount = (tsf_s16) cb;
 			break;
 		}
 		case DmDlsArticulatorDestination_EG2_SUSTAIN_LEVEL: {
@@ -319,6 +327,11 @@ static void DmSynth_insertModulators(SFModulatorList* mods, DmDlsArticulator* ar
 	}
 }
 
+// Not upstream: an INFO chunk's INAM is optional and left NULL when absent, which strncpy can't take.
+static const char* dm_name_or_empty(const char* name) {
+	return name != NULL ? name : "";
+}
+
 static DmResult
 Dm_createHydraSamplesForDls(DmDls* dls, float** pcm, int32_t* pcm_len, struct tsf_hydra_shdr** cfg, int32_t* cfg_len) {
 	// 1. Count the number of PCM samples actually required after decoding.
@@ -347,7 +360,7 @@ Dm_createHydraSamplesForDls(DmDls* dls, float** pcm, int32_t* pcm_len, struct ts
 	for (uint32_t i = 0; i < dls->wave_table_size; ++i) {
 		DmDlsWave* wav = &dls->wave_table[i];
 
-		strncpy(sample_headers[i].sampleName, wav->info.inam, 19);
+		strncpy(sample_headers[i].sampleName, dm_name_or_empty(wav->info.inam), 19);
 
 		sample_headers[i].start = (uint32_t) sample_offset;
 		sample_headers[i].startLoop = (uint32_t) sample_offset;
@@ -448,9 +461,10 @@ static DmResult Dm_createHydra(DmDls* dls, struct tsf_hydra* hydra, float** pcm,
 		DmDlsInstrument* ins = &dls->instruments[i];
 		uint32_t bank = ins->bank;
 
-		strncpy(hydra->phdrs[i].presetName, ins->info.inam, 19);
+		strncpy(hydra->phdrs[i].presetName, dm_name_or_empty(ins->info.inam), 19);
 		// NOTE: Drum kits always go into MIDI Bank 128
-		hydra->phdrs[i].bank = bank & DmDls_DRUM_KIT ? 128 : bank;
+		// Not upstream: a melodic bank is (MSB << 8) | LSB with the high bits masked off, so it matches the bank a band's patch asks for
+		hydra->phdrs[i].bank = bank & DmDls_DRUM_KIT ? 128 : (bank & 0x7F7FU);
 		hydra->phdrs[i].preset = ins->patch;
 		hydra->phdrs[i].genre = 0;
 		hydra->phdrs[i].morphology = 0;
@@ -464,7 +478,7 @@ static DmResult Dm_createHydra(DmDls* dls, struct tsf_hydra* hydra, float** pcm,
 		hydra->pgens[pgen_ndx].genAmount.wordAmount = i;
 		pgen_ndx++;
 
-		strncpy(hydra->insts[i].instName, ins->info.inam, 19);
+		strncpy(hydra->insts[i].instName, dm_name_or_empty(ins->info.inam), 19);
 		hydra->insts[i].instBagNdx = ibag_ndx;
 
 		for (size_t r = 0; r < ins->region_count; ++r) {
@@ -504,8 +518,9 @@ static DmResult Dm_createHydra(DmDls* dls, struct tsf_hydra* hydra, float** pcm,
 			SFGeneratorList_add(&igen, gen);
 
 			// Fine Tune Generator
+			// Not upstream: fine_tune is 16 bit signed cents kept in a uint16_t, so the shift made every tuning zero
 			gen.genOper = kFineTune;
-			gen.genAmount.shortAmount = reg->sample.fine_tune >> 16;
+			gen.genAmount.shortAmount = (tsf_s16) (int16_t) reg->sample.fine_tune;
 			SFGeneratorList_add(&igen, gen);
 
 			// Initial Attenuation Generator
@@ -664,4 +679,37 @@ DmResult DmSynth_createTsfForDls(DmDls* dls, tsf** out) {
 	Dm_freeHydra(&hydra);
 
 	return DmResult_SUCCESS;
+}
+
+// Not upstream: a TinySoundFont synth from a DLS collection in memory, for a caller that sequences its own MIDI.
+DmResult DmDls_createTsf(void const* buf, size_t len, tsf** out) {
+	if (buf == NULL || len == 0 || out == NULL) {
+		return DmResult_INVALID_ARGUMENT;
+	}
+	*out = NULL;
+
+	void* copy = Dm_alloc(len);
+	if (copy == NULL) {
+		return DmResult_MEMORY_EXHAUSTED;
+	}
+	memcpy(copy, buf, len);
+
+	DmDls* dls = NULL;
+	DmResult rv = DmDls_create(&dls);
+	if (rv != DmResult_SUCCESS) {
+		Dm_free(copy);
+		return rv;
+	}
+
+	// DmDls_parse owns the copy from here, on success and on failure
+	rv = DmDls_parse(dls, copy, len);
+	if (rv != DmResult_SUCCESS) {
+		DmDls_release(dls);
+		return rv;
+	}
+
+	// The synth holds its own decoded samples, so the collection can go
+	rv = DmSynth_createTsfForDls(dls, out);
+	DmDls_release(dls);
+	return rv;
 }

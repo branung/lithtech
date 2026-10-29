@@ -38,6 +38,10 @@
 #include "bindmgr.h"
 #include "clientshell.h"
 #include "servermgr.h"
+
+#ifdef ENABLE_LT1_MUSIC
+#include "music_ima.h"
+#endif
 #include "systimer.h"
 #include "demoplay_lt1.h"
 #include "iltclient.h"
@@ -1162,6 +1166,10 @@ LTRESULT CClientMgr::Update()
                 GetMusicMgr()->Resume();
             }
         }
+
+#ifdef ENABLE_LT1_MUSIC
+        music_ima_Update();
+#endif
     }
 
     // Pause sound if disabled...

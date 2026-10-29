@@ -391,14 +391,20 @@ DRESULT CClientDE::SetGlobalPanInfo(DDWORD index, float xOffset, float zOffset,
     return ILTClient::SetGlobalPanInfo((uint32)index, xOffset, zOffset, xScale, zScale);
 }
 
-DBOOL CClientDE::SetMusicDirectory(const char * /*pDirectory*/)
+DBOOL CClientDE::SetMusicDirectory(const char *pDirectory)
 {
-    return DFALSE;
+    if (!pDirectory)
+        return DFALSE;
+
+    return ILTClient::SetMusicDirectory(pDirectory) ? DTRUE : DFALSE;
 }
 
-DBOOL CClientDE::InitInstruments(const char * /*pDLSFile*/, const char * /*pStyleFile*/)
+DBOOL CClientDE::InitInstruments(const char *pDLSFile, const char *pStyleFile)
 {
-    return DFALSE;
+    if (!pDLSFile || !pStyleFile)
+        return DFALSE;
+
+    return ILTClient::InitInstruments(pDLSFile, pStyleFile) ? DTRUE : DFALSE;
 }
 
 DBOOL CClientDE::SetupPolyGrid(HLOCALOBJ hObj, DDWORD width, DDWORD height, DBOOL /*bHalfTriangles*/)

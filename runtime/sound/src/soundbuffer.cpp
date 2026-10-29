@@ -7,6 +7,10 @@
 #include "sysstreamsim.h"
 #include "sysdebugging.h"
 
+#ifdef ENABLE_LT1_MUSIC
+#include "music_segment.h"
+#endif
+
 extern int32 g_nSoundDebugLevel;
 
 //------------------------------------------------------------------
@@ -205,6 +209,31 @@ LTRESULT CSoundBuffer::LoadData()
         }
         return LT_ERROR;
     }
+
+#ifdef ENABLE_LT1_MUSIC
+    // An LT1 score section isn't a wave, so it's rendered into one, and the rest of this reads it as a .wav
+    CMusicSegmentStream segmentStream;
+    if (music_IsScoreFilename(m_pFileIdent->m_Filename))
+    {
+        uint8 *pImage = LTNULL;
+        uint32 nImageSize = 0;
+
+        if (music_RenderSegmentStream(m_pFileIdent->m_Filename, &pImage, &nImageSize) != LT_OK)
+        {
+            pFileStream->Release();
+            if (g_nSoundDebugLevel > 0)
+            {
+                dsi_PrintToConsole("Could not render music section %s",
+                                   m_pFileIdent->m_Filename);
+            }
+            return LT_ERROR;
+        }
+
+        pFileStream->Release();
+        segmentStream.Init(pImage, nImageSize);      // takes ownership
+        pFileStream = &segmentStream;
+    }
+#endif
 
     // Start at the beginning.
     pFileStream->SeekTo(0);

@@ -216,6 +216,7 @@ LTBOOL		g_bUpdateServer = LTTRUE;
 
 int32	g_nSoundDebugLevel = 0;
 LTBOOL	g_bSoundShowCounts = LTFALSE;
+int32	g_nMusicTrace = 0; // One line per LT1 music section sequenced, rendered and started. Off by default
 
 int32	g_bErrorLog = LTFALSE;
 int32	g_bAlwaysFlushLog = LTFALSE;
@@ -380,6 +381,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("CollideParticles", &g_CV_CollideParticles),
 	EV_LONG("SoundShowCounts", &g_bSoundShowCounts),
 	EV_LONG("SoundDebugLevel", &g_nSoundDebugLevel),
+	EV_LONG("MusicTrace", &g_nMusicTrace),
 	EV_LONG("ErrorLog", &g_bErrorLog),
 	EV_LONG("AlwaysFlushLog", &g_bAlwaysFlushLog),
 	EV_LONG("ShowFrameRate", &g_CV_ShowFrameRate),
