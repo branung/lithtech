@@ -92,6 +92,9 @@ static	HNETSERVICE		g_ServiceHandles[MAX_NETSTART_SERVICES];
 static	DDWORD			g_ServiceFlags[MAX_NETSTART_SERVICES];
 static	HNETSERVICE		g_SelectedService=0;
 
+// Set while the main window is minimized with the renderer shut down so a restore without one does nothing
+static	BOOL			s_bMainWndMinimized = FALSE;
+
 static  DDWORD			g_HostPort=0;
 static	char			s_sSessionName[128]     = { "" };
 static	char			s_sPlayerName[32]       = { "" };
@@ -324,6 +327,11 @@ DBOOL NetStart_DoWizard(CClientDE* pClientDE)
 
 	DBOOL bRet = NetStart_DoWizard(pClientDE, &ns, NET_UNKNOWN);
 	if (!bRet) return(DFALSE);
+
+
+	// Bring the renderer back before StartGame, since a host loads its world inside it.
+
+	NetStart_RestoreMainWnd();
 
 
 	// Start the game as requested...
@@ -1257,7 +1265,10 @@ DBOOL NetStart_MinimizeMainWnd(CClientDE* pClient)
 
 	// Shutdown the renderer, minimize it, and hide it...
 
+	// Models loaded from here until NetStart_RestoreMainWnd lose their geometry for the session
 	pClient->ShutdownRender(RSHUTDOWN_MINIMIZEWINDOW | RSHUTDOWN_HIDEWINDOW);
+
+	s_bMainWndMinimized = TRUE;
 
 
 	// All done...
@@ -1279,6 +1290,13 @@ DBOOL NetStart_RestoreMainWnd()
 	// Sanity checks...
 
 	if (!s_pClient) return(DFALSE);
+
+
+	// Nothing to do unless the renderer was shut down, and s_RMode is only set then
+
+	if (!s_bMainWndMinimized) return(DTRUE);
+
+	s_bMainWndMinimized = FALSE;
 
 
 	// Restore the main window as necessary...

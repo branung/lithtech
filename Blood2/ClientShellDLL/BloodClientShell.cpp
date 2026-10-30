@@ -1092,18 +1092,6 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	bDoNetStuff = DFALSE;
 #endif
 
-	// Determine if we should display the networking dialogs...
-	if (bDoNetStuff)
-	{
-		bNetworkGameStarted = NetStart_DoWizard (pClientDE);
-
-		if (!bNetworkGameStarted)
-		{
-			pClientDE->Shutdown();
-			return LT_ERROR;
-		}
-	}
-
 	// Pass RMode on to SetRenderMode...
 	DRESULT hResult = pClientDE->SetRenderMode(pMode);
 	if (hResult != LT_OK)
@@ -1129,7 +1117,25 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 			{
 				Abort(IDS_ERR_SETVIDMODE, 6929314);
 				return LT_ERROR;
-			} 
+			}
+		}
+	}
+
+	// Determine if we should display the networking dialogs...
+	// After the render mode is set, since a host loads its world inside the wizard's StartGame and models loaded
+	// with no renderer never draw. The wizard is minimized around like the menu's
+	if (bDoNetStuff)
+	{
+		NetStart_MinimizeMainWnd(pClientDE);
+
+		bNetworkGameStarted = NetStart_DoWizard (pClientDE);
+
+		NetStart_RestoreMainWnd();
+
+		if (!bNetworkGameStarted)
+		{
+			pClientDE->Shutdown();
+			return LT_ERROR;
 		}
 	}
 
@@ -7661,6 +7667,13 @@ DBOOL CBloodClientShell::DoMultiplayer(DBOOL bMinimize, DBOOL bHost)
 	DBOOL bRet = NetStart_DoWizard(pClientDE, &ns, bHost ? NET_HOST : NET_JOIN);
 
 	pClientDE->ResumeSounds();
+
+	// The renderer comes back before StartGame, since a host loads its world inside it and models loaded with
+	// the renderer shut down never draw. The restores after it are no-ops now
+	if (bMinimize)
+	{
+		NetStart_RestoreMainWnd();
+	}
 
 	if (bRet)
 	{
