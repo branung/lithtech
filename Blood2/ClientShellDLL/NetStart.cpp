@@ -1502,7 +1502,7 @@ BOOL NetStart_SelectCurrentService(HWND hList)
 
 	// Get the item data for this index...
 
-	int nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
+	LRESULT nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
 	if (nRet == LB_ERR) return(FALSE);
 
 	HNETSERVICE hNetService = (HNETSERVICE)nRet;
@@ -1871,7 +1871,7 @@ BOOL NetStart_DisplaySelectedSessionInfo(HWND hDlg)
 
 	// Get the item data for this index...
 
-	int nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
+	LRESULT nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
 	if (nRet == LB_ERR) return(FALSE);
 
 	NetSession* pNetSession = (NetSession*)nRet;
@@ -1988,7 +1988,7 @@ BOOL NetStart_JoinCurrentSession(HWND hList)
 
 	// Get the item data for this index...
 
-	int nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
+	LRESULT nRet = SendMessage(hList, LB_GETITEMDATA, nIndex, 0);
 	if (nRet == LB_ERR) return(FALSE);
 
 	NetSession* pNetSession = (NetSession*)nRet;
@@ -4174,7 +4174,7 @@ int NetStart_FillSessionListTcpIp(HWND hDlg)
 	int iSel = SendMessage(hList, LB_GETCURSEL, 0, 0);
 	if (iSel != LB_ERR)
 	{
-		int nRet = SendMessage(hList, LB_GETITEMDATA, iSel, 0);
+		LRESULT nRet = SendMessage(hList, LB_GETITEMDATA, iSel, 0);
 		if (nRet != LB_ERR)
 		{
 			NetSession* pNetSession = (NetSession*)nRet;
@@ -4237,7 +4237,7 @@ int NetStart_FillSessionListTcpIp(HWND hDlg)
 
 	for (DWORD i = 0; i < (DWORD)c; i++)
 	{
-		int nRet = SendMessage(hList, LB_GETITEMDATA, i, 0);
+		LRESULT nRet = SendMessage(hList, LB_GETITEMDATA, i, 0);
 		if (nRet != LB_ERR)
 		{
 			NetSession* pNetSession = (NetSession*)nRet;

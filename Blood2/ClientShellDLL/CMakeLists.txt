@@ -157,3 +157,7 @@ endif(LINUX)
 if(MSVC)
 	target_compile_options(${PROJECT_NAME} PRIVATE /we4005)
 endif(MSVC)
+
+if(MSVC)
+	target_compile_options(${PROJECT_NAME} PRIVATE /we4311 /we4312)
+endif(MSVC)
