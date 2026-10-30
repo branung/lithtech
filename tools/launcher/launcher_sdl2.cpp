@@ -20,14 +20,16 @@
 #include <unistd.h>
 #endif
 
+// The game this build launches, set per launcher by CMake
+#ifndef LTLAUNCH_PROFILE
+#define LTLAUNCH_PROFILE LithLauncherProfile
+#endif
+
 namespace {
 
 // The launcher's name and version
 const char *kLauncherName    = "LithLauncher";
 const char *kLauncherVersion = "0.01";
-const char *kGameTitle       = "Shogo: Mobile Armor Division";
-const char *kSplashRez       = "SHOGO.REZ";
-const char *kSplashPath      = "INTERFACE\\SPLASH.PCX";
 
 // Launcher color palette (0xRRGGBB)
 const Uint32 kFace   = 0xF0F0F0;
@@ -351,6 +353,7 @@ bool Spawn(const std::vector<std::string> &args, const std::string &sCwd,
 
 struct App
 {
+    ltlaunch::GameProfile game;
     ltlaunch::LaunchSpec spec;
     std::string sStatus;
     bool bQuit = false;
@@ -378,11 +381,15 @@ struct App
     int nAvailableScroll = 0, nChosenScroll = 0;
 
     // The archives a launch loads
-    // Order: the game's archives, then the Custom folder itself so loose levels are listed ingame, then the selected custom archives.
+    // Order: the game's archives and whichever optional ones are present, then the Custom folder itself so loose levels
+    // are listed ingame, then the selected custom archives.
     // False when a selected archive is no longer there, with its name stored in sMissing
     bool LaunchRez(std::vector<std::string> &rez, std::string &sMissing) const
     {
         rez = spec.m_Rez;
+
+        for (const std::string &sRez : spec.m_OptionalRez)
+            if (ltlaunch::FileExists(ltlaunch::JoinPath(spec.m_sGameDir, sRez))) rez.push_back(sRez);
 
         if (ltlaunch::DirExists(ltlaunch::JoinPath(spec.m_sGameDir, ltlaunch::kCustomFolder)))
             rez.push_back(ltlaunch::kCustomFolder);
@@ -638,25 +645,31 @@ struct App
     {
         Fill(Rect(0, 0, kWinW, kWinH), kFace);
 
-        const Rect title(12, 12, 380, 22);
-        Fill(title, kWindow);
-        Frame(title, kBorder);
-        Text(title.x + 4, title.y + (title.h - g_nLineH) / 2, kGameTitle, kText, title.w - 8);
+        // Without the game box the banner takes its space
+        const int nPanelY = game.m_bTitleBox ? 40 : 12;
+        if (game.m_bTitleBox)
+        {
+            const Rect title(12, 12, 380, 22);
+            Fill(title, kWindow);
+            Frame(title, kBorder);
+            Text(title.x + 4, title.y + (title.h - g_nLineH) / 2, game.m_sTitle, kText, title.w - 8);
+        }
 
-        const Rect panel(12, 40, 380, 290);
+        const Rect panel(12, nPanelY, 380, 330 - nPanelY);
         Fill(panel, kWindow);
         Frame(panel, kBorder);
 
+        const std::vector<std::string> required = ltlaunch::RequiredRez(spec);
         std::vector<bool> present;
         bool bMissing = false;
-        for (size_t i = 0; i < spec.m_Rez.size(); ++i)
+        for (const std::string &sRez : required)
         {
-            present.push_back(ltlaunch::FileExists(ltlaunch::JoinPath(spec.m_sGameDir, spec.m_Rez[i])));
+            present.push_back(ltlaunch::FileExists(ltlaunch::JoinPath(spec.m_sGameDir, sRez)));
             bMissing = bMissing || !present.back();
         }
         if (bMissing)
         {
-            DrawDataMissing(panel, present);
+            DrawDataMissing(panel, required, present);
             bSplashTried = false; // loaded again once the archives are back
         }
         else
@@ -685,7 +698,7 @@ struct App
 
         std::vector<unsigned char> raw;
         ltlaunch::Image img;
-        if (!ltlaunch::ReadRezEntry(ltlaunch::JoinPath(spec.m_sGameDir, kSplashRez), kSplashPath, raw) ||
+        if (!ltlaunch::ReadRezEntry(ltlaunch::JoinPath(spec.m_sGameDir, game.m_sSplashRez), game.m_sSplashPath, raw) ||
             !ltlaunch::DecodePcx(raw, img))
             return;
 
@@ -712,7 +725,7 @@ struct App
     }
 
     // Names each archive the game needs, whether it was found, and the folder they belong in
-    void DrawDataMissing(const Rect &panel, const std::vector<bool> &present)
+    void DrawDataMissing(const Rect &panel, const std::vector<std::string> &required, const std::vector<bool> &present)
     {
         const Rect in(panel.x + 3, panel.y + 3, panel.w - 6, panel.h - 6);
         const int nMaxW = in.w - 8;
@@ -743,10 +756,10 @@ struct App
         }
         y += 8;
 
-        for (size_t i = 0; i < spec.m_Rez.size() && y + g_nLineH <= in.y + in.h; ++i)
+        for (size_t i = 0; i < required.size() && y + g_nLineH <= in.y + in.h; ++i)
         {
             Text(in.x + 12, y, present[i] ? "found" : "missing", present[i] ? kGrayTxt : kAlert);
-            Text(in.x + 84, y, spec.m_Rez[i], present[i] ? kGrayTxt : kText, in.w - 88);
+            Text(in.x + 84, y, required[i], present[i] ? kGrayTxt : kText, in.w - 88);
             y += g_nLineH;
         }
     }
@@ -773,7 +786,7 @@ struct App
 
     void DrawCustomizeDialog()
     {
-        DrawDialog(kCustomizeDlg, std::string("Customize ") + kGameTitle);
+        DrawDialog(kCustomizeDlg, "Customize " + game.m_sTitle);
         Text(kAvailableList.x, kAvailableList.y - 16, "Available rez files:", kText);
         ListBox(kAvailableList, availableRez, iAvailableSel, nAvailableScroll);
         Button(kAddButton, "Add >", Down(kAddButton));
@@ -803,13 +816,14 @@ int LauncherMain()
     if (pBasePath) SDL_free(pBasePath);
 
     App app;
-    app.spec = ltlaunch::ShogoLaunch(sExeDir);
+    app.game = ltlaunch::LTLAUNCH_PROFILE(sExeDir);
+    app.spec = app.game.m_Spec;
     app.sSettingsPath = ltlaunch::JoinPath(sExeDir, "launcher.ini");
     app.LoadSettings();
 
     app.sizes = DesktopSizes();
 
-    SDL_Window *pWnd = SDL_CreateWindow(kLauncherName,
+    SDL_Window *pWnd = SDL_CreateWindow(app.game.m_sCaption.c_str(),
                                         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                         kWinW, kWinH, SDL_WINDOW_SHOWN);
     if (!pWnd) { SDL_Quit(); return 1; }
@@ -818,7 +832,7 @@ int LauncherMain()
     g_pFont = MakeFontAtlas();
     if (!g_pFont)
     {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, kLauncherName,
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, app.game.m_sCaption.c_str(),
                                  "Could not load the Tahoma font.", pWnd);
         SDL_DestroyRenderer(g_pRen);
         SDL_DestroyWindow(pWnd);

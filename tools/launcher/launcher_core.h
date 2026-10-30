@@ -9,9 +9,22 @@ namespace ltlaunch {
 // Everything one launch needs
 struct LaunchSpec
 {
-    std::string m_sGameDir; // The working directory (aka the /Shogo folder)
-    std::string m_sEngineDir; // It's parent, holding Lithtech.exe
-    std::vector<std::string> m_Rez; // The necessary .rez files (aka SHOGO.REZ)
+    std::string m_sGameDir; // The working directory, holding the game's archives
+    std::string m_sEngineDir; // The folder holding Lithtech.exe
+    std::vector<std::string> m_Rez; // The necessary .rez files, passed with -rez (aka SHOGO.REZ)
+    std::vector<std::string> m_EngineRez; // Necessary too, but the engine opens them itself (NOLF2's)
+    std::vector<std::string> m_OptionalRez; // Passed with -rez when present
+};
+
+// What sets one game's launcher apart
+struct GameProfile
+{
+    std::string m_sCaption; // The window's caption
+    std::string m_sTitle;
+    std::string m_sSplashRez; // The archive holding the banner
+    std::string m_sSplashPath; // The banner's path inside it
+    bool m_bTitleBox = false; // The game box above the banner (LithLauncher's)
+    LaunchSpec m_Spec;
 };
 
 struct WindowSize
@@ -52,7 +65,16 @@ bool GetConfigValue(const std::string &sCfg, const std::string &sName, std::stri
 
 std::string SetConfigValues(const std::string &sCfg, const std::vector<ConfigValue> &values);
 
-LaunchSpec ShogoLaunch(const std::string &sExeDir);
+// LithLauncher: Lithtech.exe beside it and the game in its Shogo folder
+GameProfile LithLauncherProfile(const std::string &sExeDir);
+
+// The per-game launchers: Lithtech.exe and the game both in the launcher's own folder
+GameProfile ShogoProfile(const std::string &sExeDir);
+GameProfile Blood2Profile(const std::string &sExeDir);
+GameProfile NOLF2Profile(const std::string &sExeDir);
+
+// Every archive the game can't start without
+std::vector<std::string> RequiredRez(const LaunchSpec &spec);
 
 // The first rez file that isn't in the game directory, or an empty string when all are there
 std::string FirstMissing(const LaunchSpec &spec);

@@ -28,21 +28,62 @@ bool FileExists(const std::string &sPath)
     return f.good();
 }
 
-LaunchSpec ShogoLaunch(const std::string &sExeDir)
+GameProfile ShogoProfile(const std::string &sExeDir)
 {
-    LaunchSpec spec;
-    spec.m_sEngineDir = sExeDir;
-    spec.m_sGameDir = JoinPath(sExeDir, "Shogo");
-    spec.m_Rez.push_back("SHOGO.REZ");
-    spec.m_Rez.push_back("SOUND.REZ");
-    return spec;
+    GameProfile game;
+    game.m_sCaption = game.m_sTitle = "Shogo: Mobile Armor Division";
+    game.m_sSplashRez = "SHOGO.REZ";
+    game.m_sSplashPath = "INTERFACE\\SPLASH.PCX";
+    game.m_Spec.m_sEngineDir = game.m_Spec.m_sGameDir = sExeDir;
+    game.m_Spec.m_Rez = { "SHOGO.REZ", "SOUND.REZ" };
+    return game;
+}
+
+GameProfile LithLauncherProfile(const std::string &sExeDir)
+{
+    GameProfile game = ShogoProfile(sExeDir);
+    game.m_sCaption = "LithLauncher";
+    game.m_bTitleBox = true;
+    game.m_Spec.m_sGameDir = JoinPath(sExeDir, "Shogo");
+    return game;
+}
+
+GameProfile Blood2Profile(const std::string &sExeDir)
+{
+    GameProfile game;
+    game.m_sCaption = game.m_sTitle = "Blood II: The Chosen";
+    game.m_sSplashRez = "BLOOD2.REZ";
+    game.m_sSplashPath = "INTERFACE\\MAINMENUS\\SPLASH.PCX";
+    game.m_Spec.m_sEngineDir = game.m_Spec.m_sGameDir = sExeDir;
+    game.m_Spec.m_Rez = { "BLOOD2.REZ", "SOUND.REZ" };
+    game.m_Spec.m_OptionalRez = { "BLOOD2P.REZ", "BLOOD2P2.REZ" }; // The patches
+    return game;
+}
+
+GameProfile NOLF2Profile(const std::string &sExeDir)
+{
+    GameProfile game;
+    game.m_sCaption = game.m_sTitle = "No One Lives Forever 2";
+    game.m_sSplashRez = "game.rez";
+    game.m_sSplashPath = "INTERFACE\\MENU\\ART\\SPLASH.PCX";
+    game.m_Spec.m_sEngineDir = game.m_Spec.m_sGameDir = sExeDir;
+    game.m_Spec.m_EngineRez = { "engine.rez", "game.rez", "game2.rez", "sound.rez" };
+    game.m_Spec.m_OptionalRez = { "Update_v1x3.rez" }; // The 1.3 patch
+    return game;
+}
+
+std::vector<std::string> RequiredRez(const LaunchSpec &spec)
+{
+    std::vector<std::string> out = spec.m_EngineRez;
+    out.insert(out.end(), spec.m_Rez.begin(), spec.m_Rez.end());
+    return out;
 }
 
 std::string FirstMissing(const LaunchSpec &spec)
 {
-    for (size_t i = 0; i < spec.m_Rez.size(); ++i)
-        if (!FileExists(JoinPath(spec.m_sGameDir, spec.m_Rez[i])))
-            return spec.m_Rez[i];
+    for (const std::string &sRez : RequiredRez(spec))
+        if (!FileExists(JoinPath(spec.m_sGameDir, sRez)))
+            return sRez;
     return std::string();
 }
 

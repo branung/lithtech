@@ -269,9 +269,10 @@ if(WIN32)
     #     GAMEFOLDER_TARGETS <targets>   Copied into its Game folder (NOLF2's ClientFx.fxd)
     #     FILES <files>                  Copied when changed, so a rebuild resets autoexec.cfg to its default
     #     DIRS <names>                   Made in the folder
+    #     LAUNCHER <name>                The launcher built into the folder as <name>.exe
     #     SERVER_NAME <name>)            ltserver copied as <name>.exe
     function(lt_game_package game)
-        cmake_parse_arguments(PKG "" "SERVER_NAME" "TARGETS;GAMEFOLDER_TARGETS;FILES;DIRS" ${ARGN})
+        cmake_parse_arguments(PKG "" "LAUNCHER;SERVER_NAME" "TARGETS;GAMEFOLDER_TARGETS;FILES;DIRS" ${ARGN})
 
         set(dir "${CMAKE_BINARY_DIR}/OUT/$<CONFIG>_Builds/${game}")
         set(cmds COMMAND ${CMAKE_COMMAND} -E make_directory "${dir}")
@@ -306,6 +307,11 @@ if(WIN32)
             list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E make_directory "${dir}/${d}")
         endforeach()
 
+        if(PKG_LAUNCHER AND COMMAND lt_add_launcher)
+            string(TOUPPER ${game} prefix)
+            lt_add_launcher(${prefix}_Launcher ${PKG_LAUNCHER} "${dir}")
+        endif()
+
         if(PKG_SERVER_NAME AND TARGET ltserver)
             list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:ltserver>"
                 "${dir}/${PKG_SERVER_NAME}$<TARGET_FILE_SUFFIX:ltserver>")
@@ -325,17 +331,20 @@ if(WIN32)
                   ${CMAKE_SOURCE_DIR}/Shogo/Config/DetailHi.cfg ${CMAKE_SOURCE_DIR}/Shogo/Config/DetailMd.cfg
                   ${CMAKE_SOURCE_DIR}/Shogo/Config/DetailLo.cfg
             DIRS Custom
+            LAUNCHER Shogo
             SERVER_NAME ShogoServer)
     endif()
 
     if(BUILD_BLOOD2)
         lt_game_package(Blood2
-            TARGETS BLOOD2_ClientShellDLL BLOOD2_ClientRes BLOOD2_ObjectDLL)
+            TARGETS BLOOD2_ClientShellDLL BLOOD2_ClientRes BLOOD2_ObjectDLL
+            LAUNCHER Blood2)
     endif()
 
     if(BUILD_NOLF2)
         lt_game_package(NOLF2
             TARGETS NOLF2_ClientShellDLL NOLF2_ClientRes NOLF2_ServerRes NOLF2_ObjectDLL
-            GAMEFOLDER_TARGETS NOLF2_ClientFXDLL)
+            GAMEFOLDER_TARGETS NOLF2_ClientFXDLL
+            LAUNCHER NOLF2)
     endif()
 endif(WIN32)
