@@ -11,6 +11,7 @@ bool ReadRezEntry(const std::string &sArchive, const std::string &sPath,
 {
     out.clear();
     CRezMgr mgr;
+    mgr.SetDirSeparators("\\/");
     if (!mgr.Open(sArchive.c_str())) return false;
 
     CRezItm *pItem = mgr.GetRezFromDosPath(sPath.c_str());

@@ -16,6 +16,19 @@ struct LaunchSpec
     std::vector<std::string> m_OptionalRez; // Passed with -rez when present
 };
 
+// An addon built as its own copy of the game's modules, in a folder inside the game folder.
+// It runs from that folder and loads the game's archives from the one above
+struct AddOn
+{
+    std::string m_sLabel; // The checkbox
+    std::string m_sButton; // The Launch button while it's ticked
+    std::string m_sDir; // The modules' folder (empty for a game without one)
+    std::string m_sSplashRez; // The archive holding its banner
+    std::string m_sSplashPath;
+    std::vector<std::string> m_Rez; // Loaded after the game's own
+    std::vector<std::string> m_OptionalRez; // Loaded after those when present
+};
+
 // What sets one game's launcher apart
 struct GameProfile
 {
@@ -25,6 +38,7 @@ struct GameProfile
     std::string m_sSplashPath; // The banner's path inside it
     bool m_bTitleBox = false; // The game box above the banner (LithLauncher's)
     LaunchSpec m_Spec;
+    AddOn m_AddOn;
 };
 
 struct WindowSize
@@ -76,8 +90,14 @@ GameProfile NOLF2Profile(const std::string &sExeDir);
 // Every archive the game can't start without
 std::vector<std::string> RequiredRez(const LaunchSpec &spec);
 
-// The first rez file that isn't in the game directory, or an empty string when all are there
-std::string FirstMissing(const LaunchSpec &spec);
+// The first file that isn't in sDir, or an empty string when all are there
+std::string FirstMissing(const std::string &sDir, const std::vector<std::string> &names);
+
+// The addon's folder, which it runs from
+std::string AddOnDir(const GameProfile &game);
+
+// Whether the game has an addon and its modules are built
+bool HasAddOn(const GameProfile &game);
 
 // Where players put their own archives and levels inside the game folder
 extern const char *kCustomFolder;
@@ -90,6 +110,7 @@ struct LauncherSettings
 {
     bool m_bAlwaysRez = false;
     std::vector<std::string> m_AlwaysRez;
+    bool m_bAddOn = false; // The addon's checkbox
 };
 
 // False when the file can't be read, leaving the defaults

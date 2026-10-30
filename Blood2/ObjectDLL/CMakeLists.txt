@@ -1,4 +1,9 @@
-project(BLOOD2_ObjectDLL)
+# Built twice when BUILD_BLOOD2_ADDON is on, the second time as The Nightmare Levels (BLOOD2_ADDON set by the parent)
+if(BLOOD2_ADDON)
+	project(BLOOD2NM_ObjectDLL)
+else()
+	project(BLOOD2_ObjectDLL)
+endif()
 
 # Blood II's server objects built against libs/DECompat like Shogo's.
 # The sources are ObjectDLL.dsp's
@@ -180,3 +185,9 @@ endif(LINUX)
 if(MSVC)
 	target_compile_options(${PROJECT_NAME} PRIVATE /we4005)
 endif(MSVC)
+
+# The add on defines both, as the 1998 project's AddOn configuration does.
+# SharedDefs.h tests _ADD_ON and the .cpp files test _ADDON
+if(BLOOD2_ADDON)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE _ADDON _ADD_ON)
+endif()

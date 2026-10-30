@@ -57,6 +57,15 @@ GameProfile Blood2Profile(const std::string &sExeDir)
     game.m_Spec.m_sEngineDir = game.m_Spec.m_sGameDir = sExeDir;
     game.m_Spec.m_Rez = { "BLOOD2.REZ", "SOUND.REZ" };
     game.m_Spec.m_OptionalRez = { "BLOOD2P.REZ", "BLOOD2P2.REZ" }; // The patches
+
+    // The retail launcher adds BLOOD2NM2.REZ too, which no install here has
+    game.m_AddOn.m_sLabel = "The Nightmare Levels";
+    game.m_AddOn.m_sButton = "Launch Nightmares";
+    game.m_AddOn.m_sDir = "Blood2NM";
+    game.m_AddOn.m_sSplashRez = "BLOOD2NM.REZ";
+    game.m_AddOn.m_sSplashPath = "SCREENS_AO\\TITLE.PCX";
+    game.m_AddOn.m_Rez = { "BLOOD2NM.REZ" };
+    game.m_AddOn.m_OptionalRez = { "BLOOD2NM2.REZ" };
     return game;
 }
 
@@ -79,12 +88,22 @@ std::vector<std::string> RequiredRez(const LaunchSpec &spec)
     return out;
 }
 
-std::string FirstMissing(const LaunchSpec &spec)
+std::string FirstMissing(const std::string &sDir, const std::vector<std::string> &names)
 {
-    for (const std::string &sRez : RequiredRez(spec))
-        if (!FileExists(JoinPath(spec.m_sGameDir, sRez)))
-            return sRez;
+    for (const std::string &sName : names)
+        if (!FileExists(JoinPath(sDir, sName)))
+            return sName;
     return std::string();
+}
+
+std::string AddOnDir(const GameProfile &game)
+{
+    return JoinPath(game.m_Spec.m_sGameDir, game.m_AddOn.m_sDir);
+}
+
+bool HasAddOn(const GameProfile &game)
+{
+    return !game.m_AddOn.m_sDir.empty() && FileExists(JoinPath(AddOnDir(game), "CShell.dll"));
 }
 
 std::string ReadTextFile(const std::string &sPath)
@@ -291,6 +310,7 @@ bool LoadSettings(const std::string &sPath, LauncherSettings &settings)
         const std::string sKey = line.substr(0, eq), sValue = line.substr(eq + 1);
         if (sKey == "alwaysrez") settings.m_bAlwaysRez = (sValue == "1");
         else if (sKey == "rez") settings.m_AlwaysRez.push_back(sValue);
+        else if (sKey == "addon") settings.m_bAddOn = (sValue == "1");
     }
     return true;
 }
@@ -299,6 +319,7 @@ bool SaveSettings(const std::string &sPath, const LauncherSettings &settings)
 {
     std::ostringstream os;
     os << "# Written by LithLauncher. Safe to delete\n";
+    os << "addon=" << (settings.m_bAddOn ? 1 : 0) << "\n";
     os << "alwaysrez=" << (settings.m_bAlwaysRez ? 1 : 0) << "\n";
     if (settings.m_bAlwaysRez)
         for (const std::string &sRez : settings.m_AlwaysRez) os << "rez=" << sRez << "\n";

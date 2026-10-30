@@ -1,4 +1,9 @@
-project(BLOOD2_ClientRes)
+# Built twice when BUILD_BLOOD2_ADDON is on, the second time as The Nightmare Levels (BLOOD2_ADDON set by the parent)
+if(BLOOD2_ADDON)
+	project(BLOOD2NM_ClientRes)
+else()
+	project(BLOOD2_ClientRes)
+endif()
 
 # Client resource DLL
 
@@ -22,9 +27,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME CRes)
 
 # ClientRes.dsp's retail configuration compiled the .rc with _REG, which picks the retail bitmap.
 # The Nightmare Levels build uses _ADDON instead
-target_compile_definitions(${PROJECT_NAME} PRIVATE _REG)
+if(BLOOD2_ADDON)
+	set(BLOOD2_RES_DEFS _ADDON)
+else()
+	set(BLOOD2_RES_DEFS _REG)
+endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${BLOOD2_RES_DEFS})
 if(WIN32)
-	set_source_files_properties(ClientRes.rc PROPERTIES COMPILE_DEFINITIONS _REG)
+	set_source_files_properties(ClientRes.rc PROPERTIES COMPILE_DEFINITIONS ${BLOOD2_RES_DEFS})
 endif(WIN32)
 
 include_directories(. ../Shared ../../sdk/inc)

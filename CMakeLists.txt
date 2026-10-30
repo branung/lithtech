@@ -216,6 +216,20 @@ if(BUILD_BLOOD2)
     if(BUILD_BLOOD2_CLIENTSHELL)
         add_subdirectory(Blood2/ClientShellDLL) # CShell
     endif(BUILD_BLOOD2_CLIENTSHELL)
+
+    # The Nightmare Levels: the same modules built again with _ADDON into their own folder
+    option(BUILD_BLOOD2_ADDON "Also build Blood II: The Nightmare Levels" OFF)
+    if(BUILD_BLOOD2_ADDON)
+        set(BLOOD2_ADDON ON)
+        add_subdirectory(Blood2/ClientRes Blood2NM/ClientRes)
+        if(BUILD_BLOOD2_OBJECTDLL)
+            add_subdirectory(Blood2/ObjectDLL Blood2NM/ObjectDLL)
+        endif()
+        if(BUILD_BLOOD2_CLIENTSHELL)
+            add_subdirectory(Blood2/ClientShellDLL Blood2NM/ClientShellDLL)
+        endif()
+        unset(BLOOD2_ADDON)
+    endif(BUILD_BLOOD2_ADDON)
 endif(BUILD_BLOOD2)
 
 if(WIN32)
@@ -234,6 +248,7 @@ if(WIN32)
     lt_game_output(Shogo      SHOGO_ClientShellDLL SHOGO_ClientRes SHOGO_ObjectDLL SHOGO_ServerRes)
 
     lt_game_output(Blood2     BLOOD2_ClientShellDLL BLOOD2_ClientRes BLOOD2_ObjectDLL)
+    lt_game_output(Blood2NM   BLOOD2NM_ClientShellDLL BLOOD2NM_ClientRes BLOOD2NM_ObjectDLL)
 
 endif(WIN32)
 
@@ -266,13 +281,14 @@ if(WIN32)
 
     # lt_game_package(<folder>
     #     TARGETS <targets>              Copied into the folder
-    #     GAMEFOLDER_TARGETS <targets>   Copied into its Game folder (NOLF2's ClientFx.fxd)
+    #     SUBFOLDER <name>               A folder inside it (NOLF2's Game, Blood II's Blood2NM)
+    #     SUBFOLDER_TARGETS <targets>    Copied into that folder, which is only made when one of them is built
     #     FILES <files>                  Copied when changed, so a rebuild resets autoexec.cfg to its default
     #     DIRS <names>                   Made in the folder
     #     LAUNCHER <name>                The launcher built into the folder as <name>.exe
     #     SERVER_NAME <name>)            ltserver copied as <name>.exe
     function(lt_game_package game)
-        cmake_parse_arguments(PKG "" "LAUNCHER;SERVER_NAME" "TARGETS;GAMEFOLDER_TARGETS;FILES;DIRS" ${ARGN})
+        cmake_parse_arguments(PKG "" "SUBFOLDER;LAUNCHER;SERVER_NAME" "TARGETS;SUBFOLDER_TARGETS;FILES;DIRS" ${ARGN})
 
         set(dir "${CMAKE_BINARY_DIR}/OUT/$<CONFIG>_Builds/${game}")
         set(cmds COMMAND ${CMAKE_COMMAND} -E make_directory "${dir}")
@@ -289,14 +305,15 @@ if(WIN32)
             list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:SDL2::SDL2>" "${dir}")
         endif()
 
-        if(PKG_GAMEFOLDER_TARGETS)
-            list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E make_directory "${dir}/Game")
-            foreach(t ${PKG_GAMEFOLDER_TARGETS})
-                if(TARGET ${t})
-                    list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${t}>" "${dir}/Game")
-                    list(APPEND deps ${t})
-                endif()
-            endforeach()
+        set(subcmds)
+        foreach(t ${PKG_SUBFOLDER_TARGETS})
+            if(TARGET ${t})
+                list(APPEND subcmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${t}>" "${dir}/${PKG_SUBFOLDER}")
+                list(APPEND deps ${t})
+            endif()
+        endforeach()
+        if(subcmds)
+            list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E make_directory "${dir}/${PKG_SUBFOLDER}" ${subcmds})
         endif()
 
         foreach(f ${PKG_FILES})
@@ -338,13 +355,17 @@ if(WIN32)
     if(BUILD_BLOOD2)
         lt_game_package(Blood2
             TARGETS BLOOD2_ClientShellDLL BLOOD2_ClientRes BLOOD2_ObjectDLL
+            SUBFOLDER Blood2NM
+            SUBFOLDER_TARGETS BLOOD2NM_ClientShellDLL BLOOD2NM_ClientRes BLOOD2NM_ObjectDLL
+            DIRS Custom
             LAUNCHER Blood2)
     endif()
 
     if(BUILD_NOLF2)
         lt_game_package(NOLF2
             TARGETS NOLF2_ClientShellDLL NOLF2_ClientRes NOLF2_ServerRes NOLF2_ObjectDLL
-            GAMEFOLDER_TARGETS NOLF2_ClientFXDLL
+            SUBFOLDER Game
+            SUBFOLDER_TARGETS NOLF2_ClientFXDLL
             LAUNCHER NOLF2)
     endif()
 endif(WIN32)

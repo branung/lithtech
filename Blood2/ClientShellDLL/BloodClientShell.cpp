@@ -4845,7 +4845,7 @@ void CBloodClientShell::OnMessage(DBYTE messageID, HMESSAGEREAD hMessage)
 			DDWORD dwLocalID, dwScorer;
 			int nFrags;
 			DBYTE nTeamID;
-			char *sScorer;
+			const char *sScorer;
 			char sMsg[256];
 			CTeam *pTeam;
 			char *pszSound;

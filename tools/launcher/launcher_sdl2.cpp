@@ -62,6 +62,7 @@ const Rect kPlayButton(406, 12, 222, 26);
 const Rect kQuitButton(406, 330, 222, 26);
 const Rect kDisplayButton(406, 52, 222, 26);
 const Rect kCustomizeButton(406, 86, 222, 26);
+const Rect kAddOnBox(12, 338, 380, 18);
 
 const int kCaptionH = 22;
 const int kCloseSize = 18;
@@ -380,16 +381,39 @@ struct App
     int iAvailableSel = -1, iChosenSel = -1;
     int nAvailableScroll = 0, nChosenScroll = 0;
 
-    // The archives a launch loads
-    // Order: the game's archives and whichever optional ones are present, then the Custom folder itself so loose levels
-    // are listed ingame, then the selected custom archives.
+    // The addon's checkbox, shown only when its modules are built
+    bool bHasAddOn = false, bAddOn = false;
+
+    bool UseAddOn() const { return bHasAddOn && bAddOn; }
+
+    // Every archive this launch can't start without
+    std::vector<std::string> Required() const
+    {
+        std::vector<std::string> out = ltlaunch::RequiredRez(spec);
+        if (UseAddOn()) out.insert(out.end(), game.m_AddOn.m_Rez.begin(), game.m_AddOn.m_Rez.end());
+        return out;
+    }
+
+    void AddPresent(std::vector<std::string> &rez, const std::vector<std::string> &optional) const
+    {
+        for (const std::string &sRez : optional)
+            if (ltlaunch::FileExists(ltlaunch::JoinPath(spec.m_sGameDir, sRez))) rez.push_back(sRez);
+    }
+
+    // The archives a launch loads, named from the game directory
+    // Order: the game's archives and whichever optional ones are present, then the addon's, 
+    // then the Custom folder itself so loose levels are listed ingame, then the selected custom archives.
     // False when a selected archive is no longer there, with its name stored in sMissing
     bool LaunchRez(std::vector<std::string> &rez, std::string &sMissing) const
     {
         rez = spec.m_Rez;
+        AddPresent(rez, spec.m_OptionalRez);
 
-        for (const std::string &sRez : spec.m_OptionalRez)
-            if (ltlaunch::FileExists(ltlaunch::JoinPath(spec.m_sGameDir, sRez))) rez.push_back(sRez);
+        if (UseAddOn())
+        {
+            rez.insert(rez.end(), game.m_AddOn.m_Rez.begin(), game.m_AddOn.m_Rez.end());
+            AddPresent(rez, game.m_AddOn.m_OptionalRez);
+        }
 
         if (ltlaunch::DirExists(ltlaunch::JoinPath(spec.m_sGameDir, ltlaunch::kCustomFolder)))
             rez.push_back(ltlaunch::kCustomFolder);
@@ -407,9 +431,18 @@ struct App
         return true;
     }
 
+    // The engine saves autoexec.cfg where it runs, so the addon keeps its own, starting from a copy of the game's
+    void SeedAddOnConfig() const
+    {
+        const std::string sOwn = ltlaunch::JoinPath(ltlaunch::AddOnDir(game), "autoexec.cfg");
+        const std::string sGame = ltlaunch::JoinPath(spec.m_sGameDir, "autoexec.cfg");
+        if (!ltlaunch::FileExists(sOwn) && ltlaunch::FileExists(sGame))
+            ltlaunch::WriteTextFile(sOwn, ltlaunch::ReadTextFile(sGame));
+    }
+
     void DoPlay()
     {
-        if (!ltlaunch::FirstMissing(spec).empty()) return;
+        if (!ltlaunch::FirstMissing(spec.m_sGameDir, Required()).empty()) return;
 
         ltlaunch::LaunchSpec launch = spec;
         std::string sMissing;
@@ -419,8 +452,26 @@ struct App
             return;
         }
 
+        // The addon runs from its own folder, one below the game's archives
+        std::string sCwd = spec.m_sGameDir;
+        if (UseAddOn())
+        {
+            for (std::string &sRez : launch.m_Rez) sRez = ltlaunch::JoinPath("..", sRez);
+            sCwd = ltlaunch::AddOnDir(game);
+            SeedAddOnConfig();
+        }
+
+        std::vector<std::string> args = ltlaunch::BuildCommandLine(launch);
+
+        // The engine never writes display.cfg, so the addon reads the game's
+        if (UseAddOn() && ltlaunch::FileExists(DisplayCfgPath()))
+        {
+            args.push_back("-display");
+            args.push_back(ltlaunch::JoinPath("..", "display.cfg"));
+        }
+
         std::string sError;
-        if (!Spawn(ltlaunch::BuildCommandLine(launch), spec.m_sGameDir, sError))
+        if (!Spawn(args, sCwd, sError))
         { sStatus = sError; return; }
         sStatus.clear();
     }
@@ -431,7 +482,7 @@ struct App
     static const std::vector<const Rect *> &ButtonsFor(DialogId eDialog)
     {
         static const std::vector<const Rect *> kMain =
-            { &kPlayButton, &kDisplayButton, &kCustomizeButton, &kQuitButton };
+            { &kPlayButton, &kDisplayButton, &kCustomizeButton, &kQuitButton, &kAddOnBox };
         static const std::vector<const Rect *> kDisplay =
             { &kDisplayDlg.ok, &kDisplayDlg.cancel, &kDisplayDlg.close, &kBorderlessBox };
         static const std::vector<const Rect *> kCustomize =
@@ -449,7 +500,7 @@ struct App
     const Rect *ButtonAt(int x, int y) const
     {
         for (const Rect *pButton : ButtonsFor(eOpenDialog))
-            if (In(*pButton, x, y)) return pButton;
+            if (In(*pButton, x, y) && (pButton != &kAddOnBox || bHasAddOn)) return pButton;
         return 0;
     }
 
@@ -462,6 +513,7 @@ struct App
         else if (p == &kDisplayButton) OpenDisplay();
         else if (p == &kCustomizeButton) OpenCustomize();
         else if (p == &kQuitButton) bQuit = true;
+        else if (p == &kAddOnBox) ToggleAddOn();
         // Display dialog
         else if (p == &kBorderlessBox) bBorderless = !bBorderless;
         // Customize dialog
@@ -610,9 +662,15 @@ struct App
             return;
         }
 
+        SaveSettings();
+    }
+
+    void SaveSettings()
+    {
         ltlaunch::LauncherSettings settings;
         settings.m_bAlwaysRez = bAlwaysRez;
         settings.m_AlwaysRez = chosenRez;
+        settings.m_bAddOn = bAddOn;
         if (!ltlaunch::SaveSettings(sSettingsPath, settings)) sStatus = "Could not write " + sSettingsPath;
     }
 
@@ -623,6 +681,15 @@ struct App
         if (!ltlaunch::LoadSettings(sSettingsPath, settings)) return;
         bAlwaysRez = settings.m_bAlwaysRez;
         if (bAlwaysRez) chosenRez = settings.m_AlwaysRez;
+        bAddOn = settings.m_bAddOn;
+    }
+
+    // The addon has its own banner, so the splash is loaded again
+    void ToggleAddOn()
+    {
+        bAddOn = !bAddOn;
+        bSplashTried = false;
+        SaveSettings();
     }
 
     void AddRez()
@@ -659,7 +726,7 @@ struct App
         Fill(panel, kWindow);
         Frame(panel, kBorder);
 
-        const std::vector<std::string> required = ltlaunch::RequiredRez(spec);
+        const std::vector<std::string> required = Required();
         std::vector<bool> present;
         bool bMissing = false;
         for (const std::string &sRez : required)
@@ -675,10 +742,11 @@ struct App
         else
             DrawSplash(panel);
 
-        Button(kPlayButton, "Launch", Down(kPlayButton));
+        Button(kPlayButton, UseAddOn() ? game.m_AddOn.m_sButton : "Launch", Down(kPlayButton));
         Button(kDisplayButton, "Display...", Down(kDisplayButton));
         Button(kCustomizeButton, "Customize...", Down(kCustomizeButton));
         Button(kQuitButton, "Quit", Down(kQuitButton));
+        if (bHasAddOn) CheckBox(kAddOnBox, game.m_AddOn.m_sLabel, bAddOn, Down(kAddOnBox));
 
         // A refused or failed launch
         Text(12, 366, sStatus, kAlert, kWinW - 24);
@@ -696,10 +764,16 @@ struct App
         bSplashTried = true;
         if (pSplash) { SDL_DestroyTexture(pSplash); pSplash = 0; }
 
+        // The addon's banner, or the game's when it has none
         std::vector<unsigned char> raw;
         ltlaunch::Image img;
-        if (!ltlaunch::ReadRezEntry(ltlaunch::JoinPath(spec.m_sGameDir, game.m_sSplashRez), game.m_sSplashPath, raw) ||
-            !ltlaunch::DecodePcx(raw, img))
+        const bool bAddOnSplash = UseAddOn() &&
+            ltlaunch::ReadRezEntry(ltlaunch::JoinPath(spec.m_sGameDir, game.m_AddOn.m_sSplashRez),
+                                   game.m_AddOn.m_sSplashPath, raw) &&
+            ltlaunch::DecodePcx(raw, img);
+        if (!bAddOnSplash &&
+            (!ltlaunch::ReadRezEntry(ltlaunch::JoinPath(spec.m_sGameDir, game.m_sSplashRez), game.m_sSplashPath, raw) ||
+             !ltlaunch::DecodePcx(raw, img)))
             return;
 
         pSplash = SDL_CreateTexture(g_pRen, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STATIC,
@@ -818,6 +892,7 @@ int LauncherMain()
     App app;
     app.game = ltlaunch::LTLAUNCH_PROFILE(sExeDir);
     app.spec = app.game.m_Spec;
+    app.bHasAddOn = ltlaunch::HasAddOn(app.game);
     app.sSettingsPath = ltlaunch::JoinPath(sExeDir, "launcher.ini");
     app.LoadSettings();
 

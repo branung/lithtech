@@ -465,7 +465,10 @@ LTRESULT GetOrCopyClientFile( char const* pszFilename,
 
 	if( GetFileAttributes( pszFilename ) != INVALID_FILE_ATTRIBUTES )
 	{
-		LTStrCpy( pszOutName, pszFilename, outNameLen );
+		// The full path, since LoadLibrary searches the exe's folder before the working directory
+		DWORD nLen = GetFullPathNameA( pszFilename, outNameLen, pszOutName, NULL );
+		if( nLen == 0 || nLen >= (DWORD)outNameLen )
+			LTStrCpy( pszOutName, pszFilename, outNameLen );
 		return LT_OK;
 	}
 

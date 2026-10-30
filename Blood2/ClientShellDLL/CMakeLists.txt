@@ -1,4 +1,9 @@
-project(BLOOD2_ClientShellDLL)
+# Built twice when BUILD_BLOOD2_ADDON is on, the second time as The Nightmare Levels (BLOOD2_ADDON set by the parent)
+if(BLOOD2_ADDON)
+	project(BLOOD2NM_ClientShellDLL)
+else()
+	project(BLOOD2_ClientShellDLL)
+endif()
 
 # Blood II's client shell. The sources are ClientShellDLL.dsp's
 
@@ -161,3 +166,9 @@ endif(MSVC)
 if(MSVC)
 	target_compile_options(${PROJECT_NAME} PRIVATE /we4311 /we4312)
 endif(MSVC)
+
+# The add on defines both, as the 1998 project's AddOn configuration does.
+# SharedDefs.h tests _ADD_ON and the .cpp files test _ADDON
+if(BLOOD2_ADDON)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE _ADDON _ADD_ON)
+endif()
