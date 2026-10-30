@@ -259,3 +259,83 @@ if(BUILD_TESTS)
     add_subdirectory(tests/ModelABC)
     add_subdirectory(tests/WorldV56)
 endif(BUILD_TESTS)
+
+# Each game in a folder of its own under OUT/<config>_Builds
+if(WIN32)
+    find_package(SDL2 QUIET)
+
+    # lt_game_package(<folder>
+    #     TARGETS <targets>              Copied into the folder
+    #     GAMEFOLDER_TARGETS <targets>   Copied into its Game folder (NOLF2's ClientFx.fxd)
+    #     FILES <files>                  Copied when changed, so a rebuild resets autoexec.cfg to its default
+    #     DIRS <names>                   Made in the folder
+    #     SERVER_NAME <name>)            ltserver copied as <name>.exe
+    function(lt_game_package game)
+        cmake_parse_arguments(PKG "" "SERVER_NAME" "TARGETS;GAMEFOLDER_TARGETS;FILES;DIRS" ${ARGN})
+
+        set(dir "${CMAKE_BINARY_DIR}/OUT/$<CONFIG>_Builds/${game}")
+        set(cmds COMMAND ${CMAKE_COMMAND} -E make_directory "${dir}")
+        set(deps)
+
+        foreach(t EXE_Lithtech DLL_Server DLL_SndDrvDX8 DLL_LTMsg ServerDir ${PKG_TARGETS})
+            if(TARGET ${t})
+                list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${t}>" "${dir}")
+                list(APPEND deps ${t})
+            endif()
+        endforeach()
+
+        if(TARGET SDL2::SDL2)
+            list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:SDL2::SDL2>" "${dir}")
+        endif()
+
+        if(PKG_GAMEFOLDER_TARGETS)
+            list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E make_directory "${dir}/Game")
+            foreach(t ${PKG_GAMEFOLDER_TARGETS})
+                if(TARGET ${t})
+                    list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${t}>" "${dir}/Game")
+                    list(APPEND deps ${t})
+                endif()
+            endforeach()
+        endif()
+
+        foreach(f ${PKG_FILES})
+            list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "${f}" "${dir}")
+        endforeach()
+
+        foreach(d ${PKG_DIRS})
+            list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E make_directory "${dir}/${d}")
+        endforeach()
+
+        if(PKG_SERVER_NAME AND TARGET ltserver)
+            list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:ltserver>"
+                "${dir}/${PKG_SERVER_NAME}$<TARGET_FILE_SUFFIX:ltserver>")
+            list(APPEND deps ltserver)
+        endif()
+
+        add_custom_target(${game}_Package ALL ${cmds} VERBATIM)
+        if(deps)
+            add_dependencies(${game}_Package ${deps})
+        endif()
+    endfunction()
+
+    if(BUILD_SHOGO)
+        lt_game_package(Shogo
+            TARGETS SHOGO_ClientShellDLL SHOGO_ClientRes SHOGO_ObjectDLL SHOGO_ServerRes
+            FILES ${CMAKE_SOURCE_DIR}/Shogo/Config/autoexec.cfg ${CMAKE_SOURCE_DIR}/Shogo/Config/defkeybd.cfg
+                  ${CMAKE_SOURCE_DIR}/Shogo/Config/DetailHi.cfg ${CMAKE_SOURCE_DIR}/Shogo/Config/DetailMd.cfg
+                  ${CMAKE_SOURCE_DIR}/Shogo/Config/DetailLo.cfg
+            DIRS Custom
+            SERVER_NAME ShogoServer)
+    endif()
+
+    if(BUILD_BLOOD2)
+        lt_game_package(Blood2
+            TARGETS BLOOD2_ClientShellDLL BLOOD2_ClientRes BLOOD2_ObjectDLL)
+    endif()
+
+    if(BUILD_NOLF2)
+        lt_game_package(NOLF2
+            TARGETS NOLF2_ClientShellDLL NOLF2_ClientRes NOLF2_ServerRes NOLF2_ObjectDLL
+            GAMEFOLDER_TARGETS NOLF2_ClientFXDLL)
+    endif()
+endif(WIN32)
