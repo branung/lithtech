@@ -37,6 +37,9 @@ public:
 	void			OnLeft()			{ SetOn(!IsOn()); }
 	void			OnRight()			{ SetOn(!IsOn()); }
 
+	// A click toggles it like Left and Right
+	void			OnMouseClick(int x, int y)		{ SetOn(!IsOn()); }
+
 protected:
 	DBOOL			m_bOn;
 	DBOOL			*m_pbValue;		// Value to store the on/off status in when UpdateData is called.

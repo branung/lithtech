@@ -67,6 +67,11 @@ void CLTGUICtrl::OnEnter()
 {
 }
 
+void CLTGUICtrl::OnMouseClick(int x, int y)
+{
+	OnEnter();
+}
+
 void CLTGUICtrl::OnCommand(DDWORD dwCommandID)
 {
 }

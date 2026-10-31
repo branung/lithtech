@@ -66,6 +66,9 @@ public:
 	void			OnLeft();
 	void			OnRight();
 
+	// A click moves the tab to the clicked point. Not in the original library
+	void			OnMouseClick(int x, int y);
+
 protected:
 	// The selection for this control has changed	
 	void			OnSelChange();

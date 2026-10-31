@@ -283,6 +283,7 @@ class CBloodClientShell : public CClientShellDE
         void			OnCommandOff(int command);
         void			OnKeyDown(int key, int rep);
         void			OnKeyUp(int key);
+		void			HandleEvent(SDL_Event e);
         void			OnMessage(DBYTE messageID, HMESSAGEREAD hMessage);
 		void			SpecialEffectNotify(HLOCALOBJ hObj, HMESSAGEREAD hMessage);
 		void			OnObjectRemove(HLOCALOBJ hObj);
@@ -417,6 +418,7 @@ class CBloodClientShell : public CClientShellDE
 		DBOOL			m_nLastCrosshair;
 		DBOOL			m_bDemoPlayback;
 		DBOOL			m_bShiftState;
+		DBOOL			m_bMenuCursorActive;	// The cursor is free for the menus
 
 		// Advanced console options...
 		DBOOL		m_bAdvancedDisableMusic;		// Disable music

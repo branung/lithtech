@@ -413,6 +413,18 @@ int dsi_GetSDLUp(uint32 i)
 	return g_ClientGlob.m_SDLUps[i];
 }
 
+// Key state set synchronously by client_input() as each SDL event is polled,
+// ahead of ProcessAllInput()'s copy into InputSDL2's g_key_state
+int dsi_GetSDLInput(uint32 i)
+{
+	return g_ClientGlob.m_SDLInputs[i];
+}
+
+int dsi_GetSDLMouseDown(uint32 i)
+{
+	return g_ClientGlob.m_mousedown[i];
+}
+
 void dsi_ClearKeyDowns()
 {
 	size_t i;

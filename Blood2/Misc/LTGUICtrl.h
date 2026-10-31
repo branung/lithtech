@@ -45,6 +45,10 @@ public:
 	virtual void	OnDown ( );
 	virtual void	OnEnter ( );	
 
+	// A mouse click at (x,y), inside the control.
+	// Defaults to OnEnter. On/off and slider controls only have OnLeft and OnRight, so they override it.
+	virtual void	OnMouseClick ( int x, int y );
+
 	// Handle a command
 	virtual void	OnCommand ( DDWORD dwCommandID );
 

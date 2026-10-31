@@ -230,6 +230,48 @@ void CLTGUIListCtrl::OnEnter()
 }
 
 //////////////////////////////////////////////////////////////////////
+// Mouse hit testing, added to the Jupiter port
+//////////////////////////////////////////////////////////////////////
+
+int CLTGUIListCtrl::GetControlUnderPoint(int x, int y)
+{
+	if (m_bEnableBoxFormat)
+	{
+		int nCurY = m_pos.y;
+
+		for (DDWORD i = m_nFirstDisplayedItem; i < m_controlArray.GetSize(); ++i)
+		{
+			int nHeight = m_controlArray[i]->GetHeight();
+
+			if (nCurY + nHeight >= m_pos.y + m_nHeight)
+				break;
+
+			if (x >= m_pos.x && y >= nCurY && y < nCurY + nHeight)
+			{
+				m_controlArray[i]->SetPos(m_pos.x, nCurY);
+				return (int)i;
+			}
+
+			nCurY += m_nItemSpacing + nHeight;
+		}
+	}
+	else
+	{
+		for (DDWORD i = 0; i < m_controlArray.GetSize(); ++i)
+		{
+			DIntPt pos = m_controlArray[i]->GetPos();
+			int nWidth  = m_controlArray[i]->GetWidth();
+			int nHeight = m_controlArray[i]->GetHeight();
+
+			if (x >= pos.x && x < pos.x + nWidth && y >= pos.y && y < pos.y + nHeight)
+				return (int)i;
+		}
+	}
+
+	return -1;
+}
+
+//////////////////////////////////////////////////////////////////////
 // Contents
 //////////////////////////////////////////////////////////////////////
 

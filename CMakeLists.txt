@@ -283,12 +283,13 @@ if(WIN32)
     #     TARGETS <targets>              Copied into the folder
     #     SUBFOLDER <name>               A folder inside it (NOLF2's Game, Blood II's Blood2NM)
     #     SUBFOLDER_TARGETS <targets>    Copied into that folder, which is only made when one of them is built
+    #     SUBFOLDER_FILES <files>        Copied into that folder like FILES, when it's made
     #     FILES <files>                  Copied when changed, so a rebuild resets autoexec.cfg to its default
     #     DIRS <names>                   Made in the folder
     #     LAUNCHER <name>                The launcher built into the folder as <name>.exe
     #     SERVER_NAME <name>)            ltserver copied as <name>.exe
     function(lt_game_package game)
-        cmake_parse_arguments(PKG "" "SUBFOLDER;LAUNCHER;SERVER_NAME" "TARGETS;SUBFOLDER_TARGETS;FILES;DIRS" ${ARGN})
+        cmake_parse_arguments(PKG "" "SUBFOLDER;LAUNCHER;SERVER_NAME" "TARGETS;SUBFOLDER_TARGETS;SUBFOLDER_FILES;FILES;DIRS" ${ARGN})
 
         set(dir "${CMAKE_BINARY_DIR}/OUT/$<CONFIG>_Builds/${game}")
         set(cmds COMMAND ${CMAKE_COMMAND} -E make_directory "${dir}")
@@ -313,6 +314,9 @@ if(WIN32)
             endif()
         endforeach()
         if(subcmds)
+            foreach(f ${PKG_SUBFOLDER_FILES})
+                list(APPEND subcmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "${f}" "${dir}/${PKG_SUBFOLDER}")
+            endforeach()
             list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E make_directory "${dir}/${PKG_SUBFOLDER}" ${subcmds})
         endif()
 
@@ -357,6 +361,8 @@ if(WIN32)
             TARGETS BLOOD2_ClientShellDLL BLOOD2_ClientRes BLOOD2_ObjectDLL
             SUBFOLDER Blood2NM
             SUBFOLDER_TARGETS BLOOD2NM_ClientShellDLL BLOOD2NM_ClientRes BLOOD2NM_ObjectDLL
+            SUBFOLDER_FILES ${CMAKE_SOURCE_DIR}/Blood2/Config/autoexec.cfg
+            FILES ${CMAKE_SOURCE_DIR}/Blood2/Config/autoexec.cfg
             DIRS Custom
             LAUNCHER Blood2)
     endif()

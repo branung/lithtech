@@ -124,6 +124,11 @@ public:
 	// Return DTRUE if the device tracking should stop.
 	virtual DBOOL	HandleDeviceTrack(DeviceInput *pInput, DDWORD dwNumDevices);
 
+	// Mouse support, added to the Jupiter port. Hovering selects like OnUp/OnDown and clicking activates,
+	// so every menu gets it through the shared option list
+	virtual void	OnMouseMove(int x, int y);
+	virtual DBOOL	OnLButtonDown(int x, int y);
+
 protected:
 	virtual DDWORD	OnCommand(DDWORD dwCommand, DDWORD dwParam1, DDWORD dwParam2);
 

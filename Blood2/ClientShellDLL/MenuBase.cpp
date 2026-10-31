@@ -847,6 +847,55 @@ DBOOL CMenuBase::HandleDeviceTrack(DeviceInput *pInput, DDWORD dwNumDevices)
 
 /******************************************************************/
 
+// Selects the enabled control under the cursor
+void CMenuBase::OnMouseMove(int x, int y)
+{
+	int nIndex = m_listOption.GetControlUnderPoint(x, y);
+
+	if (nIndex < 0 || nIndex == m_listOption.GetSelectedItem())
+	{
+		return;
+	}
+
+	if (!m_listOption.GetControl(nIndex)->IsEnabled())
+	{
+		return;
+	}
+
+	if (m_pMainMenus)
+	{
+		m_pMainMenus->PlaySelectSound();
+	}
+	m_listOption.SelectItem(nIndex);
+}
+
+/******************************************************************/
+
+// Selects the enabled control under the cursor and clicks it. DFALSE when the click missed every control
+DBOOL CMenuBase::OnLButtonDown(int x, int y)
+{
+	int nIndex = m_listOption.GetControlUnderPoint(x, y);
+
+	if (nIndex < 0 || !m_listOption.GetControl(nIndex)->IsEnabled())
+	{
+		return DFALSE;
+	}
+
+	if (nIndex != m_listOption.GetSelectedItem())
+	{
+		m_listOption.SelectItem(nIndex);
+	}
+
+	if (m_pMainMenus)
+	{
+		m_pMainMenus->PlayEnterSound();
+	}
+	m_listOption.GetControl(nIndex)->OnMouseClick(x, y);
+	return DTRUE;
+}
+
+/******************************************************************/
+
 DDWORD CMenuBase::OnCommand(DDWORD dwCommand, DDWORD dwParam1, DDWORD dwParam2)
 {
 	return 0;

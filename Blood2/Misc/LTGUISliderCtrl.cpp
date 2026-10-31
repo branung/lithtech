@@ -224,6 +224,34 @@ void CLTGUISliderCtrl::OnRight()
 	SetSliderPos(nPos);
 }
 
+// The inverse of RenderSliderBar: the click's fraction of the tab's travel (the bar less the tab and
+// RenderSliderBar's 10 pixel margin), clamped so a click on the label lands on the minimum
+void CLTGUISliderCtrl::OnMouseClick(int x, int y)
+{
+	if (!m_hBarSurf || !m_hTabSurf || !m_pClientDE)
+		return;
+
+	DDWORD nBarWidth  = 0;
+	DDWORD nBarHeight = 0;
+	DDWORD nTabWidth  = 0;
+	DDWORD nTabHeight = 0;
+
+	m_pClientDE->GetSurfaceDims(m_hBarSurf, &nBarWidth, &nBarHeight);
+	m_pClientDE->GetSurfaceDims(m_hTabSurf, &nTabWidth, &nTabHeight);
+
+	int nTravel = (int)nBarWidth - (int)nTabWidth - 10;
+	if (nTravel <= 0)
+		return;
+
+	int nBarLeft = m_nSliderOffset + m_pos.x + 5;
+	float fPercent = (float)(x - nBarLeft) / (float)nTravel;
+
+	if (fPercent < 0.0f)	fPercent = 0.0f;
+	if (fPercent > 1.0f)	fPercent = 1.0f;
+
+	SetSliderPos(m_nMinSlider + (int)(fPercent * (float)(m_nMaxSlider - m_nMinSlider) + 0.5f));
+}
+
 void CLTGUISliderCtrl::OnSelChange()
 {
 	if (!m_bSelected)

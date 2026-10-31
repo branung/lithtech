@@ -65,6 +65,9 @@ public:
 	void		SelectItem ( int nIndex );
 	int			GetSelectedItem ( )					{ return m_nCurrentIndex; }
 
+	// The index of the control at (x,y), or -1
+	int			GetControlUnderPoint ( int x, int y );
+
 	int			GetLastDisplayedIndex ( )			{ return GetLastDisplayedIndex(GetStartIndex()); }
 	int			GetStartIndex ( )					{ return m_nFirstDisplayedItem; }
 	void		SetStartIndex ( int nIndex )		{ m_nFirstDisplayedItem=nIndex; }

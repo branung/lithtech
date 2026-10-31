@@ -112,6 +112,13 @@ class CMainMenus
 		DBOOL		HandleKeyDown(int key, int rep);
 		DBOOL		HandleKeyUp(int key);
 
+		// Mouse messages, passed to the current menu like keys. The message box has no mouse support
+		void		OnMouseMove(int x, int y);
+		DBOOL		OnLButtonDown(int x, int y);
+
+		// Maps a window pixel onto the 640x480 working surface the menus are laid out in
+		void		ScreenToWorkingSurface(int &x, int &y);
+
 		// Starts tracking devices for input
 		DBOOL		StartTrackingDevices(int nDevices);
 

@@ -35,6 +35,7 @@
 #include "GameWeapons.h"
 #include "SoundTypes.h"
 #include "physics_lt.h"
+#include "iltcursor.h"
 
 PhysicsState	  g_normalPhysicsState;
 PhysicsState	  g_waterPhysicsState;
@@ -453,6 +454,7 @@ CBloodClientShell::CBloodClientShell()
 	m_bDemoPlayback			= DFALSE;
 
 	m_bShiftState			= DFALSE;
+	m_bMenuCursorActive		= DFALSE;
 	m_bRollCredits          = DFALSE;
 
 	_mbscpy((unsigned char*)m_szFilename, (const unsigned char*)"");
@@ -3035,6 +3037,23 @@ void CBloodClientShell::PostUpdate()
 		m_bPlayedWaitingSound = DFALSE;
 	}
 
+	// The cursor is shown and freed for the menus and captured again for aiming
+	DBOOL bInMenu = (GetGameState() == GS_MENU);
+	if (bInMenu != m_bMenuCursorActive)
+	{
+		m_bMenuCursorActive = bInMenu;
+		if (bInMenu)
+		{
+			pClientDE->Cursor()->SetCursorMode(CM_Hardware);
+			pClientDE->RunConsoleString("CursorCenter 0");
+		}
+		else
+		{
+			pClientDE->Cursor()->SetCursorMode(CM_None);
+			pClientDE->RunConsoleString("CursorCenter 1");
+		}
+	}
+
 	if (GetGameState() == GS_MENU)
 	{
 		m_Menu.Draw();
@@ -4043,6 +4062,39 @@ DBOOL CBloodClientShell::StartNewGame(const char *pszWorldName, DBYTE nStartType
 		_mbscpy((unsigned char*)m_szFilename, (const unsigned char*)pszWorldName);
 
 	return StartNewWorld(m_szFilename, nGameType, nLoadType, nDifficulty);
+}
+
+
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CBloodClientShell::HandleEvent()
+//
+//	PURPOSE:	Routes the mouse into the menus, which retail never had.
+//				Only while a menu is up, since in play the mouse aims
+//
+// --------------------------------------------------------------------------- //
+
+void CBloodClientShell::HandleEvent(SDL_Event e)
+{
+	if (GetGameState() != GS_MENU)
+	{
+		return;
+	}
+
+	switch (e.type)
+	{
+	case SDL_MOUSEMOTION:
+		// e.motion, not e.button: the two structs keep x and y at different offsets in the union
+		m_Menu.OnMouseMove(e.motion.x, e.motion.y);
+		break;
+
+	case SDL_MOUSEBUTTONDOWN:
+		if (e.button.button == SDL_BUTTON_LEFT)
+		{
+			m_Menu.OnLButtonDown(e.button.x, e.button.y);
+		}
+		break;
+	}
 }
 
 

@@ -774,6 +774,42 @@ void CMainMenus::BlitWorkingSurface(HSURFACE hScreen)
 
 //*******************************************************************
 
+// The mouse arrives in window coordinates, but the controls are laid out on the working surface,
+// which BlitWorkingSurface centers on the screen. This undoes that offset (or the crop below 640x480)
+// with the blit's own expressions, since (a/2 - b/2) and (a - b)/2 differ when one is odd
+void CMainMenus::ScreenToWorkingSurface(int &x, int &y)
+{
+	if (!m_pClientDE || !m_hSurfWork)
+		return;
+
+	HSURFACE hScreen = m_pClientDE->GetScreenSurface();
+	if (!hScreen)
+		return;
+
+	DDWORD dwScreenWidth=0;
+	DDWORD dwScreenHeight=0;
+	DDWORD dwWorkWidth=0;
+	DDWORD dwWorkHeight=0;
+
+	m_pClientDE->GetSurfaceDims (hScreen, &dwScreenWidth, &dwScreenHeight);
+	m_pClientDE->GetSurfaceDims (m_hSurfWork, &dwWorkWidth, &dwWorkHeight);
+
+	if ( dwScreenWidth < dwWorkWidth || dwScreenHeight < dwWorkHeight )
+	{
+		// Cropped: the window's origin is (nWidthClip, nHeightClip) on the working surface
+		x += (int)(dwWorkWidth  - dwScreenWidth)  / 2;
+		y += (int)(dwWorkHeight - dwScreenHeight) / 2;
+	}
+	else
+	{
+		// Centered: undo nLeft and nTop
+		x -= ((int)dwScreenWidth  / 2) - ((int)dwWorkWidth  / 2);
+		y -= ((int)dwScreenHeight / 2) - ((int)dwWorkHeight / 2);
+	}
+}
+
+//*******************************************************************
+
 // Set the current menu
 void CMainMenus::SetCurrentMenu(DWORD dwMenuID, DWORD dwTopLevelMenuID)
 {		
@@ -1129,6 +1165,12 @@ DBOOL CMainMenus::HandleKeyDown(int key, int rep)
 		return m_messageBox.HandleKeyDown(key, rep);		
 	}
 
+	// A bind prompt reads the key itself, so the menu doesn't also act on it
+	if ( m_bTrackingDevices )
+	{
+		return DFALSE;
+	}
+
 	if (!m_pCurrentMenu)
 	{
 		return DFALSE;
@@ -1171,4 +1213,33 @@ DBOOL CMainMenus::HandleKeyDown(int key, int rep)
 	}
 	
 	return DTRUE;
+}
+
+//*******************************************************************
+
+// Moves the highlight to whatever is under the cursor. Nothing while a message box is up or no menu is current,
+// as for keys, or while a bind prompt waits, since it reads the mouse itself
+void CMainMenus::OnMouseMove(int x, int y)
+{
+	if ( m_bInMessageBox || !m_pCurrentMenu || m_bTrackingDevices )
+	{
+		return;
+	}
+
+	ScreenToWorkingSurface(x, y);
+	m_pCurrentMenu->OnMouseMove(x, y);
+}
+
+//*******************************************************************
+
+// A click activates whatever is under the cursor. DFALSE when there was nothing to click
+DBOOL CMainMenus::OnLButtonDown(int x, int y)
+{
+	if ( m_bInMessageBox || !m_pCurrentMenu || m_bTrackingDevices )
+	{
+		return DFALSE;
+	}
+
+	ScreenToWorkingSurface(x, y);
+	return m_pCurrentMenu->OnLButtonDown(x, y);
 }
