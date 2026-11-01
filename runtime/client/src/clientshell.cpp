@@ -785,7 +785,17 @@ LTRESULT CClientShell::DoLoadWorld(const CPacket_Read &cPacket, bool bLocal)
 	// Called for a local client too, as Shogo sets m_strCurrentWorldName here and nowhere else
 	if (i_client_shell != NULL && (!m_bLocal || g_bLocalPreLoadWorld))
 	{
+#ifdef _WIN32
 		i_client_shell->PreLoadWorld(pWorldName);
+#else
+		// Game code parses DOS paths. Shogo strips the directory at the last backslash, 
+        // so a Linux path saved the whole thing as the world name
+		char szDosName[_MAX_PATH];
+		LTStrCpy(szDosName, pWorldName ? pWorldName : "", sizeof(szDosName));
+		for (char *p = szDosName; *p; ++p)
+			if (*p == '/') *p = '\\';
+		i_client_shell->PreLoadWorld(szDosName);
+#endif
 	}
 
 	//check if we have a local server.

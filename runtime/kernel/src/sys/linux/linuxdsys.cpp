@@ -3,6 +3,7 @@
 
 #include <cstdarg>
 #include <iostream>
+#include <unistd.h>
 
 #include "SDL_timer.h"
 #include "bdefs.h"
@@ -136,6 +137,17 @@ LTRESULT dsi_LoadServerObjects(CClassMgr *pInfo)
     else if (status == CB_VERSIONMISMATCH)
 	{
 		return LT_INVALIDOBJECTDLLVERSION;
+	}
+
+	// The server string module, sres.dll on Windows. Without it every server
+	// FormatString failed and Shogo's pickups had no model. Optional here
+	{
+		CBindModuleType *hSRes = nullptr;
+		if (access("./libSRes.so", R_OK) == 0
+			&& bm_BindModule("./libSRes.so", false, hSRes) == BIND_NOERROR)
+		{
+			pInfo->m_hServerResourceModule = hSRes;
+		}
 	}
 
 /*
@@ -378,29 +390,31 @@ LTBOOL dsi_IsInputEnabled()
 return LTTRUE;      // DAN - temporary
 }
 
+// The key queue client_input fills from SDL events, as on Windows.
+// The console's typing reads it
 uint16 dsi_NumKeyDowns()
 {
-return 0;      // DAN - temporary
+    return g_ClientGlob.m_nKeyDowns;
 }
 
 uint16 dsi_NumKeyUps()
 {
-return 0;     // DAN - temporary
+    return g_ClientGlob.m_nKeyUps;
 }
 
 uint32 dsi_GetKeyDown(uint32 i)
 {
-return 0;     // DAN - temporary
+    return (i < MAX_KEYBUFFER) ? g_ClientGlob.m_KeyDowns[i] : 0;
 }
 
 uint32 dsi_GetKeyDownRep(uint32 i)
 {
-return 0;     // DAN - temporary
+    return (i < MAX_KEYBUFFER) ? g_ClientGlob.m_KeyDownReps[i] : 0;
 }
 
 uint32 dsi_GetKeyUp(uint32 i)
 {
-return 0;     // DAN - temporary
+    return (i < MAX_KEYBUFFER) ? g_ClientGlob.m_KeyUps[i] : 0;
 }
 
 int dsi_GetSDLDown(uint32 i)
@@ -449,13 +463,17 @@ void dsi_ClearKeyMessages()
 {
 }
 
+// As on Windows, so the tilde key can open the console
 LTBOOL dsi_IsConsoleUp()
 {
-    return LTFALSE;
+    if (!dsi_IsConsoleEnabled())
+        return LTFALSE;
+    return g_ClientGlob.m_bIsConsoleUp;
 }
 
 void dsi_SetConsoleUp(LTBOOL bUp)
 {
+    g_ClientGlob.m_bIsConsoleUp = (bUp != LTFALSE);
 }
 
 LTBOOL dsi_IsClientActive()
@@ -463,18 +481,30 @@ LTBOOL dsi_IsClientActive()
 	return 1;
 }
 
+// As on Windows: record the message and push SDL_QUIT to end the main loop.
+// Shutdown passes an empty message, so returning on one made Quit a no-op
 void dsi_OnClientShutdown(const char *pMsg )
 {
-    if(pMsg == nullptr || pMsg[0] == '\0')
-        return;
     ClientGlob *pGlob = &g_ClientGlob;
-    strncpy(pGlob->m_ExitMessage, pMsg, sizeof(pGlob->m_ExitMessage));
-    pGlob->m_ExitMessage[sizeof(pGlob->m_ExitMessage)-1] = '\0';
+    if (pMsg && pMsg[0]) {
+        strncpy(pGlob->m_ExitMessage, pMsg, sizeof(pGlob->m_ExitMessage));
+        pGlob->m_ExitMessage[sizeof(pGlob->m_ExitMessage)-1] = '\0';
+    }
+    else {
+        pGlob->m_ExitMessage[0] = '\0';
+    }
+
+    if (pGlob->m_bProcessWindowMessages) {
+        SDL_Event sdlevent;
+        sdlevent.type = SDL_QUIT;
+        SDL_PushEvent(&sdlevent);
+    }
 }
 
+// The -world client.cpp parsed, as Windows returns it
 char* dsi_GetDefaultWorld()
 {
-return NULL;     // DAN - temporary
+    return (char*)g_ClientGlob.m_pWorldName;
 }
 
 
@@ -490,6 +520,16 @@ bool dsi_IsConsoleEnabled()
 void dsi_PrintToConsole(const char *pMsg, ...) {
     va_list marker;
     char msg[1000];
+
+    // ConsoleEcho covers the server's prints, which in a local game reach nothing on Linux
+    extern int32 g_CV_ConsoleEcho;
+    if (g_CV_ConsoleEcho) {
+        va_start(marker, pMsg);
+        vsnprintf(msg, 999, pMsg, marker);
+        va_end(marker);
+        fprintf(stdout, "Server: %s\n", msg);
+        fflush(stdout);
+    }
 
     if (g_pServerMgr && g_pServerMgr->m_pServerAppHandler) {
         va_start(marker, pMsg);
@@ -508,6 +548,18 @@ return NULL;     // DAN - temporary
 void* dsi_GetMainWindow()
 {
     return (void*)g_ClientGlob.m_window;
+}
+
+void* dsi_GetSDL2Window()
+{
+    return (void*)g_ClientGlob.m_window;
+}
+
+// r_InitRender recreates the window under ENABLE_DXVK and hands it back here.
+// The SDL_Window is what dxvk-native takes as an HWND
+void dsi_SetSDL2Window(SDL_Window* window)
+{
+    g_ClientGlob.m_window = window;
 }
 
 LTRESULT dsi_DoErrorMessage(const char *pMessage)

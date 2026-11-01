@@ -5,9 +5,8 @@
 #include "console.h"
 #include "winclientde_impl.h"
 #include "interface_helpers.h"
-#ifndef USE_DXVK
+// Under ENABLE_DXVK this is the Linux text manager, which draws into these CisSurfaces
 #include "text_mgr.h"
-#endif
 #include "load_pcx.h"
 #include "bindmgr.h"
 #include "client_ticks.h"
@@ -2265,10 +2264,9 @@ void cis_Init()
 	for(i=0; i < 8; i++)
 		g_MaskLookup[1 << i] = (1 << i) - 1;
 
-#ifndef USE_DXVK
 	// Init the text manager..
+	// Needed under ENABLE_DXVK too: it fills the font entry points every game shell calls
 	tmgr_Init();
-#endif
 }
 
 void cis_Term()
@@ -2277,9 +2275,7 @@ void cis_Term()
 	
 	// Shutdown the allocators.
 	sb_Term(&g_SurfaceBank);
-#ifndef USE_DXVK
 	tmgr_Term();
-#endif
 	g_pCisRenderStruct = LTNULL;
 }
 

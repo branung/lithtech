@@ -126,6 +126,8 @@ void dsi_PrintToConsole(const char *pMsg, ...);	// Print to console.
 void* dsi_GetInstanceHandle();	// Returns an HINSTANCE.
 void* dsi_GetResourceModule();	// Returns an HINSTANCE.
 void* dsi_GetMainWindow();		// Returns an SDL_WINDOW.
+void* dsi_GetSDL2Window();		// The same window; named as on Windows.
+void dsi_SetSDL2Window(SDL_Window* window);
 
 // Message box.
 void dsi_MessageBox(const char *pMsg, const char *pTitle);

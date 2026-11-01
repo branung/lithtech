@@ -12,7 +12,8 @@ endif(WIN32)
 
 if (ENABLE_DXVK)
 	include_directories(${DXVK_INCLUDE_DIRS})
-	link_directories(${DXVK_LIB_DIRS})
+	# pkg_check_modules sets DXVK_LIBRARY_DIRS. DXVK_LIB_DIRS was never set
+	link_directories(${DXVK_LIBRARY_DIRS})
 endif()
 
 if (ENABLE_OPENAL)
@@ -225,6 +226,7 @@ else(WIN32)
 	src/sys/linux/linuxconsole_impl.cpp
 	../kernel/src/sys/linux/stringhelper.cpp
 	../kernel/src/sys/linux/stringmgr.cpp
+	../kernel/src/sys/linux/text_mgr.cpp
 	../kernel/src/sys/linux/streamsim.cpp
 	../kernel/src/sys/linux/musicdriver.cpp
 	../kernel/src/sys/linux/input.cpp

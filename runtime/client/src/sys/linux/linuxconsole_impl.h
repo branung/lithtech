@@ -240,6 +240,8 @@ protected:
 
 	bool	InitFont();
 	void	TermFont();
+	// Creates the font, or rebuilds it when the screen or ConsoleFontSize changes its size, and sets the line height and character widths from it
+	void	EnsureFont();
 
 	void	FreeBackground();
 	
@@ -284,6 +286,9 @@ protected:
 	HSURFACE	m_hBackground;
 	float		m_fBackgroundAlpha;
 	bool		m_bBackgroundOptimized;
+	// console.pcx as a texture, and whether it's been looked for since the last Init
+	SharedTexture*	m_BackTex;
+	bool		m_bBackgroundTried;
 
 	// Error log function.
 	ErrorLogFn	m_ErrorLogFn;
@@ -305,7 +310,9 @@ protected:
 	CConIterator	*m_pCompletionIterator;
 
 	CUIFont*		m_Font;		// Using the CUI font mgr for printing text...
+	bool			m_bFontCreateFailed;
 	SharedTexture*	m_Tex;
+	uint32			m_nFontPixels;	// The size m_Font was built at, so EnsureFont knows when to rebuild (0 before the first)
 
 public:
 
@@ -350,6 +357,8 @@ public:
 	uint16	GetFullFontHeight() const { return m_FullFontHeight; };
 	void	SetFullFontHeight( uint16 wHeight ) { m_FullFontHeight = wHeight; };
 
+	// The width the console advances by for a character as the font draws it. A character past the table takes a blank's
+	uint16	CharAdvance( char cChar ) const { uint8 u = (uint8)cChar; return m_CharWidths[(u < NUM_CONSOLE_CHARACTERS) ? u : ' ']; };
 	uint16	GetCharWidth( char cChar ) { return (cChar < NUM_CONSOLE_CHARACTERS) ? m_CharWidths[cChar] : 0; };
 	void	SetCharWidths( const uint16 *pWidths ) { memcpy( m_CharWidths, pWidths, sizeof(uint16) * NUM_CONSOLE_CHARACTERS ); }; 
 	const uint16*	GetCharWidths() const { return &m_CharWidths[0]; };
@@ -391,8 +400,9 @@ public:
 	//////////////////////////////////////////////////////
 	// Drawing routines
 
-	// Filled rectangle with a border
-	void	BorderedRectangle( uint32 fillColor, uint32 borderColor, LTRect rect );
+	// The console's background, a plain fill or the game's console.pcx
+	void	FilledRectangle( uint32 fillColor, float fAlpha, LTRect rect );
+	void	TexturedRectangle( SharedTexture* pTex, float fAlpha, LTRect rect );
 
 	// Returns the length of the string in pixels
 	int		CalcStringOffset( const char *pStr, int iLength = -1 );

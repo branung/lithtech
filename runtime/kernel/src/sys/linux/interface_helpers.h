@@ -59,6 +59,8 @@ inline void cis_SetDirty(CisSurface *pSurface) {} // stub
 inline void* cis_LockSurface(CisSurface *pSurface, long &pitch, LTBOOL bSetDirty=LTFALSE) { return nullptr; } // stub
         //pitch = pSurface->m_Pitch;
 inline void cis_UnlockSurface(CisSurface *pSurface) {} // stub
-inline LTBOOL IsColorTransparent(HLTCOLOR hColor) { return LTFALSE; } // stub
+// Not a stub: the color carries its own transparency flag. text_mgr.cpp relies on it
+inline LTBOOL IsColorTransparent(HLTCOLOR hColor)
+{ return (hColor & COLOR_TRANSPARENCY_MASK) ? LTTRUE : LTFALSE; }
 #endif  // __INTERFACE_HELPERS_H__
 #endif  // USE_DXVK

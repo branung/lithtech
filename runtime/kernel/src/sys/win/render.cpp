@@ -621,6 +621,9 @@ LTRESULT r_InitRender(RMode *pMode, const char* window_name)
 #ifdef USE_DXVK
 	window = g_ClientGlob.m_window;
 	flags = SDL_WINDOW_VULKAN;
+	// dxvk-native picks its window backend from DXVK_WSI_DRIVER, and without it
+	// Direct3DCreate9 throws out of the library. Leaves a value the user set
+	setenv("DXVK_WSI_DRIVER", "SDL2", 0);
 #else
 	window = (SDL_Window*)dsi_GetSDL2Window();
 #endif

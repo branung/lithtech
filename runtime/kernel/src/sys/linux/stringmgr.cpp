@@ -8,6 +8,8 @@
 #include "stringmgr.h"
 #include "stringhelper.h"
 #include "dsys.h"
+#include "bindmgr.h"
+#include "fmtmessage.h"
 
 //IClientFileMgr
 #include "client_filemgr.h"
@@ -142,7 +144,16 @@ uint8* str_FormatString(CBindModuleType *hModule, int stringCode, va_list *marke
 	*bufferLen = 0;
 
 	// Load the string..
-    char *rawString = StringTableLookup(stringCode);
+	// From the module's DynRes LoadString first, as Windows loads from hModule.
+	// lith.str, which no game ships, is the fallback
+    const char *rawString = LTNULL;
+    typedef const char* (*DynResLoadStringFn)(uint32_t);
+    DynResLoadStringFn pLoadString = hModule ?
+        (DynResLoadStringFn)bm_GetFunctionPointer(hModule, "LoadString") : LTNULL;
+    if (pLoadString)
+        rawString = pLoadString((uint32_t)stringCode);
+    if (!rawString)
+        rawString = StringTableLookup(stringCode);
 
     if(!rawString) {
         if(g_bDebugStrings) {
@@ -151,15 +162,11 @@ uint8* str_FormatString(CBindModuleType *hModule, int stringCode, va_list *marke
         return(LTNULL);
 	}
 
-    // sprintf string into a temporary buffer - this is not foolproof, if the final string > tempBuffer,
-    // bad things will happen!
-    char tempBuffer[4096];
-    vsprintf(tempBuffer, (const char *)rawString, *marker);
-    ASSERT(strlen(tempBuffer) < sizeof(tempBuffer));
+    // FormatMessage syntax as on Windows: the .rc strings say "%1!s! joined the game"
+    const std::string formatted = fmtmessage::Format((const char *)rawString, *marker);
 
-    // Allocate a string the size of the final sprintf'ed string and copy it from tempBuffer
-    char *newString = (char *)malloc(strlen(tempBuffer) + 1);
-    strcpy(newString, tempBuffer);
+    char *newString = (char *)malloc(formatted.size() + 1);
+    memcpy(newString, formatted.c_str(), formatted.size() + 1);
 
     *bufferLen = strlen(newString) + 1;
 

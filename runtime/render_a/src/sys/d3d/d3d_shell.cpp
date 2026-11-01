@@ -315,6 +315,30 @@ D3DModeInfo* CD3D_Shell::PickDefaultMode(D3DDeviceInfo* pDeviceInfo, uint32 nWid
 		return &(*itMode); 
 	}
 
+#ifdef USE_DXVK
+	// A window need not be a display mode, and dxvk-native lists only what SDL reports
+	// (one mode under Xvfb). Fall back to the requested size in the desktop format.
+	// Static because CD3D_Device keeps the pointer
+	if (g_bRunWindowed && pDeviceInfo->bCanDoWindowed && nWidth && nHeight)
+	{
+		static D3DModeInfo s_WindowedMode;
+		s_WindowedMode.Width  = nWidth;
+		s_WindowedMode.Height = nHeight;
+		s_WindowedMode.Format = m_DesktopFormat.Format;
+		s_WindowedMode.bHWTnL = false;
+		for (vector<D3DModeInfo>::iterator itMode = pDeviceInfo->Modes.begin(); itMode != pDeviceInfo->Modes.end(); ++itMode)
+		{
+			if (itMode->Format == m_DesktopFormat.Format && itMode->bHWTnL)
+			{
+				s_WindowedMode.bHWTnL = true;
+				break;
+			}
+		}
+		if ((g_CV_RefRast || !bHWTnL) || s_WindowedMode.bHWTnL)
+			return &s_WindowedMode;
+	}
+#endif
+
 	//no matching device
 	return NULL;
 }

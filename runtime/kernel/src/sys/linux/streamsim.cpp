@@ -3,6 +3,8 @@
 #include "streamsim.h"
 #include "dynarray.h"
 
+#include <string>
+
 
 
 // ----------------------------------------------------------------------------- //
@@ -402,7 +404,14 @@ ILTStream* streamsim_Open(const char *pFilename, const char *pAccess)
 	FILE *fp;
 	SSFile *pFile;
 
-	fp = fopen(pFilename, pAccess);
+	// Game code names files in DOS form ("Save\\Slot01.sav"); host separators at the disk
+	if(!pFilename)
+		return nullptr;
+	std::string sPath(pFilename);
+	for (char &c : sPath)
+		if (c == '\\') c = '/';
+
+	fp = fopen(sPath.c_str(), pAccess);
 	if(!fp)
 		return nullptr;
 

@@ -21,7 +21,11 @@
 #include "iltclient.h"
 #include "interface_helpers.h"
 
+#include <cstdio>
 #include <string>
+
+// In kernel/src/sys/linux/text_mgr.cpp: an installed font file for a face name
+bool tmgr_FindFontFile(const char* pszFace, std::string& sOut);
 
 // get the ILTTexInterface from the interface database
 static ILTTexInterface *pTexInterface = NULL;
@@ -91,6 +95,32 @@ bool InstalledFontFace::Init(char const* pszFontFile, char const* pszFontFace, i
 
 		pStream->Read(m_ttf_buffer, file_len);
 		pStream->Release();
+	}
+	else
+	{
+		// No file means an installed font by face name, as GDI takes it on Windows
+		std::string sPath;
+		if (!tmgr_FindFontFile(pszFontFace, sPath))
+			return false;
+		FILE* fp = fopen(sPath.c_str(), "rb");
+		if (!fp)
+			return false;
+		fseek(fp, 0, SEEK_END);
+		long nLen = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		if (nLen <= 0)
+		{
+			fclose(fp);
+			return false;
+		}
+		m_ttf_buffer = new unsigned char[nLen];
+		const bool bRead = fread(m_ttf_buffer, 1, (size_t)nLen, fp) == (size_t)nLen;
+		fclose(fp);
+		if (!bRead)
+		{
+			Term();
+			return false;
+		}
 	}
 
 	m_sFontFace = pszFontFace;
@@ -393,6 +423,11 @@ bool CUIVectorFont::CreateFontTextureAndTable(InstalledFontFace& installedFontFa
 	int advance, left;
 
 	ttf = installedFontFace.GetBuffer();
+	if (!ttf)
+	{
+		DEBUG_PRINT(1, ("CUIVectorFont::CreateFontTextureAndTable: no font data"));
+		return false;
+	}
 	offset = stbtt_GetFontOffsetForIndex(ttf, 0);
 	stbtt_InitFont(&info, ttf, offset);
 	scale = stbtt_ScaleForPixelHeight(&info, (float)installedFontFace.GetHeight());

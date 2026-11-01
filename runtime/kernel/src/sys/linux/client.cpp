@@ -67,6 +67,13 @@ static bool StartClient(ClientGlob *pGlob)
     resTree.push_back("game2.rez");
     resTree.push_back("sound.rez");
 
+    // The -rez archives from the command line, as on Windows. LT1 games pass theirs this way
+    for (uint32 i = 0; i + 1 < command_line_args->Argc() && resTree.size() < MAX_RESTREES; i++) {
+        if (strcasecmp(command_line_args->Argv(i), "-rez") == 0) {
+            resTree.push_back(command_line_args->Argv(i + 1));
+        }
+    }
+
     if (command_line_args->FindArgDash("noinput"))
     {
         pGlob->m_bInputEnabled = false;

@@ -1,3 +1,4 @@
+#include <stdio.h>
 //------------------------------------------------------------------
 //	FILE	  : console_impl.cpp
 //	PURPOSE	  : Implementation for the console.
@@ -66,7 +67,9 @@ define_holder(IClientShell, i_client_shell);
 #define SCROLL_INDICATOR_UP " \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/  \\/ "
 
 extern int32 g_CV_TraceConsole;
-extern char* g_CV_Console_FontTexFile;
+extern const char* g_CV_Console_FontTexFile;
+extern const char* g_CV_Console_FontFace;
+extern int32 g_CV_ConsoleFontSize;
 	
 // The global console variable	
 CConsole g_Console;
@@ -82,11 +85,22 @@ inline void OutputDebugString(const char *msg)
 }
 
 // Convenience functions...
+// Windows' GetAsyncKeyState for the modifier keys the console asks about.
+// SDL_GetKeyboardState is indexed by scancode, not virtual key, so it read the wrong keys
 bool IsKeyDown( uint16 vkKey ) 
 {
-	const uint8* currentKeyState = SDL_GetKeyboardState(nullptr);
-	return (bool)currentKeyState[vkKey];
-//	return ((GetAsyncKeyState( VK_CONTROL ) & 0x8000) != 0);
+	const SDL_Keymod mods = SDL_GetModState();
+	switch (vkKey)
+	{
+	case VK_SHIFT:		return (mods & KMOD_SHIFT) != 0;
+	case VK_LSHIFT:		return (mods & KMOD_LSHIFT) != 0;
+	case VK_RSHIFT:		return (mods & KMOD_RSHIFT) != 0;
+	case VK_CONTROL:	return (mods & KMOD_CTRL) != 0;
+	case VK_LCONTROL:	return (mods & KMOD_LCTRL) != 0;
+	case VK_RCONTROL:	return (mods & KMOD_RCTRL) != 0;
+	case VK_MENU:		return (mods & KMOD_ALT) != 0;
+	default:			return false;
+	}
 }
 
 inline ConsoleState *GetConsoleState()
@@ -98,6 +112,7 @@ inline ConsoleState *GetConsoleState()
 extern int32 g_CV_ConsoleHistoryLen;
 extern int32 g_CV_ConsoleBufferLen;
 extern float g_CV_ConsoleAlpha;
+extern float g_CV_ConsoleFillAlpha;
 extern int32 g_CV_ConsoleLeft;
 extern int32 g_CV_ConsoleTop;
 extern int32 g_CV_ConsoleRight;
@@ -355,23 +370,50 @@ void CConCommandBox::MoveWord( int iOffset )
 		m_iCursorPos += iOffset;
 }
 
-inline uint8 ToAscii(uint32 key, int scancode, int* keyState,  uint16* out, int)
+// Windows' ToAscii for a US layout, the one sdl2_keycode_to_vkey assumes.
+// Covers punctuation and the numpad, and gives nothing with Ctrl or Alt held as Windows does
+inline uint8 ToAscii(uint32 key, int /*scancode*/, int* /*keyState*/, uint16* out, int)
 {
 	char *pb = (char*)out;
-	if( ! isascii(key))
+	if (IsKeyDown(VK_CONTROL) || IsKeyDown(VK_MENU))
 		return 0;
-	if(IsKeyDown(VK_CONTROL)) {
-		*pb = '^';
-		pb++;
-       *pb = toupper(toascii(key));
-	   return 2;
-	}
-	if(IsKeyDown(VK_SHIFT)) {
-		*pb = toupper(toascii(key));
-	} else {
-		*pb = tolower(toascii(key));
+
+	const bool bShift = IsKeyDown(VK_SHIFT);
+	const bool bCaps  = (SDL_GetModState() & KMOD_CAPS) != 0;
+	char ch = 0;
+
+	if (key >= 'A' && key <= 'Z')
+		ch = (char)((bShift != bCaps) ? key : (key - 'A' + 'a'));
+	else if (key >= '0' && key <= '9')
+		ch = bShift ? ")!@#$%^&*("[key - '0'] : (char)key;
+	else if (key >= VK_NUMPAD0 && key <= VK_NUMPAD9)
+		ch = (char)('0' + (key - VK_NUMPAD0));
+	else
+	{
+		switch (key)
+		{
+		case VK_SPACE:		ch = ' ';					break;
+		case VK_OEM_1:		ch = bShift ? ':' : ';';	break;
+		case VK_OEM_PLUS:	ch = bShift ? '+' : '=';	break;
+		case VK_OEM_COMMA:	ch = bShift ? '<' : ',';	break;
+		case VK_OEM_MINUS:	ch = bShift ? '_' : '-';	break;
+		case VK_OEM_PERIOD:	ch = bShift ? '>' : '.';	break;
+		case VK_OEM_2:		ch = bShift ? '?' : '/';	break;
+		case VK_OEM_3:		ch = bShift ? '~' : '`';	break;
+		case VK_OEM_4:		ch = bShift ? '{' : '[';	break;
+		case VK_OEM_5:		ch = bShift ? '|' : '\\';	break;
+		case VK_OEM_6:		ch = bShift ? '}' : ']';	break;
+		case VK_OEM_7:		ch = bShift ? '"' : '\'';	break;
+		case VK_DECIMAL:	ch = '.';					break;
+		case VK_ADD:		ch = '+';					break;
+		case VK_SUBTRACT:	ch = '-';					break;
+		case VK_MULTIPLY:	ch = '*';					break;
+		case VK_DIVIDE:		ch = '/';					break;
+		default:			return 0;
+		}
 	}
 
+	*pb = ch;
 	return 1;
 }
 
@@ -682,6 +724,8 @@ CConsole::CConsole()
 	m_hBackground = LTNULL;
 	m_fBackgroundAlpha = 1.0f;
 	m_bBackgroundOptimized = false;
+	m_BackTex = NULL;
+	m_bBackgroundTried = false;
 
 	m_pCompletionIterator = &g_ConEmptyIterator;
 
@@ -690,6 +734,8 @@ CConsole::CConsole()
 
 	m_Tex = NULL;
 	m_Font = NULL;
+	m_bFontCreateFailed = false;
+	m_nFontPixels = 0;
 }
 
 CConsole::~CConsole()
@@ -764,13 +810,21 @@ void CConsole::Term(bool bDeleteTextLines)
 	if (g_IFontManager && m_Font)	{ 
 		CDebugGeometry& dgPerf = getDebugGeometry(); dgPerf.clear();	// Make sure all the debug text (shares this font) is destroyed...
 		g_IFontManager->DestroyFont(m_Font); m_Font = 0; }
+	m_nFontPixels = 0;
 	if (m_Tex)						{ g_ITexInterface->ReleaseTextureHandle(m_Tex); m_Tex = 0; }
 
+	m_bBackgroundTried = false;
 	m_bInitTerminate = false;
 }
 
 void CConsole::FreeBackground()
 {
+	if ( m_BackTex )
+	{
+		g_ITexInterface->ReleaseTextureHandle( m_BackTex );
+		m_BackTex = NULL;
+	}
+
 	if ( !m_hBackground )
 		return;
 
@@ -1021,14 +1075,34 @@ LTRESULT CConsole::LoadBackground()
 	if ( (pStream = streamsim_Open("console.pcx", "rb")) == LTNULL )
 		return dResult;
 
-	if ( pcx_Create2(pStream, &bitmap) )
+	// A texture rather than LT1's surface. The console draws inside End3D, where a scaled surface blit drops
+	// its size, while a textured quad scales anywhere and can be blended.
+	// The shipped images are 8 bit paletted (Shogo, Blood 2, KISS and AVP2), and anything else keeps the plain fill
+	if ( pcx_Create2(pStream, &bitmap) && bitmap.m_Format.GetType() == BPP_8P &&
+		 bitmap.m_Width && bitmap.m_Height && g_ITexInterface )
 	{
-		m_hBackground = cis_CreateSurfaceFromPcx( &bitmap );
+		const uint32 nWidth = bitmap.m_Width, nHeight = bitmap.m_Height;
+		uint32 *pPixels = LTNULL;
+		LT_MEM_TRACK_ALLOC(pPixels = new uint32[nWidth * nHeight], LT_MEM_TYPE_MISC);
+		if ( pPixels )
+		{
+			for ( uint32 y = 0; y < nHeight; ++y )
+			{
+				for ( uint32 x = 0; x < nWidth; ++x )
+				{
+					const RPaletteColor &c = bitmap.m_Palette[ bitmap.Pixel(x, y) ];
+					pPixels[y * nWidth + x] = 0xFF000000 | ((uint32)c.rgb.r << 16) | ((uint32)c.rgb.g << 8) | (uint32)c.rgb.b;
+				}
+			}
 
-		m_bBackgroundOptimized = ilt_client->OptimizeSurface(m_hBackground, CONRGB(0,0,0)) != 0;
-		SetBackgroundAlpha( m_fBackgroundAlpha );
+			if ( g_ITexInterface->CreateTextureFromData(m_BackTex, TEXTURETYPE_ARGB8888, 0,
+					(uint8*)pPixels, nWidth, nHeight, 1) == LT_OK && m_BackTex )
+				dResult = LT_OK;
+			else
+				m_BackTex = NULL;
 
-		dResult = LT_OK;
+			delete [] pPixels;
+		}
 	}
 
 	pStream->Release();
@@ -1123,10 +1197,45 @@ void CConsole::DrawTextLines(int nTextLines, bool bScreen)
 #define RGBA_GETB(color)			((uint8)((color & 0x000000FF)      ))
 #endif
 
-void CConsole::BorderedRectangle(uint32 fillColor, uint32 borderColor, LTRect rect)
+// The game's console.pcx stretched over the console as LT1 drew it, but blended at ConsoleFillAlpha
+// where LT1's was opaque
+void CConsole::TexturedRectangle(SharedTexture* pTex, float fAlpha, LTRect rect)
 {
+	if (fAlpha < 0.0f) fAlpha = 0.0f;
+	if (fAlpha > 1.0f) fAlpha = 1.0f;
+
+	g_pILTDrawPrim->SetTexture(pTex);
+	g_pILTDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+	g_pILTDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+	g_pILTDrawPrim->SetAlphaBlendMode((fAlpha < 1.0f) ? DRAWPRIM_BLEND_MOD_SRCALPHA : DRAWPRIM_NOBLEND);
 	g_pILTDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+	g_pILTDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+	g_pILTDrawPrim->SetClipMode(DRAWPRIM_FASTCLIP);
+	g_pILTDrawPrim->SetFillMode(DRAWPRIM_FILL);
+	g_pILTDrawPrim->SetCullMode(DRAWPRIM_CULL_NONE);
+
+	LT_POLYFT4 Poly;
+	Poly.rgba.r = 255; Poly.rgba.g = 255; Poly.rgba.b = 255;
+	Poly.rgba.a = (uint8)((fAlpha * 255.0f) + 0.5f);
+	Poly.verts[0].x = (float)rect.left;  Poly.verts[0].y = (float)rect.top;    Poly.verts[0].z = SCREEN_NEAR_Z; Poly.verts[0].u = 0.0f; Poly.verts[0].v = 0.0f;
+	Poly.verts[1].x = (float)rect.right; Poly.verts[1].y = (float)rect.top;    Poly.verts[1].z = SCREEN_NEAR_Z; Poly.verts[1].u = 1.0f; Poly.verts[1].v = 0.0f;
+	Poly.verts[2].x = (float)rect.right; Poly.verts[2].y = (float)rect.bottom; Poly.verts[2].z = SCREEN_NEAR_Z; Poly.verts[2].u = 1.0f; Poly.verts[2].v = 1.0f;
+	Poly.verts[3].x = (float)rect.left;  Poly.verts[3].y = (float)rect.bottom; Poly.verts[3].z = SCREEN_NEAR_Z; Poly.verts[3].u = 0.0f; Poly.verts[3].v = 1.0f;
+	g_pILTDrawPrim->DrawPrim(&Poly, 1);
+
+	g_pILTDrawPrim->SetTexture(NULL);
 	g_pILTDrawPrim->SetAlphaBlendMode(DRAWPRIM_NOBLEND);
+}
+
+// The console's plain background, with no border and blended at ConsoleFillAlpha.
+// The color's own alpha is ignored, since the console colors are built opaque
+void CConsole::FilledRectangle(uint32 fillColor, float fAlpha, LTRect rect)
+{
+	if (fAlpha < 0.0f) fAlpha = 0.0f;
+	if (fAlpha > 1.0f) fAlpha = 1.0f;
+
+	g_pILTDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+	g_pILTDrawPrim->SetAlphaBlendMode((fAlpha < 1.0f) ? DRAWPRIM_BLEND_MOD_SRCALPHA : DRAWPRIM_NOBLEND);
 	g_pILTDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
 	g_pILTDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
 	g_pILTDrawPrim->SetClipMode(DRAWPRIM_FASTCLIP);
@@ -1134,33 +1243,166 @@ void CConsole::BorderedRectangle(uint32 fillColor, uint32 borderColor, LTRect re
 	g_pILTDrawPrim->SetTexture(NULL);
 
 	LT_POLYF4 FillPoly;
-	FillPoly.rgba.a = RGBA_GETA(fillColor); FillPoly.rgba.r = RGBA_GETR(fillColor); FillPoly.rgba.g = RGBA_GETG(fillColor); FillPoly.rgba.b = RGBA_GETB(fillColor);
+	FillPoly.rgba.a = (uint8)((fAlpha * 255.0f) + 0.5f); FillPoly.rgba.r = RGBA_GETR(fillColor); FillPoly.rgba.g = RGBA_GETG(fillColor); FillPoly.rgba.b = RGBA_GETB(fillColor);
 	FillPoly.verts[0].x = rect.left; FillPoly.verts[0].y = rect.top; FillPoly.verts[0].z = SCREEN_NEAR_Z;
 	FillPoly.verts[1].x = rect.right; FillPoly.verts[1].y = rect.top; FillPoly.verts[1].z = SCREEN_NEAR_Z;
 	FillPoly.verts[2].x = rect.right; FillPoly.verts[2].y = rect.bottom; FillPoly.verts[2].z = SCREEN_NEAR_Z;
 	FillPoly.verts[3].x = rect.left; FillPoly.verts[3].y = rect.bottom; FillPoly.verts[3].z = SCREEN_NEAR_Z;
 	g_pILTDrawPrim->DrawPrim(&FillPoly,1);
 
-	LT_LINEF EdgeLine;
-	EdgeLine.rgba.a = RGBA_GETA(borderColor); EdgeLine.rgba.r = RGBA_GETR(borderColor); EdgeLine.rgba.g = RGBA_GETG(borderColor); EdgeLine.rgba.b = RGBA_GETB(borderColor);
-	EdgeLine.verts[0].x = rect.left+1; EdgeLine.verts[0].y = rect.top; EdgeLine.verts[0].z = SCREEN_NEAR_Z;
-	EdgeLine.verts[1].x = rect.right+1; EdgeLine.verts[1].y = rect.top; EdgeLine.verts[1].z = SCREEN_NEAR_Z;
-	g_pILTDrawPrim->DrawPrim(&EdgeLine,1);
-	EdgeLine.verts[0].x = rect.left+1; EdgeLine.verts[0].y = rect.top; EdgeLine.verts[0].z = SCREEN_NEAR_Z;
-	EdgeLine.verts[1].x = rect.left+1; EdgeLine.verts[1].y = rect.bottom; EdgeLine.verts[1].z = SCREEN_NEAR_Z;
-	g_pILTDrawPrim->DrawPrim(&EdgeLine,1);
-	EdgeLine.verts[0].x = rect.left+1; EdgeLine.verts[0].y = rect.bottom; EdgeLine.verts[0].z = SCREEN_NEAR_Z;
-	EdgeLine.verts[1].x = rect.right+1; EdgeLine.verts[1].y = rect.bottom; EdgeLine.verts[1].z = SCREEN_NEAR_Z;
-	g_pILTDrawPrim->DrawPrim(&EdgeLine,1);
-	EdgeLine.verts[0].x = rect.right+1; EdgeLine.verts[0].y = rect.top; EdgeLine.verts[0].z = SCREEN_NEAR_Z;
-	EdgeLine.verts[1].x = rect.right+1; EdgeLine.verts[1].y = rect.bottom; EdgeLine.verts[1].z = SCREEN_NEAR_Z;
+	// Leave blending off for whatever draws next, as the old box did
+	g_pILTDrawPrim->SetAlphaBlendMode(DRAWPRIM_NOBLEND);
+}
 
-	g_pILTDrawPrim->DrawPrim(&EdgeLine,1);
+// The console's text size in pixels: ConsoleFontSize, or when that's 0 the screen height / 54, at least 9.
+// 9 is the original size, kept at 480 lines, and 1080 lines give 20
+static uint32 ConsoleFontPixels(const RenderStruct *pStruct)
+{
+	if (g_CV_ConsoleFontSize > 0)
+		return (uint32)LTCLAMP(g_CV_ConsoleFontSize, 6, 96);
 
+	const uint32 nHeight = pStruct ? pStruct->m_Height : 0;
+	const uint32 nPixels = (nHeight + 27) / 54;
+	return (nPixels < 9) ? 9 : nPixels;
+}
+
+void CConsole::EnsureFont()
+{
+	const uint32 nPixels = ConsoleFontPixels(m_pStruct);
+
+	// Rebuild at a new size when the screen or ConsoleFontSize changed.
+	// The debug text shares this font, so it goes first, as in Term
+	if (m_Font && nPixels != m_nFontPixels)
+	{
+		CDebugGeometry& dgPerf = getDebugGeometry(); dgPerf.clear();
+		g_IFontManager->DestroyFont(m_Font); m_Font = NULL;
+		if (m_Tex) { g_ITexInterface->ReleaseTextureHandle(m_Tex); m_Tex = NULL; }
+		m_bFontCreateFailed = false;
+	}
+
+	if (m_Font || m_bFontCreateFailed)
+		return;
+
+	// Only latched once the font and texture managers exist as the console can draw before they do
+	if (!g_IFontManager || !g_ITexInterface)
+		return;
+
+	m_nFontPixels = nPixels;
+
+	if (nPixels <= 9)
+	{
+		// The original console: 9 pixel lines, a 7 pixel advance, and the engine's bitmap font where the game has one
+		const uint32 iCharWidth = 7;
+		m_FontHeight = m_FullFontHeight = 9;
+		for (uint32 i = 0; i < NUM_CONSOLE_CHARACTERS; ++i)
+			m_CharWidths[i] = (uint16)iCharWidth;
+
+		assert(!m_Tex);
+		m_Tex = NULL;
+
+		if (g_CV_Console_FontTexFile)
+		{
+			g_ITexInterface->CreateTextureFromName(m_Tex,g_CV_Console_FontTexFile);
+		}
+		else
+		{
+			g_ITexInterface->CreateTextureFromName(m_Tex,"console/console_font.dtx");
+		}
+
+		if (m_Tex)
+		{
+			m_Font = g_IFontManager->CreateFont(m_Tex,9,9);
+			m_Font->SetDefCharWidth(iCharWidth); m_Font->SetDefCharHeight(9);
+		}
+		else
+		{
+			// The console font texture ships within a Jupiter game's engine archive, which an LT1 game won't have.
+			// This falls back to an installed face for these cases, monospaced as the fixed character width assumes
+			const char* pszFace = g_CV_Console_FontFace ? g_CV_Console_FontFace : "Courier New";
+			m_Font = g_IFontManager->CreateFont(LTNULL, pszFace, m_FontHeight, 32, 127);
+			if (m_Font)
+			{
+				m_Font->SetDefCharWidth(iCharWidth); m_Font->SetDefCharHeight(9);
+			}
+		}
+	}
+	else
+	{
+		// Larger sizes use an installed monospaced face rendered at that size, one texel per pixel rather than
+		// the 9 pixel font magnified: Console_FontFace if set, then Consolas, then Courier New
+		const char* aFaces[] = { g_CV_Console_FontFace, "Consolas", "Courier New" };
+		for (uint32 i = 0; i < sizeof(aFaces) / sizeof(aFaces[0]) && !m_Font; ++i)
+		{
+			if (aFaces[i] && aFaces[i][0])
+				m_Font = g_IFontManager->CreateFont(LTNULL, aFaces[i], nPixels, 32, 126);
+		}
+
+		if (m_Font)
+		{
+			// The poly string draws a glyph (tex height + 2) tall from a slot that tall, so this is one texel per pixel
+			// and each glyph comes out at its table width
+			const uint32 nTexHeight = m_Font->GetCharTexHeight();
+			m_Font->SetDefCharHeight((uint8)(nTexHeight + 2));
+			m_FontHeight = m_FullFontHeight = (uint16)(nTexHeight + 3);
+
+			// The layout uses the widths the poly string advances by (a glyph's table width plus the spacing, and the
+			// font's space width for a blank), so the caret and the clip land on the drawn text
+			const uint16* pTable = m_Font->GetFontTable();
+			const uint8* pMap = m_Font->GetFontMap();
+			const uint16 nSpacing = m_Font->GetDefSpacingH();
+			const uint16 nBlank = (uint16)(m_Font->GetDefCharScreenWidth() + nSpacing);
+			for (uint32 i = 0; i < NUM_CONSOLE_CHARACTERS; ++i)
+				m_CharWidths[i] = nBlank;
+			if (pTable)
+			{
+				for (uint32 c = 33; c < NUM_CONSOLE_CHARACTERS; ++c)
+				{
+					const uint32 nIndex = pMap ? pMap[c] : (c - 33);
+					m_CharWidths[c] = (uint16)(pTable[nIndex * 3] + nSpacing);
+				}
+			}
+		}
+	}
+
+	if (!m_Font)
+		m_bFontCreateFailed = true;
 }
 
 extern uint32	g_ScreenWidth, g_ScreenHeight;
+// As the Windows console, without its D3D viewport and sampler state saves.
+// The SDL client has no D3D device
 void CConsole::Draw() {
+	if (!m_pStruct) return;
+
+	// The font first, since its size sets the line height
+	EnsureFont();
+
+	// Check the console variables
+	CheckVariables();
+
+	LTRect cRect;
+	CalcRect( cRect );
+
+	SetBackgroundAlpha( g_CV_ConsoleAlpha );
+
+	// The game's console.pcx when it ships one, as LT1 drew it, else the plain fill.
+	// It's loaded on the first draw, and again after the next Init
+	if ( !m_bBackgroundTried )
+	{
+		m_bBackgroundTried = true;
+		LoadBackground();
+	}
+
+	if ( m_BackTex )
+		TexturedRectangle( m_BackTex, g_CV_ConsoleFillAlpha, cRect );
+	else
+		FilledRectangle( m_BackColor, g_CV_ConsoleFillAlpha, cRect );
+
+	// Draw all the text.
+	DrawTextLines( m_nTextLines );
+
+	// Draw the command box.
+	GetCommandBox()->Draw();
 }
 
 int CConsole::CalcStringOffset(const char *pStr, int iLength)
@@ -1194,33 +1436,9 @@ int CConsole::CalcStringOffset(const char *pStr, int iLength)
 
 void CConsole::DrawTextLine(const char *pText, const LTRect *pRect, COLORREF textColor)
 {
-	const uint32 iCharWidth = 7;
 	if ((m_Rect.right > 0) && (pRect->left > m_Rect.right)) return;
 
-	// If we haven't create it yet, create the Font we're going to use for the Debug Text...
-	if (!m_Font) 
-	{
-		if (g_IFontManager && g_ITexInterface) 
-		{
-			assert(!m_Tex); 
-			m_Tex = NULL; 
-
-			if (g_CV_Console_FontTexFile) 
-			{
-				g_ITexInterface->CreateTextureFromName(m_Tex,g_CV_Console_FontTexFile);
-			}
-			else
-			{
-				g_ITexInterface->CreateTextureFromName(m_Tex,"console/console_font.dtx");
-			}
-
-			if (m_Tex) 
-			{
-				m_Font = g_IFontManager->CreateFont(m_Tex,9,9);
-				m_Font->SetDefCharWidth(iCharWidth); m_Font->SetDefCharHeight(9); 
-			} 
-		} 
-	}
+	EnsureFont();
 
 	if (m_Font) 
 	{
@@ -1232,13 +1450,13 @@ void CConsole::DrawTextLine(const char *pText, const LTRect *pRect, COLORREF tex
 		char* pB = szBuff; 
 		uint32 iW = 0;
 
- 		while (*pCh && (iW + iCharWidth <= (uint32)(pRect->right - pRect->left)) && iCh < 255) 
+ 		while (*pCh && (iW + CharAdvance(*pCh) <= (uint32)(pRect->right - pRect->left)) && iCh < 255) 
 		{ 
+			iW += CharAdvance(*pCh); 
 			*pB = *pCh; 
 			++pCh; 
 			++pB; 
 			++iCh; 
-			iW += iCharWidth; 
 		} 
 
 		*pB = '\0';
@@ -1250,8 +1468,10 @@ void CConsole::DrawTextLine(const char *pText, const LTRect *pRect, COLORREF tex
 
 }
 
+// The last few lines over the game (NumConsoleLines, ShowFrameRate 1)
 void CConsole::DrawSmall(int nLines)
 {
+	DrawTextLines( nLines, true );
 }
 
 void CConsole::SetRect( const LTRect &cRect )
@@ -1325,6 +1545,14 @@ void CConsole::PrintString(CONCOLOR theColor, int filterLevel, const char *pMsg)
 	// Protect agains error messages that happen after the destructor has been called
 	if (!m_bInitialized)
 		return;
+
+	// ConsoleEcho copies every console line to stdout for headless runs
+	extern int32 g_CV_ConsoleEcho;
+	if (g_CV_ConsoleEcho)
+	{
+		fprintf(stdout, "Console: %s\n", pMsg);
+		fflush(stdout);
+	}
 
 	//	Send the info we're using for output to the client shell so the 
 	//	game code can do whatever it wants with it.

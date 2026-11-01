@@ -86,7 +86,8 @@
 	inline char* strupr(char* s)
 	{ char* p = s; while (*p) { *p = toupper(*p); ++p; } return s; }
 	inline char* _itoa(int value, char* str, int base)
-	{ ASSERT(base == 10); snprintf(str, 12, "%d", value); return str; }
+	// No made up bound: FORTIFY checks it against the caller's buffer, and Blood 2 passes a char[5]
+	{ ASSERT(base == 10); sprintf(str, "%d", value); return str; }
 	inline char* itoa(int value, char* str, int base)
 	{ return _itoa(value, str, base); }
 	inline int _vsnprintf(char* str, size_t size, const char* fmt, va_list ap)
@@ -469,9 +470,8 @@ inline void LTVSNPrintF(char *buffer, size_t count, const char *format, va_list 
 	if(count)
 	{
 #ifdef __LINUX
-		//!!!NOTE: There is no buffer checking on this linux version, potential buffer overruns
-		//could ensue.
-		vsprintf(buffer, format, argptr);
+		// Bounded as on Windows. An unbounded vsprintf overran CPrint's buffer
+		vsnprintf(buffer, count, format, argptr);
 #else
 		_vsnprintf(buffer, count, format, argptr);
 #endif

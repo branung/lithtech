@@ -505,12 +505,29 @@ struct UnixTreeSearch
 	UnixTreeSearch(const char* bName, const char *dName)
 	{
 		memset(searchPath, 0, sizeof(searchPath));
-		LTSNPrintF(searchPath, sizeof(searchPath)-1, "%s/%s", bName, dName);
+
+		// The name is DOS ("\\" for the root, from Shogo's load menu), so skip a
+		// leading separator and use host separators for the filesystem
+		while (dName && (*dName == '\\' || *dName == '/'))
+			++dName;
+
+		if (dName && *dName)
+			LTSNPrintF(searchPath, sizeof(searchPath)-1, "%s/%s", bName, dName);
+		else
+			LTSNPrintF(searchPath, sizeof(searchPath)-1, "%s", bName);
+
+		for (char *p = searchPath; *p; ++p)
+			if (*p == '\\') *p = '/';
+
 		m_pDir = opendir(searchPath);
 	};
 
 	bool GetNextFile(LTFindInfo *pInfo) 
 	{
+		// A directory that would not open is an empty search
+		if (this->m_pDir == nullptr)
+			return false;
+
 		errno = 0;
 		bool found = false;
 		dirent64 *pEntry = readdir64(this->m_pDir);
@@ -541,6 +558,9 @@ struct UnixTreeSearch
 		pInfo->m_Type = (pEntry->d_type == DT_DIR) ? DIRECTORY_TYPE : FILE_TYPE;
 		memset(filePath, 0, sizeof(filePath));
 		LTSNPrintF(filePath, sizeof(filePath)-1, "%s/%s", searchPath, pEntry->d_name);
+
+		// Zeroed so a failed stat64 doesn't leave stack garbage
+		memset(&st, 0, sizeof(st));
 		stat64(filePath, &st);
 		pInfo->m_Size = st.st_size;
 		pInfo->m_Date = st.st_ctim.tv_sec;
@@ -548,7 +568,8 @@ struct UnixTreeSearch
 
 	~UnixTreeSearch()
 	{
-		closedir(m_pDir);
+		if (m_pDir != nullptr)
+			closedir(m_pDir);
 	};
 };
 

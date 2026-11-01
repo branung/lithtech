@@ -1,7 +1,8 @@
 project(Test_DtxLT1)
 
 # Regression test for the LithTech 1.0 texture loader
-remove_definitions(-D__D3D -D__D3DREND)
+# USE_DXVK too: on Linux it pulls in the Windows RenderStruct and d3d9.h
+remove_definitions(-D__D3D -D__D3DREND -DUSE_DXVK)
 
 set(exec_src
 	main.cpp

@@ -241,16 +241,39 @@ if(WIN32)
             endif()
         endforeach()
     endfunction()
-
-    lt_game_output(NOLF2      NOLF2_ClientShellDLL NOLF2_ClientRes NOLF2_ServerRes NOLF2_ObjectDLL)
-    lt_game_output(NOLF2/Game NOLF2_ClientFXDLL)
-
-    lt_game_output(Shogo      SHOGO_ClientShellDLL SHOGO_ClientRes SHOGO_ObjectDLL SHOGO_ServerRes)
-
-    lt_game_output(Blood2     BLOOD2_ClientShellDLL BLOOD2_ClientRes BLOOD2_ObjectDLL)
-    lt_game_output(Blood2NM   BLOOD2NM_ClientShellDLL BLOOD2NM_ClientRes BLOOD2NM_ObjectDLL)
-
+else()
+    # The .so modules stay in their build dirs and are copied into OUT/<subdir>,
+    # where the engine opens them from its working directory. One target per folder,
+    # since add_custom_command(TARGET) can't name a target from another directory
+    function(lt_game_output subdir)
+        set(dest "${CMAKE_BINARY_DIR}/OUT/${subdir}")
+        set(cmds "")
+        set(deps "")
+        foreach(target ${ARGN})
+            if(TARGET ${target})
+                list(APPEND cmds COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                                 $<TARGET_FILE:${target}> "${dest}/")
+                list(APPEND deps ${target})
+            endif()
+        endforeach()
+        if(deps)
+            string(REPLACE "/" "_" name "lt_stage_${subdir}")
+            add_custom_target(${name} ALL
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${dest}"
+                ${cmds}
+                COMMENT "Copying game modules into OUT/${subdir}")
+            add_dependencies(${name} ${deps})
+        endif()
+    endfunction()
 endif(WIN32)
+
+lt_game_output(NOLF2      NOLF2_ClientShellDLL NOLF2_ClientRes NOLF2_ServerRes NOLF2_ObjectDLL)
+lt_game_output(NOLF2/Game NOLF2_ClientFXDLL)
+
+lt_game_output(Shogo      SHOGO_ClientShellDLL SHOGO_ClientRes SHOGO_ObjectDLL SHOGO_ServerRes)
+
+lt_game_output(Blood2     BLOOD2_ClientShellDLL BLOOD2_ClientRes BLOOD2_ObjectDLL)
+lt_game_output(Blood2NM   BLOOD2NM_ClientShellDLL BLOOD2NM_ClientRes BLOOD2NM_ObjectDLL)
 
 if(BUILD_TOOLS)
     add_subdirectory(tools/DtxView)			# TOOLS_DtxView
