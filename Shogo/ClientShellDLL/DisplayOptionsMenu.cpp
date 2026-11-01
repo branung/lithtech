@@ -19,9 +19,10 @@ extern CommandID g_CommandArray[];
 #define ID_DETAIL					4
 #define ID_ADVANCED					5
 #define ID_FRAMERATE				6
-#define ID_HUDSCALE					7
-#define ID_BACK						8
-#define NUM_DISPLAY_ITEMS			9
+#define ID_HUDMODE					7	// Auto or Manual
+#define ID_HUDSCALE					8	// The slider, Manual only
+#define ID_BACK						9
+#define NUM_DISPLAY_ITEMS			10
 
 #define max(a,b)	((a) > (b) ? (a) : (b))
 
@@ -156,6 +157,9 @@ void CDisplayOptionsMenu::Up()
 	}
 
 	CBaseMenu::Up();
+
+	// The slider does nothing in Auto, so the keys pass over it
+	if (m_nSelection == ID_HUDSCALE && !IsHUDScaleManual()) m_nSelection = ID_HUDMODE;
 }
 
 void CDisplayOptionsMenu::Down()
@@ -170,6 +174,8 @@ void CDisplayOptionsMenu::Down()
 	}
 
 	CBaseMenu::Down();
+
+	if (m_nSelection == ID_HUDSCALE && !IsHUDScaleManual()) m_nSelection = ID_BACK;
 }
 
 void CDisplayOptionsMenu::Left()
@@ -188,10 +194,17 @@ void CDisplayOptionsMenu::Left()
 		return;
 	}
 
+	if (m_nSelection == ID_HUDMODE)
+	{
+		ToggleHUDMode();
+		return;
+	}
+
 	if (m_nSelection == ID_HUDSCALE)
 	{
-		// Saved on every step so that it's in place if the player goes straight back to the game
-		if (m_sliderHUDScale.DecPos()) SaveHUDScaleSetting();
+		// Saved on every step so that it's in place if the player goes straight back to the game.
+		// Nothing in Auto, where the slider only shows Auto's choice
+		if (IsHUDScaleManual() && m_sliderHUDScale.DecPos()) SaveHUDScaleSetting();
 		return;
 	}
 
@@ -306,9 +319,15 @@ void CDisplayOptionsMenu::Right()
 		return;
 	}
 
+	if (m_nSelection == ID_HUDMODE)
+	{
+		ToggleHUDMode();
+		return;
+	}
+
 	if (m_nSelection == ID_HUDSCALE)
 	{
-		if (m_sliderHUDScale.IncPos()) SaveHUDScaleSetting();
+		if (IsHUDScaleManual() && m_sliderHUDScale.IncPos()) SaveHUDScaleSetting();
 		return;
 	}
 
@@ -400,6 +419,11 @@ void CDisplayOptionsMenu::Return()
 		m_pRiotMenu->SetCurrentMenu (&m_DetailSettingsMenu);
 		CBaseMenu::Return();
 	}
+	else if (m_nSelection == ID_HUDMODE)
+	{
+		// Enter and a click toggle it too
+		ToggleHUDMode();
+	}
 	else if (m_nSelection == ID_BACK)
 	{
 		m_pRiotMenu->SetCurrentMenu (m_pParent);
@@ -467,7 +491,13 @@ void CDisplayOptionsMenu::Draw (HSURFACE hScreen, int nScreenWidth, int nScreenH
 
 	m_sliderHUDScale.SetSelected ((LTBOOL)(m_nSelection == ID_HUDSCALE));
 
+	// Grayed in Auto, where it shows Auto's step. Read each frame since the console can change it too
+	m_sliderHUDScale.SetEnabled (IsHUDScaleManual());
+
 	y += m_GenericItem[ID_FRAMERATE].szMenuItem.cy + m_nMenuSpacing;
+	m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_nSelection == ID_HUDMODE ? m_HUDModeSetting.hMenuItemSelected : m_HUDModeSetting.hMenuItem, LTNULL, m_nMenuX + m_nSecondColumn, y, LTNULL);
+
+	y += m_GenericItem[ID_HUDMODE].szMenuItem.cy + m_nMenuSpacing;
 	m_sliderHUDScale.Draw (hScreen, m_nMenuX + m_nSecondColumn, y);
 }
 
@@ -505,6 +535,55 @@ void CDisplayOptionsMenu::SaveFrameRateSetting()
 	char szConsole[64];
 	sprintf (szConsole, "+MaxFPS %d", kFrameRateCaps[m_nFrameRate]);
 	m_pClientDE->RunConsoleString (szConsole);
+}
+
+void CDisplayOptionsMenu::RebuildHUDModeSurfaces()
+{
+	if (!m_pClientDE || !m_pRiotMenu) return;
+
+	CBitmapFont* pFontNormal   = LTNULL;
+	CBitmapFont* pFontSelected = LTNULL;
+	if (m_szScreen.cy < 400)
+	{
+		pFontNormal   = m_pRiotMenu->GetFont08n();
+		pFontSelected = m_pRiotMenu->GetFont08s();
+	}
+	else
+	{
+		pFontNormal   = m_pRiotMenu->GetFont12n();
+		pFontSelected = m_pRiotMenu->GetFont12s();
+	}
+
+	if (m_HUDModeSetting.hMenuItem) m_pClientDE->DeleteSurface (m_HUDModeSetting.hMenuItem);
+	if (m_HUDModeSetting.hMenuItemSelected) m_pClientDE->DeleteSurface (m_HUDModeSetting.hMenuItemSelected);
+
+	const int nStringID = IsHUDScaleManual() ? IDS_DISPLAY_HUDMODE_MANUAL : IDS_DISPLAY_HUDMODE_AUTO;
+	m_HUDModeSetting.hMenuItem         = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, nStringID);
+	m_HUDModeSetting.hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, nStringID);
+}
+
+// Puts the slider on the scale in use: HUDScale in Manual, Auto's choice in Auto.
+// Manual with no saved HUDScale starts from Auto's choice, so switching modes doesn't shrink the HUD
+void CDisplayOptionsMenu::SyncHUDScaleSlider()
+{
+	if (!m_pClientDE) return;
+
+	HCONSOLEVAR hHUDVar = m_pClientDE->GetConsoleVar ("HUDScale");
+	LTFLOAT fScale = (IsHUDScaleManual() && hHUDVar) ? m_pClientDE->GetVarValueFloat (hHUDVar)
+	                                                 : GetAutoHUDScale();
+	m_sliderHUDScale.SetPos (HUDScaleStopFromPct ((int)((fScale * 100.0f) + 0.5f)));
+}
+
+void CDisplayOptionsMenu::ToggleHUDMode()
+{
+	if (!m_pClientDE) return;
+
+	const LTBOOL bManual = !IsHUDScaleManual();
+	m_pClientDE->RunConsoleString (bManual ? "+HUDScaleManual 1" : "+HUDScaleManual 0");
+
+	SyncHUDScaleSlider();
+	if (bManual) SaveHUDScaleSetting();		// So a never saved HUDScale holds Auto's step
+	RebuildHUDModeSurfaces();
 }
 
 void CDisplayOptionsMenu::SaveHUDScaleSetting()
@@ -634,6 +713,7 @@ LTBOOL CDisplayOptionsMenu::LoadSurfaces()
 	m_GenericItem[ID_DETAIL].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_DISPLAY_DETAIL);
 	m_GenericItem[ID_ADVANCED].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_DISPLAY_ADVANCED);
 	m_GenericItem[ID_FRAMERATE].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_DISPLAY_FRAMERATE);
+	m_GenericItem[ID_HUDMODE].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_DISPLAY_HUDMODE);
 	m_GenericItem[ID_HUDSCALE].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_DISPLAY_HUDSCALE);
 	m_GenericItem[ID_BACK].hMenuItem = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, IDS_BACK);
 
@@ -647,6 +727,7 @@ LTBOOL CDisplayOptionsMenu::LoadSurfaces()
 	m_GenericItem[ID_DETAIL].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_DISPLAY_DETAIL);
 	m_GenericItem[ID_ADVANCED].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_DISPLAY_ADVANCED);
 	m_GenericItem[ID_FRAMERATE].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_DISPLAY_FRAMERATE);
+	m_GenericItem[ID_HUDMODE].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_DISPLAY_HUDMODE);
 	m_GenericItem[ID_HUDSCALE].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_DISPLAY_HUDSCALE);
 	m_GenericItem[ID_BACK].hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, IDS_BACK);
 
@@ -673,14 +754,9 @@ LTBOOL CDisplayOptionsMenu::LoadSurfaces()
 	m_FrameRateSetting.hMenuItem         = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontNormal, FrameRateStringID (m_nFrameRate));
 	m_FrameRateSetting.hMenuItemSelected = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontSelected, FrameRateStringID (m_nFrameRate));
 
-	// HUD Scale: read HUDScale and put the slider on the nearest stop
-	int nHUDPct = HUDSCALE_PCT_MIN;
-	HCONSOLEVAR hHUDVar = m_pClientDE->GetConsoleVar ("HUDScale");
-	if (hHUDVar)
-	{
-		nHUDPct = (int)((m_pClientDE->GetVarValueFloat (hHUDVar) * 100.0f) + 0.5f);
-	}
-	m_sliderHUDScale.SetPos (HUDScaleStopFromPct (nHUDPct));
+	// HUD Scale: Auto or Manual, and the slider on the nearest stop to the scale in use
+	RebuildHUDModeSurfaces();
+	SyncHUDScaleSlider();
 
 	m_hMenuTitle = CTextHelper::CreateSurfaceFromString (m_pClientDE, pFontTitle, IDS_TITLE_DISPLAYOPTIONS);
 	m_pClientDE->GetSurfaceDims (m_hMenuTitle, &m_szMenuTitle.cx, &m_szMenuTitle.cy);
@@ -714,7 +790,8 @@ LTBOOL CDisplayOptionsMenu::LoadSurfaces()
 
 	if (!m_GoreSetting.hMenuItem || !m_DetailSetting.hMenuItem || !m_ScreenFlash.hMenuItem ||
 		!m_GoreSetting.hMenuItemSelected || !m_DetailSetting.hMenuItemSelected || !m_ScreenFlash.hMenuItem ||
-		!m_FrameRateSetting.hMenuItem || !m_FrameRateSetting.hMenuItemSelected)
+		!m_FrameRateSetting.hMenuItem || !m_FrameRateSetting.hMenuItemSelected ||
+		!m_HUDModeSetting.hMenuItem || !m_HUDModeSetting.hMenuItemSelected)
 	{
 		UnloadSurfaces();
 		return LTFALSE;
@@ -761,6 +838,11 @@ void CDisplayOptionsMenu::UnloadSurfaces()
 	m_FrameRateSetting.hMenuItem = LTNULL;
 	m_FrameRateSetting.hMenuItemSelected = LTNULL;
 
+	if (m_HUDModeSetting.hMenuItem) m_pClientDE->DeleteSurface (m_HUDModeSetting.hMenuItem);
+	if (m_HUDModeSetting.hMenuItemSelected) m_pClientDE->DeleteSurface (m_HUDModeSetting.hMenuItemSelected);
+	m_HUDModeSetting.hMenuItem = LTNULL;
+	m_HUDModeSetting.hMenuItemSelected = LTNULL;
+
 	if (m_RendererLine1.hMenuItem) m_pClientDE->DeleteSurface (m_RendererLine1.hMenuItem);
 	if (m_RendererLine2.hMenuItem) m_pClientDE->DeleteSurface (m_RendererLine2.hMenuItem);
 	if (m_Resolution.hMenuItem) m_pClientDE->DeleteSurface (m_Resolution.hMenuItem);
@@ -791,6 +873,8 @@ void CDisplayOptionsMenu::PostCalculateMenuDims()
 	m_pClientDE->GetSurfaceDims (m_DetailSetting.hMenuItem, &nSettingWidth, &nSettingHeight);
 	if (m_nSecondColumn + (int)nSettingWidth > nMenuMaxWidth) nMenuMaxWidth = m_nSecondColumn + nSettingWidth;
 	m_pClientDE->GetSurfaceDims (m_FrameRateSetting.hMenuItem, &nSettingWidth, &nSettingHeight);
+	if (m_nSecondColumn + (int)nSettingWidth > nMenuMaxWidth) nMenuMaxWidth = m_nSecondColumn + nSettingWidth;
+	m_pClientDE->GetSurfaceDims (m_HUDModeSetting.hMenuItem, &nSettingWidth, &nSettingHeight);
 	if (m_nSecondColumn + (int)nSettingWidth > nMenuMaxWidth) nMenuMaxWidth = m_nSecondColumn + nSettingWidth;
 	if (m_nSecondColumn + m_sliderHUDScale.GetWidth() > nMenuMaxWidth) nMenuMaxWidth = m_nSecondColumn + m_sliderHUDScale.GetWidth();
 
@@ -826,6 +910,7 @@ int CDisplayOptionsMenu::GetItemWidth (int nItem)
 			case ID_SCREENFLASH:	hValue = m_ScreenFlash.hMenuItem;	break;
 			case ID_DETAIL:		hValue = m_DetailSetting.hMenuItem;		break;
 			case ID_FRAMERATE:	hValue = m_FrameRateSetting.hMenuItem;	break;
+			case ID_HUDMODE:	hValue = m_HUDModeSetting.hMenuItem;	break;
 			default: break;
 		}
 

@@ -85,11 +85,17 @@ protected:
 	CLTGUITextItemCtrl				*m_pRendererCtrl;		// The renderer control
 	CLTGUITextItemCtrl				*m_pResolutionCtrl;		// The resolution control
 	CLTGUISliderCtrl				*m_pHUDScaleCtrl;		// The HUD scaling control
+	CLTGUITextItemCtrl				*m_pHUDModeCtrl;		// HUD scale Auto or Manual
 	int								m_nDetailLevel;			// The detail level
 	int								m_nHUDScale;			// The HUD scale in percent
+	int								m_nHUDMode;				// 0 Auto, 1 Manual (HUDScaleManual)
 
 	// Saves the HUD scale to the HUDScale console variable
 	void							SaveHUDScaleSetting();
+
+	// The Auto or Manual mode (HUDScaleManual) and the slider it locks
+	void							LoadHUDScaleSetting();
+	void							ApplyHUDModeChange();
 
 	CMoArray<MenuDisplayRenderer>	m_rendererArray;		// The array of renderers
 };

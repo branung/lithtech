@@ -46,8 +46,10 @@ CMenuDisplay::CMenuDisplay()
 	m_pRendererCtrl=DNULL;
 	m_pResolutionCtrl=DNULL;
 	m_pHUDScaleCtrl=DNULL;
+	m_pHUDModeCtrl=DNULL;
 	m_nDetailLevel=2;
 	m_nHUDScale=100;
+	m_nHUDMode=0;
 }
 
 CMenuDisplay::~CMenuDisplay()
@@ -137,6 +139,14 @@ void CMenuDisplay::Build()
 		m_nDetailLevel=2;
 	}
 
+	// Add the HUD scale mode. Auto (the default) follows the screen, and Manual hands the scale to the slider below
+	m_pHUDModeCtrl=AddTextItemOption(DNULL, 0, m_pMainMenus->GetSmallFont(), 1, DTRUE, &m_nHUDMode);
+	if (m_pHUDModeCtrl)
+	{
+		m_pHUDModeCtrl->AddString(IDS_MENU_DISPLAY_HUDMODE_AUTO);
+		m_pHUDModeCtrl->AddString(IDS_MENU_DISPLAY_HUDMODE_MANUAL);
+	}
+
 	// Add the HUD scaling option, since the HUD is fixed pixel art that shrinks as the resolution rises
 	m_pHUDScaleCtrl=AddSliderOption(IDS_MENU_DISPLAY_HUDSCALE, m_pMainMenus->GetSmallFont(), 100, m_pMainMenus->GetSurfaceSliderBar(), m_pMainMenus->GetSurfaceSliderTab(), &m_nHUDScale);
 	if (m_pHUDScaleCtrl)
@@ -145,17 +155,8 @@ void CMenuDisplay::Build()
 		m_pHUDScaleCtrl->SetSliderIncrement(kHUDScaleStep);
 	}
 
-	// Load the HUD scale, snapped to a step since autoexec.cfg can hold any value
-	m_nHUDScale=kHUDScaleMin;
-	HCONSOLEVAR hHUDVar=m_pClientDE->GetConsoleVar("HUDScale");
-	if (hHUDVar)
-	{
-		int nCur=(int)((m_pClientDE->GetVarValueFloat(hHUDVar) * 100.0f) + 0.5f);
-		if (nCur < kHUDScaleMin) nCur=kHUDScaleMin;
-		if (nCur > kHUDScaleMax) nCur=kHUDScaleMax;
-		m_nHUDScale=kHUDScaleMin + (((nCur - kHUDScaleMin) + (kHUDScaleStep / 2)) / kHUDScaleStep) * kHUDScaleStep;
-		if (m_nHUDScale > kHUDScaleMax) m_nHUDScale=kHUDScaleMax;
-	}
+	// Load the HUD scale mode and scale
+	LoadHUDScaleSetting();
 
 	UpdateData(DFALSE);
 }
@@ -441,7 +442,8 @@ void CMenuDisplay::OnFocus(DBOOL bFocus)
 		// Save the global detail setting
 		SaveDetailSetting();
 
-		// Save the HUD scale
+		// Save the HUD scale mode, in case it changed by a path other than Left or Right, then the scale (Manual only)
+		ApplyHUDModeChange();
 		SaveHUDScaleSetting();
 
 		bSet = SetRenderer(m_pRendererCtrl->GetSelIndex(), m_pResolutionCtrl->GetSelIndex());
@@ -459,6 +461,10 @@ void CMenuDisplay::OnFocus(DBOOL bFocus)
 	}
 	else
 	{
+		// Read the HUD scale again, since the resolution Auto follows or the console can have changed it
+		LoadHUDScaleSetting();
+		UpdateData(DFALSE);
+
 		// The current render mode
 		RMode currentMode;
 		m_pClientDE->GetRenderMode(&currentMode);		
@@ -567,9 +573,55 @@ void CMenuDisplay::SaveDetailSetting()
 	g_pBloodClientShell->MenuSetDetail();
 }
 
+// The slider's value snapped to a step, since autoexec.cfg can hold any value
+static int HUDScaleStepFromFloat(DFLOAT fScale)
+{
+	int nCur=(int)((fScale * 100.0f) + 0.5f);
+	if (nCur < kHUDScaleMin) nCur=kHUDScaleMin;
+	if (nCur > kHUDScaleMax) nCur=kHUDScaleMax;
+	int nStep=kHUDScaleMin + (((nCur - kHUDScaleMin) + (kHUDScaleStep / 2)) / kHUDScaleStep) * kHUDScaleStep;
+	if (nStep > kHUDScaleMax) nStep=kHUDScaleMax;
+	return nStep;
+}
+
+// Reads the mode and puts the slider on the scale in use: HUDScale in Manual, Auto's choice in Auto,
+// where the slider is grayed and skipped. Manual with no saved HUDScale starts from Auto's choice,
+// so switching modes doesn't shrink the HUD
+void CMenuDisplay::LoadHUDScaleSetting()
+{
+	m_nHUDMode=IsHUDScaleManual() ? 1 : 0;
+
+	HCONSOLEVAR hHUDVar=m_pClientDE->GetConsoleVar("HUDScale");
+	DFLOAT fScale=(m_nHUDMode && hHUDVar) ? m_pClientDE->GetVarValueFloat(hHUDVar) : GetAutoHUDScale();
+	m_nHUDScale=HUDScaleStepFromFloat(fScale);
+
+	if (m_pHUDScaleCtrl)
+	{
+		m_pHUDScaleCtrl->Enable(m_nHUDMode ? DTRUE : DFALSE);
+	}
+}
+
+// Applies a mode change at once, so the slider unlocks or locks as the player toggles
+void CMenuDisplay::ApplyHUDModeChange()
+{
+	UpdateData();
+
+	const DBOOL bManual=m_nHUDMode ? DTRUE : DFALSE;
+	if (bManual == IsHUDScaleManual()) return;
+
+	m_pClientDE->RunConsoleString(bManual ? "+HUDScaleManual 1" : "+HUDScaleManual 0");
+
+	LoadHUDScaleSetting();
+	if (bManual) SaveHUDScaleSetting();		// So a never saved HUDScale holds Auto's step
+	UpdateData(DFALSE);
+}
+
 // Saves the HUD scale. The HUD picks it up on its next draw, since each part rebuilds when the scale changes
 void CMenuDisplay::SaveHUDScaleSetting()
 {
+	// Auto ignores the slider, and HUDScale keeps the Manual value
+	if (!IsHUDScaleManual()) return;
+
 	int nScale=m_nHUDScale;
 	if (nScale < kHUDScaleMin) nScale=kHUDScaleMin;
 	if (nScale > kHUDScaleMax) nScale=kHUDScaleMax;
@@ -595,6 +647,11 @@ void CMenuDisplay::OnLeft()
 		// Set the resolution for the control
 		SetCurrentCtrlResolution(currentResolution);
 	}
+
+	if (GetCurrentItem() == m_pHUDModeCtrl)
+	{
+		ApplyHUDModeChange();
+	}
 }
 
 // Override the right control
@@ -612,6 +669,11 @@ void CMenuDisplay::OnRight()
 
 		// Set the resolution for the control
 		SetCurrentCtrlResolution(currentResolution);
+	}
+
+	if (GetCurrentItem() == m_pHUDModeCtrl)
+	{
+		ApplyHUDModeChange();
 	}
 }
 

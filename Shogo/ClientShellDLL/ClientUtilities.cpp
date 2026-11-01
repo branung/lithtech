@@ -352,7 +352,8 @@ HSURFACE CropSurface ( HSURFACE hSurf, HLTCOLOR hBorderColor )
 //
 //	ROUTINE:	GetHUDScale()
 //
-//	PURPOSE:	Read HUDScale, clamped to the Display screen's range (1.0 when absent)
+//	PURPOSE:	The HUD scale. Auto (the default) follows the screen, and Manual reads
+//				HUDScale, clamped to the Display screen's range (1.0 when absent)
 //
 // ----------------------------------------------------------------------- //
 
@@ -360,10 +361,62 @@ LTFLOAT GetHUDScale()
 {
 	if (!g_pLTClient) return 1.0f;
 
+	if (!IsHUDScaleManual()) return GetAutoHUDScale();
+
 	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar ("HUDScale");
 	if (!hVar) return 1.0f;
 
 	LTFLOAT fScale = g_pLTClient->GetVarValueFloat (hVar);
+
+	if (fScale < HUDSCALE_MIN) fScale = HUDSCALE_MIN;
+	if (fScale > HUDSCALE_MAX) fScale = HUDSCALE_MAX;
+
+	return fScale;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	IsHUDScaleManual()
+//
+//	PURPOSE:	Whether the HUD scale is set to Manual (Auto when absent)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL IsHUDScaleManual()
+{
+	if (!g_pLTClient) return LTFALSE;
+
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar ("HUDScaleManual");
+	if (!hVar) return LTFALSE;
+
+	return (g_pLTClient->GetVarValueFloat (hVar) != 0.0f);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	GetAutoHUDScale()
+//
+//	PURPOSE:	Auto's scale: min(width / 640, height / 480), rounded down to a 25% step
+//				and clamped to the slider's range
+//
+// ----------------------------------------------------------------------- //
+
+LTFLOAT GetAutoHUDScale()
+{
+	if (!g_pLTClient) return 1.0f;
+
+	uint32 nWidth = 0, nHeight = 0;
+	HSURFACE hScreen = g_pLTClient->GetScreenSurface();
+	if (!hScreen) return 1.0f;
+	g_pLTClient->GetSurfaceDims (hScreen, &nWidth, &nHeight);
+	if (nHeight == 0) return 1.0f;
+
+	LTFLOAT fFit = (LTFLOAT)nHeight / (LTFLOAT)HUDSCALE_DESIGN_HEIGHT;
+	LTFLOAT fFitX = (LTFLOAT)nWidth / (LTFLOAT)HUDSCALE_DESIGN_WIDTH;
+	if (fFitX < fFit) fFit = fFitX;
+
+	int nSteps = (int)(fFit / HUDSCALE_STEP);
+	LTFLOAT fScale = (LTFLOAT)nSteps * HUDSCALE_STEP;
 
 	if (fScale < HUDSCALE_MIN) fScale = HUDSCALE_MIN;
 	if (fScale > HUDSCALE_MAX) fScale = HUDSCALE_MAX;

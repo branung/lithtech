@@ -37,7 +37,15 @@ void PrintError(char *pMsg, ...);
 #define HUDSCALE_MIN	1.0f
 #define HUDSCALE_MAX	3.0f
 
+// Unless HUDScaleManual is set, the scale follows the screen: min(width / 640, height / 480), rounded down to the
+// Display menu's 25% steps and clamped as above. 640x480 keeps the original layout, 1920x1080 gives 2.25
+#define HUDSCALE_DESIGN_WIDTH	640
+#define HUDSCALE_DESIGN_HEIGHT	480
+#define HUDSCALE_STEP			0.25f
+
 DFLOAT GetHUDScale();
+DFLOAT GetAutoHUDScale();
+DBOOL  IsHUDScaleManual();
 
 // DrawHUDScaled blits at the HUD scale, and HUDScaled scales a layout offset to match.
 // CoolFont text (the CommLink, the frag table) has no size to ask for, so it's magnified.

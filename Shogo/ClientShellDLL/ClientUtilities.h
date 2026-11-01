@@ -46,7 +46,15 @@ HSURFACE CropSurface ( HSURFACE hSurf, HLTCOLOR hBorderColor );
 #define HUDSCALE_MIN	1.0f
 #define HUDSCALE_MAX	3.0f
 
+// Unless HUDScaleManual is set, the scale follows the screen: min(width / 640, height / 480), rounded down to the
+// Display screen's 25% steps and clamped as above. 640x480 keeps the original layout, 1920x1080 gives 2.25
+#define HUDSCALE_DESIGN_WIDTH	640
+#define HUDSCALE_DESIGN_HEIGHT	480
+#define HUDSCALE_STEP			0.25f
+
 LTFLOAT GetHUDScale();
+LTFLOAT GetAutoHUDScale();
+LTBOOL  IsHUDScaleManual();
 
 struct FONT;
 

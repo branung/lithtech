@@ -60,6 +60,11 @@ public:
 	// The slider's range must match HUDSCALE_MIN/MAX in ClientUtilities.h.
 	void				SaveHUDScaleSetting();
 
+	// Auto or Manual, stored in HUDScaleManual (Auto when absent). The slider only applies in Manual
+	void				ToggleHUDMode();
+	void				RebuildHUDModeSurfaces();
+	void				SyncHUDScaleSlider();
+
 protected:
 
 	virtual LTBOOL		LoadSurfaces();
@@ -85,6 +90,7 @@ protected:
 	GENERIC_ITEM		m_ScreenFlash;
 	GENERIC_ITEM		m_DetailSetting;
 	GENERIC_ITEM		m_FrameRateSetting;
+	GENERIC_ITEM		m_HUDModeSetting;
 
 	int					m_nFrameRate;
 

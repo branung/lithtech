@@ -197,6 +197,9 @@
 #define IDS_DISPLAY_FRAMERATE_144       3803
 #define IDS_DISPLAY_FRAMERATE_200       3804
 #define IDS_DISPLAY_HUDSCALE            3805
+#define IDS_DISPLAY_HUDMODE             3806
+#define IDS_DISPLAY_HUDMODE_AUTO        3807
+#define IDS_DISPLAY_HUDMODE_MANUAL      3808
 // The General options screen for newly added tweaks
 #define IDS_GENERAL                     3810
 #define IDS_TITLE_GENERAL               3811

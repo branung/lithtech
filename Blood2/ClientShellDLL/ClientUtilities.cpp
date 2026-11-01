@@ -19,7 +19,8 @@
 //
 //	ROUTINE:	GetHUDScale
 //
-//	PURPOSE:	Read HUDScale, clamped to the Display menu's range (1.0 when absent)
+//	PURPOSE:	The HUD scale. Auto (the default) follows the screen, and Manual reads
+//				HUDScale, clamped to the Display menu's range (1.0 when absent)
 //
 // ----------------------------------------------------------------------- //
 
@@ -28,10 +29,66 @@ DFLOAT GetHUDScale()
 	CClientDE* pClientDE = g_pBloodClientShell ? g_pBloodClientShell->GetClientDE() : DNULL;
 	if (!pClientDE) return 1.0f;
 
+	if (!IsHUDScaleManual()) return GetAutoHUDScale();
+
 	HCONSOLEVAR hVar = pClientDE->GetConsoleVar("HUDScale");
 	if (!hVar) return 1.0f;
 
 	DFLOAT fScale = pClientDE->GetVarValueFloat(hVar);
+
+	if (fScale < HUDSCALE_MIN) fScale = HUDSCALE_MIN;
+	if (fScale > HUDSCALE_MAX) fScale = HUDSCALE_MAX;
+
+	return fScale;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	IsHUDScaleManual
+//
+//	PURPOSE:	Whether the HUD scale is set to Manual (Auto when absent)
+//
+// ----------------------------------------------------------------------- //
+
+DBOOL IsHUDScaleManual()
+{
+	CClientDE* pClientDE = g_pBloodClientShell ? g_pBloodClientShell->GetClientDE() : DNULL;
+	if (!pClientDE) return DFALSE;
+
+	HCONSOLEVAR hVar = pClientDE->GetConsoleVar("HUDScaleManual");
+	if (!hVar) return DFALSE;
+
+	return (pClientDE->GetVarValueFloat(hVar) != 0.0f);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	GetAutoHUDScale
+//
+//	PURPOSE:	Auto's scale: min(width / 640, height / 480), rounded down to a 25% step
+//				and clamped to the slider's range. The status bar's small layout still
+//				depends only on the screen size (NewStatusBar::AdjustRes)
+//
+// ----------------------------------------------------------------------- //
+
+DFLOAT GetAutoHUDScale()
+{
+	CClientDE* pClientDE = g_pBloodClientShell ? g_pBloodClientShell->GetClientDE() : DNULL;
+	if (!pClientDE) return 1.0f;
+
+	HSURFACE hScreen = pClientDE->GetScreenSurface();
+	if (!hScreen) return 1.0f;
+
+	DDWORD nWidth = 0, nHeight = 0;
+	pClientDE->GetSurfaceDims(hScreen, &nWidth, &nHeight);
+	if (nHeight == 0) return 1.0f;
+
+	DFLOAT fFit = (DFLOAT)nHeight / (DFLOAT)HUDSCALE_DESIGN_HEIGHT;
+	DFLOAT fFitX = (DFLOAT)nWidth / (DFLOAT)HUDSCALE_DESIGN_WIDTH;
+	if (fFitX < fFit) fFit = fFitX;
+
+	int nSteps = (int)(fFit / HUDSCALE_STEP);
+	DFLOAT fScale = (DFLOAT)nSteps * HUDSCALE_STEP;
 
 	if (fScale < HUDSCALE_MIN) fScale = HUDSCALE_MIN;
 	if (fScale > HUDSCALE_MAX) fScale = HUDSCALE_MAX;
