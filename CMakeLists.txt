@@ -108,7 +108,7 @@ endif(LINUX)
 
 option(ENABLE_SMACKER "Play Smacker (.smk) movies with libsmacker" ON)
 if (ENABLE_SMACKER)
-	add_subdirectory(libsmacker)						# LIB_Smacker
+	add_subdirectory(libs/libsmacker)						# LIB_Smacker
 endif()
 
 # dmusic is static, as Windows ships its own dmusic.dll which a shared build would collide with
