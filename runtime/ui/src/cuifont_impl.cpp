@@ -261,8 +261,15 @@ void CUIFont_Impl::DrawString(float x, float y, char* text)
 		sm_pDrawStr = pFontManager->CreatePolyString(this, NULL, x, y);
 	}
 
-	if (sm_pDrawStr->GetFont() != this) {
+	// Every font shares this poly string, which keeps the character size it was created with since SetFont doesn't change it. 
+	// So the size is set whenever the font or its size changes, or a rebuilt console font draws at the old one
+	static uint8 s_nDrawWidth = 0, s_nDrawHeight = 0;
+	if (sm_pDrawStr->GetFont() != this ||
+		s_nDrawWidth != m_DefaultCharScreenWidth || s_nDrawHeight != m_DefaultCharScreenHeight) {
 		sm_pDrawStr->SetFont(this);
+		sm_pDrawStr->SetCharScreenSize(m_DefaultCharScreenHeight, m_DefaultCharScreenWidth);
+		s_nDrawWidth  = m_DefaultCharScreenWidth;
+		s_nDrawHeight = m_DefaultCharScreenHeight;
 	}
 
 	sm_pDrawStr->SetPosition(x,y);

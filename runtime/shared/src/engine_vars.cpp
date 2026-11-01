@@ -61,6 +61,7 @@ const char	*g_CV_IP = LTNULL;
 
 const char*	g_CV_Console_FontTexFile = NULL;
 const char*	g_CV_Console_FontFace = NULL; // System font face the console falls back to without a console font texture
+int32	g_CV_ConsoleFontSize = 0; // Console text size in pixels. 0 follows the screen (height / 54, at least the original 9)
 int32	g_CV_NoDefaultEngineRez = 0;
 
 int32	g_CV_ForceConsole = 0;
@@ -264,6 +265,7 @@ int32	g_CV_ShowSphereFindTicks = LTFALSE;
 int32	g_CV_ConsoleHistoryLen = 20;
 int32	g_CV_ConsoleBufferLen = 500;
 float	g_CV_ConsoleAlpha = 1.0f;		// Note : OptimizeSurfaces must be 1 for this to have any effect
+float	g_CV_ConsoleFillAlpha = 0.8f;	// The console background's opacity. ConsoleAlpha is too thin at the 0.25 Jupiter games save
 int32	g_CV_ConsoleLeft = -1;	// Note : Negative values move the edge away from the screen edge by
 int32	g_CV_ConsoleTop = -1;	//	that positive fraction of the screen dimension.  (-1 = no offset)
 int32	g_CV_ConsoleRight = -1;
@@ -320,6 +322,7 @@ static LTEngineVar g_LTEngineVars[] =
 
 	EV_STRING("Console_FontTexFile", &g_CV_Console_FontTexFile),
 	EV_STRING("Console_FontFace", &g_CV_Console_FontFace),
+	EV_LONG("ConsoleFontSize", &g_CV_ConsoleFontSize),
 	EV_LONG("NoDefaultEngineRez", &g_CV_NoDefaultEngineRez),
 
 	EV_LONG("RenderEnable", &g_CV_RenderEnable),
@@ -510,6 +513,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("ConsoleHistoryLen", &g_CV_ConsoleHistoryLen),
 	EV_LONG("ConsoleBufferLen", &g_CV_ConsoleBufferLen),
 	EV_FLOAT("ConsoleAlpha", &g_CV_ConsoleAlpha),
+	EV_FLOAT("ConsoleFillAlpha", &g_CV_ConsoleFillAlpha),
 	EV_LONG("ConsoleLeft", &g_CV_ConsoleLeft),
 	EV_LONG("ConsoleTop", &g_CV_ConsoleTop),
 	EV_LONG("ConsoleRight", &g_CV_ConsoleRight),
