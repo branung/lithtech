@@ -862,6 +862,9 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	HSTRING hstrError;
 	const char *pszError;
 
+	// Name the window before the SetRenderMode below creates it, or it keeps DECompat's default "LithTech"
+	CClientDE::SetWindowName(GAME_NAME);
+
 	// Set the guid...
 
 	*pAppGuid = BLOOD2GUID;

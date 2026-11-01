@@ -1,6 +1,13 @@
 #ifndef __BLOODCLIENTSHELL_H__
 #define __BLOODCLIENTSHELL_H__
 
+// The window title
+#ifdef _ADDON
+#define GAME_NAME	"Blood II: The Nightmare Levels"
+#else
+#define GAME_NAME	"Blood II: The Chosen"
+#endif
+
 #include <stdio.h>
 #include <math.h>
 #include <mbstring.h>
