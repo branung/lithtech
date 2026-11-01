@@ -5,7 +5,9 @@
 #define SDL_MAIN_HANDLED
 #endif
 #include <SDL.h>
+#include <SDL_syswm.h>
 
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <string>
@@ -16,7 +18,9 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <shobjidl.h>
 #else
+#include <sys/wait.h>
 #include <unistd.h>
 #endif
 
@@ -63,6 +67,8 @@ const Rect kQuitButton(406, 330, 222, 26);
 const Rect kDisplayButton(406, 52, 222, 26);
 const Rect kCustomizeButton(406, 86, 222, 26);
 const Rect kAddOnBox(12, 338, 380, 18);
+const Rect kDataDirBox(12, 12, 300, 22);
+const Rect kBrowseButton(318, 12, 74, 22);
 
 const int kCaptionH = 22;
 const int kCloseSize = 18;
@@ -167,6 +173,15 @@ void Text(int x, int y, const std::string &s, Uint32 c, int nMaxW = 100000)
 void TextC(const Rect &r, const std::string &s, Uint32 c)
 {
     Text(r.x + (r.w - TextW(s)) / 2, r.y + (r.h - g_nLineH) / 2, s, c, r.w);
+}
+
+// A path that's too wide keeps its end, which names the folder
+std::string FitLeft(const std::string &s, int nMaxW)
+{
+    if (TextW(s) <= nMaxW) return s;
+    size_t i = 0;
+    while (i < s.size() && TextW("..." + s.substr(i)) > nMaxW) ++i;
+    return "..." + s.substr(i);
 }
 
 // Tahoma from the system's fonts. Has fallback attempts on Linux in case it's not available.
@@ -320,6 +335,108 @@ std::vector<ltlaunch::WindowSize> DesktopSizes()
     return ltlaunch::DistinctSizes(all);
 }
 
+// Asks for a folder, starting in sStart. False when cancelled, with sError set when it couldn't ask
+#ifdef _WIN32
+bool PickFolder(SDL_Window *pWnd, const std::string &sStart, std::string &sOut, std::string &sError)
+{
+    HWND hOwner = NULL;
+    SDL_SysWMinfo wm;
+    SDL_VERSION(&wm.version);
+    if (SDL_GetWindowWMInfo(pWnd, &wm)) hOwner = wm.info.win.window;
+
+    const HRESULT hrInit = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    bool bPicked = false;
+    IFileOpenDialog *pDlg = NULL;
+    if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pDlg))))
+    {
+        sError = "Could not open the folder dialog";
+        if (SUCCEEDED(hrInit)) CoUninitialize();
+        return false;
+    }
+
+    DWORD dwOptions = 0;
+    pDlg->GetOptions(&dwOptions);
+    pDlg->SetOptions(dwOptions | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST);
+    pDlg->SetTitle(L"Choose the folder holding the game's .rez files");
+
+    wchar_t wStart[MAX_PATH];
+    IShellItem *pStart = NULL;
+    if (MultiByteToWideChar(CP_ACP, 0, sStart.c_str(), -1, wStart, MAX_PATH) &&
+        SUCCEEDED(SHCreateItemFromParsingName(wStart, NULL, IID_PPV_ARGS(&pStart))))
+    {
+        pDlg->SetFolder(pStart);
+        pStart->Release();
+    }
+
+    IShellItem *pItem = NULL;
+    if (SUCCEEDED(pDlg->Show(hOwner)) && SUCCEEDED(pDlg->GetResult(&pItem)))
+    {
+        PWSTR pPath = NULL;
+        if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pPath)))
+        {
+            // The engine takes ANSI paths, so a name the code page can't hold is refused
+            char sPath[MAX_PATH * 2];
+            BOOL bLossy = FALSE;
+            if (WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, pPath, -1, sPath, sizeof(sPath), NULL, &bLossy) &&
+                !bLossy)
+            {
+                sOut = sPath;
+                bPicked = true;
+            }
+            else
+                sError = "That folder's name has characters the engine can't open";
+            CoTaskMemFree(pPath);
+        }
+        pItem->Release();
+    }
+
+    pDlg->Release();
+    if (SUCCEEDED(hrInit)) CoUninitialize();
+    return bPicked;
+}
+#else
+std::string ShellQuote(const std::string &s)
+{
+    std::string out = "'";
+    for (char c : s)
+    {
+        if (c == '\'') out += "'\\''";
+        else out += c;
+    }
+    return out + "'";
+}
+
+// zenity, or kdialog when it isn't installed
+bool PickFolder(SDL_Window *, const std::string &sStart, std::string &sOut, std::string &sError)
+{
+    const std::string kCmds[] = {
+        "zenity --file-selection --directory --title='Choose the game data folder' --filename=" +
+            ShellQuote(ltlaunch::JoinPath(sStart, "")),
+        "kdialog --getexistingdirectory " + ShellQuote(sStart),
+    };
+    for (const std::string &sCmd : kCmds)
+    {
+        FILE *pPipe = popen((sCmd + " 2>/dev/null").c_str(), "r");
+        if (!pPipe) continue;
+        std::string sLine;
+        char buf[512];
+        while (fgets(buf, sizeof(buf), pPipe)) sLine += buf;
+        const int nStatus = pclose(pPipe);
+        while (!sLine.empty() && (sLine.back() == '\n' || sLine.back() == '\r')) sLine.pop_back();
+
+        if (WIFEXITED(nStatus) && WEXITSTATUS(nStatus) == 127) continue; // Not installed
+        if (WIFEXITED(nStatus) && WEXITSTATUS(nStatus) == 0 && !sLine.empty())
+        {
+            sOut = sLine;
+            return true;
+        }
+        return false; // Cancelled
+    }
+    sError = "Install zenity or kdialog to choose a folder";
+    return false;
+}
+#endif
+
 // Starts the engine with the game directory as its working directory
 bool Spawn(const std::vector<std::string> &args, const std::string &sCwd,
            std::string &sError)
@@ -368,6 +485,8 @@ struct App
     SDL_Texture *pSplash = 0;
     bool bSplashTried = false;
 
+    SDL_Window *pWnd = 0; // The folder dialog's owner
+
     std::vector<ltlaunch::WindowSize> sizes;
     int  iSize = -1, iSizeOpen = -1;
     bool bBorderless = false, bBorderlessOpen = false;
@@ -394,24 +513,35 @@ struct App
         return out;
     }
 
+    bool HasData(const std::string &sRez) const
+    {
+        return ltlaunch::FileExists(ltlaunch::JoinPath(ltlaunch::DataDir(spec), sRez));
+    }
+
+    void AddRezArgs(std::vector<std::string> &rez, const std::vector<std::string> &names) const
+    {
+        for (const std::string &sRez : names) rez.push_back(ltlaunch::RezArg(spec, sRez));
+    }
+
     void AddPresent(std::vector<std::string> &rez, const std::vector<std::string> &optional) const
     {
         for (const std::string &sRez : optional)
-            if (ltlaunch::FileExists(ltlaunch::JoinPath(spec.m_sGameDir, sRez))) rez.push_back(sRez);
+            if (HasData(sRez)) rez.push_back(ltlaunch::RezArg(spec, sRez));
     }
 
-    // The archives a launch loads, named from the game directory
-    // Order: the game's archives and whichever optional ones are present, then the addon's, 
+    // The archives a launch loads. The game's come from the data folder, and Custom's from the game folder.
+    // Order: the game's archives and whichever optional ones are present, then the addon's,
     // then the Custom folder itself so loose levels are listed ingame, then the selected custom archives.
     // False when a selected archive is no longer there, with its name stored in sMissing
     bool LaunchRez(std::vector<std::string> &rez, std::string &sMissing) const
     {
-        rez = spec.m_Rez;
+        rez.clear();
+        AddRezArgs(rez, spec.m_Rez);
         AddPresent(rez, spec.m_OptionalRez);
 
         if (UseAddOn())
         {
-            rez.insert(rez.end(), game.m_AddOn.m_Rez.begin(), game.m_AddOn.m_Rez.end());
+            AddRezArgs(rez, game.m_AddOn.m_Rez);
             AddPresent(rez, game.m_AddOn.m_OptionalRez);
         }
 
@@ -442,7 +572,7 @@ struct App
 
     void DoPlay()
     {
-        if (!ltlaunch::FirstMissing(spec.m_sGameDir, Required()).empty()) return;
+        if (!ltlaunch::FirstMissing(ltlaunch::DataDir(spec), Required()).empty()) return;
 
         ltlaunch::LaunchSpec launch = spec;
         std::string sMissing;
@@ -452,11 +582,12 @@ struct App
             return;
         }
 
-        // The addon runs from its own folder, one below the game's archives
+        // The addon runs from its own folder, one below the game folder
         std::string sCwd = spec.m_sGameDir;
         if (UseAddOn())
         {
-            for (std::string &sRez : launch.m_Rez) sRez = ltlaunch::JoinPath("..", sRez);
+            for (std::string &sRez : launch.m_Rez)
+                if (!ltlaunch::IsAbsolutePath(sRez)) sRez = ltlaunch::JoinPath("..", sRez);
             sCwd = ltlaunch::AddOnDir(game);
             SeedAddOnConfig();
         }
@@ -482,7 +613,7 @@ struct App
     static const std::vector<const Rect *> &ButtonsFor(DialogId eDialog)
     {
         static const std::vector<const Rect *> kMain =
-            { &kPlayButton, &kDisplayButton, &kCustomizeButton, &kQuitButton, &kAddOnBox };
+            { &kPlayButton, &kDisplayButton, &kCustomizeButton, &kQuitButton, &kAddOnBox, &kBrowseButton };
         static const std::vector<const Rect *> kDisplay =
             { &kDisplayDlg.ok, &kDisplayDlg.cancel, &kDisplayDlg.close, &kBorderlessBox };
         static const std::vector<const Rect *> kCustomize =
@@ -514,6 +645,7 @@ struct App
         else if (p == &kCustomizeButton) OpenCustomize();
         else if (p == &kQuitButton) bQuit = true;
         else if (p == &kAddOnBox) ToggleAddOn();
+        else if (p == &kBrowseButton) BrowseDataDir();
         // Display dialog
         else if (p == &kBorderlessBox) bBorderless = !bBorderless;
         // Customize dialog
@@ -671,6 +803,7 @@ struct App
         settings.m_bAlwaysRez = bAlwaysRez;
         settings.m_AlwaysRez = chosenRez;
         settings.m_bAddOn = bAddOn;
+        settings.m_sDataDir = spec.m_sDataDir;
         if (!ltlaunch::SaveSettings(sSettingsPath, settings)) sStatus = "Could not write " + sSettingsPath;
     }
 
@@ -682,6 +815,23 @@ struct App
         bAlwaysRez = settings.m_bAlwaysRez;
         if (bAlwaysRez) chosenRez = settings.m_AlwaysRez;
         bAddOn = settings.m_bAddOn;
+        spec.m_sDataDir = settings.m_sDataDir;
+    }
+
+    // A standard install's folder to read the archives from. The game folder goes back to the default
+    void BrowseDataDir()
+    {
+        std::string sDir, sError;
+        if (!PickFolder(pWnd, ltlaunch::DataDir(spec), sDir, sError))
+        {
+            if (!sError.empty()) sStatus = sError;
+            return;
+        }
+
+        spec.m_sDataDir = ltlaunch::SameDir(sDir, spec.m_sGameDir) ? std::string() : sDir;
+        bSplashTried = false;
+        sStatus.clear();
+        SaveSettings();
     }
 
     // The addon has its own banner, so the splash is loaded again
@@ -712,17 +862,14 @@ struct App
     {
         Fill(Rect(0, 0, kWinW, kWinH), kFace);
 
-        // Without the game box the banner takes its space
-        const int nPanelY = game.m_bTitleBox ? 40 : 12;
-        if (game.m_bTitleBox)
-        {
-            const Rect title(12, 12, 380, 22);
-            Fill(title, kWindow);
-            Frame(title, kBorder);
-            Text(title.x + 4, title.y + (title.h - g_nLineH) / 2, game.m_sTitle, kText, title.w - 8);
-        }
+        // The folder the archives are read from
+        Fill(kDataDirBox, kWindow);
+        Frame(kDataDirBox, kBorder);
+        Text(kDataDirBox.x + 4, kDataDirBox.y + (kDataDirBox.h - g_nLineH) / 2,
+             FitLeft(ltlaunch::DataDir(spec), kDataDirBox.w - 8), kText, kDataDirBox.w - 8);
+        Button(kBrowseButton, "Browse...", Down(kBrowseButton));
 
-        const Rect panel(12, nPanelY, 380, 330 - nPanelY);
+        const Rect panel(12, 40, 380, 290);
         Fill(panel, kWindow);
         Frame(panel, kBorder);
 
@@ -731,7 +878,7 @@ struct App
         bool bMissing = false;
         for (const std::string &sRez : required)
         {
-            present.push_back(ltlaunch::FileExists(ltlaunch::JoinPath(spec.m_sGameDir, sRez)));
+            present.push_back(HasData(sRez));
             bMissing = bMissing || !present.back();
         }
         if (bMissing)
@@ -768,11 +915,11 @@ struct App
         std::vector<unsigned char> raw;
         ltlaunch::Image img;
         const bool bAddOnSplash = UseAddOn() &&
-            ltlaunch::ReadRezEntry(ltlaunch::JoinPath(spec.m_sGameDir, game.m_AddOn.m_sSplashRez),
+            ltlaunch::ReadRezEntry(ltlaunch::JoinPath(ltlaunch::DataDir(spec), game.m_AddOn.m_sSplashRez),
                                    game.m_AddOn.m_sSplashPath, raw) &&
             ltlaunch::DecodePcx(raw, img);
         if (!bAddOnSplash &&
-            (!ltlaunch::ReadRezEntry(ltlaunch::JoinPath(spec.m_sGameDir, game.m_sSplashRez), game.m_sSplashPath, raw) ||
+            (!ltlaunch::ReadRezEntry(ltlaunch::JoinPath(ltlaunch::DataDir(spec), game.m_sSplashRez), game.m_sSplashPath, raw) ||
              !ltlaunch::DecodePcx(raw, img)))
             return;
 
@@ -811,10 +958,11 @@ struct App
         Text(hx + 1, y, sHead, kAlert);
         y += g_nLineH + 10;
 
-        Text(in.x + 4, y, "This game's archives were not found. Copy them into:", kText, nMaxW);
+        Text(in.x + 4, y, spec.m_sDataDir.empty() ? "This game's archives were not found. Copy them into:"
+                                                  : "This game's archives were not found in:", kText, nMaxW);
         y += g_nLineH + 4;
 
-        std::string sDir = spec.m_sGameDir;
+        std::string sDir = ltlaunch::DataDir(spec);
         while (!sDir.empty())
         {
             size_t n = 1;
@@ -826,6 +974,26 @@ struct App
             }
             Text(in.x + 4, y, sDir.substr(0, n), kText, nMaxW);
             sDir.erase(0, n);
+            y += g_nLineH;
+        }
+        y += 8;
+
+        // Wrapped at spaces to the panel
+        std::string sBrowse = spec.m_sDataDir.empty()
+            ? "Or press Browse... to point to your copy of the game."
+            : "Press Browse... to point to your copy of the game.";
+        while (!sBrowse.empty())
+        {
+            size_t n = sBrowse.size();
+            while (n > 0 && TextW(sBrowse.substr(0, n)) > nMaxW)
+            {
+                const size_t cut = sBrowse.find_last_of(' ', n - 1);
+                n = (cut == std::string::npos || cut == 0) ? n - 1 : cut;
+            }
+            if (n == 0) n = 1;
+            Text(in.x + 4, y, sBrowse.substr(0, n), kText, nMaxW);
+            sBrowse.erase(0, n);
+            while (!sBrowse.empty() && sBrowse[0] == ' ') sBrowse.erase(0, 1);
             y += g_nLineH;
         }
         y += 8;
@@ -902,6 +1070,7 @@ int LauncherMain()
                                         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                         kWinW, kWinH, SDL_WINDOW_SHOWN);
     if (!pWnd) { SDL_Quit(); return 1; }
+    app.pWnd = pWnd;
     g_pRen = SDL_CreateRenderer(pWnd, -1, SDL_RENDERER_SOFTWARE);
     if (!g_pRen) { SDL_DestroyWindow(pWnd); SDL_Quit(); return 1; }
     g_pFont = MakeFontAtlas();

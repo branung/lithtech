@@ -43,7 +43,6 @@ GameProfile LithLauncherProfile(const std::string &sExeDir)
 {
     GameProfile game = ShogoProfile(sExeDir);
     game.m_sCaption = "LithLauncher";
-    game.m_bTitleBox = true;
     game.m_Spec.m_sGameDir = JoinPath(sExeDir, "Shogo");
     return game;
 }
@@ -86,6 +85,16 @@ std::vector<std::string> RequiredRez(const LaunchSpec &spec)
     std::vector<std::string> out = spec.m_EngineRez;
     out.insert(out.end(), spec.m_Rez.begin(), spec.m_Rez.end());
     return out;
+}
+
+std::string DataDir(const LaunchSpec &spec)
+{
+    return spec.m_sDataDir.empty() ? spec.m_sGameDir : spec.m_sDataDir;
+}
+
+std::string RezArg(const LaunchSpec &spec, const std::string &sRez)
+{
+    return spec.m_sDataDir.empty() ? sRez : JoinPath(spec.m_sDataDir, sRez);
 }
 
 std::string FirstMissing(const std::string &sDir, const std::vector<std::string> &names)
@@ -197,6 +206,25 @@ bool DirExists(const std::string &sPath)
 {
     std::error_code ec;
     return std::filesystem::is_directory(sPath, ec);
+}
+
+bool IsAbsolutePath(const std::string &sPath)
+{
+    return std::filesystem::path(sPath).is_absolute();
+}
+
+bool SameDir(const std::string &a, const std::string &b)
+{
+    std::error_code ec;
+    if (std::filesystem::equivalent(a, b, ec)) return true;
+    std::string sA = a, sB = b;
+    while (!sA.empty() && (sA.back() == '\\' || sA.back() == '/')) sA.pop_back();
+    while (!sB.empty() && (sB.back() == '\\' || sB.back() == '/')) sB.pop_back();
+#ifdef _WIN32
+    return EqualNoCase(sA, sB);
+#else
+    return sA == sB;
+#endif
 }
 
 std::vector<std::string> ListFiles(const std::string &sDir, const std::string &sExt)
@@ -311,6 +339,7 @@ bool LoadSettings(const std::string &sPath, LauncherSettings &settings)
         if (sKey == "alwaysrez") settings.m_bAlwaysRez = (sValue == "1");
         else if (sKey == "rez") settings.m_AlwaysRez.push_back(sValue);
         else if (sKey == "addon") settings.m_bAddOn = (sValue == "1");
+        else if (sKey == "datadir") settings.m_sDataDir = sValue;
     }
     return true;
 }
@@ -320,6 +349,7 @@ bool SaveSettings(const std::string &sPath, const LauncherSettings &settings)
     std::ostringstream os;
     os << "# Written by LithLauncher. Safe to delete\n";
     os << "addon=" << (settings.m_bAddOn ? 1 : 0) << "\n";
+    if (!settings.m_sDataDir.empty()) os << "datadir=" << settings.m_sDataDir << "\n";
     os << "alwaysrez=" << (settings.m_bAlwaysRez ? 1 : 0) << "\n";
     if (settings.m_bAlwaysRez)
         for (const std::string &sRez : settings.m_AlwaysRez) os << "rez=" << sRez << "\n";
@@ -334,6 +364,19 @@ std::vector<std::string> BuildCommandLine(const LaunchSpec &spec)
 #else
     args.push_back(JoinPath(spec.m_sEngineDir, "Lithtech"));
 #endif
+    if (!spec.m_sDataDir.empty())
+    {
+        for (const std::string &sRez : spec.m_EngineRez)
+        {
+            args.push_back("-rez");
+            args.push_back(RezArg(spec, sRez));
+        }
+
+        // For the loose data the engine and game read beside the archives (music, movies, console.pcx).
+        // A command line variable isn't saved to autoexec.cfg
+        args.push_back("+GameDataDir");
+        args.push_back(spec.m_sDataDir);
+    }
     for (size_t i = 0; i < spec.m_Rez.size(); ++i)
     {
         args.push_back("-rez");

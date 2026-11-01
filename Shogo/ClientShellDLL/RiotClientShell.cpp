@@ -1283,9 +1283,10 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 	}
 
 
-	// Attempt to find the movies path
+	// Attempt to find the movies path, in the launcher's data folder too
 
-	CWinUtil::GetMoviesPath (m_strMoviesDir);
+	HCONSOLEVAR hDataDir = g_pLTClient->GetConsoleVar("GameDataDir");
+	CWinUtil::GetMoviesPath (m_strMoviesDir, hDataDir ? g_pLTClient->GetVarValueString(hDataDir) : NULL);
 
 	// Initialize the physics states...
 

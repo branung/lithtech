@@ -61,6 +61,7 @@ const char	*g_CV_IP = LTNULL;
 
 const char*	g_CV_Console_FontTexFile = NULL;
 const char*	g_CV_Console_FontFace = NULL; // System font face the console falls back to without a console font texture
+const char*	g_CV_GameDataDir = NULL; // A standard install the launcher reads archives from, searched for loose data too
 int32	g_CV_ConsoleFontSize = 0; // Console text size in pixels. 0 follows the screen (height / 54, at least the original 9)
 int32	g_CV_NoDefaultEngineRez = 0;
 
@@ -323,6 +324,7 @@ static LTEngineVar g_LTEngineVars[] =
 
 	EV_STRING("Console_FontTexFile", &g_CV_Console_FontTexFile),
 	EV_STRING("Console_FontFace", &g_CV_Console_FontFace),
+	EV_STRING("GameDataDir", &g_CV_GameDataDir),
 	EV_LONG("ConsoleFontSize", &g_CV_ConsoleFontSize),
 	EV_LONG("NoDefaultEngineRez", &g_CV_NoDefaultEngineRez),
 

@@ -15,7 +15,8 @@ class CWinUtil
 {
 public:
 
-	static BOOL GetMoviesPath (char* strPath);
+	// pDataDir is the launcher's data folder, searched after the working directory
+	static BOOL GetMoviesPath (char* strPath, const char* pDataDir = NULL);
 	static BOOL DirExist (char* strPath);
 	static BOOL CreateDir (char* strPath);
 	static BOOL FileExist (char* strPath);

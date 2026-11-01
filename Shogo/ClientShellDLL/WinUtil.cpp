@@ -13,7 +13,7 @@
 
 #ifdef _WIN32
 
-BOOL CWinUtil::GetMoviesPath (char* strPath)
+BOOL CWinUtil::GetMoviesPath (char* strPath, const char* pDataDir)
 {
 	char chDrive   = 'A';
 	strPath[0] = '\0';
@@ -22,6 +22,21 @@ BOOL CWinUtil::GetMoviesPath (char* strPath)
 	if (_getcwd (strTemp, 255))
 	{
 		char strFile[270];
+		if (strTemp[strlen(strTemp) - 1] != '\\') strcat (strTemp, "\\");
+		SAFE_STRCPY(strFile, strTemp);
+		strcat (strFile, "intro.smk");
+
+		if (FileExist (strFile))
+		{
+			SAFE_STRCPY(strPath, strTemp);
+			return TRUE;
+		}
+	}
+
+	if (pDataDir && *pDataDir && strlen(pDataDir) < 250)
+	{
+		char strFile[270];
+		SAFE_STRCPY(strTemp, pDataDir);
 		if (strTemp[strlen(strTemp) - 1] != '\\') strcat (strTemp, "\\");
 		SAFE_STRCPY(strFile, strTemp);
 		strcat (strFile, "intro.smk");
@@ -153,9 +168,19 @@ char* CWinUtil::GetFocusWindow()
 #else // !_WIN32
 
 // No CD autodetection on Linux, and an empty path means no movies
-BOOL CWinUtil::GetMoviesPath (char* strPath)
+BOOL CWinUtil::GetMoviesPath (char* strPath, const char* pDataDir)
 {
 	strPath[0] = '\0';
+	if (pDataDir && *pDataDir && strlen(pDataDir) < 250)
+	{
+		char strFile[270];
+		snprintf(strFile, sizeof(strFile), "%s/intro.smk", pDataDir);
+		if (FileExist (strFile))
+		{
+			snprintf(strPath, 256, "%s/", pDataDir);
+			return TRUE;
+		}
+	}
 	return FALSE;
 }
 

@@ -9,7 +9,8 @@ namespace ltlaunch {
 // Everything one launch needs
 struct LaunchSpec
 {
-    std::string m_sGameDir; // The working directory, holding the game's archives
+    std::string m_sGameDir; // The working directory, holding the game's modules and configs
+    std::string m_sDataDir; // The folder holding the game's archives, when not m_sGameDir (a standard install)
     std::string m_sEngineDir; // The folder holding Lithtech.exe
     std::vector<std::string> m_Rez; // The necessary .rez files, passed with -rez (aka SHOGO.REZ)
     std::vector<std::string> m_EngineRez; // Necessary too, but the engine opens them itself (NOLF2's)
@@ -36,7 +37,6 @@ struct GameProfile
     std::string m_sTitle;
     std::string m_sSplashRez; // The archive holding the banner
     std::string m_sSplashPath; // The banner's path inside it
-    bool m_bTitleBox = false; // The game box above the banner (LithLauncher's)
     LaunchSpec m_Spec;
     AddOn m_AddOn;
 };
@@ -56,6 +56,11 @@ std::string JoinPath(const std::string &dir, const std::string &leaf);
 bool FileExists(const std::string &sPath);
 
 bool DirExists(const std::string &sPath);
+
+bool IsAbsolutePath(const std::string &sPath);
+
+// Whether two paths name the same folder
+bool SameDir(const std::string &a, const std::string &b);
 
 std::vector<std::string> ListFiles(const std::string &sDir, const std::string &sExt);
 
@@ -90,6 +95,12 @@ GameProfile NOLF2Profile(const std::string &sExeDir);
 // Every archive the game can't start without
 std::vector<std::string> RequiredRez(const LaunchSpec &spec);
 
+// The folder the game's archives are read from
+std::string DataDir(const LaunchSpec &spec);
+
+// An archive's -rez argument: its name in the game folder, or its full path in another data folder
+std::string RezArg(const LaunchSpec &spec, const std::string &sRez);
+
 // The first file that isn't in sDir, or an empty string when all are there
 std::string FirstMissing(const std::string &sDir, const std::vector<std::string> &names);
 
@@ -111,6 +122,7 @@ struct LauncherSettings
     bool m_bAlwaysRez = false;
     std::vector<std::string> m_AlwaysRez;
     bool m_bAddOn = false; // The addon's checkbox
+    std::string m_sDataDir; // The chosen data folder, empty for the game folder
 };
 
 // False when the file can't be read, leaving the defaults
@@ -120,6 +132,7 @@ bool LoadSettings(const std::string &sPath, LauncherSettings &settings);
 bool SaveSettings(const std::string &sPath, const LauncherSettings &settings);
 
 // The engine's argument list. The caller sets the working directory to m_sGameDir
+// The engine opens m_EngineRez itself from there, so another data folder passes them too, and itself as GameDataDir
 std::vector<std::string> BuildCommandLine(const LaunchSpec &spec);
 
 // Joins the arguments into one command line, quoting any with spaces

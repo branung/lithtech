@@ -29,6 +29,7 @@ function(lt_launcher_target target)
 
 	if(WIN32)
 		set_target_properties(${target} PROPERTIES WIN32_EXECUTABLE TRUE)
+		target_link_libraries(${target} ole32 uuid) # The folder dialog
 	endif()
 endfunction()
 

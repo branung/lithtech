@@ -7905,10 +7905,16 @@ DBOOL CBloodClientShell::PlayMovie(CClientDE* pClientDE, char* sMovie, DBOOL bCh
 		}
 		else
 		{
-			// Look in a movies folder on the hard disk...
+			// Look in the launcher's data folder, a standard install, then a movies folder on the hard disk...
 
 			char sTemp[256];
-			sprintf(sTemp, "Movies\\%s", sMovie);
+			HCONSOLEVAR hDataDir = pClientDE->GetConsoleVar("GameDataDir");
+			const char *pDataDir = hDataDir ? pClientDE->GetVarValueString(hDataDir) : NULL;
+			const bool bInDataDir = pDataDir && *pDataDir &&
+				snprintf(sTemp, sizeof(sTemp), "%s\\%s", pDataDir, sMovie) < (int)sizeof(sTemp) &&
+				CWinUtil::FileExist(sTemp);
+			if (!bInDataDir)
+				sprintf(sTemp, "Movies\\%s", sMovie);
 			if (CWinUtil::FileExist(sTemp))
 			{
 				_mbscpy((unsigned char*)sMoviePath, (const unsigned char*)sTemp);

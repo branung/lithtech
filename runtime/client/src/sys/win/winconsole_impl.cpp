@@ -988,7 +988,16 @@ LTRESULT CConsole::LoadBackground()
 
 	dResult = LT_ERROR;
 	if ( (pStream = streamsim_Open("console.pcx", "rb")) == LTNULL )
-		return dResult;
+	{
+		// Else the one in the launcher's data folder, a standard install
+		extern const char* g_CV_GameDataDir;
+		if ( !g_CV_GameDataDir || !g_CV_GameDataDir[0] )
+			return dResult;
+		char szPath[512];
+		LTSNPrintF(szPath, sizeof(szPath), "%s\\console.pcx", g_CV_GameDataDir);
+		if ( (pStream = streamsim_Open(szPath, "rb")) == LTNULL )
+			return dResult;
+	}
 
 	// A texture rather than LT1's surface. The console draws inside End3D, where a scaled surface blit drops
 	// its size, while a textured quad scales anywhere and can be blended.

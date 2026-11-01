@@ -150,10 +150,28 @@ public:
             return true;
         }
 
+        // Then the one in the launcher's data folder, a standard install
+        extern const char *g_CV_GameDataDir;
+        if (szRoot[0] && g_CV_GameDataDir && g_CV_GameDataDir[0])
+        {
+            char szTree[512];
+#ifdef _WIN32
+            LTSNPrintF(szTree, sizeof(szTree), "%s\\%s", g_CV_GameDataDir, szRoot);
+#else
+            LTSNPrintF(szTree, sizeof(szTree), "%s/%s", g_CV_GameDataDir, szRoot);
+#endif
+            if (MountOnce(szTree) && CanOpen(szRest, pszProbe))
+            {
+                LTStrCpy(m_szDir, szRest, sizeof(m_szDir));
+                return true;
+            }
+        }
+
         dsi_PrintToConsole("music: cannot reach %s in %s - no music this level. "
                            "LT1 keeps its music LOOSE and in no archive, so the "
                            "game directory needs a Music folder copied from the "
-                           "retail install beside the .rez files.",
+                           "retail install beside the .rez files, or the launcher "
+                           "pointed at that install.",
                            pszProbe, m_szDir);
         return false;
     }
