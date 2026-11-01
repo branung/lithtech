@@ -45,12 +45,20 @@ CMenuDisplay::CMenuDisplay()
 {
 	m_pRendererCtrl=DNULL;
 	m_pResolutionCtrl=DNULL;
+	m_pHUDScaleCtrl=DNULL;
 	m_nDetailLevel=2;
+	m_nHUDScale=100;
 }
 
 CMenuDisplay::~CMenuDisplay()
 {	
 }
+
+// HUD scaling in percent. The range has to match HUDSCALE_MIN and HUDSCALE_MAX in ClientUtilities.h,
+// and 100 is the original layout
+static const int kHUDScaleMin  = 100;
+static const int kHUDScaleMax  = 300;
+static const int kHUDScaleStep = 25;
 
 // Build the menu
 void CMenuDisplay::Build()
@@ -127,6 +135,26 @@ void CMenuDisplay::Build()
 	else
 	{
 		m_nDetailLevel=2;
+	}
+
+	// Add the HUD scaling option, since the HUD is fixed pixel art that shrinks as the resolution rises
+	m_pHUDScaleCtrl=AddSliderOption(IDS_MENU_DISPLAY_HUDSCALE, m_pMainMenus->GetSmallFont(), 100, m_pMainMenus->GetSurfaceSliderBar(), m_pMainMenus->GetSurfaceSliderTab(), &m_nHUDScale);
+	if (m_pHUDScaleCtrl)
+	{
+		m_pHUDScaleCtrl->SetSliderRange(kHUDScaleMin, kHUDScaleMax);
+		m_pHUDScaleCtrl->SetSliderIncrement(kHUDScaleStep);
+	}
+
+	// Load the HUD scale, snapped to a step since autoexec.cfg can hold any value
+	m_nHUDScale=kHUDScaleMin;
+	HCONSOLEVAR hHUDVar=m_pClientDE->GetConsoleVar("HUDScale");
+	if (hHUDVar)
+	{
+		int nCur=(int)((m_pClientDE->GetVarValueFloat(hHUDVar) * 100.0f) + 0.5f);
+		if (nCur < kHUDScaleMin) nCur=kHUDScaleMin;
+		if (nCur > kHUDScaleMax) nCur=kHUDScaleMax;
+		m_nHUDScale=kHUDScaleMin + (((nCur - kHUDScaleMin) + (kHUDScaleStep / 2)) / kHUDScaleStep) * kHUDScaleStep;
+		if (m_nHUDScale > kHUDScaleMax) m_nHUDScale=kHUDScaleMax;
 	}
 
 	UpdateData(DFALSE);
@@ -411,7 +439,10 @@ void CMenuDisplay::OnFocus(DBOOL bFocus)
 		UpdateData();
 
 		// Save the global detail setting
-		SaveDetailSetting();		
+		SaveDetailSetting();
+
+		// Save the HUD scale
+		SaveHUDScaleSetting();
 
 		bSet = SetRenderer(m_pRendererCtrl->GetSelIndex(), m_pResolutionCtrl->GetSelIndex());
 
@@ -534,6 +565,18 @@ void CMenuDisplay::SaveDetailSetting()
 
 	m_pClientDE->RunConsoleString(szConsole);
 	g_pBloodClientShell->MenuSetDetail();
+}
+
+// Saves the HUD scale. The HUD picks it up on its next draw, since each part rebuilds when the scale changes
+void CMenuDisplay::SaveHUDScaleSetting()
+{
+	int nScale=m_nHUDScale;
+	if (nScale < kHUDScaleMin) nScale=kHUDScaleMin;
+	if (nScale > kHUDScaleMax) nScale=kHUDScaleMax;
+
+	char szConsole[64];
+	sprintf(szConsole, "+HUDScale %.2f", (float)nScale / 100.0f);
+	m_pClientDE->RunConsoleString(szConsole);
 }
 
 // Override the left control

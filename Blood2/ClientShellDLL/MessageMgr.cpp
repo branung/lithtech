@@ -9,6 +9,7 @@
 //----------------------------------------------------------
 
 #include "MessageMgr.h"
+#include "ClientUtilities.h"
 #include "VKDefs.h"
 #include "SharedDefs.h"
 #include "stdio.h"
@@ -198,8 +199,9 @@ DBOOL CMessageMgr::Init (CClientDE* pClientDE)
 	m_pClientDE = pClientDE;
 	m_InputLine.Init(pClientDE);
 
-	m_hFont = m_pClientDE->CreateFont("Arial", 6, 16, DFALSE, DFALSE, DFALSE);
-	m_nFontHeight = 16;
+	m_fFontScale = GetHUDScale();
+	m_hFont = m_pClientDE->CreateFont("Arial", HUDScaled(6, m_fFontScale), HUDScaled(16, m_fFontScale), DFALSE, DFALSE, DFALSE);
+	m_nFontHeight = HUDScaled(16, m_fFontScale);
 
 	return DTRUE;
 }
@@ -287,6 +289,33 @@ void CMessageMgr::AddLine( HSTRING hMsg, DBYTE uMessageFlag )
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CMessageMgr::UpdateFontScale
+//
+//	PURPOSE:	Rebuilds the message font when the HUD scale changes. Queued messages
+//				keep their old size until they expire, and the input line follows at
+//				once since it's drawn fresh each frame
+//
+// ----------------------------------------------------------------------- //
+
+void CMessageMgr::UpdateFontScale()
+{
+	if (!m_pClientDE) return;
+
+	DFLOAT fScale = GetHUDScale();
+	if (fScale == m_fFontScale && m_hFont) return;
+
+	HDEFONT hNew = m_pClientDE->CreateFont("Arial", HUDScaled(6, fScale), HUDScaled(16, fScale), DFALSE, DFALSE, DFALSE);
+	if (!hNew) return;			// Keep the current font rather than none
+
+	if (m_hFont) m_pClientDE->DeleteFont(m_hFont);
+	m_hFont = hNew;
+	m_fFontScale = fScale;
+	m_nFontHeight = HUDScaled(16, fScale);
+}
+
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CMessageMgr::Draw()
 //
 //	PURPOSE:	Displays the Message list
@@ -297,6 +326,9 @@ void CMessageMgr::Draw( void )
 {
 	if (!m_bEnabled)
 		return;
+
+	// Rebuild the font if the HUD scale changed
+	UpdateFontScale();
 
 	// Try to draw a cheat message
 	DBOOL bDrawCheatMsg = DrawCheatMsg();
@@ -309,7 +341,7 @@ void CMessageMgr::Draw( void )
 	int nCount = m_nMessageCount;	// use temporary values
 	int nFirst = m_nFirstMessage;	// because the real ones may change
 	int i;
-	int y = m_y;
+	int y = HUDScaled(m_y, m_fFontScale);
 
 	if (bDrawCheatMsg) y += m_nFontHeight;
 
@@ -332,14 +364,16 @@ void CMessageMgr::Draw( void )
 		}
 
 		// draw the text
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, pMsg->hSurface, NULL, m_x, y, NULL);
+		// The font is already scaled, so only the inset scales
+		m_pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, pMsg->hSurface, NULL, HUDScaled(m_x, m_fFontScale), y, NULL);
 		y += m_nFontHeight;
 	}
 
 	if (m_bEditing)
 	{
+		// The input line draws from m_hFont each frame, so only its anchor scales
 		HDECOLOR hForeground = m_pClientDE->SetupColor1 (1.0f, 1.0f, 1.0f, DFALSE);
-		m_InputLine.Draw(hScreen, m_hFont, hForeground, NULL, m_x, y);
+		m_InputLine.Draw(hScreen, m_hFont, hForeground, NULL, HUDScaled(m_x, m_fFontScale), y);
 	}
 }
 
@@ -381,7 +415,9 @@ DBOOL CMessageMgr::DrawCheatMsg( void )
 		HSTRING hString = m_pClientDE->CreateString(szCheatString);
 		HSURFACE hSurface = m_pClientDE->CreateSurfaceFromString (m_hFont, hString, hForeground, NULL, 10, 0);
 
-		m_pClientDE->DrawSurfaceToSurfaceTransparent (m_pClientDE->GetScreenSurface(), hSurface, NULL, m_x, m_y, NULL);
+		// m_hFont is already scaled, so only the anchors scale
+		m_pClientDE->DrawSurfaceToSurfaceTransparent (m_pClientDE->GetScreenSurface(), hSurface, NULL,
+													 HUDScaled(m_x, m_fFontScale), HUDScaled(m_y, m_fFontScale), NULL);
 
 		m_pClientDE->DeleteSurface(hSurface);
 		m_pClientDE->FreeString(hString);

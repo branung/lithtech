@@ -249,7 +249,10 @@ public:
     // Null - there's no software renderer
     DRESULT         SetSoftwarePSColor(HLOCALOBJ hObj, float r, float g, float b);
 
-    // Null - Jupiter worlds carry no info block
+    // The world file's info string, read from its header without loading the world.
+    // Blood 2 names each chapter's load screen there (WorldName, LoadScreen, LoadScreenID).
+    // An LT1 world (56, 57, 127) holds it after two offsets, a Jupiter line world (66, 70, 85) after two offsets
+    // and eight reserved words. DE_ERROR with an empty string when the file can't be read
     DRESULT         GetWorldInfoString(const char *pFilename, char *pInfoString,
                                        DDWORD maxLen, DDWORD *pActualLen);
 

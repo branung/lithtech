@@ -50,6 +50,7 @@ CCommLink::CCommLink()
 
 	m_nCommTextWidth = 0;
 	m_nFaceWidth = 0;
+	m_fHUDScale = 1.0f;
 	m_nCommTextX = 0;
 	m_nCommTextY = 0;
 
@@ -119,19 +120,31 @@ void CCommLink::AdjustRes()
 	DDWORD	width, height;
 	HSURFACE hScreen = m_pClientDE->GetScreenSurface();
 
+	DFLOAT fScale = GetHUDScale();
+
 	m_pClientDE->GetSurfaceDims(hScreen, &width, &height);
-	if((m_nScreenWidth == width) && (m_nScreenHeight == height))	return;
+	if((m_nScreenWidth == width) && (m_nScreenHeight == height) && (m_fHUDScale == fScale))	return;
 
 	// Set the screen width and height variables to the new resolution
 	m_nScreenWidth = width;
 	m_nScreenHeight = height;
+	m_fHUDScale = fScale;
 
 	// Adjust the commlink tab location to the new resolution
+	// The face and text are magnified when drawn, so the text surface's width is divided by the scale
+	// or it runs off the right edge. That also narrows the wrap to match the wider glyphs
 	m_pClientDE->GetSurfaceDims(m_hFace, &width, &height);
 	m_nFaceWidth = width;
-	m_nCommTextWidth = (short)(m_nScreenWidth - width - 20);
-	m_nCommTextX = width + 10;
-	m_nCommTextY = 10;
+
+	int nFaceOnScreen = HUDScaled((int)width, fScale);
+	int nTextOnScreen = (int)m_nScreenWidth - nFaceOnScreen - HUDScaled(20, fScale);
+	if (nTextOnScreen < 1) nTextOnScreen = 1;
+
+	m_nCommTextWidth = (short)((DFLOAT)nTextOnScreen / fScale);
+	if (m_nCommTextWidth < 1) m_nCommTextWidth = 1;
+
+	m_nCommTextX = nFaceOnScreen + HUDScaled(10, fScale);
+	m_nCommTextY = HUDScaled(10, fScale);
 
 	// Delete the current text surface and make a new one that's the right size
 	if(m_hText)		{ m_pClientDE->DeleteSurface(m_hText); m_hText = 0; }
@@ -412,13 +425,15 @@ void CCommLink::Draw(DBOOL bDrawBar)
 	}
 
 	// Draw the face to the screen
+	// It slides in by its drawn width, in signed math where the 1998 DDWORD relied on wrapping
 	if(m_hFace)
 	{
-		DDWORD nNewX = (DDWORD)(m_nFaceWidth * m_fCommScrollRatio) - m_nFaceWidth;
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hFace, DNULL, nNewX, m_nCommTextY, m_hTransColor);
+		int nFaceOnScreen = HUDScaled((int)m_nFaceWidth, m_fHUDScale);
+		int nNewX = (int)(nFaceOnScreen * m_fCommScrollRatio) - nFaceOnScreen;
+		DrawHUDScaled(hScreen, m_hFace, nNewX, m_nCommTextY, m_fHUDScale, m_hTransColor);
 	}
 
 	// Draw the text to the screen
 	if(m_hText && m_nTextLevel)
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hText, DNULL, m_nCommTextX, m_nCommTextY, m_hTransColor);
+		DrawHUDScaled(hScreen, m_hText, m_nCommTextX, m_nCommTextY, m_fHUDScale, m_hTransColor);
 }

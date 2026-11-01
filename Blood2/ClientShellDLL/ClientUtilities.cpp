@@ -15,6 +15,80 @@
 #include "BloodClientShell.h"
 
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	GetHUDScale
+//
+//	PURPOSE:	Read HUDScale, clamped to the Display menu's range (1.0 when absent)
+//
+// ----------------------------------------------------------------------- //
+
+DFLOAT GetHUDScale()
+{
+	CClientDE* pClientDE = g_pBloodClientShell ? g_pBloodClientShell->GetClientDE() : DNULL;
+	if (!pClientDE) return 1.0f;
+
+	HCONSOLEVAR hVar = pClientDE->GetConsoleVar("HUDScale");
+	if (!hVar) return 1.0f;
+
+	DFLOAT fScale = pClientDE->GetVarValueFloat(hVar);
+
+	if (fScale < HUDSCALE_MIN) fScale = HUDSCALE_MIN;
+	if (fScale > HUDSCALE_MAX) fScale = HUDSCALE_MAX;
+
+	return fScale;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	DrawHUDScaled
+//
+//	PURPOSE:	Blit one ingame surface at the HUD scale, or the plain blit at 1.
+//				It only scales inside the shell's Start3D and StartOptimized2D
+//				bracket. Outside it the engine keeps the position and drops the size
+//
+// ----------------------------------------------------------------------- //
+
+void DrawHUDScaled (HSURFACE hDest, HSURFACE hSrc, int x, int y, DFLOAT fScale, HDECOLOR hTransColor)
+{
+	CClientDE* pClientDE = g_pBloodClientShell ? g_pBloodClientShell->GetClientDE() : DNULL;
+	if (!pClientDE || !hDest || !hSrc) return;
+
+	if (fScale == 1.0f)
+	{
+		pClientDE->DrawSurfaceToSurfaceTransparent(hDest, hSrc, DNULL, x, y, hTransColor);
+		return;
+	}
+
+	DDWORD cx = 0, cy = 0;
+	pClientDE->GetSurfaceDims(hSrc, &cx, &cy);
+	if (!cx || !cy) return;
+
+	DRect rcDest;
+	rcDest.left   = x;
+	rcDest.top    = y;
+	rcDest.right  = x + (int)((DFLOAT)cx * fScale);
+	rcDest.bottom = y + (int)((DFLOAT)cy * fScale);
+
+	pClientDE->ScaleSurfaceToSurfaceTransparent(hDest, hSrc, &rcDest, DNULL, hTransColor);
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	HUDScaled
+//
+//	PURPOSE:	Scale a fixed pixel layout offset
+//
+// ----------------------------------------------------------------------- //
+
+int HUDScaled (int n, DFLOAT fScale)
+{
+	return (int)((DFLOAT)n * fScale);
+}
+
+
 // Stolen from gamework.h...
 
 int GetRandom()

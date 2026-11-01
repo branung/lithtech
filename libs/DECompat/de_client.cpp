@@ -798,14 +798,52 @@ DRESULT CClientDE::SetSoftwarePSColor(HLOCALOBJ /*hObj*/, float /*r*/, float /*g
     return DE_OK;
 }
 
-DRESULT CClientDE::GetWorldInfoString(const char * /*pFilename*/, char *pInfoString,
+DRESULT CClientDE::GetWorldInfoString(const char *pFilename, char *pInfoString,
                                       DDWORD maxLen, DDWORD *pActualLen)
 {
     if (pInfoString && maxLen)
         pInfoString[0] = '\0';
     if (pActualLen)
         *pActualLen = 0;
-    return DE_ERROR;
+    if (!pFilename || !pInfoString || maxLen == 0)
+        return DE_ERROR;
+
+    ILTStream *pStream = NULL;
+    if (OpenFile(pFilename, &pStream) != LT_OK || !pStream)
+        return DE_ERROR;
+
+    // The header before the string: the version, two section offsets, and eight reserved words on the Jupiter line
+    uint32 nVersion = 0;
+    pStream->Read(&nVersion, sizeof(nVersion));
+    uint32 nSkip;
+    if (nVersion == 56 || nVersion == 57 || nVersion == 127)
+        nSkip = 2 * sizeof(uint32);
+    else if (nVersion == 66 || nVersion == 70 || nVersion == 85)
+        nSkip = 10 * sizeof(uint32);
+    else
+    {
+        pStream->Release();
+        return DE_ERROR;
+    }
+    pStream->SeekTo(sizeof(uint32) + nSkip);
+
+    uint32 nLen = 0;
+    pStream->Read(&nLen, sizeof(nLen));
+    const uint32 nCopy = (nLen < maxLen - 1) ? nLen : maxLen - 1;
+    if (nCopy)
+        pStream->Read(pInfoString, nCopy);
+    const bool bOK = pStream->ErrorStatus() == LT_OK;
+    pStream->Release();
+
+    if (!bOK)
+    {
+        pInfoString[0] = '\0';
+        return DE_ERROR;
+    }
+    pInfoString[nCopy] = '\0';
+    if (pActualLen)
+        *pActualLen = nCopy;
+    return DE_OK;
 }
 
 /*

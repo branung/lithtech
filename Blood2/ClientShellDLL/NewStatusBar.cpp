@@ -111,6 +111,7 @@ CNewStatusBar::CNewStatusBar()
 	// General
 	m_nScreenWidth = 0;
 	m_nScreenHeight = 0;
+	m_fHUDScale = 1.0f;
 	m_bHighGraphics = DTRUE;
 
 	m_hTransColor = 0;
@@ -215,17 +216,22 @@ void CNewStatusBar::AdjustRes()
 	if (!m_pClientDE) return;
 
 	// Check to see if the screen resolution has changed... if not then return
+	// A HUD scale change moves every anchor below, so it rebuilds too
 	DDWORD	width, height;
 	HSURFACE hScreen = m_pClientDE->GetScreenSurface();
+	DFLOAT	fScale = GetHUDScale();
 
 	m_pClientDE->GetSurfaceDims(hScreen, &width, &height);
-	if((m_nScreenWidth == width) && (m_nScreenHeight == height))	return;
+	if((m_nScreenWidth == width) && (m_nScreenHeight == height) && (m_fHUDScale == fScale))	return;
 
 	// Set the screen width and height variables to the new resolution
 	m_nScreenWidth = width;
 	m_nScreenHeight = height;
+	m_fHUDScale = fScale;
 
 	// If we are lower than the prefered res, default to LOW stat mode
+	// This tests the screen, not the screen divided by the HUD scale, which could only ever swap the enlarged bar
+	// for the small one
 	if((m_nScreenWidth < STATTAB_LOW_WIDTH) || (m_nScreenHeight < STATTAB_LOW_HEIGHT))
 	{
 		m_bHighGraphics = DFALSE;
@@ -240,56 +246,60 @@ void CNewStatusBar::AdjustRes()
 	}
 
 	// Adjust the stat tab locations to the new resolution
+	// The tabs are drawn at Scale() size, so the anchors use it too
 	m_stHealth.locX		= 0;
-	m_stHealth.locY		= m_nScreenHeight - m_stHealth.sizeY;
+	m_stHealth.locY		= m_nScreenHeight - Scale(m_stHealth.sizeY);
 
-	if(m_nStatLevel == STATTAB_HIGH)	m_stArmor.locX		= m_stHealth.sizeX;
-		else							m_stArmor.locX		= m_stHealth.sizeX / 2;
-	m_stArmor.locY		= m_nScreenHeight - m_stArmor.sizeY;
+	if(m_nStatLevel == STATTAB_HIGH)	m_stArmor.locX		= Scale(m_stHealth.sizeX);
+		else							m_stArmor.locX		= Scale(m_stHealth.sizeX) / 2;
+	m_stArmor.locY		= m_nScreenHeight - Scale(m_stArmor.sizeY);
 
-	m_stAmmo.locX		= m_nScreenWidth - m_stAmmo.sizeX;
-	m_stAmmo.locY		= m_nScreenHeight - m_stAmmo.sizeY;
+	m_stAmmo.locX		= m_nScreenWidth - Scale(m_stAmmo.sizeX);
+	m_stAmmo.locY		= m_nScreenHeight - Scale(m_stAmmo.sizeY);
 
-	m_stAltAmmo.locX	= m_stAmmo.locX + (m_stAmmo.sizeX / 2) - (m_stAltAmmo.sizeX / 2);
-	m_stAltAmmo.locY	= m_stAmmo.locY - m_stAltAmmo.sizeY - 3;
+	m_stAltAmmo.locX	= m_stAmmo.locX + (Scale(m_stAmmo.sizeX) / 2) - (Scale(m_stAltAmmo.sizeX) / 2);
+	m_stAltAmmo.locY	= m_stAmmo.locY - Scale(m_stAltAmmo.sizeY) - Scale(3);
 
 	// Adjust the inventory items tabs
 	m_stItems[1].locX	= 0;
-	m_stItems[1].locY	= (m_nScreenHeight / 2) - (m_stItems[1].sizeY / 2);
-	m_stItems[0].locX	= -15;
-	m_stItems[0].locY	= m_stItems[1].locY - m_stItems[1].sizeY;
-	m_stItems[2].locX	= -15;
-	m_stItems[2].locY	= m_stItems[1].locY + m_stItems[1].sizeY;
+	m_stItems[1].locY	= (m_nScreenHeight / 2) - (Scale(m_stItems[1].sizeY) / 2);
+	m_stItems[0].locX	= -Scale(15);
+	m_stItems[0].locY	= m_stItems[1].locY - Scale(m_stItems[1].sizeY);
+	m_stItems[2].locX	= -Scale(15);
+	m_stItems[2].locY	= m_stItems[1].locY + Scale(m_stItems[1].sizeY);
 
 	// Adjust the current item tab locations to the new resolution
-	m_stCurrentItem.locX= 20;
-	m_stCurrentItem.locY= m_nScreenHeight - m_stHealth.sizeY - m_stCurrentItem.sizeY;
+	m_stCurrentItem.locX= Scale(20);
+	m_stCurrentItem.locY= m_nScreenHeight - Scale(m_stHealth.sizeY) - Scale(m_stCurrentItem.sizeY);
 
 	if(m_bHighGraphics)
 	{
-		m_nItemNameX		= m_stItems[1].sizeX + 10;
-		m_nItemNameY		= (m_nScreenHeight / 2) - (m_pStatFont1->height / 2);
+		m_nItemNameX		= Scale(m_stItems[1].sizeX + 10);
+		m_nItemNameY		= (m_nScreenHeight / 2) - (Scale(m_pStatFont1->height) / 2);
 	}
 	else
 	{
-		m_nItemNameX		= m_stCurrentItem.locX + m_stCurrentItem.sizeX + 10;
-		m_nItemNameY		= m_stCurrentItem.locY + (m_stCurrentItem.sizeY / 2) - (m_pStatFont1->height / 2);
+		m_nItemNameX		= m_stCurrentItem.locX + Scale(m_stCurrentItem.sizeX + 10);
+		m_nItemNameY		= m_stCurrentItem.locY + (Scale(m_stCurrentItem.sizeY) / 2) - (Scale(m_pStatFont1->height) / 2);
 	}
 
 	// Adjust the weapon tab locations
-	DDWORD	offset		= (m_nScreenHeight / 2) - (m_stWeapons[0].sizeY * 5);
+	DDWORD	offset		= (m_nScreenHeight / 2) - (Scale(m_stWeapons[0].sizeY) * 5);
 
 	for(int i = 0; i < 10; i++)
 	{
-		m_stWeapons[i].locX		= m_nScreenWidth - m_stWeapons[i].sizeX;
+		m_stWeapons[i].locX		= m_nScreenWidth - Scale(m_stWeapons[i].sizeX);
 		m_stWeapons[i].locY		= offset;
-		offset += m_stWeapons[i].sizeY;
+		offset += Scale(m_stWeapons[i].sizeY);
 	}
 
 	// Adjust the power bar location
+	// Signed and floored at 0, since a bar wider than the screen would wrap the DDWORD
 	m_pClientDE->GetSurfaceDims(m_hPowerBar, &width, &height);
-	m_nPowerBarX = (m_nScreenWidth - width) / 2;
-	m_nPowerBarY = m_stAmmo.locY - height - height;
+	int nBarX = ((int)m_nScreenWidth - Scale((int)width)) / 2;
+	if(nBarX < 0) nBarX = 0;
+	m_nPowerBarX = (DDWORD)nBarX;
+	m_nPowerBarY = m_stAmmo.locY - Scale((int)height) - Scale((int)height);
 }
 
 //*************************************************************************
@@ -1241,6 +1251,33 @@ void CNewStatusBar::JustifySurface(HSURFACE surf, DDWORD just, DDWORD &x, DDWORD
 }
 
 //*************************************************************************
+//*****	Function:	DrawScaled()
+//*****	Details:	Blits a HUD surface at the HUD scale, or the original blit at 1
+//*************************************************************************
+
+void CNewStatusBar::DrawScaled(HSURFACE hScreen, HSURFACE hSurf, int x, int y)
+{
+	if(!m_pClientDE || !hSurf) return;
+
+	if(m_fHUDScale == 1.0f)
+	{
+		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, hSurf, DNULL, x, y, m_hTransColor);
+		return;
+	}
+
+	DDWORD	width, height;
+	m_pClientDE->GetSurfaceDims(hSurf, &width, &height);
+
+	DRect	rcDest;
+	rcDest.left		= x;
+	rcDest.top		= y;
+	rcDest.right	= x + Scale((int)width);
+	rcDest.bottom	= y + Scale((int)height);
+
+	m_pClientDE->ScaleSurfaceToSurfaceTransparent(hScreen, hSurf, &rcDest, DNULL, m_hTransColor);
+}
+
+//*************************************************************************
 //*****	Function:	DrawStatTabs()
 //*****	Details:	Draws the stat tabs at the bottom of the screen
 //*************************************************************************
@@ -1279,21 +1316,21 @@ void CNewStatusBar::DrawStatTabs()
 
 	m_nOldStatLevel = m_nStatLevel;
 
-	m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_stHealth.hTab, DNULL, m_stHealth.locX, m_stHealth.locY, m_hTransColor);
-	m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_stArmor.hTab, DNULL, m_stArmor.locX, m_stArmor.locY, m_hTransColor);
-	m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_stAmmo.hTab, DNULL, m_stAmmo.locX, m_stAmmo.locY, m_hTransColor);
+	DrawScaled(hScreen, m_stHealth.hTab, m_stHealth.locX, m_stHealth.locY);
+	DrawScaled(hScreen, m_stArmor.hTab, m_stArmor.locX, m_stArmor.locY);
+	DrawScaled(hScreen, m_stAmmo.hTab, m_stAmmo.locX, m_stAmmo.locY);
 
 	if(m_stAltAmmo.value)
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_stAltAmmo.hTab, DNULL, m_stAltAmmo.locX, m_stAltAmmo.locY, m_hTransColor);
+		DrawScaled(hScreen, m_stAltAmmo.hTab, m_stAltAmmo.locX, m_stAltAmmo.locY);
 
 	// Draw the currently selected inventory item along with the normal stats
 	if(m_stCurrentItem.hIcon)
 	{
 		SetupTab(m_stCurrentItem, m_pStatFont1, TAB_INC_HIGH);
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_stCurrentItem.hTab, DNULL, m_stCurrentItem.locX, m_stCurrentItem.locY, m_hTransColor);
+		DrawScaled(hScreen, m_stCurrentItem.hTab, m_stCurrentItem.locX, m_stCurrentItem.locY);
 
 		if(!m_bHighGraphics)
-			m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hItemName, DNULL, m_nItemNameX, m_nItemNameY, m_hTransColor);
+			DrawScaled(hScreen, m_hItemName, m_nItemNameX, m_nItemNameY);
 	}
 }
 
@@ -1343,26 +1380,27 @@ void CNewStatusBar::DrawInvTabs()
 	}
 
 	// Previous item
+	// The tabs slide in from off the left edge by their drawn width
 	if(m_stItems[0].hIcon)
 	{
-		DDWORD nNewX = (DDWORD)((m_stItems[0].locX + m_stItems[0].sizeX) * m_fInvScrollRatio) - m_stItems[0].sizeX;
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_stItems[0].hTab, DNULL, nNewX, m_stItems[0].locY, m_hTransColor);
+		DDWORD nNewX = (DDWORD)((m_stItems[0].locX + Scale(m_stItems[0].sizeX)) * m_fInvScrollRatio) - Scale(m_stItems[0].sizeX);
+		DrawScaled(hScreen, m_stItems[0].hTab, nNewX, m_stItems[0].locY);
 	}
 
 	// Current item
 	if(m_stItems[1].hIcon)
 	{
-		DDWORD nNewX = (DDWORD)((m_stItems[1].locX + m_stItems[1].sizeX) * m_fInvScrollRatio) - m_stItems[1].sizeX;
+		DDWORD nNewX = (DDWORD)((m_stItems[1].locX + Scale(m_stItems[1].sizeX)) * m_fInvScrollRatio) - Scale(m_stItems[1].sizeX);
 
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_stItems[1].hTab, DNULL, nNewX, m_stItems[1].locY, m_hTransColor);
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hItemName, DNULL, m_nItemNameX, m_nItemNameY, m_hTransColor);
+		DrawScaled(hScreen, m_stItems[1].hTab, nNewX, m_stItems[1].locY);
+		DrawScaled(hScreen, m_hItemName, m_nItemNameX, m_nItemNameY);
 	}
 
 	// Next item
 	if(m_stItems[2].hIcon)
 	{
-		DDWORD nNewX = (DDWORD)((m_stItems[2].locX + m_stItems[2].sizeX) * m_fInvScrollRatio) - m_stItems[2].sizeX;
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_stItems[2].hTab, DNULL, nNewX, m_stItems[2].locY, m_hTransColor);
+		DDWORD nNewX = (DDWORD)((m_stItems[2].locX + Scale(m_stItems[2].sizeX)) * m_fInvScrollRatio) - Scale(m_stItems[2].sizeX);
+		DrawScaled(hScreen, m_stItems[2].hTab, nNewX, m_stItems[2].locY);
 	}
 }
 
@@ -1407,10 +1445,10 @@ void CNewStatusBar::DrawWeaponTabs()
 			break;
 	}
 
-	DDWORD nNewX = (DDWORD)(m_stWeapons[0].sizeX - (m_stWeapons[0].sizeX * m_fWeapScrollRatio)) + m_stWeapons[0].locX;
+	DDWORD nNewX = (DDWORD)(Scale(m_stWeapons[0].sizeX) - (Scale(m_stWeapons[0].sizeX) * m_fWeapScrollRatio)) + m_stWeapons[0].locX;
 
 	for(int i = 0; i < 10; i++)
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_stWeapons[i].hTab, DNULL, nNewX, m_stWeapons[i].locY, m_hTransColor);
+		DrawScaled(hScreen, m_stWeapons[i].hTab, nNewX, m_stWeapons[i].locY);
 }
 
 //*************************************************************************
@@ -1427,9 +1465,15 @@ void CNewStatusBar::DrawObjectives()
 	DDWORD		halfWidth, halfHeight;
 	DBYTE		scaleIndex = 0;
 
+	// The panel already pops on through a scaled blit, so the HUD scale only enlarges its final rect and position
 	m_pClientDE->GetSurfaceDims(m_hObjectives, &width, &height);
+	width  = (DDWORD)Scale((int)width);
+	height = (DDWORD)Scale((int)height);
 	halfWidth = width / 2;
 	halfHeight = height / 2;
+
+	DDWORD	nObjX = (DDWORD)Scale((int)m_nObjectivesX);
+	DDWORD	nObjY = (DDWORD)Scale((int)m_nObjectivesY);
 
 	// Handle the scrolling in and out of the inventory item tabs
 	switch(m_nObjLevel)
@@ -1446,18 +1490,18 @@ void CNewStatusBar::DrawObjectives()
 
 			// Scale the rectangle accordingly...
 			scaleIndex = (DBYTE)(m_fObjScaleRatio * OBJTAB_SCALE_LEVELS);
-			m_rObjectives.top		= (int)(m_nObjectivesY + (halfHeight * (1.0f - g_ObjScaleUpY[scaleIndex])));
-			m_rObjectives.left		= (int)(m_nObjectivesX + (halfWidth * (1.0f - g_ObjScaleUpX[scaleIndex])));
-			m_rObjectives.bottom	= (int)(m_nObjectivesY + halfHeight + (halfHeight * g_ObjScaleUpY[scaleIndex]));
-			m_rObjectives.right		= (int)(m_nObjectivesX + halfWidth + (halfWidth * g_ObjScaleUpX[scaleIndex]));
+			m_rObjectives.top		= (int)(nObjY + (halfHeight * (1.0f - g_ObjScaleUpY[scaleIndex])));
+			m_rObjectives.left		= (int)(nObjX + (halfWidth * (1.0f - g_ObjScaleUpX[scaleIndex])));
+			m_rObjectives.bottom	= (int)(nObjY + halfHeight + (halfHeight * g_ObjScaleUpY[scaleIndex]));
+			m_rObjectives.right		= (int)(nObjX + halfWidth + (halfWidth * g_ObjScaleUpX[scaleIndex]));
 			break;
 
 		case	OBJTAB_STOPPED:
 			// Scale the rectangle accordingly...
-			m_rObjectives.top		= m_nObjectivesY;
-			m_rObjectives.left		= m_nObjectivesX;
-			m_rObjectives.bottom	= m_nObjectivesY + height;
-			m_rObjectives.right		= m_nObjectivesX + width;
+			m_rObjectives.top		= nObjY;
+			m_rObjectives.left		= nObjX;
+			m_rObjectives.bottom	= nObjY + height;
+			m_rObjectives.right		= nObjX + width;
 			break;
 
 		case	OBJTAB_SCALE_DOWN:
@@ -1472,10 +1516,10 @@ void CNewStatusBar::DrawObjectives()
 
 			// Scale the rectangle accordingly...
 			scaleIndex = (DBYTE)(m_fObjScaleRatio * OBJTAB_SCALE_LEVELS);
-			m_rObjectives.top		= (int)(m_nObjectivesY + (halfHeight * (1.0f - g_ObjScaleDownY[scaleIndex])));
-			m_rObjectives.left		= (int)(m_nObjectivesX + (halfWidth * (1.0f - g_ObjScaleDownX[scaleIndex])));
-			m_rObjectives.bottom	= (int)(m_nObjectivesY + halfHeight + (halfHeight * g_ObjScaleDownY[scaleIndex]));
-			m_rObjectives.right		= (int)(m_nObjectivesX + halfWidth + (halfWidth * g_ObjScaleDownX[scaleIndex]));
+			m_rObjectives.top		= (int)(nObjY + (halfHeight * (1.0f - g_ObjScaleDownY[scaleIndex])));
+			m_rObjectives.left		= (int)(nObjX + (halfWidth * (1.0f - g_ObjScaleDownX[scaleIndex])));
+			m_rObjectives.bottom	= (int)(nObjY + halfHeight + (halfHeight * g_ObjScaleDownY[scaleIndex]));
+			m_rObjectives.right		= (int)(nObjX + halfWidth + (halfWidth * g_ObjScaleDownX[scaleIndex]));
 			break;
 	}
 
@@ -1497,8 +1541,8 @@ void CNewStatusBar::DrawObjectivesIcon()
 
 	m_pClientDE->GetSurfaceDims(hScreen, &width, &height);
 	m_pClientDE->GetSurfaceDims(m_hObjectivesIcon, &width2, &height);
-	width = width - width2 - 5;
-	m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hObjectivesIcon, DNULL, width, 5, m_hTransColor);
+	width = width - Scale((int)width2) - Scale(5);
+	DrawScaled(hScreen, m_hObjectivesIcon, width, Scale(5));
 }
 
 //*************************************************************************
@@ -1515,7 +1559,7 @@ void CNewStatusBar::DrawPowerBar()
 	if(m_fTime - m_fPowerBarUpdate > BARTAB_DISP_TIME)
 		m_nPowerBar = BARTAB_NONE;
 
-	m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hPowerBar, DNULL, m_nPowerBarX, m_nPowerBarY, m_hTransColor);
+	DrawScaled(hScreen, m_hPowerBar, m_nPowerBarX, m_nPowerBarY);
 }
 
 //*************************************************************************
@@ -1536,8 +1580,8 @@ void CNewStatusBar::DrawFlagIcon()
 
 	m_pClientDE->GetSurfaceDims(hScreen, &width, &height);
 	m_pClientDE->GetSurfaceDims(m_hFlagIcon, &width2, &height);
-	width = width - width2 - 5;
-	m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hFlagIcon, DNULL, width, m_nTeamIconHeight + 10, m_hTransColor);
+	width = width - Scale((int)width2) - Scale(5);
+	DrawScaled(hScreen, m_hFlagIcon, width, m_nTeamIconHeight + Scale(10));
 }
 
 //*************************************************************************
@@ -1559,7 +1603,8 @@ void CNewStatusBar::DrawTeamIcon()
 
 	m_pClientDE->GetSurfaceDims(hScreen, &width, &height);
 	m_pClientDE->GetSurfaceDims(m_hTeamIcon, &width2, &height);
-	width = width - width2 - 5;
-	m_nTeamIconHeight = height;
-	m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hTeamIcon, DNULL, width, 5, m_hTransColor);
+	width = width - Scale((int)width2) - Scale(5);
+	// DrawFlagIcon stacks under this, so it needs the drawn height. Only the height, since the flag's +10 is the gap
+	m_nTeamIconHeight = Scale((int)height);
+	DrawScaled(hScreen, m_hTeamIcon, width, Scale(5));
 }

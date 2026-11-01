@@ -881,6 +881,10 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	// A 4:3 window is pixel identical
 	pClientDE->RunConsoleString("-WidescreenFOV 1");
 
+	// Point sample the 2D. The HUD is pixel art keyed on magenta, and a scaled bilinear blit blends the
+	// keyed texels' magenta into every edge. A 1:1 blit looks the same either way
+	pClientDE->RunConsoleString("-2DBilinear 0");
+
 	// LT1 splits WorldModels by polygon 0's SURF_TRANSPARENT: translucent ones draw last and aren't culled.
 	// Jupiter's split never puts LT1 glass in the translucent pass, so it was painted over
 	pClientDE->RunConsoleString("-LT1WorldCull 1");
@@ -3065,6 +3069,12 @@ void CBloodClientShell::PostUpdate()
 			return;
 		}
 
+		// The HUD has to be inside a 3D block and an optimized 2D block to scale. Outside them the engine
+		// keeps a blit's position and drops its size, and still answers LT_OK. StartOptimized2D needs
+		// Start3D first, so the order matters
+		pClientDE->Start3D();
+		pClientDE->StartOptimized2D();
+
 		m_MessageMgr.Draw();
 		DBOOL bDraw = m_bDrawStatusBar && !(m_pExternalCamera);
 		m_NewStatusBar.Draw(bDraw);
@@ -3110,11 +3120,33 @@ void CBloodClientShell::PostUpdate()
 				nBottom = (int)m_dwScreenHeight;
 			}
 
-			int x = nLeft + (((nRight - nLeft) - m_cxCrosshair) >> 1);
-			int y = nTop + (((nBottom - nTop) - m_cyCrosshair) >> 1);
+			// The crosshair scales with the HUD, and at 1 is the original blit
+			DFLOAT fHUDScale = GetHUDScale();
+			int cxCross = (int)((DFLOAT)m_cxCrosshair * fHUDScale);
+			int cyCross = (int)((DFLOAT)m_cyCrosshair * fHUDScale);
 
-			pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hCrosshair, NULL, x, y, NULL);
+			int x = nLeft + (((nRight - nLeft) - cxCross) >> 1);
+			int y = nTop + (((nBottom - nTop) - cyCross) >> 1);
+
+			if (fHUDScale == 1.0f)
+			{
+				pClientDE->DrawSurfaceToSurfaceTransparent (hScreen, m_hCrosshair, NULL, x, y, NULL);
+			}
+			else
+			{
+				DRect rcDest;
+				rcDest.left   = x;
+				rcDest.top    = y;
+				rcDest.right  = x + cxCross;
+				rcDest.bottom = y + cyCross;
+
+				pClientDE->ScaleSurfaceToSurfaceTransparent (hScreen, m_hCrosshair, &rcDest, NULL, NULL);
+			}
 		}
+
+		// FlipScreen would end these too
+		pClientDE->EndOptimized2D();
+		pClientDE->End3D();
 	}
 
 	// Draw the message box if it is up
@@ -7281,8 +7313,7 @@ void CBloodClientShell::GetWorldTitle(const char *pWorldFile)
 	{
 		int nArgs;
     
-		// LT1's five-argument Parse, as ConParse.
-		// GetWorldInfoString always fails here (de_client.h), so this never runs
+		// LT1's five-argument Parse, as ConParse
 		ConParse parse(szWorldInfo);
 		while (pClientDE->Common()->Parse(&parse) == LT_OK)
 		{

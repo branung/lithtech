@@ -1,6 +1,7 @@
 //*********************************************************************************
 
 #include <stdio.h>
+#include "ClientUtilities.h"
 #include "FragInfo.h"
 #include "cpp_client_de.h"
 #include "TeamMgr.h"
@@ -32,6 +33,7 @@ CFragInfo::CFragInfo()
 	m_nFragTableMaxDisp = 0;
 
 	m_nScreenWidth = 0;
+	m_fHUDScale = 1.0f;
 	m_nScreenHeight = 0;
 
 	m_hTransColor = 0;
@@ -435,7 +437,7 @@ void CFragInfo::Draw (DBOOL bDrawSingleFragCount, DBOOL bDrawAllFragCounts)
 	{
 		UpdateFragTable();
 		HSURFACE	hScreen = m_pClientDE->GetScreenSurface();
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hFragTable, DNULL, m_nFragTableX, m_nFragTableY, m_hTransColor);
+		DrawHUDScaled(hScreen, m_hFragTable, m_nFragTableX, m_nFragTableY, m_fHUDScale, m_hTransColor);
 	}
 }
 
@@ -462,7 +464,7 @@ void CFragInfo::Draw (DBOOL bDrawSingleFragCount, DBOOL bDrawAllFragCounts, HSUR
 	{
 		UpdateFragTable();
 		HSURFACE	hScreen = m_pClientDE->GetScreenSurface();
-		m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hFragTable, DNULL, m_nFragTableX, m_nFragTableY, m_hTransColor);
+		DrawHUDScaled(hScreen, m_hFragTable, m_nFragTableX, m_nFragTableY, m_fHUDScale, m_hTransColor);
 	}
 }
 
@@ -477,18 +479,30 @@ void CFragInfo::AdjustRes()
 
 	m_pClientDE->GetSurfaceDims(hScreen, &width, &height);
 
+	DFLOAT fScale = GetHUDScale();
+
 	// If we're at the same resolution, just return
-	if((width == m_nScreenWidth) && (height == m_nScreenHeight))
+	if((width == m_nScreenWidth) && (height == m_nScreenHeight) && (m_fHUDScale == fScale))
 		return;
 
 	// Otherwise set the variables to the new resolution
 	m_nScreenWidth = width;
 	m_nScreenHeight = height;
+	m_fHUDScale = fScale;
 
+	// The table is magnified when drawn, so its anchors use the drawn size and its height is divided by
+	// the scale, or it runs off the bottom
 	m_pClientDE->GetSurfaceDims(m_hFragBar, &width, &height);
-	m_nFragTableX = (m_nScreenWidth - width) / 2;
-	m_nFragTableY = height;
-	m_nFragTableHeight = m_nScreenHeight - height - height;
+
+	int nBarOnScreen = HUDScaled((int)height, fScale);
+	int nAvail       = (int)m_nScreenHeight - nBarOnScreen - nBarOnScreen;
+	if (nAvail < (int)height) nAvail = (int)height;
+
+	m_nFragTableX = ((int)m_nScreenWidth - HUDScaled((int)width, fScale)) / 2;
+	if (m_nFragTableX < 0) m_nFragTableX = 0;
+	m_nFragTableY = nBarOnScreen;
+	m_nFragTableHeight = (DDWORD)((DFLOAT)nAvail / fScale);
+	if (m_nFragTableHeight < height) m_nFragTableHeight = height;
 	m_nFragTableMaxDisp = m_nFragTableHeight / height;
 
 	if(m_hFragTable)	{ m_pClientDE->DeleteSurface(m_hFragTable); m_hFragTable = 0; }
@@ -609,7 +623,8 @@ void CFragInfo::DrawTeams()
 	int cTeams = m_pTeamMgr->GetNumTeams();
 	if (cTeams <= 0) return;
 
-	int nTotalWidth = (cTeams * barWidth) + ((cTeams - 1) * FRAG_COLUMN_SPACE);
+	// Centered on the drawn size, since the table is magnified
+	int nTotalWidth = HUDScaled((int)((cTeams * barWidth) + ((cTeams - 1) * FRAG_COLUMN_SPACE)), m_fHUDScale);
 	int xDraw       = (m_nScreenWidth / 2) - (nTotalWidth / 2);
 
 	if (xDraw < 0) xDraw = 0;
@@ -627,8 +642,8 @@ void CFragInfo::DrawTeams()
 
 	cPlayers++;		// add one more row for the colulmn title
 
-	int nTotalHeight = barHeight * cPlayers;
-	int yDraw        = ((m_nScreenHeight / 2) - (nTotalHeight / 2)) - barHeight;
+	int nTotalHeight = HUDScaled((int)(barHeight * cPlayers), m_fHUDScale);
+	int yDraw        = ((m_nScreenHeight / 2) - (nTotalHeight / 2)) - HUDScaled((int)barHeight, m_fHUDScale);
 
 	if (yDraw < 0) yDraw = 0;
 
@@ -643,7 +658,8 @@ void CFragInfo::DrawTeams()
 
 		pTeam = m_pTeamMgr->GetNextTeam(pTeam);
 
-		xDraw += barWidth + FRAG_COLUMN_SPACE;
+		// The step between columns is on screen, so it scales
+		xDraw += HUDScaled((int)(barWidth + FRAG_COLUMN_SPACE), m_fHUDScale);
 	}
 }
 
@@ -769,7 +785,8 @@ void CFragInfo::DrawTeamColumn(CTeam* pTeam, int xDraw, int yDraw, int nMax)
 	}
 
 	HSURFACE hScreen = m_pClientDE->GetScreenSurface();
-	DRESULT  dr      = m_pClientDE->DrawSurfaceToSurfaceTransparent(hScreen, m_hFragTable, DNULL, xDraw, yDraw, m_hTransColor);
+	DRESULT  dr      = DE_OK;
+	DrawHUDScaled(hScreen, m_hFragTable, xDraw, yDraw, m_fHUDScale, m_hTransColor);
 }
 
 
@@ -794,7 +811,8 @@ void CFragInfo::DrawSingleColumnTeams()
 
 	int cTeams = 1;
 
-	int nTotalWidth = (cTeams * barWidth) + ((cTeams - 1) * FRAG_COLUMN_SPACE);
+	// Centered on the drawn size, as in DrawTeams
+	int nTotalWidth = HUDScaled((int)((cTeams * barWidth) + ((cTeams - 1) * FRAG_COLUMN_SPACE)), m_fHUDScale);
 	int xDraw       = (m_nScreenWidth / 2) - (nTotalWidth / 2);
 
 	if (xDraw < 0) xDraw = 0;
@@ -809,8 +827,8 @@ void CFragInfo::DrawSingleColumnTeams()
 
 	cPlayers++;		// add one more row for the colulmn title
 
-	int nTotalHeight = barHeight * cPlayers;
-	int yDraw        = ((m_nScreenHeight / 2) - (nTotalHeight / 2)) - barHeight;
+	int nTotalHeight = HUDScaled((int)(barHeight * cPlayers), m_fHUDScale);
+	int yDraw        = ((m_nScreenHeight / 2) - (nTotalHeight / 2)) - HUDScaled((int)barHeight, m_fHUDScale);
 
 	if (yDraw < 0) yDraw = 0;
 

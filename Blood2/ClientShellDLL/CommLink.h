@@ -97,6 +97,8 @@ class CCommLink
 
 		// General information variables
 		DDWORD		m_nScreenWidth;
+		// The HUD scale the layout was built for. The text is magnified, so its surface shrinks as the scale rises
+		DFLOAT		m_fHUDScale;
 		DDWORD		m_nScreenHeight;
 		HDECOLOR	m_hTransColor;
 		HDECOLOR	m_hTextColor;

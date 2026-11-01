@@ -204,6 +204,11 @@ class CNewStatusBar
 		void	SetupTab(StatTab &stTab, CoolFont *font, DBYTE nFlags);
 		void	JustifySurface(HSURFACE surf, DDWORD just, DDWORD &x, DDWORD &y);
 
+		// HUD scaling: HUDScale multiplies both the tab sizes the layout is built from and the blit.
+		// At 1 DrawScaled is the original blit
+		int		Scale(int n)			{ return (int)((DFLOAT)n * m_fHUDScale); }
+		void	DrawScaled(HSURFACE hScreen, HSURFACE hSurf, int x, int y);
+
 		void	DrawStatTabs();
 		void	DrawInvTabs();
 		void	DrawWeaponTabs();
@@ -293,6 +298,7 @@ class CNewStatusBar
 		// General information variables
 		DDWORD		m_nScreenWidth;
 		DDWORD		m_nScreenHeight;
+		DFLOAT		m_fHUDScale;
 		DBOOL		m_bHighGraphics;
 
 		HDECOLOR	m_hTransColor;

@@ -136,6 +136,9 @@ class CMessageMgr
 		int			m_y;
 
 		int			m_nFontHeight;
+		// The HUD scale m_hFont was built at. The font is rebuilt larger rather than magnified
+		DFLOAT		m_fFontScale;
+		void		UpdateFontScale();
 
 		int			m_nMaxMessages;
 		DFLOAT		m_fMessageTime;

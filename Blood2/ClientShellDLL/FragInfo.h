@@ -109,6 +109,8 @@ class CFragInfo
 
 		// General varaibles
 		DDWORD				m_nScreenWidth;
+		// The HUD scale the table was laid out for. The table is magnified, so its surface shrinks as the scale rises
+		DFLOAT				m_fHUDScale;
 		DDWORD				m_nScreenHeight;
 		int					m_nTeamID;
 
