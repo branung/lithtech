@@ -1168,12 +1168,14 @@ void CLTClient::CPrint(const char *pMsg, ...)
 	va_start(marker, pMsg);
 
 	static const uint32 knBufferSize = 512;
-	char str[knBufferSize];
+	// One byte spare for the newline added below, which otherwise wrote past a full buffer.
+	// An empty message read str[-1]
+	char str[knBufferSize + 1];
 	LTVSNPrintF(str, knBufferSize, pMsg, marker);
 	va_end(marker);
 
 	uint32 len = (uint32)strlen(str);
-	if (str[len-1] != '\n')
+	if (len == 0 || str[len-1] != '\n')
 	{
 		str[len] = '\n';
 		str[len+1] = '\0';

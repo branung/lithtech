@@ -169,7 +169,13 @@ ObjectBank<LTLink> g_DLinkBank(64, 1024);
 
 CClientMgr *g_pClientMgr = nullptr;
 
-SMusicMgr *GetMusicMgr() { return g_pClientMgr->GetMusicMgr(); }
+// An LT1 shell can call into music after CClientMgr is gone: Shogo's static shell destructor runs at exit and calls SetMenuMusic.
+// Every music entry point tests m_bValid first, so an empty manager is enough.
+SMusicMgr *GetMusicMgr()
+{
+	static SMusicMgr s_Gone;
+	return g_pClientMgr ? g_pClientMgr->GetMusicMgr() : &s_Gone;
+}
 
 extern LTBOOL g_bMusicEnable;
 extern LTBOOL g_bSoundEnable;
