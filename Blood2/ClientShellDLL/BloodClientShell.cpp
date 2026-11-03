@@ -3201,7 +3201,10 @@ void CBloodClientShell::UpdateBob()
 	
 	// Calculate Y velocity for camera dampening
 	DFLOAT fVelY = (vMyPos.y - m_vMyLastPos.y) / (pClientDE->GetFrameTime() * 100.0f);
-	CLIPLOWHIGH(fVelY, -20, 20);
+	// CLIPLOWHIGH(fVelY, -20, 20) as retail's compiler built it, which turns a NaN from a zero frame time into -20.
+	// Otherwise the NaN stays in the camera's height for good
+	if (!(fVelY >= -20.0f)) fVelY = -20.0f;
+	if (fVelY > 20.0f) fVelY = 20.0f;
 
 	VEC_COPY(m_vMyLastPos, vMyPos);
 
@@ -8379,7 +8382,8 @@ DBOOL CBloodClientShell::MenuNewGame(int nDifficulty, int nCharacter, int nGameT
 //				The file holds neither the difficulty nor the character, so they come from
 //				PlayDemoDifficulty (0 Genocide, 1 Homicide, the default, 2 Suicide) and
 //				PlayDemoCharacter (-1 for a story game as Caleb, the default, or a character
-//				for an action game). The load screen's key is pressed on the frame <demo>.key names.
+//				for an action game), or PlayDemoWorld for a Custom Level demo.
+//				The load screen's key is pressed on the frame <demo>.key names.
 //				m_bDemoPlayback stays false, as retail's shell never knew
 //
 // ----------------------------------------------------------------------- //
@@ -8401,8 +8405,21 @@ DBOOL CBloodClientShell::StartDemoPlayback(const char *pDemo)
 	pClientDE->CPrint("playdemo %s: difficulty %d, %s", pDemo, nDifficulty,
 		nCharacter < 0 ? "story mode (Caleb)" : "action mode");
 
-	DBOOL bOK = nCharacter < 0 ? MenuNewGame(nDifficulty)
-							   : MenuNewGame(nDifficulty, nCharacter, GAMETYPE_ACTION);
+	// PlayDemoWorld: a demo recorded from the Custom Level menu, which starts the level at Easy with no character
+	const char *pWorld = DNULL;
+	if ((hVar = pClientDE->GetConsoleVar("PlayDemoWorld")) != DNULL)
+		pWorld = pClientDE->GetVarValueString(hVar);
+	DBOOL bOK;
+	if (pWorld && pWorld[0])
+	{
+		pClientDE->CPrint("playdemo %s: custom level '%s' at Easy", pDemo, pWorld);
+		bOK = MenuLoadCustomLevel(pWorld, DIFFICULTY_EASY);
+	}
+	else
+	{
+		bOK = nCharacter < 0 ? MenuNewGame(nDifficulty)
+							 : MenuNewGame(nDifficulty, nCharacter, GAMETYPE_ACTION);
+	}
 	m_szPlayDemo[0] = '\0';
 	return bOK;
 }

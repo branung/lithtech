@@ -409,8 +409,13 @@ void CMoveMgr::UpdateOnGround(CollisionInfo *pInfo)
 		// Landing ends the fall. The player's collision never changes its velocity,
 		// so the fall speed kept building on the floor until falling damage killed the player.
 		// Only the part into the floor is cleared, along its normal, so a jump keeps its speed
-		// and a player standing on a ramp isn't carried up it
+		// and a player standing on a ramp isn't carried up it.
+		// LT1FloorResponse: no clear at all, as retail's shell makes no velocity call here. The engine's collision
+		// applies LT1's floor response, -0.05 along the normal on a frame whose move hit the floor
 		m_pPhysicsLT->GetVelocity(m_hObject, &vVel);
+		static HCONSOLEVAR s_hFloorResponse = DNULL;
+		if (!s_hFloorResponse) s_hFloorResponse = m_pClientDE->GetConsoleVar("LT1FloorResponse");
+		if (!s_hFloorResponse || m_pClientDE->GetVarValueFloat(s_hFloorResponse) == 0.0f)
 		{
 			const DVector &n = pInfo->m_Plane.m_Normal;
 			if (n.y > 0.001f)

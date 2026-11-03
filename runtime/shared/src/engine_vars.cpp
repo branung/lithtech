@@ -31,6 +31,7 @@ const char *g_DemoExec = LTNULL; // Diagnostic: a console line run once at DemoE
 int32	g_DemoTraceRadius = 0; // Diagnostic: DemoTrace also prints every model and world model within this distance of the player (0 = off)
 const char *g_DemoShotFrames = LTNULL; // Diagnostic: a comma list of recorded frames to take a screenshot at
 int32	g_bLT1ServerStepFloor = 0; // During playback the server's step is floored at 0.01 s as LT1's is
+int32	g_bLT1FloorResponse = 0; // Read by Blood 2's client shell: a standing player's fall speed is left to the engine's floor response, not cleared each frame
 int32	g_bDemoZeroFrame = 0; // Set by playback for a frame whose recorded clock repeats the last one
 int32	g_bLT1DemoNoPrime = 0; // Playback doesn't hold recorded frame 0 for an extra frame after the world loads
 int32	g_bLT1DemoClientTime = 0; // During playback the client's clock is the recording's own, as LT1's is
@@ -350,6 +351,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("DemoTraceRadius", &g_DemoTraceRadius),
 	EV_STRING("DemoShotFrames", &g_DemoShotFrames),
 	EV_LONG("LT1ServerStepFloor", &g_bLT1ServerStepFloor),
+	EV_LONG("LT1FloorResponse", &g_bLT1FloorResponse),
 	EV_LONG("LT1DemoNoPrime", &g_bLT1DemoNoPrime),
 	EV_LONG("LT1DemoClientTime", &g_bLT1DemoClientTime),
 	EV_LONG("LT1DemoEndConsole", &g_bLT1DemoEndConsole),
