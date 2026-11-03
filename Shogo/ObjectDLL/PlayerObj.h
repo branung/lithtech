@@ -59,15 +59,10 @@ class CPlayerObj : public CBaseCharacter
 
 		/*
 			Is the client holding this command?
-			Jupiter has no server IsCommandOn so the state comes in the player update (CLIENTUPDATE_COMMANDS).
+			Under LT1ServerCommands the engine keeps the states again, as LT1's did, and this asks it.
+			Otherwise they come in the player update (CLIENTUPDATE_COMMANDS), sent after the server's tick.
 		*/
-		DBOOL IsCommandOn(int nCommand) const
-		{
-			if (nCommand < 0 || nCommand >= PLAYER_COMMAND_BITS)
-				return DFALSE;
-			return (m_nCommandBits[nCommand >> 6] &
-					(((uint64)1) << (nCommand & 63))) ? DTRUE : DFALSE;
-		}
+		DBOOL IsCommandOn(int nCommand) const;
 
 		DBOOL MultiplayerInit(HMESSAGEREAD hMessage);
 

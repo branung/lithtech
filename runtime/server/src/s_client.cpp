@@ -103,6 +103,8 @@ Client::Client() :
 	m_AttachmentLink(LTLink_Init),
 	m_pAttachmentParent(0),
 	m_ViewPos(0.0f, 0.0f, 0.0f),
+	m_iLT1CommandSet(0),
+	m_bLT1Commands(false),
 	m_Attachments(LTLink_Init),
 	m_hFTServ(0),
 	m_ObjInfos(0),
@@ -118,6 +120,7 @@ Client::Client() :
 	m_Events(LTLink_Init),
 	m_hFileIDTable(0)
 {
+	memset(m_LT1Commands, 0, sizeof(m_LT1Commands));
 }
 
 bool Client::Init( CBaseConn *pBaseConn, bool bIsLocal )

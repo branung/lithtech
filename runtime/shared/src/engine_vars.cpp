@@ -120,6 +120,7 @@ int32	g_bLT1StairSwept = 0; // The stair step's box covers the whole move and mo
 int32	g_bLT1WorldOnce = 0; // MoveObject collides with the main world once, after the other objects. Set on both client and server
 int32	g_bLT1SoundStep = 0; // The server's tracked sounds count down by game time rather than system time. Server only
 int32	g_bLT1AutoDeactivate = 0; // An object nothing has pinged for its deactivation time stops updating. Needs LT1 vis data. Server only
+int32	g_bLT1ServerCommands = 0; // The client sends its command states at the start of each frame, and the server keeps them for IsCommandOn and OnCommandOn, as LT1's did. Both sides
 int32	g_bLT1ClientPVS = 0; // A client is only sent what LT1's visibility walk reaches from its view, filtered as LT1's, plus its forced objects unfiltered. A world without vis data sends every filed object. Server only
 int32	g_bLT1FileOrder = 0; // The visibility walk meets a node's newest filed objects first, as LT1's does. Server only
 int32	g_bLT1AnimTransition = 0; // A model with FLAG_ANIMTRANSITION holds a newly set animation for ModelTransitionMS, firing no string keys. Set on both client and server
@@ -438,6 +439,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1WorldOnce", &g_bLT1WorldOnce),
 	EV_LONG("LT1SoundStep", &g_bLT1SoundStep),
 	EV_LONG("LT1AutoDeactivate", &g_bLT1AutoDeactivate),
+	EV_LONG("LT1ServerCommands", &g_bLT1ServerCommands),
 	EV_LONG("LT1ClientPVS", &g_bLT1ClientPVS),
 	EV_LONG("LT1FileOrder", &g_bLT1FileOrder),
 	EV_LONG("LT1AnimTransition", &g_bLT1AnimTransition),

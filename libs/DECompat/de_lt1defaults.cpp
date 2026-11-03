@@ -156,6 +156,11 @@ static const LT1Var s_aLT1Set[] =
     // Blood 2: two shell casings whose last step met a face just inside the band bounced in the port and were
     // deleted in retail. Shogo's replays are unchanged by it (both sides)
     { "LT1IntersectPoly",      "1", LT1_BOTH },
+
+    // Shogo and Blood 2: the client sends its command states at the start of each frame, and the server answers
+    // IsCommandOn and fires OnCommandOn from them, as LT1's update packet did. From the game's own player update
+    // the server saw every held key a tick late, and every key driven animation with it (both sides)
+    { "LT1ServerCommands",     "1", LT1_BOTH },
 };
 
 

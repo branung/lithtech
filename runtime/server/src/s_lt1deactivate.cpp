@@ -8,6 +8,8 @@
 // This is all gated behind LT1AutoDeactivate
 
 #include "bdefs.h"
+#include "s_client.h"
+#include "packetdefs.h"
 #include "ltmodule.h"
 #include "iltlt1server.h"
 #include "de_objects.h"
@@ -34,6 +36,15 @@ define_holder(IServerConsoleState, console_state);
 // The visibility walk
 bool sm_LT1WorldHasVis();
 void sm_LT1VisitVisibleObjects(const LTVector &vPos, void (*fn)(LTObject *pObj, void *pUser), void *pUser);
+
+// LT1ServerCommands: the game's stand in for its server shell's OnCommandOn, called by OnLT1CommandsPacket (s_net.cpp)
+static ILTLT1Server::CommandChangeFn s_pfnLT1CommandChange = LTNULL;
+
+void sm_LT1CommandChanged(Client *pClient, int nCommand, bool bOn)
+{
+	if (g_bLT1ServerCommands && s_pfnLT1CommandChange)
+		s_pfnLT1CommandChange((HCLIENT)pClient, nCommand, bOn);
+}
 
 static bool LT1AutoDeactivateOn()
 {
@@ -141,6 +152,25 @@ public:
 			pStr[maxLen - 1] = '\0';
 		}
 		return LT_OK;
+	}
+
+	// LT1's IsCommandOn: the live set
+	virtual bool IsCommandOn(HCLIENT hClient, int nCommand, bool *pbOn)
+	{
+		Client *pClient = (Client *)hClient;
+		if (!g_bLT1ServerCommands || !pClient || !pClient->m_bLT1Commands)
+			return false;
+		if (pbOn)
+		{
+			*pbOn = nCommand >= 0 && nCommand < 32 * LT1_COMMAND_WORDS &&
+				(pClient->m_LT1Commands[pClient->m_iLT1CommandSet][nCommand >> 5] & (1u << (nCommand & 31))) != 0;
+		}
+		return true;
+	}
+
+	virtual void SetCommandCallback(CommandChangeFn fn)
+	{
+		s_pfnLT1CommandChange = fn;
 	}
 };
 

@@ -83,6 +83,11 @@ CPlayerObj::CPlayerObj() : CBaseCharacter()
 {
 	m_nCommandBits[0] = 0;
 	m_nCommandBits[1] = 0;
+	// The engine's command changes (LT1ServerCommands), in place of LT1's call to the shell's OnCommandOn
+	{
+		extern void lt1_RegisterCommandCallback();
+		lt1_RegisterCommandCallback();
+	}
 
 	// The ammo for every weapon, hit points, and armor on the last update...
 
@@ -3278,6 +3283,31 @@ static void lt1_FireCommandOn(void *pContext, int nCommand)
 	}
 }
 
+// Under LT1ServerCommands the engine reports each command change, as LT1 called the shell's OnCommandOn.
+// Shogo's shell has no OnCommandOff
+static void lt1_EngineCommandChange(HCLIENT hClient, int nCommand, bool bOn)
+{
+	if (bOn && hClient && g_pRiotServerShellDE)
+		g_pRiotServerShellDE->OnCommandOn(hClient, nCommand);
+}
+
+void lt1_RegisterCommandCallback()
+{
+	if (g_pServerDE)
+		g_pServerDE->LT1SetCommandCallback(lt1_EngineCommandChange);
+}
+
+DBOOL CPlayerObj::IsCommandOn(int nCommand) const
+{
+	DBOOL bOn = DFALSE;
+	if (g_pServerDE && g_pServerDE->LT1IsCommandOn(m_hClient, nCommand, &bOn))
+		return bOn;
+	if (nCommand < 0 || nCommand >= PLAYER_COMMAND_BITS)
+		return DFALSE;
+	return (m_nCommandBits[nCommand >> 6] &
+			(((uint64)1) << (nCommand & 63))) ? DTRUE : DFALSE;
+}
+
 
 // ----------------------------------------------------------------------- //
 //
@@ -3347,7 +3377,10 @@ DBOOL CPlayerObj::ClientUpdate(HMESSAGEREAD hMessage)
 		m_nCommandBits[0] = hMessage->Readuint64();
 		m_nCommandBits[1] = hMessage->Readuint64();
 
-		if (g_pRiotServerShellDE)
+		// Not when the engine keeps the states (LT1ServerCommands), as it reports each change a tick sooner
+		// and firing here too would fire each press twice
+		DBOOL bEngineOn;
+		if (g_pRiotServerShellDE && !(g_pServerDE && g_pServerDE->LT1IsCommandOn(m_hClient, 0, &bEngineOn)))
 		{
 			DECompat_FireCommandEdges(nOldBits, m_nCommandBits, 2, lt1_FireCommandOn, this);
 		}

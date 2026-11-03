@@ -76,6 +76,7 @@ extern int32 g_bLT1RaySolidOnly;
 // Server
 extern int32 g_bLT1SoundStep;
 extern int32 g_bLT1AutoDeactivate;
+extern int32 g_bLT1ServerCommands;
 extern int32 g_bLT1ClientPVS;
 extern int32 g_bLT1FileOrder;
 extern int32 g_bLT1EngineRand;

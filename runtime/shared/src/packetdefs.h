@@ -270,6 +270,11 @@ struct FileIDInfo
 // Used for testing (when the client blasts the server).
 #define CMSG_TEST				(PACKETID_CLIENTBASE+7)
 
+// LT1ServerCommands: the client's command states this frame, sent at its start as LT1's CMSG_UPDATE carried them.
+// <uint32 x LT1_COMMAND_WORDS: a bit per command, bit (n & 31) of word n >> 5>
+#define CMSG_LT1COMMANDS		(PACKETID_CLIENTBASE+8)
+#define LT1_COMMAND_WORDS		8
+
 
 #endif  // __PACKETDEFS_H__
 

@@ -711,6 +711,22 @@ void CServerDE::SetObjectState(HOBJECT hObj, int state)
     ILTServer::SetObjectState(hObj, state);
 }
 
+DBOOL CServerDE::LT1IsCommandOn(HCLIENT hClient, int nCommand, DBOOL *pbOn)
+{
+    bool bOn = false;
+    if (!s_pDELT1Server || !s_pDELT1Server->IsCommandOn(hClient, nCommand, &bOn))
+        return DFALSE;
+    if (pbOn)
+        *pbOn = bOn ? DTRUE : DFALSE;
+    return DTRUE;
+}
+
+void CServerDE::LT1SetCommandCallback(void (*fn)(HCLIENT hClient, int nCommand, bool bOn))
+{
+    if (s_pDELT1Server)
+        s_pDELT1Server->SetCommandCallback(fn);
+}
+
 
 // Functions whose signatures drifted
 

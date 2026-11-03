@@ -326,6 +326,11 @@ CPlayerObj::CPlayerObj() : CBaseCharacter(OT_MODEL)
 	VEC_INIT(m_vForward);
 	m_byFlags			= CDATA_SHOWGUN;
 	m_nCommandBits[0] = m_nCommandBits[1] = m_nCommandBits[2] = m_nCommandBits[3] = 0;
+	// The engine's command changes (LT1ServerCommands), in place of LT1's call to the shell's OnCommandOn
+	{
+		extern void lt1_RegisterCommandCallback();
+		lt1_RegisterCommandCallback();
+	}
 	m_fMouseAxis0		= 0.0;
 	m_fMouseAxis1		= 0.0;
 
@@ -2520,6 +2525,34 @@ static void lt1_FireCommandOn(void *pContext, int nCommand)
 		pPlayer->OnCommandOn((DDWORD)nCommand);
 }
 
+// Under LT1ServerCommands the engine reports each command change, as LT1 called the shell's OnCommandOn.
+// This finds the player as CBloodServerShell::OnCommandOn does. Blood 2 has no OnCommandOff handler
+static void lt1_EngineCommandChange(HCLIENT hClient, int nCommand, bool bOn)
+{
+	if (!bOn || !g_pServerDE || !hClient)
+		return;
+	CPlayerObj *pPlayer = (CPlayerObj*)g_pServerDE->GetClientUserData(hClient);
+	if (pPlayer)
+		pPlayer->OnCommandOn((DDWORD)nCommand);
+}
+
+void lt1_RegisterCommandCallback()
+{
+	if (g_pServerDE)
+		g_pServerDE->LT1SetCommandCallback(lt1_EngineCommandChange);
+}
+
+DBOOL CPlayerObj::IsCommandOn(int nCommand) const
+{
+	DBOOL bOn = DFALSE;
+	if (g_pServerDE && g_pServerDE->LT1IsCommandOn(m_hClient, nCommand, &bOn))
+		return bOn;
+	if (nCommand < 0 || nCommand >= PLAYER_COMMAND_BITS)
+		return DFALSE;
+	return (m_nCommandBits[nCommand >> 5] &
+			(((DDWORD)1) << (nCommand & 31))) ? DTRUE : DFALSE;
+}
+
 void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 {
 	CServerDE* pServerDE = GetServerDE();
@@ -2587,7 +2620,11 @@ void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 					nOldBits[nWord] = m_nCommandBits[nWord];
 					m_nCommandBits[nWord] = pServerDE->ReadFromMessageDWord(hMsg);
 				}
-				DECompat_FireCommandEdges(nOldBits, m_nCommandBits, 4, lt1_FireCommandOn, this);
+				// Not when the engine keeps the states (LT1ServerCommands), as it reports each change a tick sooner
+				// and firing here too would fire each press twice
+				DBOOL bEngineOn;
+				if (!pServerDE->LT1IsCommandOn(m_hClient, 0, &bEngineOn))
+					DECompat_FireCommandEdges(nOldBits, m_nCommandBits, 4, lt1_FireCommandOn, this);
 			}
 
 			// Update the rotation

@@ -6,6 +6,9 @@
 
 // LT1's GetModelCommandString: the command string in a model file, where Shogo's weapon models carry their AI fire timings
 
+// LT1's server side command states: each client's keys as its frame start packet sent them, for IsCommandOn
+// and the server shell's OnCommandOn. Active only under LT1ServerCommands
+
 #ifndef __ILTLT1SERVER_H__
 #define __ILTLT1SERVER_H__
 
@@ -31,6 +34,15 @@ public:
     // Copies the model file's command string into pStr (an empty string when it has none).
     // LT_INVALIDPARAMS when hModel isn't a model
     virtual LTRESULT GetModelCommandString(HOBJECT hModel, char *pStr, uint32 maxLen) = 0;
+
+    // LT1's IsCommandOn: the client's command state this frame.
+    // False, leaving *pbOn alone, when the engine keeps no states (LT1ServerCommands off, or nothing from that client yet)
+    virtual bool IsCommandOn(HCLIENT hClient, int nCommand, bool *pbOn) = 0;
+
+    // LT1's server shell OnCommandOn and OnCommandOff, which Jupiter's shell lacks:
+    // fn is called for each command the client's frame start packet changed, after the new state is stored
+    typedef void (*CommandChangeFn)(HCLIENT hClient, int nCommand, bool bOn);
+    virtual void SetCommandCallback(CommandChangeFn fn) = 0;
 };
 
 #endif

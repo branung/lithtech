@@ -77,15 +77,9 @@ class CPlayerObj : public CBaseCharacter
 
 		void		SetClient(HCLIENT hClient) { m_hClient = hClient; m_InventoryMgr.SetClient(hClient); }
 		HCLIENT		GetClient() const		{ return m_hClient; }
-		// LT1 asked the engine with pServerDE->IsCommandOn(m_hClient, id), which Jupiter's server can't answer,
-		// so the client sends its held commands in CMSG_PLAYERUPDATE
-		DBOOL IsCommandOn(int nCommand) const
-		{
-			if (nCommand < 0 || nCommand >= PLAYER_COMMAND_BITS)
-				return DFALSE;
-			return (m_nCommandBits[nCommand >> 5] &
-					(((DDWORD)1) << (nCommand & 31))) ? DTRUE : DFALSE;
-		}
+		// LT1 asked the engine with pServerDE->IsCommandOn(m_hClient, id). Under LT1ServerCommands the engine keeps
+		// the states again and this asks it. Otherwise they come in CMSG_PLAYERUPDATE, sent after the server's tick
+		DBOOL IsCommandOn(int nCommand) const;
 
 		DBYTE		GetCharacter() const	{ return m_nCharacter; }
 		void		SetCharacter(DBYTE nCharacter);

@@ -1362,6 +1362,21 @@ void CClientMgr::ProcessAllInput(bool bForceClear) {
 	if (m_pCurShell && m_pCurShell->m_bWorldOpened && m_pCurShell->m_HostID)
 	{
 		SendUpdate(&m_NetMgr, m_pCurShell->m_HostID);
+
+		// LT1ServerCommands: this frame's command states, ahead of the shell's Update and so of the server's tick, as LT1's update packet carried them
+		if (g_bLT1ServerCommands)
+		{
+			uint32 aWords[LT1_COMMAND_WORDS];
+			memset(aWords, 0, sizeof(aWords));
+			for (i = 0; i < MAX_CLIENT_COMMANDS; i++)
+				if (pCurSlot[i])
+					aWords[i >> 5] |= 1u << (i & 31);
+			CPacket_Write cPacket;
+			cPacket.Writeuint8(CMSG_LT1COMMANDS);
+			for (uint32 w = 0; w < LT1_COMMAND_WORDS; w++)
+				cPacket.Writeuint32(aWords[w]);
+			m_NetMgr.SendPacket(CPacket_Read(cPacket), m_pCurShell->m_HostID, MESSAGE_GUARANTEED);
+		}
 	}
 }
 

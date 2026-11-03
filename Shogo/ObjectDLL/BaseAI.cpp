@@ -3931,10 +3931,13 @@ DBOOL BaseAI::UpdateScriptMovement(DVector* pvTargetPos)
 	// The arrival tolerance's frame time is floored at 1/30 second, so a jammed AI still arrives at high frame rates.
 	// "serv ScriptArrivalFloor 0" turns the floor off for comparing with retail's demo playback,
 	// which uses the raw frame time and arrives up to 10 units later than the floor does.
+	// SHOGO_SCRIPTARRIVALFLOOR in the environment answers when the console variable is unset
 	const DFLOAT kMinArrivalFrameTime = 1.0f / 30.0f;
 	DFLOAT fArrivalFrameTime = pServerDE->GetFrameTime();
 	HCONVAR hFloorVar = pServerDE->GetGameConVar("ScriptArrivalFloor");
-	const DBOOL bArrivalFloor = !hFloorVar || pServerDE->GetVarValueFloat(hFloorVar) != 0.0f;
+	static const char *s_pFloorEnv = getenv("SHOGO_SCRIPTARRIVALFLOOR");
+	const DBOOL bArrivalFloor = hFloorVar ? (pServerDE->GetVarValueFloat(hFloorVar) != 0.0f)
+	                                      : (!s_pFloorEnv || atof(s_pFloorEnv) != 0.0);
 	if (bArrivalFloor && fArrivalFrameTime < kMinArrivalFrameTime)
 		fArrivalFrameTime = kMinArrivalFrameTime;
 

@@ -131,6 +131,11 @@ struct Client
 	// Where the client is seeing from.
 	LTVector	m_ViewPos;
 
+	// LT1ServerCommands: the client's command states, two sets flipped on each CMSG_LT1COMMANDS as LT1's were, and whether any has arrived
+	uint32		m_LT1Commands[2][8];
+	uint32		m_iLT1CommandSet;
+	bool		m_bLT1Commands;
+
 	// List of clients attached to this one.
 	LTLink		m_Attachments;
 

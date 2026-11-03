@@ -137,6 +137,33 @@ LTRESULT OnClientUpdatePacket(CPacket_Read &cPacket, Client *pClient)
 }
 
 
+// LT1ServerCommands: flips the client's two command sets, stores this frame's, then reports each change.
+// The report comes after the flip, so a handler asking IsCommandOn sees the new state.
+// It goes to the game's callback (s_lt1deactivate.cpp), standing in for the server shell's OnCommandOn
+void sm_LT1CommandChanged(Client *pClient, int nCommand, bool bOn);
+
+LTRESULT OnLT1CommandsPacket(CPacket_Read &cPacket, Client *pClient)
+{
+    if (!pClient)
+        return LT_OK;
+
+    const uint32 *pOld = pClient->m_LT1Commands[pClient->m_iLT1CommandSet];
+    uint32 *pNew = pClient->m_LT1Commands[!pClient->m_iLT1CommandSet];
+    for (uint32 w = 0; w < LT1_COMMAND_WORDS; w++)
+        pNew[w] = cPacket.Readuint32();
+    pClient->m_iLT1CommandSet = !pClient->m_iLT1CommandSet;
+    pClient->m_bLT1Commands = true;
+
+    for (uint32 w = 0; w < LT1_COMMAND_WORDS; w++)
+    {
+        const uint32 nDiff = pOld[w] ^ pNew[w];
+        for (uint32 b = 0; nDiff && b < 32; b++)
+            if (nDiff & (1u << b))
+                sm_LT1CommandChanged(pClient, (int)((w << 5) | b), (pNew[w] & (1u << b)) != 0);
+    }
+    return LT_OK;
+}
+
 LTRESULT OnClientDisconnectPacket(CPacket_Read &cPacket, Client *pClient)
 {
     if (pClient && pClient->m_ConnectionID)
@@ -1284,6 +1311,7 @@ void InitServerNetHandlers()
 
     g_ServerHandlers[CMSG_GOODBYE].m_Fn = &OnClientDisconnectPacket;
     g_ServerHandlers[CMSG_UPDATE].m_Fn = &OnClientUpdatePacket;
+    g_ServerHandlers[CMSG_LT1COMMANDS].m_Fn = &OnLT1CommandsPacket;
     g_ServerHandlers[CMSG_SOUNDUPDATE].m_Fn = &OnSoundUpdatePacket;
     g_ServerHandlers[CMSG_COMMANDSTRING].m_Fn = &OnCommandStringPacket;
     g_ServerHandlers[CMSG_MESSAGE].m_Fn = &OnMessagePacket;

@@ -368,6 +368,13 @@ public:
 
     // Catches LT1's state 3 (OBJSTATE_AUTODEACTIVATE_NOW), which Jupiter doesn't have
     void            SetObjectState(HOBJECT hObj, int state);
+
+    // LT1's IsCommandOn, from the states the engine keeps under LT1ServerCommands.
+    // DFALSE, leaving *pbOn alone, when it keeps none, so a game can fall back to its own player update's states
+    DBOOL           LT1IsCommandOn(HCLIENT hClient, int nCommand, DBOOL *pbOn);
+
+    // LT1's server shell OnCommandOn and OnCommandOff: fn is called for each command a client's frame start packet changed
+    void            LT1SetCommandCallback(void (*fn)(HCLIENT hClient, int nCommand, bool bOn));
 };
 
 
