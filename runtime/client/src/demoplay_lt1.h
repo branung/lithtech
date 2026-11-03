@@ -42,6 +42,7 @@ private:
 	unsigned    m_nWorldFrames = 0;		// Frames played in the world
 	size_t      m_nNext = 0;
 	bool        m_bPlaying = false, m_bPrimed = false;
+	size_t      m_nKeyFrame = 0;		// The frame <demo>.key names for the key, 0 for none
 	unsigned char m_Bank[256];
 	float       m_Axis[3];
 };

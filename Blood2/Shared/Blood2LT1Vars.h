@@ -27,6 +27,18 @@ static const LT1Var g_aBlood2LT1Vars[] =
 
     // LT1 stair step, and gravity's push into the floor on a standing object (both sides)
     { "LT1StandGravity",       "1",    LT1_BOTH },
+
+    // LT1's motion for a standing object. Without it the player slid 0.039 past the stop where retail's
+    // replay of subway3 halted dead (both sides)
+    { "LT1CalcMotion",         "1",    LT1_BOTH },
+
+    // The engine's Random, IntRandom and RandomScale draw from LT1's stream with LT1's seeds, as Blood 2's own
+    // engine does. Weapon damage is ServerDE Random, so without it no replay repeats itself (both sides)
+    { "LT1EngineRand",         "1",    LT1_BOTH },
+
+    // During demo playback the server's step is floored at 0.01 s: every step of retail's subway3 replay is
+    // the frame time clamped to [0.01, 0.2] (both sides)
+    { "LT1ServerStepFloor",    "1",    LT1_BOTH },
 };
 
 // The walkers' last three arguments: the set's name, the table and its length

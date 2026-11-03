@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include "lt1_vars.h"
 
 extern int32 g_nDemoClockMS;
@@ -23,6 +24,7 @@ extern float g_fDemoFrameTime;
 extern float g_fDemoClientFrameTime;
 extern int32 g_nDemoAnimMS;
 extern const char *g_DemoStopCommand;
+extern int32 g_DemoKey;
 extern int32 g_DemoTrace;
 extern int32 g_DemoExecFrame;
 extern const char *g_DemoExec;
@@ -133,6 +135,26 @@ bool CDemoPlaybackLT1::Load(const char *pPath)
 		pos += 19 + cnt;
 		m_Frames.push_back(f);
 	}
+
+	// <demo>.key: "unpause <clock>", the clock of the frame the recording's server unpaused on.
+	// That's the frame Blood 2's load screen read its key on, which no record holds, and the server stays
+	// paused until it. The key is pressed on the first frame with that clock
+	m_nKeyFrame = 0;
+	if (FILE *kf = fopen((std::string(pPath) + ".key").c_str(), "r"))
+	{
+		char line[128];
+		double t = -1.0;
+		while (fgets(line, sizeof(line), kf))
+			sscanf(line, "unpause %lf", &t);
+		fclose(kf);
+		for (size_t i = 1; t >= 0.0 && i < m_Frames.size() && !m_nKeyFrame; i++)
+			if (fabs((double)m_Frames[i].t - t) < 0.00005)
+				m_nKeyFrame = i;
+		if (m_nKeyFrame)
+			dsi_ConsolePrint("DEMO: %s.key: the key on frame %u (clock %.4f)", pPath, (unsigned)m_nKeyFrame, m_Frames[m_nKeyFrame].t);
+		else
+			dsi_ConsolePrint("DEMO: %s.key names no frame of the recording (clock %.4f)", pPath, t);
+	}
 	return true;
 }
 
@@ -237,6 +259,15 @@ void CDemoPlaybackLT1::StepClock(bool bWorldOpen)
 	g_bDemoZeroFrame = (f.t - m_fLastT) > 0.0f ? 0 : 1;
 	SetClock(f.t);
 	Toggle(f);
+
+	// <demo>.key: the key goes to the shell before this frame's input, where the recording's arrived as a raw key
+	// event, and the shell unpauses the server in the same frame
+	if (m_nKeyFrame && m_nNext == m_nKeyFrame && i_client_shell)
+	{
+		dsi_ConsolePrint("DEMO: key %d at frame %u (clock %.4f), from the .key file", (int)g_DemoKey, (unsigned)m_nNext, f.t);
+		i_client_shell->OnKeyDown((int)g_DemoKey, 0);
+		i_client_shell->OnKeyUp((int)g_DemoKey);
+	}
 	if (++m_nWorldFrames == 1)
 		m_dRealStartMS = (double)time_GetMSTime();
 

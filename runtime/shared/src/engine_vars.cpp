@@ -24,6 +24,7 @@ float	g_fDemoFrameTime = 0.0f; // The recorded server frame time in place of the
 float	g_fDemoClientFrameTime = 0.0f; // The client's frame time, the same difference
 int32	g_nDemoAnimMS = -1; // The client models' step, truncated to whole ms as LT1's was (-1 = the frame's own)
 const char *g_DemoStopCommand = LTNULL; // A console line run when a playback stops, for the game to undo what it changed
+int32	g_DemoKey = 13; // The key playback presses on the frame a <demo>.key names, for a key the recording doesn't hold (13 = Return)
 int32	g_DemoTrace = 0; // Diagnostic: print each played frame's number, clock, held commands, mouse axes, and player position (0 = off)
 int32	g_DemoExecFrame = 0; // Diagnostic: the recorded frame at which DemoExec runs (0 = off)
 const char *g_DemoExec = LTNULL; // Diagnostic: a console line run once at DemoExecFrame, to switch something on from a state every run shares
@@ -343,6 +344,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("DemoAnimMS", &g_nDemoAnimMS),
 	EV_STRING("DemoStopCommand", &g_DemoStopCommand),
 	EV_LONG("DemoTrace", &g_DemoTrace),
+	EV_LONG("DemoKey", &g_DemoKey),
 	EV_LONG("DemoExecFrame", &g_DemoExecFrame),
 	EV_STRING("DemoExec", &g_DemoExec),
 	EV_LONG("DemoTraceRadius", &g_DemoTraceRadius),

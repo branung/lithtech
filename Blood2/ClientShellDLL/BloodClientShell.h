@@ -192,6 +192,8 @@ class CBloodClientShell : public CClientShellDE
 		// Menu execute functions
 		DBOOL			MenuQuit();
 		DBOOL			MenuNewGame(int nDifficulty, int nCharacter = CHARACTER_CALEB, int nGameType = GAMETYPE_SINGLE);
+		// playdemo: the New Game a retail recording was made from, with the file in its StartGame request
+		DBOOL			StartDemoPlayback(const char *pDemo);
 		DBOOL			MenuNewNightmaresGame(int nDifficulty);
 		DBOOL			MenuHostGame();
 		DBOOL			MenuJoinGame();
@@ -424,6 +426,9 @@ class CBloodClientShell : public CClientShellDE
 		DBOOL			m_nCrosshair;
 		DBOOL			m_nLastCrosshair;
 		DBOOL			m_bDemoPlayback;
+		char			m_szPlayDemo[100];		// For the next StartNewGame's request (StartDemoPlayback)
+		char			m_szPendingDemo[100];	// playdemo, started by the first Update
+		DBOOL			m_bDemoStartFrame;		// That Update started it, so PostUpdate draws no loading screen
 		DBOOL			m_bShiftState;
 		DBOOL			m_bMenuCursorActive;	// The cursor is free for the menus
 

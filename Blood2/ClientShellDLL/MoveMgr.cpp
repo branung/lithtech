@@ -1351,6 +1351,15 @@ void CMoveMgr::Update()
 
 	UpdateControlFlags();
 
+	// DemoTrace: what this update moves by, beside the shell's B2MOVE line
+	{
+		static HCONSOLEVAR s_hTrace = DNULL;
+		if (!s_hTrace) s_hTrace = m_pClientDE->GetConsoleVar("DemoTrace");
+		if (s_hTrace && m_pClientDE->GetVarValueFloat(s_hTrace) != 0.0f)
+			m_pClientDE->CPrint("B2MOVEUPD ft=%.4f flags=%08lx trapped=%d onground=%d",
+				m_FrameTime, (unsigned long)m_dwControlFlags, (int)m_pClientShell->IsTrapped(), (int)m_bOnGround);
+	}
+
 	if(!m_pClientShell->IsTrapped())
 	{
 		UpdateMotion();

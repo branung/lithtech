@@ -186,6 +186,15 @@ if(MSVC)
 	target_compile_options(${PROJECT_NAME} PRIVATE /we4005)
 endif(MSVC)
 
+# One rand() stream per module, as LT1's static CRT gave it (de_modulerand.h).
+# Otherwise every module draws from the game thread's one stream, and the client's effects move the server's rolls
+set(B2_MODULERAND ${CMAKE_CURRENT_SOURCE_DIR}/../../libs/DECompat/de_modulerand.h)
+if(MSVC)
+	target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FI${B2_MODULERAND}>)
+else()
+	target_compile_options(${PROJECT_NAME} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-include;${B2_MODULERAND}>")
+endif()
+
 # The add on defines both, as the 1998 project's AddOn configuration does.
 # SharedDefs.h tests _ADD_ON and the .cpp files test _ADDON
 if(BLOOD2_ADDON)

@@ -453,6 +453,9 @@ CBloodClientShell::CBloodClientShell()
 
 	g_pBloodClientShell		= this;
 	m_bDemoPlayback			= DFALSE;
+	m_szPlayDemo[0]			= '\0';
+	m_szPendingDemo[0]		= '\0';
+	m_bDemoStartFrame		= DFALSE;
 
 	m_bShiftState			= DFALSE;
 	m_bMenuCursorActive		= DFALSE;
@@ -1342,7 +1345,14 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 		}
 		
 		// Get the command line world, if found
-		if (hVar = pClientDE->GetConsoleVar("runworld"))
+		if ((hVar = pClientDE->GetConsoleVar("playdemo")) && pClientDE->GetVarValueString(hVar) &&
+			pClientDE->GetVarValueString(hVar)[0] && strcmp(pClientDE->GetVarValueString(hVar), "0") != 0)
+		{
+			// Started by the first Update rather than here, since the rest of this function seeds the shell's
+			// stream from the clock, on top of the demo's srand(123). Retail's New Game comes from the menu, after it
+			SAFE_STRCPY(m_szPendingDemo, pClientDE->GetVarValueString(hVar));
+		}
+		else if (hVar = pClientDE->GetConsoleVar("runworld"))
 		{
 			const char *pWorldName = pClientDE->GetVarValueString(hVar);
 
@@ -2546,6 +2556,17 @@ void CBloodClientShell::Update()
 
 	CClientDE* pClientDE = GetClientDE();
 
+	// playdemo, from the startup chain in OnEngineInitialized
+	if (m_szPendingDemo[0])
+	{
+		char szDemo[100];
+		SAFE_STRCPY(szDemo, m_szPendingDemo);
+		m_szPendingDemo[0] = '\0';
+		StartDemoPlayback(szDemo);
+		m_bDemoStartFrame = DTRUE;
+		return;
+	}
+
 	m_pMoveMgr->Update();
 
 	UpdateSoundReverb( );
@@ -2986,7 +3007,31 @@ void CBloodClientShell::PostUpdate()
 {
 	CClientDE* pClientDE = GetClientDE();
 
+	// DemoTrace: the move manager's object at the end of each frame and this module's rand stream,
+	// for comparing a replay with retail's trace of the same demo
+	{
+		static HCONSOLEVAR s_hTrace = DNULL;
+		if (!s_hTrace) s_hTrace = pClientDE->GetConsoleVar("DemoTrace");
+		if (s_hTrace && pClientDE->GetVarValueFloat(s_hTrace) != 0.0f && m_pMoveMgr && m_pMoveMgr->GetObject())
+		{
+			DVector vPos;
+			pClientDE->GetObjectPos(m_pMoveMgr->GetObject(), &vPos);
+			pClientDE->CPrint("B2MOVE pos(%.4f,%.4f,%.4f) crand=%08x n=%u", vPos.x, vPos.y, vPos.z,
+				DE_ModuleRandState(), DE_ModuleRandCount());
+		}
+	}
+
 	HSURFACE hScreen = pClientDE->GetScreenSurface();
+
+	// The frame Update started a deferred playdemo in: the engine has seeded this module's stream and the world
+	// loads next frame. Retail loads the world straight after the seed, so it draws no loading screen between,
+	// and DrawLoadingScreen's random message would be one draw retail never made
+	if (m_bDemoStartFrame)
+	{
+		m_bDemoStartFrame = DFALSE;
+		if (GetGameState() == GS_LOADINGLEVEL)
+			return;
+	}
 
 	// Delete the loading screen if there is one.
 	if (GetGameState() == GS_LOADINGLEVEL || GetGameState() == GS_MPLOADINGLEVEL || GetGameState() == GS_WAITING)
@@ -4043,6 +4088,12 @@ DBOOL CBloodClientShell::StartNewGame(const char *pszWorldName, DBYTE nStartType
 
 	memset(&m_Request, 0, sizeof(StartGameRequest));
 	m_Request.m_Type = nStartType;
+	// StartDemoPlayback's file, for this one request. The engine starts the playback in StartGame, as retail's does
+	if (m_szPlayDemo[0])
+	{
+		SAFE_STRCPY(m_Request.m_PlaybackFilename, m_szPlayDemo);
+		m_szPlayDemo[0] = '\0';
+	}
 	pClientDE->StartGame(&m_Request);
 
 	// Reset the voice manager...
@@ -8315,6 +8366,45 @@ DBOOL CBloodClientShell::MenuNewGame(int nDifficulty, int nCharacter, int nGameT
 	// Start the game at the given character and difficulty...
 
 	return(StartNewGame(sFirstLevel, STARTGAME_NORMAL, nGameType, LOADTYPE_NEW_GAME, nDifficulty));
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CBloodClientShell::StartDemoPlayback
+//
+//	PURPOSE:	Plays a retail recording. The 1998 shell has no playback of its own:
+//				retail plays one when its name is in the New Game's StartGame request,
+//				so this makes the same New Game with the name in that request.
+//				The file holds neither the difficulty nor the character, so they come from
+//				PlayDemoDifficulty (0 Genocide, 1 Homicide, the default, 2 Suicide) and
+//				PlayDemoCharacter (-1 for a story game as Caleb, the default, or a character
+//				for an action game). The load screen's key is pressed on the frame <demo>.key names.
+//				m_bDemoPlayback stays false, as retail's shell never knew
+//
+// ----------------------------------------------------------------------- //
+
+DBOOL CBloodClientShell::StartDemoPlayback(const char *pDemo)
+{
+	CClientDE* pClientDE = GetClientDE();
+	if (!pClientDE || !pDemo || !pDemo[0]) return DFALSE;
+
+	HCONSOLEVAR hVar;
+	int nDifficulty = DIFFICULTY_MEDIUM;
+	if ((hVar = pClientDE->GetConsoleVar("PlayDemoDifficulty")) != DNULL)
+		nDifficulty = (int)pClientDE->GetVarValueFloat(hVar);
+	int nCharacter = -1;
+	if ((hVar = pClientDE->GetConsoleVar("PlayDemoCharacter")) != DNULL)
+		nCharacter = (int)pClientDE->GetVarValueFloat(hVar);
+
+	SAFE_STRCPY(m_szPlayDemo, pDemo);
+	pClientDE->CPrint("playdemo %s: difficulty %d, %s", pDemo, nDifficulty,
+		nCharacter < 0 ? "story mode (Caleb)" : "action mode");
+
+	DBOOL bOK = nCharacter < 0 ? MenuNewGame(nDifficulty)
+							   : MenuNewGame(nDifficulty, nCharacter, GAMETYPE_ACTION);
+	m_szPlayDemo[0] = '\0';
+	return bOK;
 }
 
 

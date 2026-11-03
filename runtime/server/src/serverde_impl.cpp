@@ -1973,10 +1973,17 @@ uint32 si_GetServerFlags()
 	return flags;
 }
 
+extern int32 g_DemoTrace;
+
 uint32 si_SetServerFlags(uint32 flags)
 {
 	// Only let them set certain ones..
+	const uint32 nOld = g_pServerMgr->m_ServerFlags;
 	g_pServerMgr->m_ServerFlags = (flags & (SS_PAUSED));
+	// DemoTrace: a pause or unpause, after that frame's DEMOFRAME line, as a playback has to unpause on the
+	// frame its recording did
+	if (g_DemoTrace && ((nOld ^ g_pServerMgr->m_ServerFlags) & SS_PAUSED))
+		dsi_ConsolePrint("SERVER: %s", (g_pServerMgr->m_ServerFlags & SS_PAUSED) ? "paused" : "unpaused");
 	return g_pServerMgr->m_ServerFlags;
 }
 
