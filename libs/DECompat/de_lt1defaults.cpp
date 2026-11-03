@@ -161,6 +161,134 @@ static const LT1Var s_aLT1Set[] =
     // IsCommandOn and fires OnCommandOn from them, as LT1's update packet did. From the game's own player update
     // the server saw every held key a tick late, and every key driven animation with it (both sides)
     { "LT1ServerCommands",     "1", LT1_BOTH },
+
+    // Shogo and Blood 2: the rest of the rows both games set the same way.
+    // Each was measured in Shogo and confirmed in Blood 2's own binaries
+    
+    // Shogo: room for the player view weapon, as the engine's default far plane for REALLYCLOSE (7.0) clips most guns.
+    // Blood 2: the far clip only has to clear the deepest player view model
+    { "reallyclose_far",       "20.0", LT1_CLIENT },
+
+    // Horizontal+ widescreen. A 4:3 window is pixel identical.
+    // Shogo: its fovY only matches the screen at 4:3.
+    // Blood 2: it always asks for a 4:3 pair (fovY = fovX * 0.80)
+    { "WidescreenFOV",         "1", LT1_CLIENT },
+
+    // LT1's motion for a standing object, which keeps gravity on it (both sides).
+    // Shogo: without it a standing character flickers between grounded and airborne and loses jumps.
+    // Blood 2: without it a stopping player slides 0.039 past where retail stops dead
+    { "LT1CalcMotion",         "1", LT1_BOTH },
+
+    // The physics step is LT1's whole CalcMotion, the LT1 era set's module, in place of Jupiter's with LT1CalcMotion
+    // inside it. It clips the standing velocity in place as LT1 does, so a resting player is at v 0, not -21.44.
+    // LT1CalcMotion above stays set for Jupiter's step if this row is taken out (both sides)
+    { "LT1MotionStep",         "1", LT1_BOTH },
+
+    // A resized box is detached from what it stood on, so its first step from rest falls and lands as in LT1 (both sides)
+    { "LT1DimsDetach",         "1", LT1_BOTH },
+
+    // The main world is walked once per move, and the stair step's box covers the whole move.
+    // Only both together match LT1 on slopes: the swept box alone lifts a climbing player twice,
+    // on the world's second walk (both sides)
+    { "LT1WorldOnce",          "1", LT1_BOTH },
+    { "LT1StairSwept",         "1", LT1_BOTH },
+
+    // Server: tracked sounds count down by game time, so a character's next pain sound waits for the last one
+    // to end in game time
+    { "LT1SoundStep",          "1", LT1_SERVER },
+
+    // Server: an object nobody has seen for its deactivation time stops updating until the player or a camera pings it.
+    // The shell's 'autodeactivate 1' is LT1's own switch, and this turns on the engine's part.
+    // Shogo: an AI unseen for 10 s (AI_DEACTIVATION_TIME) sleeps.
+    // Blood 2: retail's AIs sleep on the first unpaused tick and wake when a ping reaches them
+    { "LT1AutoDeactivate",     "1", LT1_SERVER },
+
+    // Server: a client is only sent what LT1's vis walk reaches from its view, and the walk takes a node's objects
+    // most recently filed first, so pings wake them and the server updates them in LT1's order
+    { "LT1ClientPVS",          "1", LT1_SERVER },
+    { "LT1FileOrder",          "1", LT1_SERVER },
+
+    // The engine's Random, IntRandom and RandomScale, and the particles' draws, come from LT1's stream with LT1's
+    // seeds (both sides).
+    // Shogo: so things like how many pieces a destroyed prop breaks into match og Shogo.
+    // Blood 2: weapon damage is ServerDE Random, which otherwise rolls differently on every run
+    { "LT1EngineRand",         "1", LT1_BOTH },
+
+    // A mover's world touch sees where it was stopped, which is where a projectile's impact is read from (both sides)
+    { "LT1WorldTouchPos",      "1", LT1_BOTH },
+
+    // Only a solid object's resize collides. Anything else takes its new dims with no move and no touch (both sides)
+    { "LT1SolidResize",        "1", LT1_BOTH },
+
+    // A world ray without INTERSECT_HPOLY walks leaves with a 0.1 tolerance, so debris that sinks a little into
+    // a floor rests rather than bouncing (both sides)
+    { "LT1IntersectLeaf",      "1", LT1_BOTH },
+
+    // A point collide mover, such as every projectile, uses both LT1 walks' 0.1 tolerance and stops 0.1 short
+    // of the plane (both sides)
+    { "LT1PointCollide",       "1", LT1_BOTH },
+
+    // Collision candidates are tested against the mover's box at its destination,
+    // so a player stepping away from an NPC it touches isn't pulled back to it (both sides)
+    { "LT1MoverBoxGate",       "1", LT1_BOTH },
+
+    // A move bigger than the mover's dims takes the swept test even when the pair isn't solid,
+    // so a projectile's touch, and its impact point, comes at the target's face (both sides)
+    { "LT1TunnelNonsolid",     "1", LT1_BOTH },
+
+    // A resize grows Y, then X, then Z with LT1's three probes,
+    // so a player starting to walk from a wall gets the same box as in LT1 (both sides)
+    { "LT1GrowDim",            "1", LT1_BOTH },
+
+    // MoveObject drops any axis of a move under 0.001, so a player against a wall doesn't creep into its
+    // clearance (both sides)
+    { "LT1MoveAxisMin",        "1", LT1_BOTH },
+
+    // Touches are box overlap alone, so stepping onto a resting rocket detonates it (both sides)
+    { "LT1PointBoxTouch",      "1", LT1_BOTH },
+
+    // Containers use LT1's box against BSP test with its center and corner probes (both sides).
+    // Shogo: its airshaft fans lift the player when they're supposed to
+    { "LT1ContainerBSP",       "1", LT1_BOTH },
+    { "LT1BoxBSPProbes",       "1", LT1_BOTH },
+
+    // Positions in game messages at LT1's precision, as the server encodes them, so a weapon impact sent to the
+    // client is where LT1's explosion debris starts (both sides)
+    { "LT1CompPos",            "1", LT1_BOTH },
+
+    // Server: a removed object leaves the world tree at once
+    { "LT1RemoveUnlinks",      "1", LT1_SERVER },
+
+    // SetObjectPos drops moves under 0.0316 units as LT1's does.
+    // Shogo: the weapon fires from the camera object, so this decides where shots start
+    { "LT1ClientMoveMin",      "1", LT1_CLIENT },
+
+    // A sprite's glow and bias reach the client, as LT1's flag mask sent them.
+    // The server writes the mask and the client reads it, so both sides set it.
+    // Blood 2: bit 5 is also FLAG_ONLYLIGHTWORLD, which its scorch mark lights carry, so they stop lighting models
+    { "LT1SpriteFlags",        "1", LT1_BOTH },
+
+    // LT1's renderer: the world's fullbrite passes add the masked texel over the lit result, a fullbright skin
+    // draws a second unlit pass, a dynamic light lights a model as one object measured at its position,
+    // and the sky draws through its object's matrix.
+    // Shogo: seen in the glowing parts of the Laser Cannon and Pulse Rifle skins, and a Pulse Rifle hit lights
+    // a whole truck or enemy in retail, where Jupiter's point lights leave a faint spot.
+    // Blood 2: read in its own d3d.ren
+    { "LT1FullbriteAdd",       "1", LT1_CLIENT },
+    { "LT1ModelFullbrite",     "1", LT1_CLIENT },
+    { "LT1ModelDynLight",      "1", LT1_CLIENT },
+    { "LT1SkyObjectTransform", "1", LT1_CLIENT },
+
+    // Demo playback as og runs it, playback only: the server's step floored at 0.01 s,
+    // no held frame after the world loads, the client's clock is the recording's,
+    // and at the end the console comes up over the still running level
+    { "LT1ServerStepFloor",    "1", LT1_BOTH },
+    { "LT1DemoNoPrime",        "1", LT1_CLIENT },
+    { "LT1DemoClientTime",     "1", LT1_CLIENT },
+    { "LT1DemoEndConsole",     "1", LT1_CLIENT },
+
+    // LT1 picks the path that prevents tunneling by geometry, Jupiter by a flag no 1998 game sets (both sides)
+    { "LT1TunnelPath",         "1", LT1_BOTH },
 };
 
 
