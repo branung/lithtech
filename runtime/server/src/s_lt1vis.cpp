@@ -42,6 +42,50 @@ bool sm_LT1WorldHasVis()
 	return LT1VisBsp() != LTNULL;
 }
 
+// The world's user portals. A vis list's portal id indexes the array of the BSP carrying the lists, so that one first.
+// A world with portals and no vis data still answers Get and SetPortalFlags from the first BSP that has any
+static const WorldBsp *LT1PortalBsp()
+{
+	const WorldBsp *pVis = LT1VisBsp();
+	if (pVis && pVis->m_nUserPortals)
+		return pVis;
+	if (!world_bsp_server || !world_bsp_server->IsLoaded())
+		return LTNULL;
+	uint32 nModels = world_bsp_server->NumWorldModels();
+	for (uint32 i = 0; i < nModels; ++i)
+	{
+		const WorldData *pData = world_bsp_server->GetWorldModel(i);
+		const WorldBsp *pBsp = pData ? pData->OriginalBSP() : LTNULL;
+		if (pBsp && pBsp->m_nUserPortals)
+			return pBsp;
+	}
+	return LTNULL;
+}
+
+uint32 sm_LT1NumPortals()
+{
+	const WorldBsp *pBsp = LT1PortalBsp();
+	return pBsp ? pBsp->m_nUserPortals : 0;
+}
+
+SUserPortal *sm_LT1Portal(uint32 nIndex)
+{
+	const WorldBsp *pBsp = LT1PortalBsp();
+	return (pBsp && nIndex < pBsp->m_nUserPortals) ? &pBsp->m_pUserPortals[nIndex] : LTNULL;
+}
+
+// LT1's lookup by name: the first match in the world's order, case sensitive
+SUserPortal *sm_LT1FindPortal(const char *pName)
+{
+	const WorldBsp *pBsp = LT1PortalBsp();
+	if (!pBsp || !pName)
+		return LTNULL;
+	for (uint32 i = 0; i < pBsp->m_nUserPortals; ++i)
+		if (strcmp(pBsp->m_pUserPortals[i].m_Name, pName) == 0)
+			return &pBsp->m_pUserPortals[i];
+	return LTNULL;
+}
+
 // The filing itself, shared with the object pass's gather (era/lt1/lt1_bsp_filing.h)
 static const LTPlane *LT1NodePlane(const WorldBsp *pBsp, const SVisNode &v) { return lt1filing::NodePlane(pBsp, v); }
 static float LT1Radius(const LTObject *pObj) { return lt1filing::Radius(pObj); }
@@ -221,15 +265,25 @@ void sm_LT1VisitVisibleObjects(const LTVector &vPos, void (*fn)(LTObject *pObj, 
 		return;
 	}
 
-	// The base list only as later lists belong to portals
-	const uint32 nList = lf.m_nFirstList;
-	if (nList >= pBsp->m_nVisLists)
-		return;
-	const SVisList &entry = pBsp->m_pVisLists[nList];
-	if ((uint32)entry.m_nOffset + entry.m_nSize > pBsp->m_nVisDataSize)
-		return;
-	w.m_pData = &pBsp->m_pVisData[entry.m_nOffset];
-	w.m_nBits = (uint32)entry.m_nSize * 8;
-	w.m_nBit = 0;
-	Walk(w, pBsp->m_nVisRoot, std::vector<LTObject *>(), 0);
+	// The base list always, and each later list only while the portal it names is open.
+	// Each list starts a fresh cursor and an empty carried set at the root
+	for (uint32 k = 0; k < lf.m_nNumLists; ++k)
+	{
+		const uint32 nList = lf.m_nFirstList + k;
+		if (nList >= pBsp->m_nVisLists)
+			break;
+		const SVisList &entry = pBsp->m_pVisLists[nList];
+		if (k != 0)
+		{
+			if (entry.m_nPortalId >= pBsp->m_nUserPortals ||
+				!(pBsp->m_pUserPortals[entry.m_nPortalId].m_Flags & PORTAL_OPEN))
+				continue;
+		}
+		if ((uint32)entry.m_nOffset + entry.m_nSize > pBsp->m_nVisDataSize)
+			continue;
+		w.m_pData = &pBsp->m_pVisData[entry.m_nOffset];
+		w.m_nBits = (uint32)entry.m_nSize * 8;
+		w.m_nBit = 0;
+		Walk(w, pBsp->m_nVisRoot, std::vector<LTObject *>(), 0);
+	}
 }

@@ -711,6 +711,20 @@ void CServerDE::SetObjectState(HOBJECT hObj, int state)
     ILTServer::SetObjectState(hObj, state);
 }
 
+DRESULT CServerDE::GetPortalFlags(const char *pPortalName, DDWORD *pFlags)
+{
+    if (!s_pDELT1Server)
+        return LT_NOTFOUND;
+    return s_pDELT1Server->GetPortalFlags(pPortalName, pFlags);
+}
+
+DRESULT CServerDE::SetPortalFlags(const char *pPortalName, DDWORD dwFlags)
+{
+    if (!s_pDELT1Server)
+        return LT_NOTFOUND;
+    return s_pDELT1Server->SetPortalFlags(pPortalName, dwFlags);
+}
+
 DBOOL CServerDE::LT1IsCommandOn(HCLIENT hClient, int nCommand, DBOOL *pbOn)
 {
     bool bOn = false;

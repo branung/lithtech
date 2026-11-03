@@ -49,7 +49,8 @@ Load/save objects flags.
 
 enum
 {
-    SAVEOBJECTS_SAVEGAMECONSOLE  = 1   //! Save the game console state?
+    SAVEOBJECTS_SAVEGAMECONSOLE  = 1,  //! Save the game console state?
+    SAVEOBJECTS_SAVEPORTALS      = 2   //! Save LT1 user portals' flags (LT1's own bit, save version 2003)
 };
 
 

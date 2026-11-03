@@ -286,6 +286,8 @@ void WorldBsp::Clear()
     m_pVisNodes = NULL;
     m_nVisNodes = 0;
     m_nVisRoot = -1;
+    m_pUserPortals = NULL;
+    m_nUserPortals = 0;
     m_pNodeLeaf = NULL;
 
     m_WorldInfoFlags = 0;
@@ -311,6 +313,7 @@ void WorldBsp::Term()
     dfree(m_pVisLists);
     dfree(m_pVisLeaves);
     dfree(m_pVisNodes);
+    dfree(m_pUserPortals);
     dfree(m_pNodeLeaf);
 
     g_WorldGeometryMemory -= m_MemoryUse;
@@ -471,13 +474,24 @@ ELoadWorldStatus WorldBsp::Load(ILTStream *pStream, bool bUsePlaneTypes)
     STREAM_READ(m_MaxBox);
     STREAM_READ(m_WorldTranslation);
 
-	// We should have user portals from a converted LT1 world
-	// Jupiter has no portal array to hand them to so they are read then discarded
+	// A converted LT1 world's user portals. Each keeps its name, with flags that start closed as LT1's do,
+	// and doors open them by name. A Jupiter world has none, so nothing here is read
+	if (nUserPortals)
+	{
+		LT_MEM_TRACK_ALLOC(m_pUserPortals = (SUserPortal*)dalloc_z(sizeof(SUserPortal) * nUserPortals), LT_MEM_TYPE_WORLD);
+		if (!m_pUserPortals)
+			return LoadWorld_InvalidFile;
+		m_nUserPortals = nUserPortals;
+	}
 	for (uint32 nPortal = 0; nPortal < nUserPortals; ++nPortal)
 	{
 		uint16 nNameLen;
 		STREAM_READ(nNameLen);
-		pStream->SeekTo(pStream->GetPos() + nNameLen); // Name
+		SUserPortal &portal = m_pUserPortals[nPortal];
+		const uint32 nKeep = LTMIN((uint32)nNameLen, (uint32)sizeof(portal.m_Name) - 1);
+		pStream->Read(portal.m_Name, nKeep);
+		portal.m_Name[nKeep] = 0;
+		pStream->SeekTo(pStream->GetPos() + (nNameLen - nKeep));
 
 		uint32 nUnused32;
 		uint16 nUnused16;

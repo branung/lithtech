@@ -991,17 +991,15 @@ void Door::SetPortalState(DBOOL bOpen)
 
 	if (m_hstrPortal)
 	{
-		// Jupiter has no portal API, so the doorway behaves as permanently open.
-		// Kept for whoever restores portal control:
-		//	DDWORD dwPortalFlags = 0;
-		//	if (pServerDE->GetPortalFlags(pServerDE->GetStringData(m_hstrPortal), &dwPortalFlags) == LT_OK)
-		//	{
-		//		if (bOpen)
-		//			dwPortalFlags |= PORTAL_OPEN;
-		//		else
-		//			dwPortalFlags &= ~PORTAL_OPEN;
-		//		pServerDE->SetPortalFlags(pServerDE->GetStringData(m_hstrPortal), dwPortalFlags);
-		//	}
+		DDWORD dwPortalFlags = 0;
+		if (pServerDE->GetPortalFlags(pServerDE->GetStringData(m_hstrPortal), &dwPortalFlags) == DE_OK)
+		{
+			if (bOpen)
+				dwPortalFlags |= PORTAL_OPEN;
+			else
+				dwPortalFlags &= ~PORTAL_OPEN;
+			pServerDE->SetPortalFlags(pServerDE->GetStringData(m_hstrPortal), dwPortalFlags);
+		}
 	}
 }
 

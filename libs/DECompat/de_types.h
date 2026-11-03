@@ -186,9 +186,7 @@ typedef CheapLTLink CheapDLink;
 #define DE_OBJSTATE_AUTODEACTIVATE_NOW 3
 #define OBJSTATE_AUTODEACTIVATE_NOW DE_OBJSTATE_AUTODEACTIVATE_NOW
 
-// In LT1: also save portal states.
-//There are no portal states to save.
-#define SAVEOBJECTS_SAVEPORTALS 0
+// SAVEOBJECTS_SAVEPORTALS is Jupiter's enum member now (iltserver.h), with LT1's value 2
 
 // In LT1: stream this sound from disk.
 // Jupiter decides streaming itself and doesn't expose a flag for it

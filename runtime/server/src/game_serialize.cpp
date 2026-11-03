@@ -43,6 +43,11 @@ define_holder(IServerConsoleState, console_state);
 static IWorldServerBSP *world_bsp_server;
 define_holder(IWorldServerBSP, world_bsp_server);
 
+// LT1's user portals, for SAVEOBJECTS_SAVEPORTALS (s_lt1vis.cpp)
+#include "de_world.h"
+uint32 sm_LT1NumPortals();
+SUserPortal *sm_LT1Portal(uint32 nIndex);
+
 #include "iltmodel.h"
 static ILTModel *model_interface ;
 define_holder_to_instance(ILTModel, model_interface, Server);
@@ -1141,7 +1146,8 @@ void sm_SaveObjects(ILTStream *pStream, ObjectList *pList, uint32 dwParam, uint3
 
 
     // Save version. Version checks will be done by the game.
-	g_dwSaveFileVersion = 2002;
+    // 2003 carries LT1's portal flags. Only an LT1 game asks for them, so every other game's file is 2002 as before
+	g_dwSaveFileVersion = (flags & SAVEOBJECTS_SAVEPORTALS) ? 2003 : 2002;
     GS_STREAM_WRITE(g_dwSaveFileVersion);
 
 
@@ -1176,6 +1182,19 @@ void sm_SaveObjects(ILTStream *pStream, ObjectList *pList, uint32 dwParam, uint3
 
     bAnyMore = 0;
     GS_STREAM_WRITE(bAnyMore);
+
+    // LT1's portal flags: the count, then each portal's flags in the world's order.
+    // A door left open when the game was saved keeps what's beyond it visible
+    if (flags & SAVEOBJECTS_SAVEPORTALS)
+	{
+        uint32 nPortals = sm_LT1NumPortals();
+        GS_STREAM_WRITE(nPortals);
+        for (uint32 p = 0; p < nPortals; ++p)
+		{
+            uint16 nPortalFlags = sm_LT1Portal(p)->m_Flags;
+            GS_STREAM_WRITE(nPortalFlags);
+        }
+    }
 
 
     for (i=0; i < nObjects; i++)
@@ -1264,9 +1283,9 @@ LTRESULT sm_RestoreObjects(ILTStream *pStream, uint32 dwParam, uint32 flags)
 
     g_pServerMgr->m_nTimeOffsetMS = (int32)(g_pServerMgr->m_nTrueLastTimeMS) - (int32)(time_GetMSTime() + g_pServerMgr->m_nTimeOffsetMS);
 
-	// Only allow these 2 versions.  The game will handle versioning of save files from
-	// here on.
-    if( g_dwSaveFileVersion != 2001 && g_dwSaveFileVersion != 2002 )
+	// Only allow these versions.  The game will handle versioning of save files from
+	// here on. 2003 is 2002 with LT1's portal flags after the console state
+    if( g_dwSaveFileVersion != 2001 && g_dwSaveFileVersion != 2002 && g_dwSaveFileVersion != 2003 )
 	{
 		// Delete our temporary buffer.
 		DeleteTempBuffer();
@@ -1280,6 +1299,25 @@ LTRESULT sm_RestoreObjects(ILTStream *pStream, uint32 dwParam, uint32 flags)
 		DeleteTempBuffer();
 
 		RETURN_ERROR(1, sm_RestoreObjects, LT_INVALIDFILE);
+	}
+
+	// LT1's portal flags, before any object is restored.
+	// LT1 fails the restore when the count isn't the loaded world's, which means the save is from another world
+	if (g_dwSaveFileVersion == 2003)
+	{
+		uint32 nPortals = 0;
+		GS_STREAM_READ(nPortals);
+		if (pStream->ErrorStatus() != LT_OK || nPortals != sm_LT1NumPortals())
+		{
+			DeleteTempBuffer();
+			RETURN_ERROR(1, sm_RestoreObjects, LT_INVALIDFILE);
+		}
+		for (uint32 p = 0; p < nPortals; ++p)
+		{
+			uint16 nPortalFlags = 0;
+			GS_STREAM_READ(nPortalFlags);
+			sm_LT1Portal(p)->m_Flags = nPortalFlags;
+		}
 	}
 
     startPos = pStream->GetPos();

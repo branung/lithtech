@@ -574,13 +574,10 @@ void Door::SetOpening()
 		const char* pName = pServerDE->GetStringData(m_hstrPortalName);
 		if (pName)
 		{	
-			// Jupiter has no portal API, so the doorway behaves as permanently open.
-			// Kept for whoever restores portal control:
-			//
-			//	DDWORD dwFlags = 0;
-			//	pServerDE->GetPortalFlags(pName, &dwFlags);
-			//	dwFlags |= PORTAL_OPEN;
-			//	pServerDE->SetPortalFlags(pName, dwFlags);
+			DDWORD dwFlags = 0;
+			pServerDE->GetPortalFlags(pName, &dwFlags);
+			dwFlags |= PORTAL_OPEN;
+			pServerDE->SetPortalFlags(pName, dwFlags);
 		}
 	}
 
@@ -680,13 +677,10 @@ void Door::SetClosed(DBOOL bPlaySound)
 		const char* pName = pServerDE->GetStringData(m_hstrPortalName);
 		if (pName)
 		{	
-			// Jupiter has no portal API, so the doorway behaves as permanently open.
-			// Kept for whoever restores portal control:
-			//
-			//	DDWORD dwFlags = 0;
-			//	pServerDE->GetPortalFlags(pName, &dwFlags);
-			//	dwFlags &= ~PORTAL_OPEN;
-			//	pServerDE->SetPortalFlags(pName, dwFlags);
+			DDWORD dwFlags = 0;
+			pServerDE->GetPortalFlags(pName, &dwFlags);
+			dwFlags &= ~PORTAL_OPEN;
+			pServerDE->SetPortalFlags(pName, dwFlags);
 		}
 	}
 }

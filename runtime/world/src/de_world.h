@@ -386,6 +386,15 @@ struct SVisLeaf
     uint32  m_nNumLists;
 };
 
+// One LT1 user portal: the name a door opens it by, and its flags. The flags aren't on disk,
+// so every portal starts closed, as LT1's do. A list whose m_nPortalId names a portal is walked
+// by the server only while PORTAL_OPEN is set (s_lt1vis.cpp)
+struct SUserPortal
+{
+    char    m_Name[100];    // LT1 keeps at most 99 characters
+    uint16  m_Flags;        // PORTAL_OPEN, written by SetPortalFlags
+};
+
 // PVSFindLeaf's answer without vis data, or for a point in solid space
 const uint32 kPVSNoLeaf = 0xFFFFFFFF;
 
@@ -482,6 +491,11 @@ public:
     SVisNode        *m_pVisNodes;
     uint32          m_nVisNodes;
     int32           m_nVisRoot;         // Index into m_pVisNodes, or -1
+
+    // LT1's user portals, which a list's m_nPortalId indexes. None in a Jupiter world.
+    // Not const through a const WorldBsp, as the flags are runtime state
+    SUserPortal     *m_pUserPortals;
+    uint32          m_nUserPortals;
 
     // Each BSP node's leaf (0xFFFF for none)
     // Jupiter's Node drops it, and PVSFindLeaf needs it

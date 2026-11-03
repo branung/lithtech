@@ -6,6 +6,9 @@
 
 // LT1's GetModelCommandString: the command string in a model file, where Shogo's weapon models carry their AI fire timings
 
+// LT1's user portals: named brushes across doorways that doors open. An open portal lets the server's
+// visibility walk see past it, so clients are sent and pings reach what's beyond it
+
 // LT1's server side command states: each client's keys as its frame start packet sent them, for IsCommandOn
 // and the server shell's OnCommandOn. Active only under LT1ServerCommands
 
@@ -34,6 +37,11 @@ public:
     // Copies the model file's command string into pStr (an empty string when it has none).
     // LT_INVALIDPARAMS when hModel isn't a model
     virtual LTRESULT GetModelCommandString(HOBJECT hModel, char *pStr, uint32 maxLen) = 0;
+
+    // LT1's GetPortalFlags and SetPortalFlags: a user portal's flags, by its name in the editor.
+    // Portals start closed. LT_NOTFOUND when the world has no portal of that name
+    virtual LTRESULT GetPortalFlags(const char *pName, uint32 *pFlags) = 0;
+    virtual LTRESULT SetPortalFlags(const char *pName, uint32 dwFlags) = 0;
 
     // LT1's IsCommandOn: the client's command state this frame.
     // False, leaving *pbOn alone, when the engine keeps no states (LT1ServerCommands off, or nothing from that client yet)

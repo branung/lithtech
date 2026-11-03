@@ -21,6 +21,7 @@
 #include "server_consolestate.h"
 #include "dhashtable.h"
 #include "lt1_vars.h"
+#include "de_world.h"
 
 
 // For LT1DeactivateTrace
@@ -36,6 +37,7 @@ define_holder(IServerConsoleState, console_state);
 // The visibility walk
 bool sm_LT1WorldHasVis();
 void sm_LT1VisitVisibleObjects(const LTVector &vPos, void (*fn)(LTObject *pObj, void *pUser), void *pUser);
+SUserPortal *sm_LT1FindPortal(const char *pName);
 
 // LT1ServerCommands: the game's stand in for its server shell's OnCommandOn, called by OnLT1CommandsPacket (s_net.cpp)
 static ILTLT1Server::CommandChangeFn s_pfnLT1CommandChange = LTNULL;
@@ -151,6 +153,27 @@ public:
 			strncpy(pStr, pModel->m_CommandString, maxLen - 1);
 			pStr[maxLen - 1] = '\0';
 		}
+		return LT_OK;
+	}
+
+	virtual LTRESULT GetPortalFlags(const char *pName, uint32 *pFlags)
+	{
+		SUserPortal *pPortal = sm_LT1FindPortal(pName);
+		if (!pPortal)
+			return LT_NOTFOUND;
+		if (pFlags)
+			*pFlags = pPortal->m_Flags;
+		return LT_OK;
+	}
+
+	// LT1 keeps only PORTAL_OPEN. It also tells every client, which reads nothing from it, so no message is sent.
+	// Not gated on a var, as only an LT1 world has portals and only LT1 game code calls this
+	virtual LTRESULT SetPortalFlags(const char *pName, uint32 dwFlags)
+	{
+		SUserPortal *pPortal = sm_LT1FindPortal(pName);
+		if (!pPortal)
+			return LT_NOTFOUND;
+		pPortal->m_Flags = (uint16)(dwFlags & PORTAL_OPEN);
 		return LT_OK;
 	}
 

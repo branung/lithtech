@@ -369,6 +369,10 @@ public:
     // Catches LT1's state 3 (OBJSTATE_AUTODEACTIVATE_NOW), which Jupiter doesn't have
     void            SetObjectState(HOBJECT hObj, int state);
 
+    // LT1's user portals, kept by the engine. PORTAL_OPEN lets the server see past one, and every portal starts closed
+    DRESULT         GetPortalFlags(const char *pPortalName, DDWORD *pFlags);
+    DRESULT         SetPortalFlags(const char *pPortalName, DDWORD dwFlags);
+
     // LT1's IsCommandOn, from the states the engine keeps under LT1ServerCommands.
     // DFALSE, leaving *pbOn alone, when it keeps none, so a game can fall back to its own player update's states
     DBOOL           LT1IsCommandOn(HCLIENT hClient, int nCommand, DBOOL *pbOn);
