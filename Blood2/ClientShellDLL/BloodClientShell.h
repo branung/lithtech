@@ -577,6 +577,7 @@ class CBloodClientShell : public CClientShellDE
         DFLOAT			m_fBlindTime;
 
 		HSURFACE		m_hLoadingScreen;
+		DRect			m_rcLoadScreen;			// Where DrawLoadingScreen fitted its art, for the text
 		DFLOAT			m_fLoadingFadeTime;
 		DBOOL			m_bLoadingFadeUp;
 		DBOOL			m_bPlayedWaitingSound;

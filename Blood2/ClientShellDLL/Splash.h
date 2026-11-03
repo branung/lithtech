@@ -28,6 +28,7 @@ void	 Splash_Term();
 void	 Splash_Update();
 void	 Splash_OnKeyDown(int nKey);
 HSURFACE Splash_Display(CClientDE* pClientDE, char* sScreen, DBOOL bStretch = DFALSE);
+void	 Splash_FitRect(DDWORD nScreenW, DDWORD nScreenH, DDWORD nBmpW, DDWORD nBmpH, DRect& rcDst);
 
 
 // EOF...

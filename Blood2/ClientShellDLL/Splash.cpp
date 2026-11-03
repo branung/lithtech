@@ -35,12 +35,12 @@ static	CClientDE*	s_pClientDE = DNULL;
 //	ROUTINE:	Splash_FitRect
 //
 //	PURPOSE:	The largest centered rectangle with the bitmap's aspect
-//				ratio that fits the screen
+//				ratio that fits the screen. The loading screen uses it too
 //
 // ----------------------------------------------------------------------- //
 
-static void Splash_FitRect(DDWORD nScreenW, DDWORD nScreenH,
-                           DDWORD nBmpW, DDWORD nBmpH, DRect& rcDst)
+void Splash_FitRect(DDWORD nScreenW, DDWORD nScreenH,
+                    DDWORD nBmpW, DDWORD nBmpH, DRect& rcDst)
 {
 	DDWORD nFitW = nScreenW;
 	DDWORD nFitH = nScreenH;

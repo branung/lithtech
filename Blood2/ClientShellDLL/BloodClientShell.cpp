@@ -6707,8 +6707,16 @@ void CBloodClientShell::DrawLoadingScreen()
 			pClientDE->DrawBitmapToSurface(hTemp, "Interface\\LoadScreens\\LoadingText\\Loading_01.pcx", DNULL, 215, 321);
 		}
 
+		// The art keeps its own proportions, centered on black, as the splash screen does.
+		// Scaled to the whole screen it stretches at any wider resolution. The text below is placed in the same rectangle
+		DDWORD nBmpW = 0, nBmpH = 0;
+		if (hTemp)
+			pClientDE->GetSurfaceDims(hTemp, &nBmpW, &nBmpH);
+		Splash_FitRect(screenWidth, screenHeight, nBmpW, nBmpH, m_rcLoadScreen);
+		pClientDE->FillRect(m_hLoadingScreen, DNULL, pClientDE->SetupColor1(0.0f, 0.0f, 0.0f, DFALSE));
+
 		// Scale the bitmap to the loading screen and dump the temp surface
-		pClientDE->ScaleSurfaceToSurface(m_hLoadingScreen, hTemp, DNULL, DNULL);
+		pClientDE->ScaleSurfaceToSurface(m_hLoadingScreen, hTemp, &m_rcLoadScreen, DNULL);
 		pClientDE->DeleteSurface(hTemp);
 		hTemp = DNULL;
 	}
@@ -6734,7 +6742,7 @@ void CBloodClientShell::DrawLoadingScreen()
 	m_hLoadCursor->SetFont(m_hLoadTitleFont);
 	m_hLoadCursor->SetDest(m_hLoadingScreen);
 	m_hLoadCursor->SetJustify(CF_JUSTIFY_CENTER);
-	m_hLoadCursor->SetLoc((short)(screenWidth * 0.5f), (short)(m_hLoadTitleFont->height * 2));
+	m_hLoadCursor->SetLoc((short)(screenWidth * 0.5f), (short)(m_rcLoadScreen.top + m_hLoadTitleFont->height * 2));
 
 	if(m_hstrTitle)
 	{
@@ -6750,7 +6758,7 @@ void CBloodClientShell::DrawLoadingScreen()
 		m_hLoadCursor->SetFont(m_hLoadTitleFont);
 		m_hLoadCursor->SetDest(m_hLoadingScreen);
 		m_hLoadCursor->SetJustify(CF_JUSTIFY_CENTER);
-		m_hLoadCursor->SetLoc((short)(screenWidth * 0.5f), (short)(m_hLoadTitleFont->height * 2));
+		m_hLoadCursor->SetLoc((short)(screenWidth * 0.5f), (short)(m_rcLoadScreen.top + m_hLoadTitleFont->height * 2));
 
 		if(m_hstrTitle)
 		{
@@ -6765,8 +6773,8 @@ void CBloodClientShell::DrawLoadingScreen()
 	{
 		HSTRING			hStr;
 		LoadScreenData	*lsd = &(g_LoadScreenData[m_nLoadScreenID]);
-		DFLOAT			ratioX = (float)screenWidth / 640.0f;
-		DFLOAT			ratioY = (float)screenHeight / 480.0f;
+		DFLOAT			ratioX = (float)(m_rcLoadScreen.right - m_rcLoadScreen.left) / 640.0f;
+		DFLOAT			ratioY = (float)(m_rcLoadScreen.bottom - m_rcLoadScreen.top) / 480.0f;
 		short			newX, newY;
 
 		m_hLoadCursor->SetFont(m_hLoadTitleFont);
@@ -6774,16 +6782,16 @@ void CBloodClientShell::DrawLoadingScreen()
 		m_hLoadCursor->SetJustify(CF_JUSTIFY_CENTER);
 
 		// Find the scaled location for the title and draw it center justified
-		newX = (short)(lsd->nTitleX * ratioX);
-		newY = (short)(lsd->nTitleY * ratioY);
+		newX = (short)(m_rcLoadScreen.left + lsd->nTitleX * ratioX);
+		newY = (short)(m_rcLoadScreen.top + lsd->nTitleY * ratioY);
 
 		// Draw the title of the level
-		m_hLoadCursor->SetLoc(newX, (short)(m_hLoadTitleFont->height * 2));
+		m_hLoadCursor->SetLoc(newX, (short)(m_rcLoadScreen.top + m_hLoadTitleFont->height * 2));
 
 		if(m_hstrTitle)
 			m_hLoadCursor->Draw(pClientDE->GetStringData(m_hstrTitle));
 
-		m_hLoadCursor->SetLoc(newX, (short)(m_hLoadTitleFont->height * 3));
+		m_hLoadCursor->SetLoc(newX, (short)(m_rcLoadScreen.top + m_hLoadTitleFont->height * 3));
 		hStr = pClientDE->FormatString(lsd->nTitle);
 		m_hLoadCursor->Draw(pClientDE->GetStringData(hStr));
 		pClientDE->FreeString(hStr);
@@ -6791,11 +6799,11 @@ void CBloodClientShell::DrawLoadingScreen()
 		if(m_nGameType != GAMETYPE_ACTION && screenWidth >= 512 && screenHeight >= 384)
 		{
 			// Find the scaled location for the text and draw it in formatted mode
-			newX = (short)(lsd->nTextX * ratioX);
-			newY = (short)(lsd->nTextY * ratioY);
+			newX = (short)(m_rcLoadScreen.left + lsd->nTextX * ratioX);
+			newY = (short)(m_rcLoadScreen.top + lsd->nTextY * ratioY);
 
 			m_hLoadCursor->SetFont(m_hLoadTextFont);
-			m_hLoadCursor->SetLoc(newX, (short)(m_hLoadTitleFont->height * 5));
+			m_hLoadCursor->SetLoc(newX, (short)(m_rcLoadScreen.top + m_hLoadTitleFont->height * 5));
 			hStr = pClientDE->FormatString(lsd->nText);
 			m_hLoadCursor->DrawFormat(pClientDE->GetStringData(hStr), (short)(lsd->nTextWrapWidth * ratioX));
 			pClientDE->FreeString(hStr);
@@ -6807,7 +6815,7 @@ void CBloodClientShell::DrawLoadingScreen()
 		// Draw a loading message at the bottom of the screen
 		m_hLoadCursor->SetDest(hScreen);
 		m_hLoadCursor->SetFont(m_hLoadTitleFont);
-		m_hLoadCursor->SetLoc((short)(screenWidth * 0.5f), (short)(screenHeight - m_hLoadTitleFont->height));
+		m_hLoadCursor->SetLoc((short)(screenWidth * 0.5f), (short)(m_rcLoadScreen.bottom - m_hLoadTitleFont->height));
 
 		if(GetGameState() == GS_WAITING)
 		{
