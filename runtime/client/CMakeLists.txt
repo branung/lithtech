@@ -62,6 +62,7 @@ set(exec_src
 	src/cnet.cpp
 	src/cobject.cpp
 	../shared/src/collision.cpp
+	../shared/src/era/era.cpp
 	../shared/src/compress.cpp
 	../shared/src/concommand.cpp
 	../shared/src/conparse.cpp

@@ -10,6 +10,7 @@
 
 #include "RiotServerShell.h"
 #include "de_lt1defaults.h"
+#include "ShogoLT1Vars.h"
 #include "PlayerObj.h"
 #include "cpp_server_de.h"
 #include "RiotMsgIDs.h"
@@ -134,116 +135,8 @@ LTRESULT CRiotServerShell::OnServerInitialized()
 	// The shared LT1 server defaults
 	DECompat_ApplyLT1ServerDefaults(g_pServerDE);
 
-	// LT1 stair step and resting behavior.
-	// Each side compiles its own collision.cpp so the client shell sets this too
-	g_pServerDE->RunGameConString("LT1StairStep 1");
-
-	// LT1's motion for a standing object, which keeps gravity on it.
-	// Without it a standing character flickers between grounded and airborne and loses jumps (client too)
-	g_pServerDE->RunGameConString("LT1CalcMotion 1");
-
-	// A standing object keeps its clipped velocity, as LT1 clips it in place (client too)
-	g_pServerDE->RunGameConString("LT1StandVelStore 1");
-
-	// A resized box is detached from what it stood on, so its first step from rest falls and lands like LT1 (client too)
-	g_pServerDE->RunGameConString("LT1DimsDetach 1");
-
-	// Keep the solver's resolved position when the strike or restart cap fires (client too)
-	g_pServerDE->RunGameConString("LT1StrikeKeep 1");
-
-	// LT1StrikeKeep's other half.
-	// A strike leaves the candidate loop early, and Jupiter put the main world in that loop (client too)
-	g_pServerDE->RunGameConString("LT1WorldAfterObjects 1");
-
-	// Walk the main world once per move, and give the stair step a box covering the whole move.
-	// Only both together match LT1 on slopes: the swept box alone lifts a climbing player twice, on the world's second walk (client too)
-	g_pServerDE->RunGameConString("LT1WorldOnce 1");
-	g_pServerDE->RunGameConString("LT1StairSwept 1");
-
-	// Tracked sounds count down by game time, so a character's next pain sound waits for the last one to end in game time
-	g_pServerDE->RunGameConString("LT1SoundStep 1");
-
-	// An AI nobody has seen for 10 s (AI_DEACTIVATION_TIME) stops updating until the player or a camera pings it.
-	// 'autodeactivate 1.0' above is LT1's own switch, and this turns on the engine's part
-	g_pServerDE->RunGameConString("LT1AutoDeactivate 1");
-
-	// Only send the client objects it could see from its position
-	g_pServerDE->RunGameConString("LT1ClientPVS 1");
-
-	// Pings wake objects in LT1's order, so the server updates them in LT1's order
-	g_pServerDE->RunGameConString("LT1FileOrder 1");
-
-	// The engine's Random, IntRandom and RandomScale draw from LT1's stream with LT1's seeds,
-	// so things like how many pieces a destroyed prop breaks into match og Shogo (client too)
-	g_pServerDE->RunGameConString("LT1EngineRand 1");
-
-	// A mover's world touch sees where it was stopped, which is where a projectile's impact is read from (client too)
-	g_pServerDE->RunGameConString("LT1WorldTouchPos 1");
-
-	// Only a solid object's resize collides. Anything else takes its new dims with no move and no touch (client too)
-	g_pServerDE->RunGameConString("LT1SolidResize 1");
-
-	// A ray hitting an object's box reports the x face's normal for every face, and impact effects are aligned to it
-	g_pServerDE->RunGameConString("LT1BoxHitNormal 1");
-
-	// A world ray without INTERSECT_HPOLY walks leaves with a 0.1 tolerance, so debris that sinks a little into a floor rests
-	// rather than bouncing (client too)
-	g_pServerDE->RunGameConString("LT1IntersectLeaf 1");
-
-	// A point collide mover - such as every projectile - uses both LT1 walks' 0.1 tolerance and stops 0.1 short of the plane (client too)
-	g_pServerDE->RunGameConString("LT1PointCollide 1");
-
-	// Collision candidates are tested against the mover's box at its destination,
-	// so a player stepping away from an NPC it touches isn't pulled back to it (client too)
-	g_pServerDE->RunGameConString("LT1MoverBoxGate 1");
-
-	// A move bigger than the mover's dims takes the swept test even when the pair isn't solid,
-	// so a projectile's touch - and its impact point - comes at the target's face (client too)
-	g_pServerDE->RunGameConString("LT1TunnelNonsolid 1");
-
-	// A resize grows Y, then X, then Z with LT1's three test moves/probes,
-	// so a player starting to walk from a wall gets the same box as in LT1 (client too)
-	g_pServerDE->RunGameConString("LT1GrowDim 1");
-
-	// Platforms carry riders as LT1's do: no nudge into the platform, tiny moves ignored,
-	// and a rotating platform doesn't refuse its riders (client too)
-	g_pServerDE->RunGameConString("LT1CarryNoNudge 1");
-	g_pServerDE->RunGameConString("LT1MinMove 1");
-	g_pServerDE->RunGameConString("LT1RotateNoMovingFlag 1");
-
-	// Positions in game messages at LT1's precision, so a weapon impact sent to the client
-	// is where LT1's explosion debris starts (client too)
-	g_pServerDE->RunGameConString("LT1CompPos 1");
-
-	// A removed object leaves the world tree at once
-	g_pServerDE->RunGameConString("LT1RemoveUnlinks 1");
-
-	// Send a sprite's glow and bias to clients, as LT1's flag mask did (client too)
-	g_pServerDE->RunGameConString("LT1SpriteFlags 1");
-
-	// MoveObject drops any axis of a move under 0.001, so a player against a wall doesn't creep into its clearance (client too)
-	g_pServerDE->RunGameConString("LT1MoveAxisMin 1");
-
-	// Touches are box overlap alone, so stepping onto a resting rocket detonates it (client too)
-	g_pServerDE->RunGameConString("LT1PointBoxTouch 1");
-
-	// Containers use LT1's box against BSP test with its center and corner probes,
-	// so Shogo's airshaft fans lift the player when its suppose to (client too)
-	g_pServerDE->RunGameConString("LT1ContainerBSP 1");
-	g_pServerDE->RunGameConString("LT1BoxBSPProbes 1");
-
-	// During demo playback the server's step is floored at 0.01 s, as LT1's is (client too)
-	g_pServerDE->RunGameConString("LT1ServerStepFloor 1");
-
-	// The rest of LT1's contact stack: 0.1 clearance, exact contact isn't a hit, no stale detections.
-	// Without them LT1StrikeKeep parks the player on the wall plane (client sets all four)
-	g_pServerDE->RunGameConString("LT1IntersectPushback 1");
-	g_pServerDE->RunGameConString("LT1PlaneRecheck 1");
-	g_pServerDE->RunGameConString("LT1SweepRebuild 1");
-	g_pServerDE->RunGameConString("LT1PolyTest 1");
-
-	// LT1 picks the path that prevents tunneling geometrically, Jupiter by a flag no 1998 game sets (client too)
-	g_pServerDE->RunGameConString("LT1TunnelPath 1");
+	// Shogo's own engine vars, both shells' in one table (Shared/ShogoLT1Vars.h)
+	DECompat_ApplyLT1ServerVars(g_pServerDE, SHOGO_LT1_VARS);
 
 	if (!m_hstrStartPointName)
 	{

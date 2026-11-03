@@ -26,6 +26,7 @@ set(libsources
 	../shared/src/classbind.cpp
 	src/classmgr.cpp
 	../shared/src/collision.cpp
+	../shared/src/era/era.cpp
 	../shared/src/compress.cpp
 	../shared/src/concommand.cpp
 	../shared/src/conparse.cpp

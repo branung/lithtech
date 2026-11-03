@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include "BloodClientShell.h"
 #include "de_lt1defaults.h"
+#include "Blood2LT1Vars.h"
 #include "ViewWeapon.h"
 #include "Commands.h"
 #include "VKDefs.h"
@@ -872,51 +873,8 @@ DRESULT CBloodClientShell::OnEngineInitialized(RMode *pMode, DGUID *pAppGuid)
 	// The shared LT1 engine defaults
 	DECompat_ApplyLT1ClientDefaults(pClientDE);
 
-	// Blood 2's near clip for player view models is 0.01. The far clip only has to clear the deepest one
-	pClientDE->RunConsoleString("-reallyclose_near 0.01");
-	pClientDE->RunConsoleString("-reallyclose_far 20.0");
-
-	// LT1 dynamic lights light the world, and Jupiter's only opt in is a flag LT1 games don't have.
-	// 01_SUBWAYA's tunnel is lit by lights swept past the train
-	pClientDE->RunConsoleString("-DynamicLightWorld 1");
-
-	// Horizontal+ widescreen, since Blood 2 always asks for a 4:3 pair (fovY = fovX * 0.80).
-	// A 4:3 window is pixel identical
-	pClientDE->RunConsoleString("-WidescreenFOV 1");
-
-	// Point sample the 2D. The HUD is pixel art keyed on magenta, and a scaled bilinear blit blends the
-	// keyed texels' magenta into every edge. A 1:1 blit looks the same either way
-	pClientDE->RunConsoleString("-2DBilinear 0");
-
-	// LT1 splits WorldModels by polygon 0's SURF_TRANSPARENT: translucent ones draw last and aren't culled.
-	// Jupiter's split never puts LT1 glass in the translucent pass, so it was painted over
-	pClientDE->RunConsoleString("-LT1WorldCull 1");
-	pClientDE->RunConsoleString("-LT1WorldSort 1");
-
-	// Jupiter's CLightTable::GetLightVal blends its rows backwards, which LT1's coarse grid shows
-	pClientDE->RunConsoleString("-LT1LightTableY 1");
-
-	// LT1's box collision: pushback along the normal, slide with a 0.1 gap, the 0.1 recheck against every plane touched,
-	// the sweep rebuilt after each resolution, and LT1's polygon test. Without them a crouched player grinds in vents (both sides)
-	pClientDE->RunConsoleString("-LT1IntersectPushback 1");
-	pClientDE->RunConsoleString("-LT1BoxSlide 1");
-	pClientDE->RunConsoleString("-LT1PlaneRecheck 1");
-	pClientDE->RunConsoleString("-LT1SweepRebuild 1");
-	pClientDE->RunConsoleString("-LT1PolyTest 1");
-
-	// A third repeat hit keeps the resolved progress, and the main world is walked after the object loop (both sides)
-	pClientDE->RunConsoleString("-LT1StrikeKeep 1");
-	pClientDE->RunConsoleString("-LT1WorldAfterObjects 1");
-
-	// LT1 stair step, and gravity's push into the floor on a standing object (both sides)
-	pClientDE->RunConsoleString("-LT1StairStep 1");
-	pClientDE->RunConsoleString("-LT1StandGravity 1");
-
-	// Platforms carry riders as LT1's do: no nudge into the platform, tiny moves ignored,
-	// and a rotating platform doesn't refuse its riders (both sides)
-	pClientDE->RunConsoleString("-LT1CarryNoNudge 1");
-	pClientDE->RunConsoleString("-LT1MinMove 1");
-	pClientDE->RunConsoleString("-LT1RotateNoMovingFlag 1");
+	// Blood 2's own engine vars, both shells' in one table (Shared/Blood2LT1Vars.h)
+	DECompat_ApplyLT1ClientVars(pClientDE, BLOOD2_LT1_VARS);
 
 	// Init Move mgr...
 	m_pMoveMgr = new CMoveMgr(this);

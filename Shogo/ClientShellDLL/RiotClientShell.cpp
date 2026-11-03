@@ -13,6 +13,7 @@
 // ILTCursor and the CM_* modes for the menu cursor
 #include "iltcursor.h"
 #include "de_lt1defaults.h"
+#include "ShogoLT1Vars.h"
 #include "ShogoDiag.h"
 #include "RiotMsgIDs.h"
 #include "RiotCommandIDs.h"
@@ -1155,131 +1156,12 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 	g_pLTClient->SetCameraFOV(m_hCamera, m_fCurrentFovX, y);
 
 	
-	// Room for the player view weapon.
-	// The engine's default far plane for REALLYCLOSE is 7.0 which clips most of Shogo's guns.
-	// '-' keeps it out of autoexec.cfg
-	g_pLTClient->RunConsoleString("-reallyclose_far 20.0");
-
-	// Draw the player view weapon with the scene's own projection as LT1 did (it had no separate one)
 	{
-		g_pLTClient->RunConsoleString("-PVModelSceneFOV 1");
-
-		// The fullbrite pass adds the masked texel over the lit result, as LT1 does
-		g_pLTClient->RunConsoleString("-LT1FullbriteAdd 1");
-
-		// Reads the object light grid with y the right way round.
-		// Jupiter's CLightTable::GetLightVal blends its rows backwards, which LT1's coarse grid shows
-		g_pLTClient->RunConsoleString("-LT1LightTableY 1");
-
-		// Sky world models draw through their object transform, so a rotated sky box faces right
-		g_pLTClient->RunConsoleString("-LT1SkyObjectTransform 1");
-
-		// Hor+ widescreen, since Shogo's fovY only matches the screen at 4:3.
-		// A 4:3 window is pixel identical
-		g_pLTClient->RunConsoleString("-WidescreenFOV 1");
-
 		// The shared LT1 engine defaults before the server creates its objects.
 		DECompat_ApplyLT1ClientDefaults(g_pLTClient);
 
-		// Shogo's dynamic lights light the level as it does in the og.
-		// Jupiter only lets a dynamic light reach the world under this.
-		g_pLTClient->RunConsoleString("-DynamicLightWorld 1");
-
-		// LT1's translucent WorldModel split, part 1: whether a brush is culled.
-		// Much of Shogo is a box textured on one face that a cull would hide
-		g_pLTClient->RunConsoleString("-LT1WorldCull 1");
-
-		// Part 2: when the brush draws.
-		// LT1 draws the translucent list last, where Jupiter would overdraw them in the solid pass
-		g_pLTClient->RunConsoleString("-LT1WorldSort 1");
-
-		// LT1 stair step and resting behavior.
-		// Without it, MoveToFrontside walks the player up hillsides
-		g_pLTClient->RunConsoleString("-LT1StairStep 1");
-
-		// LT1's motion for a standing object (both sides)
-		g_pLTClient->RunConsoleString("-LT1CalcMotion 1");
-
-		// A standing object keeps its clipped velocity (both sides)
-		g_pLTClient->RunConsoleString("-LT1StandVelStore 1");
-
-		// A resized box is detached from what it stood on (both sides)
-		g_pLTClient->RunConsoleString("-LT1DimsDetach 1");
-
-		// Keeps resolved progress when the strike or restart cap cancels (both sides)
-		g_pLTClient->RunConsoleString("-LT1StrikeKeep 1");
-
-		// Travels with LT1StrikeKeep (both sides)
-		g_pLTClient->RunConsoleString("-LT1WorldAfterObjects 1");
-
-		// The main world is walked once per move, and the stair step's box covers the whole move.
-		// Only both together match LT1 on slopes (both sides)
-		g_pLTClient->RunConsoleString("-LT1WorldOnce 1");
-		g_pLTClient->RunConsoleString("-LT1StairSwept 1");
-
-		// The engine's random stream and its seeds are LT1's, for its particles (both sides)
-		g_pLTClient->RunConsoleString("-LT1EngineRand 1");
-
-		// A mover's world touch sees where it was stopped, and only a solid object's resize collides (both sides)
-		g_pLTClient->RunConsoleString("-LT1WorldTouchPos 1");
-		g_pLTClient->RunConsoleString("-LT1SolidResize 1");
-
-		// LT1's world rays and point collision, and its collision candidates tested at the mover's destination (both sides)
-		g_pLTClient->RunConsoleString("-LT1IntersectLeaf 1");
-		g_pLTClient->RunConsoleString("-LT1PointCollide 1");
-		g_pLTClient->RunConsoleString("-LT1MoverBoxGate 1");
-
-		// A fast non solid mover touches at the blocker's face, and a resize grows Y, X, Z with LT1's probes (both sides)
-		g_pLTClient->RunConsoleString("-LT1TunnelNonsolid 1");
-		g_pLTClient->RunConsoleString("-LT1GrowDim 1");
-
-		// Platforms carry riders as LT1's do: no nudge into the platform, tiny moves ignored,
-		// and a rotating platform doesn't refuse its riders (both sides)
-		g_pLTClient->RunConsoleString("-LT1CarryNoNudge 1");
-		g_pLTClient->RunConsoleString("-LT1MinMove 1");
-		g_pLTClient->RunConsoleString("-LT1RotateNoMovingFlag 1");
-
-		// Tiny move axes are dropped, touches are box overlap alone,
-		// and containers use LT1's box against BSP test with its probes (both sides)
-		g_pLTClient->RunConsoleString("-LT1MoveAxisMin 1");
-		g_pLTClient->RunConsoleString("-LT1PointBoxTouch 1");
-		g_pLTClient->RunConsoleString("-LT1ContainerBSP 1");
-		g_pLTClient->RunConsoleString("-LT1BoxBSPProbes 1");
-
-		// Positions in game messages at LT1's precision, as the server encodes them (both sides)
-		g_pLTClient->RunConsoleString("-LT1CompPos 1");
-
-		// SetObjectPos drops moves under 0.0316 units as LT1's does.
-		// The weapon fires from the camera object, so this decides where shots start
-		g_pLTClient->RunConsoleString("-LT1ClientMoveMin 1");
-
-		// A sprite's glow and bias reach the client, as LT1's flag mask sent them.
-		// The server writes the mask and this client reads it, so both sides set it
-		g_pLTClient->RunConsoleString("-LT1SpriteFlags 1");
-
-		// LT1's model fullbright pass: seen in the glowing parts of Shogo's Laser Cannon and Pulse Rifle skins
-		g_pLTClient->RunConsoleString("-LT1ModelFullbrite 1");
-
-		// LT1's model dynamic lighting: a dynamic light lights a model as one object, measured at its position.
-		// A Pulse Rifle hit in Shogo lights a whole truck or enemy in retail, where Jupiter's point lights leave a faint spot
-		g_pLTClient->RunConsoleString("-LT1ModelDynLight 1");
-
-		// Demo playback as og runs it, playback only: the server's step floored at 0.01 s,
-		// no held frame after the world loads, the client's clock is the recording's,
-		// and at the end the console comes up over the still running level
-		g_pLTClient->RunConsoleString("-LT1ServerStepFloor 1");
-		g_pLTClient->RunConsoleString("-LT1DemoNoPrime 1");
-		g_pLTClient->RunConsoleString("-LT1DemoClientTime 1");
-		g_pLTClient->RunConsoleString("-LT1DemoEndConsole 1");
-
-		// The rest of LT1's contact stack (both sides)
-		g_pLTClient->RunConsoleString("-LT1IntersectPushback 1");
-		g_pLTClient->RunConsoleString("-LT1PlaneRecheck 1");
-		g_pLTClient->RunConsoleString("-LT1SweepRebuild 1");
-		g_pLTClient->RunConsoleString("-LT1PolyTest 1");
-
-		// LT1 picks the path that prevents tunneling by geometry, not FLAG2_PLAYERCOLLIDE (both sides)
-		g_pLTClient->RunConsoleString("-LT1TunnelPath 1");
+		// Shogo's own engine vars, both shells' in one table (Shared/ShogoLT1Vars.h)
+		DECompat_ApplyLT1ClientVars(g_pLTClient, SHOGO_LT1_VARS);
 	}
 
 
