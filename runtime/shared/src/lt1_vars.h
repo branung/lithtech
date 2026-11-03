@@ -30,9 +30,14 @@ extern int32 g_bLT1ContainerType;
 extern int32 g_bLT1RemoveUnlinks;
 extern int32 g_bLT1ClientIDFromOne;
 
+// The era set's modules (era/lt1/)
+extern int32 g_bLT1CollideWithWorld;
+extern int32 g_bLT1MotionStep;
+extern int32 g_bLT1ObjectPass;
+
 // Motion and stairs
+extern int32 g_bLT1ZeroMoveSkip;
 extern int32 g_bLT1CalcMotion;
-extern int32 g_bLT1StandVelStore;
 extern int32 g_bLT1StandGravity;
 extern int32 g_bLT1StairStep;
 extern int32 g_bLT1StairSwept;

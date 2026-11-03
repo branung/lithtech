@@ -80,6 +80,11 @@ static const LT1Var s_aLT1Set[] =
     // Server: LT1 reserved client id 0 for 'no player' - ids are handed out on the server
     { "LT1ClientIDFromOne",      "1", LT1_SERVER },
 
+    // LT1 skips the world walk for a zero length move, so a creation teleport doesn't lift an object out of
+    // a slope or eject a trigger placed overlapping the world. Shogo's AIs on slopes are touched by their first
+    // fall instead, as in retail, and Blood 2's level triggers stay where they were placed (both sides)
+    { "LT1ZeroMoveSkip",         "1", LT1_BOTH },
+
     // Optimized 2D draws over the whole target, not clipped to the last camera's rect
     { "Optimized2DFullViewport", "1", LT1_CLIENT },
 

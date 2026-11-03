@@ -54,4 +54,13 @@ struct EraImplSet
 // The set EngineEra selects. A value this build doesn't know selects Jupiter's and says so once
 const EraImplSet &era_Get();
 
+// The era implementations, one per module under era/
+bool era_lt1_CollideWithWorld(CollideRequest &request, CollideInfo *pInfo);
+bool era_lt1_CalcMotion(MotionInfo *pInfo, LTObject *pObj, LTVector &dr, LTVector &v, LTVector &a,
+	bool bApplyGravity, float dt);
+bool era_lt1_MoveObject(MoveState *pState, const LTVector &vNewPos, uint32 flags);
+bool era_lt1_ChangeObjectDimensions(MoveState *pState, LTVector &newDims, LTBOOL bCollide,
+	LTBOOL bTrivialReject, LTBOOL *pbRet);
+bool era_lt1_RotateWorldModel(MoveState *pState, const LTRotation &cRotation, LTBOOL bDoCollisions);
+
 #endif  // __ERA_H__

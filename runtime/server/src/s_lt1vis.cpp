@@ -6,6 +6,7 @@
 #include "servermgr.h"
 #include "serverobj.h"
 #include "world_server_bsp.h"
+#include "era/lt1/lt1_bsp_filing.h"
 #include <vector>
 #include <algorithm>
 #include "lt1_vars.h"
@@ -41,12 +42,12 @@ bool sm_LT1WorldHasVis()
 	return LT1VisBsp() != LTNULL;
 }
 
-static const LTPlane *LT1NodePlane(const WorldBsp *pBsp, const SVisNode &v)
+// The filing itself, shared with the object pass's gather (era/lt1/lt1_bsp_filing.h)
+static const LTPlane *LT1NodePlane(const WorldBsp *pBsp, const SVisNode &v) { return lt1filing::NodePlane(pBsp, v); }
+static float LT1Radius(const LTObject *pObj) { return lt1filing::Radius(pObj); }
+static int32 LT1FindMinimumNode(const WorldBsp *pBsp, const LTVector &vPos, float fRadius)
 {
-	if (v.m_nBspNode >= pBsp->m_nNodes)
-		return LTNULL;
-	const WorldPoly *pPoly = pBsp->m_Nodes[v.m_nBspNode].GetPoly();
-	return pPoly ? pPoly->GetPlane() : LTNULL;
+	return lt1filing::FindMinimumNode(pBsp, vPos, fRadius);
 }
 
 // The objects LT1 links into the BSP: those with a special effect message or any flag below (unless FLAG_FORCEOPTIMIZEOBJECT), 
@@ -62,42 +63,6 @@ static bool LT1IsLinked(const LTObject *pObj)
 	const uint32 nMask = FLAG_VISIBLE | FLAG_SOLID | FLAG_TOUCH_NOTIFY | FLAG_GOTHRUWORLD |
 		FLAG_RAYHIT | FLAG_FORCECLIENTUPDATE;
 	return (pObj->m_Flags & nMask) && !(pObj->m_Flags & FLAG_FORCEOPTIMIZEOBJECT);
-}
-
-// LT1's bounding radius: the half extents' length + 0.5, or + 0.1 for a world model
-static float LT1Radius(const LTObject *pObj)
-{
-	return pObj->GetDims().Mag() + (pObj->m_ObjectType == OT_WORLDMODEL ? 0.1f : 0.5f);
-}
-
-// Descends while the sphere is wholly on one side. 
-// -1 if it goes wholly into solid space, so the object isn't linked
-static int32 LT1FindMinimumNode(const WorldBsp *pBsp, const LTVector &vPos, float fRadius)
-{
-	int32 nIdx = pBsp->m_nVisRoot;
-	for (uint32 nGuard = 0; nGuard < 4096 && nIdx >= 0 && (uint32)nIdx < pBsp->m_nVisNodes; ++nGuard)
-	{
-		const SVisNode &v = pBsp->m_pVisNodes[nIdx];
-		const LTPlane *pPlane = LT1NodePlane(pBsp, v);
-		if (!pPlane)
-			return nIdx;
-		const float d = pPlane->DistTo(vPos);
-		if (d > fRadius)
-		{
-			if (v.m_Slot1 < 0)
-				return nIdx;
-			nIdx = v.m_Slot1;
-		}
-		else if (d < -fRadius)
-		{
-			if (v.m_Slot0 < 0)
-				return -1;
-			nIdx = v.m_Slot0;
-		}
-		else
-			return nIdx;
-	}
-	return nIdx;
 }
 
 namespace

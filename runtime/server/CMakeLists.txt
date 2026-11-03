@@ -27,6 +27,9 @@ set(libsources
 	src/classmgr.cpp
 	../shared/src/collision.cpp
 	../shared/src/era/era.cpp
+	../shared/src/era/lt1/collidewithworld.cpp
+	../shared/src/era/lt1/calcmotion.cpp
+	../shared/src/era/lt1/moveobject.cpp
 	../shared/src/compress.cpp
 	../shared/src/concommand.cpp
 	../shared/src/conparse.cpp

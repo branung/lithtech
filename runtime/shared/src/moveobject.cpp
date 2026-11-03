@@ -14,6 +14,7 @@
 #include "moveplayer.h"
 #include "fullintersectline.h"
 #include "lt1_vars.h"
+#include "era/era.h"
 
 extern int32 g_CV_NewPlayerPhysics;	// Use the new player physics
 
@@ -1682,6 +1683,13 @@ void MoveObject
 	MoveState moveState;
 	CollisionInfo collisionInfo, *pOldCollisionInfo;
 
+	// The era set's mover when EngineEra selects one and it takes the move. Jupiter falls through, untouched
+	if (EraMoveObjectFn pEraMove = era_Get().m_pMoveObject)
+	{
+		if (pEraMove(pState, P1, flags))
+			return;
+	}
+
 	pState->SetupCall();
 
 	// Don't move again if we're already moving.  Make sure we're moveable.
@@ -1910,6 +1918,14 @@ LTBOOL ChangeObjectDimensions(MoveState *pState, LTVector &newDims, LTBOOL bColl
 	LTObject *pObj;
 	float distSqr;
 
+	// The era set's resize
+	if (EraChangeObjectDimensionsFn pEraDims = era_Get().m_pChangeObjectDimensions)
+	{
+		LTBOOL bEraRet;
+		if (pEraDims(pState, newDims, bCollide, bTrivialReject, &bEraRet))
+			return bEraRet;
+	}
+
 	pState->SetupCall();
 	pObj = pState->m_pObj;
 
@@ -2071,6 +2087,12 @@ void RotateWorldModel(MoveState *pState,
 	uint32 i;
 	CollisionInfo collisionInfo, *pOldCollisionInfo;
 
+	// The era set's rotation
+	if (EraRotateWorldModelFn pEraRotate = era_Get().m_pRotateWorldModel)
+	{
+		if (pEraRotate(pState, cRotation, bDoCollisions))
+			return;
+	}
 
 	++g_nMoveObjectCalls;
 	CountAdder cnt(&g_Ticks_MoveObject);

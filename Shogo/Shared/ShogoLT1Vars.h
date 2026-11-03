@@ -32,9 +32,11 @@ static const LT1Var g_aShogoLT1Vars[] =
     // Without it a standing character flickers between grounded and airborne and loses jumps (client too)
     { "LT1CalcMotion",         "1",    LT1_BOTH },
 
-    // A standing object keeps its clipped velocity (both sides)
-    // Server: a standing object keeps its clipped velocity, as LT1 clips it in place (client too)
-    { "LT1StandVelStore",      "1",    LT1_BOTH },
+    // The physics step is LT1's whole CalcMotion, the LT1 era set's module, in place of Jupiter's with LT1CalcMotion
+    // inside it. It reproduces all 7,658 of retail's logged calls in a demo, and clips the standing velocity in place
+    // as LT1 does, so a resting player is at v 0, not -21.44. LT1CalcMotion above stays set for Jupiter's step
+    // if this row is taken out (both sides)
+    { "LT1MotionStep",         "1",    LT1_BOTH },
 
     // A resized box is detached from what it stood on (both sides)
     // Server: a resized box is detached from what it stood on, so its first step from rest falls and lands like LT1 (client too)

@@ -23,6 +23,7 @@
 #include "world_blocker_math.h"
 #include "iltphysics.h"
 #include "lt1_vars.h"
+#include "era/era.h"
 
 // Diagnostic: the next N hits of the LT1 stair step
 extern int32 g_StairTrace;
@@ -2628,6 +2629,25 @@ void CollideWithWorld
 		return;
 	}
 
+	// The era's own walk in place of everything below, when the era set EngineEra selects has one and takes this move.
+	if( EraCollideWithWorldFn pEraWalk = era_Get().m_pCollideWithWorld )
+	{
+		if( pEraWalk( request, pInfo ) )
+			return;
+	}
+
+	// LT1ZeroMoveSkip: LT1 skips the walk for a move under 0.0001 on every axis, where Jupiter's stair pass
+	// and world model path still lift and eject an object overlapping the world. A creation teleport is such
+	// a move, so an object placed inside a slope stays there until its first real move pushes it out and touches it.
+	if( g_bLT1ZeroMoveSkip )
+	{
+		const LTVector vMove = request.m_NewPos - request.m_OriginalPos;
+		if (fabsf(vMove.x) < 0.0001f && fabsf(vMove.y) < 0.0001f && fabsf(vMove.z) < 0.0001f)
+		{
+			pInfo->m_FinalPos = request.m_NewPos;
+			return;
+		}
+	}
 
 	//1st and 2nd positions of object
 	LTVector& P0 = request.m_OriginalPos;

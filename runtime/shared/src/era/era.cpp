@@ -6,12 +6,14 @@
 
 extern int32 g_nEngineEra;   // engine_vars.cpp
 
-// Indexed by EngineEraId. An entry is filled when that era's routine moves into its module under era/,
-// and stays null (Jupiter's routine) until then
+// Indexed by EngineEraId. A null entry is Jupiter's routine
 static const EraImplSet s_aEraSets[ENGINE_ERA_COUNT] =
 {
 	{ "Jupiter", LTNULL, LTNULL, LTNULL, LTNULL, LTNULL },
-	{ "LT1",     LTNULL, LTNULL, LTNULL, LTNULL, LTNULL },
+	// Retail Shogo's world walk, off unless LT1CollideWithWorld. LT1's physics step, off unless LT1MotionStep.
+	// LT1 25.1's object mover, off unless LT1ObjectPass.
+	{ "LT1",     era_lt1_CollideWithWorld, era_lt1_CalcMotion,
+	             era_lt1_MoveObject, era_lt1_ChangeObjectDimensions, era_lt1_RotateWorldModel },
 };
 
 const EraImplSet &era_Get()

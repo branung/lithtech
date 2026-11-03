@@ -4,12 +4,13 @@
 #include "de_world.h"
 #include "motion.h"
 #include "lt1_vars.h"
+#include "era/era.h"
 
 // Reimplementation of LT1's CalcMotion for a standing object
 // It differs from Jupiter's in three ways:
 // 1) An object moving away from its plane still gets only the force's normal part on a shallow plane, not the whole force
 // 2) The velocity clip and zeroing change only a copy used for this step's movement. The object's own velocity keeps them only when friction applies,
-// unless LT1StandVelStore is on, which keeps them either way as LT1 does
+// where LT1 keeps them either way. LT1MotionStep, the era set's whole step, does what LT1 does
 // 3) LT1's thresholds decide when no force is applied: almost no speed, too little speed along the plane, or little speed left after the clip
 static void LT1StandingMotion(MotionInfo *pInfo, LTObject *pObj, const LTVector &vForce,
 	LTVector &dr, LTVector &v, LTVector &a, float dt, float velocityMagSqr, float accelMagSqr)
@@ -97,11 +98,10 @@ static void LT1StandingMotion(MotionInfo *pInfo, LTObject *pObj, const LTVector 
 	else
 	{
 		dr = vStepVel * dt + a * (dt * dt * 0.5f * 0.5f);
-		// LT1 clips and zeroes the velocity in place, so it keeps the clipped one (LT1StandVelStore)
-		if (g_bLT1StandVelStore)
-			pObj->m_Velocity = vStepVel + a * dt;
-		else
-			pObj->m_Velocity += a * dt;
+		// LT1 clips the velocity in place, so where that's the object's own (the client's movement object)
+		// the object keeps the clip, and this copy doesn't. The era set's step (LT1MotionStep) is LT1's,
+		// and LT1StandVelStore, which stood in for it here, is retired
+		pObj->m_Velocity += a * dt;
 		v = pObj->m_Velocity;
 	}
 }
@@ -131,6 +131,12 @@ void CalcMotion
 	float velocityMagSqr, accelMagSqr;
 	LTBOOL bFriction;
 
+	// The era set's step when EngineEra selects one and it takes the step. Jupiter falls through, untouched
+	if (EraCalcMotionFn pEraStep = era_Get().m_pCalcMotion)
+	{
+		if (pEraStep(pInfo, pObj, dr, v, a, bApplyGravity, dt))
+			return;
+	}
 
 	bFriction = LTFALSE;
 	timeIntegral = dt * dt * 0.5f;	

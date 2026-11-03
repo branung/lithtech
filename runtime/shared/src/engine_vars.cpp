@@ -110,7 +110,7 @@ int32	g_bLocalPreLoadWorld = 1; // PreLoadWorld for a local client too, not just
 int32	g_bLT1CreateInPlace = 0; // Placement move before InitialUpdate, so a new object isn't sent MID_TOUCHNOTIFY
 int32	g_bLT1ModelAnimNoRestart = 0; // Ignore a request for the animation already playing.
 int32	g_bLT1CalcMotion = 0; // LT1's motion for a standing object in place of Jupiter's. Set on both client and server
-int32	g_bLT1StandVelStore = 0; // LT1CalcMotion's object keeps its clipped velocity when there's no friction, as LT1's does. Set on both client and server
+int32	g_bLT1StandVelStore = 0; // Retired, reads nothing: LT1MotionStep clips in place itself. Kept registered so configs naming it still resolve.
 int32	g_bLT1StandGravity = 0; // A standing object keeps gravity's push into the floor, as LT1's does, so its move reaches the floor. Set on both client and server
 int32	g_bLT1BoxSlide = 0; // A box physics object stopped by a world model slides, leaving LT1's 0.1 gap, unless it has FLAG_NOSLIDING. Set on both client and server
 int32	g_bLT1DimsDetach = 0; // An object whose box changes size is detached from what it stood on, as in LT1. Set on both client and server
@@ -172,6 +172,10 @@ int32	g_bLT1ModelShading = 0; // Shade models with LT1's fixed direction ramp ra
 int32	g_bWidescreenFOV = 0; // Horizontal widescreen - widens the horizontal FOV by aspect/4:3 at render time
 int32	g_CV_ConsoleEcho = 0; // The Linux console also writes every line to stdout
 int32	g_nEngineEra = 0; // The engine line a game was built for, selecting its era set (era/era.h). 0 Jupiter, 1 LT1
+int32	g_bLT1CollideWithWorld = 0; // Under EngineEra 1, retail Shogo's world walk in place of Jupiter's and the walk vars in it. Both sides
+int32	g_bLT1MotionStep = 0; // Under EngineEra 1, LT1's whole physics step in place of Jupiter's and the stand vars in it. Both sides
+int32	g_bLT1ObjectPass = 0; // Under EngineEra 1, 25.1's MoveObject, resize and rotation in place of Jupiter's. Both sides
+int32	g_bLT1ZeroMoveSkip = 0; // A world walk for a move under 0.0001 on every axis does nothing, as LT1's does. Both sides
 
 int32	g_CV_MasterPaletteMode = 2;
 
@@ -484,6 +488,10 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("WidescreenFOV", &g_bWidescreenFOV),
 	EV_LONG("ConsoleEcho", &g_CV_ConsoleEcho),
 	EV_LONG("EngineEra", &g_nEngineEra),
+	EV_LONG("LT1CollideWithWorld", &g_bLT1CollideWithWorld),
+	EV_LONG("LT1MotionStep", &g_bLT1MotionStep),
+	EV_LONG("LT1ObjectPass", &g_bLT1ObjectPass),
+	EV_LONG("LT1ZeroMoveSkip", &g_bLT1ZeroMoveSkip),
 	EV_LONG("FullLightScale", &g_CV_FullLightScale),
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),
