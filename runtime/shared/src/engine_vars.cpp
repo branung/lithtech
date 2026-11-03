@@ -169,6 +169,7 @@ int32	g_bLT1WorldSort = 0; // A WorldModel whose polygon 0 is SURF_TRANSPARENT s
 int32	g_bLT1WorldCull = 0; // Those translucent WorldModels draw without backface culling
 int32	g_bLT1PolyGridCull = 0; // Draw polygrids without backface culling
 int32	g_bLT1PolyGridTexCoords = 0; // Polygrid scale is world units per texel and its pan is in texels
+int32	g_bLT1PolyGridAlpha = 0; // A polygrid vertex's alpha is its color table alpha times the object's, not 255
 int32	g_bLT1ModelShading = 0; // Shade models with LT1's fixed direction ramp rather than flat ambient
 int32	g_bWidescreenFOV = 0; // Horizontal widescreen - widens the horizontal FOV by aspect/4:3 at render time
 int32	g_CV_ConsoleEcho = 0; // The Linux console also writes every line to stdout
@@ -486,6 +487,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1WorldCull", &g_bLT1WorldCull),
 	EV_LONG("LT1PolyGridCull", &g_bLT1PolyGridCull),
 	EV_LONG("LT1PolyGridTexCoords", &g_bLT1PolyGridTexCoords),
+	EV_LONG("LT1PolyGridAlpha", &g_bLT1PolyGridAlpha),
 	EV_LONG("LT1ModelShading", &g_bLT1ModelShading),
 	EV_LONG("WidescreenFOV", &g_bWidescreenFOV),
 	EV_LONG("ConsoleEcho", &g_CV_ConsoleEcho),

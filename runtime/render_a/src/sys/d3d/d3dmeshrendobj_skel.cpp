@@ -129,11 +129,14 @@ void CD3DSkelMesh::Reset()
 
 	for (uint32 i = 0; i < 4; ++i)
 		m_pVertData[i] = NULL;
+
+	m_pDrawVB			= &m_VBController;
 }
 
 void CD3DSkelMesh::FreeAll()
 {
 	m_VBController.FreeAll();
+	m_LT1Warble.Free();
 	if (m_pBoneSetArray)
 	{
 		delete[] m_pBoneSetArray;
@@ -176,6 +179,7 @@ bool CD3DSkelMesh::Load(ILTStream& File, LTB_Header& LTBHeader)
 
 	// Read in the basics...
 	uint32 iObjSize; File.Read(&iObjSize,sizeof(iObjSize));
+	uint32 iObjStart = 0; File.GetPos(&iObjStart);
 	File.Read(&m_iVertCount,sizeof(m_iVertCount));
 	File.Read(&m_iPolyCount,sizeof(m_iPolyCount));
 	File.Read(&m_iMaxBonesPerTri,sizeof(m_iMaxBonesPerTri));
@@ -195,7 +199,17 @@ bool CD3DSkelMesh::Load(ILTStream& File, LTB_Header& LTBHeader)
 	else
 	{
 		m_eRenderMethod = eD3DRenderDirect;
-		return Load_RD(File);
+		if (!Load_RD(File))
+			return false;
+
+		// A mesh converted from ABC v6 carries its LT1 warble data after the bone sets. Nothing else writes it,
+		// and a mesh without it is left as read. The warble rewrites stream 0, the only one the converter emits
+		if (!m_VertStreamFlags[1] && !m_VertStreamFlags[2] && !m_VertStreamFlags[3] &&
+			m_LT1Warble.LoadOptional(File, iObjStart + iObjSize))
+		{
+			m_LT1Warble.BindSets(m_pBoneSetArray, m_iBoneSetCount, m_iVertCount);
+		}
+		return true;
 	}
 }
 
@@ -341,6 +355,7 @@ void CD3DSkelMesh::ReCreateObject()
 void CD3DSkelMesh::FreeDeviceObjects()
 {
 	m_VBController.FreeAll();										// Free our VB...
+	m_LT1Warble.FreeDeviceObjects();
 }
 
 // Skinned from the system memory copies, each bone set by its first bone
@@ -563,7 +578,7 @@ void CD3DSkelMesh::Render(ModelInstance *pInstance, DDMatrix* pD3DTransforms, CD
 					}
 				}
 #endif
-				m_VBController.Render(	pBoneSet->iFirstVertIndex,
+				m_pDrawVB->Render(	pBoneSet->iFirstVertIndex,
 										iCurrentPolyIndex,
 										pBoneSet->iVertCount,
 										(pBoneSet->iIndexIntoIndexBuff - iCurrentPolyIndex)/3);
@@ -745,7 +760,17 @@ void CD3DSkelMesh::BeginRender(DDMatrix* pD3DTransforms, CD3DRenderStyle* pRende
 	}
 
 
-	m_VBController.SetStreamSources();
+	// LT1's model warble draws from a copy whose positions are scaled about each bone set's node origin.
+	// Only the positions differ, so every draw below is unchanged
+	m_pDrawVB = &m_VBController;
+	if (lt1warble_On() && m_LT1Warble.Has() && m_eRenderMethod == eD3DRenderDirect)
+	{
+		VertexBufferController* pCopy = m_LT1Warble.GetCopy(m_pVertData[0], m_iVertCount,
+			m_VertStreamFlags[0], m_VertType, m_bSWVertProcessing, m_pIndexData, m_iPolyCount * 3);
+		if (pCopy)
+			m_pDrawVB = pCopy;
+	}
+	m_pDrawVB->SetStreamSources();
 
 	if(m_eRenderMethod == eD3DRenderMatrixPalettes)
 	{

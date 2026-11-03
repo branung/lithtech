@@ -23,6 +23,7 @@
 #include "counter.h"
 #include "screenglowmgr.h"
 #include "rendererframestats.h"
+#include "lt1modelwarble.h"
 
 //------------------------------------------------------------------
 //------------------------------------------------------------------
@@ -796,6 +797,9 @@ int d3d_RenderScene(SceneDesc *pDesc)
 		d3d_ShowPolyCounts();
 		d3d_ShowModelRenderInfo();
 	}
+
+	// LT1's model warble clock, after the scene, whether the warble is on or not
+	lt1warble_Tick(pDesc->m_FrameTime);
 
 	// Draw the world tree?
 	if (g_CV_DrawWorldTree.m_Val && g_have_world) 

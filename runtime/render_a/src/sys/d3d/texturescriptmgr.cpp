@@ -89,6 +89,61 @@ private:
 	float m_fPanU, m_fPanV;
 };
 
+// LT1's Warble scales a surface's texture axes about its texture origin: P by cos(a0) + 1.2 and
+// Q by sin(a1) + 1.3, a0 starting at 0 and a1 at 0.5, each at its own rate in radians per second.
+// Its <center> argument is never applied in LT1, as it asks for the surface's bounds while the world
+// is still loading. So it's a plain scale of the baked UVs, and the converter writes "@LT1Warble <rate0> <rate1>"
+static const char * const kLT1WarblePrefix = "@LT1Warble ";
+
+class CLT1WarbleEvaluator : public ITextureScriptEvaluator
+{
+public:
+	CLT1WarbleEvaluator(float fRate0, float fRate1) : m_fRate0(fRate0), m_fRate1(fRate1) {}
+
+	virtual void Evaluate(const CTextureScriptEvaluateVars& Vars, LTMatrix& mMat)
+	{
+		// The phases are in double: 21_MARITROPA2 warbles at 1000 radians a second, past float's range within a minute
+		const float xs = (float)cos((double)m_fRate0 * Vars.m_fTime) + 1.2f;
+		const float ys = (float)sin(0.5 + (double)m_fRate1 * Vars.m_fTime) + 1.3f;
+		mMat.Init(xs,   0.0f, 0.0f, 0.0f,
+				  0.0f, ys,   0.0f, 0.0f,
+				  0.0f, 0.0f, 1.0f, 0.0f,
+				  0.0f, 0.0f, 0.0f, 1.0f);
+	}
+
+	virtual uint32 GetFlags() const
+	{
+		return FLAG_DIRTYONFRAME | FLAG_COORD2;
+	}
+
+	virtual EInputType GetInputType() const
+	{
+		return INPUT_UV;
+	}
+
+private:
+	float m_fRate0, m_fRate1;
+};
+
+// The evaluator for a converter's LT1 surface effect name, or NULL if the name isn't one
+static ITextureScriptEvaluator* CreateLT1Evaluator(const char* pszGroupName)
+{
+	ITextureScriptEvaluator* pEval = NULL;
+	if(strncmp(pszGroupName, kLT1PanPrefix, strlen(kLT1PanPrefix)) == 0)
+	{
+		float fPanU = 0.0f, fPanV = 0.0f;
+		sscanf(pszGroupName + strlen(kLT1PanPrefix), "%f %f", &fPanU, &fPanV);
+		LT_MEM_TRACK_ALLOC(pEval = new CLT1PanEvaluator(fPanU, fPanV),LT_MEM_TYPE_RENDER_TEXTURESCRIPT);
+	}
+	else if(strncmp(pszGroupName, kLT1WarblePrefix, strlen(kLT1WarblePrefix)) == 0)
+	{
+		float fRate0 = 0.0f, fRate1 = 0.0f;
+		sscanf(pszGroupName + strlen(kLT1WarblePrefix), "%f %f", &fRate0, &fRate1);
+		LT_MEM_TRACK_ALLOC(pEval = new CLT1WarbleEvaluator(fRate0, fRate1),LT_MEM_TYPE_RENDER_TEXTURESCRIPT);
+	}
+	return pEval;
+}
+
 //creates a script instance. Note that the returned pointer must be released
 //with the function ReleaseInstance, and cannot be deleted
 CTextureScriptInstance* CTextureScriptMgr::GetInstance(const char* pszGroupName)
@@ -112,21 +167,10 @@ CTextureScriptInstance* CTextureScriptMgr::GetInstance(const char* pszGroupName)
 	if(!pInst || !pNode)
 		return NULL;
 
-	// An LT1 Pan carries its rates in the name and needs no file
-	if(strncmp(pszGroupName, kLT1PanPrefix, strlen(kLT1PanPrefix)) == 0)
+	// An LT1 surface effect carries its parameters in the name and needs no file
+	ITextureScriptEvaluator* pEval = CreateLT1Evaluator(pszGroupName);
+	if(pEval)
 	{
-		float fPanU = 0.0f, fPanV = 0.0f;
-		sscanf(pszGroupName + strlen(kLT1PanPrefix), "%f %f", &fPanU, &fPanV);
-
-		ITextureScriptEvaluator* pEval;
-		LT_MEM_TRACK_ALLOC(pEval = new CLT1PanEvaluator(fPanU, fPanV),LT_MEM_TYPE_RENDER_TEXTURESCRIPT);
-		if(!pEval)
-		{
-			delete pInst;
-			delete pNode;
-			return NULL;
-		}
-
 		// Held in the script list like any other evaluator, so it's found by name again and released with the rest
 		CTextureScriptNode* pScriptNode;
 		LT_MEM_TRACK_ALLOC(pScriptNode = new CTextureScriptNode,LT_MEM_TYPE_RENDER_TEXTURESCRIPT);

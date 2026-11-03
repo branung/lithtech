@@ -242,6 +242,10 @@ struct ABCNodeTrack
 
 	// Vertex animation for a node that owns an MD vertex list
 	float    *pMDPos;
+
+	// That animation's decompression translate for this node, with the same z mirror as pMDPos.
+	// LT1's model warble scales a vertex about it. Only meaningful where pMDPos is set
+	float     vMDXlate[3];
 };
 
 struct ABCAnim
@@ -310,6 +314,9 @@ struct ABCModel
 	LTMatrix *pBindGlobals;
 
 	LTVector  vBoundsMin, vBoundsMax;
+
+	// VertexStartNum[0], the first full detail vertex, where LT1's model warble starts counting
+	uint32    iVertStart0;
 };
 
 }
@@ -379,7 +386,8 @@ static bool abc_ParseGeometry(const uint8 *pData, uint32 len, ABCModel &m)
 	if (nLODVerts > ABC_MAX_VERTS)
 		return false;
 
-	r.Skip(2 * (nLODVerts + 1));
+	m.iVertStart0 = r.U16();
+	r.Skip(2 * nLODVerts);
 
 	uint32 nTris = r.U32();
 	if (r.Bad() || nTris == 0 || nTris > ABC_MAX_TRIS)
@@ -646,6 +654,9 @@ static bool abc_ParseAnims(const uint8 *pData, uint32 len, ABCModel &m)
 					delete[] pRaw;
 					return false;
 				}
+				tr.vMDXlate[0] = vXlate.x;
+				tr.vMDXlate[1] = vXlate.y;
+				tr.vMDXlate[2] = fMirrorZ2 * vXlate.z;
 
 				for (uint32 k = 0; k < nKF; k++)
 				{
@@ -978,6 +989,17 @@ static bool abc_TriIsVertexAnim(const ABCModel &m, const ABCTri &tri, const uint
 	return pIsVA[m.pVerts[tri.idx[0]].iNode] != 0;
 }
 
+// LT1's model warble ripples along LT1's vertex order: vertex n, counted from VertexStartNum[lod], takes
+// table entry (Offset + n) & 31. ABC keeps UVs per triangle corner, so one LT1 vertex becomes several here,
+// and each render object ends with a block giving every emitted vertex its n & 31 and the points it scales
+// about. CLT1WarbleData::LoadOptional reads it. It sits inside iObjSize, so a loader that doesn't look for it skips it
+#define ABC_LT1WARBLE_MAGIC 0x5731544Cu     // "LT1W"
+
+static uint8 abc_LT1WarblePhase(const ABCModel &m, uint32 iVert)
+{
+	return (uint8)((iVert - m.iVertStart0) & 31);
+}
+
 // Emits the vertex-animated render object as a CD3DVAMesh.
 // The first nMD vertices must be the node's MD vertices in pMDVerts order, 
 // since UpdateVA writes getValue(i) into vertex i. 
@@ -1131,6 +1153,24 @@ static bool abc_WriteVertexAnimObject(CLTBWriter &w, const ABCModel &m,
 		w.U16(pDupDst[i]);
 	}
 
+	// LT1's model warble: the undup vertices are the node's MD list, and each scales about its animation's
+	// translate. A duplicate needs no entry, as it copies its source after the warble
+	{
+		w.U32(ABC_LT1WARBLE_MAGIC);
+		w.U32(nMD);
+		for (uint32 v = 0; v < nMD; v++)
+			w.U8(abc_LT1WarblePhase(m, pMD[v]));
+		w.U32(m.nAnims);
+		for (uint32 a = 0; a < m.nAnims; a++)
+		{
+			const ABCNodeTrack *pTr = m.pAnims[a].pTracks ? &m.pAnims[a].pTracks[iMDNode] : LTNULL;
+			const bool bHas = pTr && pTr->pMDPos;
+			w.F32(bHas ? pTr->vMDXlate[0] : 0.0f);
+			w.F32(bHas ? pTr->vMDXlate[1] : 0.0f);
+			w.F32(bHas ? pTr->vMDXlate[2] : 0.0f);
+		}
+	}
+
 	w.PatchU32(sizeOffset, w.Size() - payloadStart);
 
 	delete[] pOutVerts; delete[] pOutIdx;
@@ -1193,12 +1233,15 @@ static bool abc_WriteRenderObject(CLTBWriter &w, const ABCModel &m, const uint8 
 
 	float  *pOutVerts = LTNULL;
 	uint16 *pOutIdx = LTNULL;
+	uint8  *pOutPhase = LTNULL;
 	LT_MEM_TRACK_ALLOC(pOutVerts = new float[nOutVerts * 8], LT_MEM_TYPE_MODEL);
 	LT_MEM_TRACK_ALLOC(pOutIdx = new uint16[m.nTris * 3], LT_MEM_TYPE_MODEL);
-	if (!pOutVerts || !pOutIdx)
+	LT_MEM_TRACK_ALLOC(pOutPhase = new uint8[nOutVerts], LT_MEM_TYPE_MODEL);
+	if (!pOutVerts || !pOutIdx || !pOutPhase)
 	{
 		delete[] pOutVerts;
 		delete[] pOutIdx;
+		delete[] pOutPhase;
 		return false;
 	}
 
@@ -1256,6 +1299,9 @@ static bool abc_WriteRenderObject(CLTBWriter &w, const ABCModel &m, const uint8 
 				p[3] = vNormal.x; p[4] = vNormal.y; p[5] = vNormal.z;
 				p[6] = tri.u[c];
 				p[7] = tri.v[c];
+
+				// The LT1 vertex this corner came from, for the model warble
+				pOutPhase[vOut] = abc_LT1WarblePhase(m, tri.idx[c]);
 
 				pOutIdx[iOut++] = (uint16)vOut;
 				vOut++;
@@ -1316,10 +1362,24 @@ static bool abc_WriteRenderObject(CLTBWriter &w, const ABCModel &m, const uint8 
 		}
 	}
 
+	// LT1's model warble: each vertex's phase, then the point each bone set scales about,
+	// its node's bind origin, where LT1's node space scale is centered after the bind transform
+	w.U32(ABC_LT1WARBLE_MAGIC);
+	w.U32(vOut);
+	w.Write(pOutPhase, vOut);
+	w.U32(nSets);
+	for (uint32 i = 0; i < nSets; i++)
+	{
+		LTVector vZero(0.0f, 0.0f, 0.0f), vOrigin;
+		MatVMul(&vOrigin, &m.pBindGlobals[sets[i].iBone], &vZero);
+		w.F32(vOrigin.x); w.F32(vOrigin.y); w.F32(vOrigin.z);
+	}
+
 	w.PatchU32(sizeOffset, w.Size() - payloadStart);
 
 	delete[] pOutVerts;
 	delete[] pOutIdx;
+	delete[] pOutPhase;
 
 	return !w.Bad();
 }

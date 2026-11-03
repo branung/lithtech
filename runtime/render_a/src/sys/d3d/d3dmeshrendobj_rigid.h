@@ -9,6 +9,7 @@
 #include "model.h" //genrenobj_model.h"				// For the DI Definitions...
 #include "VertexBufferController.h"
 #include "d3d_renderstyle.h"
+#include "lt1modelwarble.h"
 #include <vector>
 
 using namespace std;
@@ -78,6 +79,10 @@ private:
 	// Sys mem copies of our data...
 	uint8*					m_pVertData[4];
 	uint8*					m_pIndexData;
+
+	// LT1's model warble, as in CD3DSkelMesh, with one origin for the whole mesh
+	CLT1WarbleData			m_LT1Warble;
+	VertexBufferController*	m_pDrawVB;
 };
 
 #endif

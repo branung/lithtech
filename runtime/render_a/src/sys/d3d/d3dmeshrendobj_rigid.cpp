@@ -56,11 +56,13 @@ void CD3DRigidMesh::Reset()
 
 	m_bNonFixPipeData	= false;
 	for (uint32 i = 0; i < 4; ++i) m_pVertData[i] = NULL;
+	m_pDrawVB			= &m_VBController;
 }
 
 void CD3DRigidMesh::FreeAll()
 {
 	m_VBController.FreeAll();
+	m_LT1Warble.Free();
 	if (m_pIndexData)
 	{
 		delete[] m_pIndexData; m_pIndexData = NULL;
@@ -91,6 +93,7 @@ bool CD3DRigidMesh::Load(ILTStream& File, LTB_Header& LTBHeader)
 
 	// Read in the basics...
 	uint32 iObjSize; File.Read(&iObjSize,sizeof(iObjSize));
+	uint32 iObjStart = 0; File.GetPos(&iObjStart);
 	File.Read(&m_iVertCount,sizeof(m_iVertCount));
 	File.Read(&m_iPolyCount,sizeof(m_iPolyCount)); uint32 iMaxBonesPerVert, iMaxBonesPerTri;
 	File.Read(&iMaxBonesPerTri,sizeof(iMaxBonesPerTri)); assert(iMaxBonesPerTri == 1);
@@ -116,6 +119,13 @@ bool CD3DRigidMesh::Load(ILTStream& File, LTB_Header& LTBHeader)
 	// Read in pIndexList...
 	LT_MEM_TRACK_ALLOC(m_pIndexData = new uint8[sizeof(uint16) * m_iPolyCount * 3],LT_MEM_TYPE_RENDERER);
 	File.Read(m_pIndexData,sizeof(uint16) * m_iPolyCount * 3);
+
+	// A mesh converted from ABC v6 carries its LT1 warble data last; see CD3DSkelMesh::Load
+	if (!m_VertStreamFlags[1] && !m_VertStreamFlags[2] && !m_VertStreamFlags[3] &&
+		m_LT1Warble.LoadOptional(File, iObjStart + iObjSize))
+	{
+		m_LT1Warble.BindSets(NULL, 0, m_iVertCount);
+	}
 
 	// Create the VBs and stuff...
 	ReCreateObject();
@@ -166,6 +176,7 @@ void CD3DRigidMesh::ReCreateObject()
 void CD3DRigidMesh::FreeDeviceObjects()
 {
 	m_VBController.FreeAll();									// Free our VB...
+	m_LT1Warble.FreeDeviceObjects();
 }
 
 // Skinned from the system memory copies by the effector bone
@@ -235,7 +246,7 @@ void CD3DRigidMesh::Render(ModelInstance *pInstance, DDMatrix& WorldTransform,CD
 	}
 
 	//render away
-	m_VBController.Render(0, 0, m_iVertCount, m_iPolyCount);
+	m_pDrawVB->Render(0, 0, m_iVertCount, m_iPolyCount);
 }
 
 void CD3DRigidMesh::BeginRender(DDMatrix& pD3DTransforms, CD3DRenderStyle* pRenderStyle, uint32 iRenderPass)
@@ -306,7 +317,16 @@ void CD3DRigidMesh::BeginRender(DDMatrix& pD3DTransforms, CD3DRenderStyle* pRend
 	}
 
 
-	m_VBController.SetStreamSources();
+	// LT1's model warble draws from a copy with the positions scaled about the node's origin
+	m_pDrawVB = &m_VBController;
+	if (lt1warble_On() && m_LT1Warble.Has())
+	{
+		VertexBufferController* pCopy = m_LT1Warble.GetCopy(m_pVertData[0], m_iVertCount,
+			m_VertStreamFlags[0], eNO_WORLD_BLENDS, m_bSWVertProcessing, m_pIndexData, m_iPolyCount * 3);
+		if (pCopy)
+			m_pDrawVB = pCopy;
+	}
+	m_pDrawVB->SetStreamSources();
 }
 
 // NOTE: The texture list needs to change to be device independent...

@@ -24,6 +24,11 @@ static const LT1Var s_aLT1Set[] =
     { "LT1PolyGridCull",         "1", LT1_CLIENT },
     { "LT1PolyGridTexCoords",    "1", LT1_CLIENT },
 
+    // Both games' palettes write a table alpha of 255, so a polygrid vertex takes the object's alpha.
+    // Shogo: water at its default SurfaceAlpha 0.7 is 70% opaque, where it drew opaque.
+    // Blood 2: 03_MUSEUM's basin draws at its 0.55
+    { "LT1PolyGridAlpha",        "1", LT1_CLIENT },
+
     // LT1 packs a 2D color key and each pixel to 5:6:5 before comparing, so near magentas are transparent
     { "LT1ColorKey565",          "1", LT1_CLIENT },
 

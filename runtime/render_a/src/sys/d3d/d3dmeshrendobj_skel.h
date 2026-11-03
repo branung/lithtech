@@ -11,6 +11,7 @@
 #include "model.h"
 #include "VertexBufferController.h"
 #include "d3d_renderstyle.h"
+#include "lt1modelwarble.h"
 
 // DEFINES
 #define MAX_BONES_PER_VERTEX_SUPPORTED_BY_D3D		4
@@ -117,6 +118,11 @@ private:
 	// Sys mem copies of our data...
 	uint8*					m_pVertData[4];
 	uint8*					m_pIndexData;
+
+	// LT1's model warble: what the ABC converter wrote for it, and the buffer BeginRender draws from,
+	// the warbled copy while ModelWarble is on and m_VBController otherwise
+	CLT1WarbleData			m_LT1Warble;
+	VertexBufferController*	m_pDrawVB;
 };
 
 #endif

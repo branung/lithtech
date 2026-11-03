@@ -879,14 +879,22 @@ void d3d_DrawPolyGrid(const ViewParams &Params, LTObject *pObj)
 	float fScaledG = pGrid->m_ColorG * MATH_ONE_OVER_255;
 	float fScaledB = pGrid->m_ColorB * MATH_ONE_OVER_255;
 
+	// LT1PolyGridAlpha: off the env map path, LT1's vertex alpha is the table entry's alpha times the object's
+	const bool bLT1Alpha = g_bLT1PolyGridAlpha && !bEnvMap;
+	const float fObjAlpha = pGrid->m_ColorA * MATH_ONE_OVER_255;
+
 	uint32 nColorTable[256];
 	for(uint32 nCurrColor = 0; nCurrColor < 256; nCurrColor++)
 	{
+		uint8 nAlpha = nColorAlpha;
+		if (bLT1Alpha)
+			nAlpha = (uint8)LTCLAMP(pGrid->m_ColorTable[nCurrColor].a * fObjAlpha, 0.0f, 255.0f);
+
 		//Note that the color table is 0..255, object color is 0..255 as well
 		nColorTable[nCurrColor] = D3DRGBA_255(	pGrid->m_ColorTable[nCurrColor].x * fScaledR,
 												pGrid->m_ColorTable[nCurrColor].y * fScaledG,
 												pGrid->m_ColorTable[nCurrColor].z * fScaledB,
-												nColorAlpha);
+												nAlpha);
 	}
 
 	//setup our world matrix to represent a space that holds the orientation of the polygrid

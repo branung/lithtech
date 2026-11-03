@@ -101,6 +101,7 @@ extern int32 g_bLT1WorldSort;
 extern int32 g_bLT1WorldCull;
 extern int32 g_bLT1PolyGridCull;
 extern int32 g_bLT1PolyGridTexCoords;
+extern int32 g_bLT1PolyGridAlpha;
 
 // Diagnostics
 extern int32 g_LT1DeactivateTrace;

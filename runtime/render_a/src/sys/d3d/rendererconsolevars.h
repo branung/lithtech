@@ -290,6 +290,14 @@ RCONVAR(g_CV_ScreenGlowFogFarZ, "ScreenGlowFogFarZ", float, 2000.0f);
 RCONVAR(g_CV_ScreenGlowEnablePS, "ScreenGlowEnablePS", int, 1);
 
 //------------------------------
+// LT1's model warble, with LT1's names and defaults. Shogo and Blood 2 set the speed and scale at start
+// and turn ModelWarble on while the camera is in liquid. Only meshes converted from ABC v6 carry what
+// it needs, so another game that sets these (AVP2's shell does) draws as before
+RCONVAR(g_CV_ModelWarble, "ModelWarble", int, 0);
+RCONVAR(g_CV_WarbleSpeed, "WarbleSpeed", float, 25.0f);
+RCONVAR(g_CV_WarbleScale, "WarbleScale", float, 0.92f);
+
+//------------------------------
 // Effect file settings
 RCONVAR(g_CV_Effect_ForceSoftwareShaders, "Effect_ForceSoftwareShaders", int, 0);
 RCONVAR(g_CV_Effect_DebugEffectIncludes, "Effect_DebugEffectIncludes", int, 0);

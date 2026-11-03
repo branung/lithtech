@@ -9,6 +9,7 @@
 #include "common_stuff.h"
 #include "VertexBufferController.h"
 #include "d3d_renderstyle.h"
+#include "lt1modelwarble.h"
 
 
 
@@ -70,6 +71,10 @@ private:
 	// Sys mem copies of our data...
 	uint8*					m_pVertData[4];
 	uint8*					m_pIndexData;
+
+	// LT1's model warble: each undup vertex's LT1 phase, and the node's translate per animation,
+	// which a deformation node's vertices scale about
+	CLT1WarbleData			m_LT1Warble;
 };
 
 #endif

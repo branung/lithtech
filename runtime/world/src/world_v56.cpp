@@ -970,6 +970,28 @@ void BuildSections(const std::vector<const WorldModel *> &models, WorldV56TexDim
 					sEffectName = szEffect;
 				}
 			}
+			// An LT1 Warble scales P by cos(a0) + 1.2 and Q by sin(a1) + 1.3, a0 from 0 and a1 from 0.5, each at its own
+			// rate in radians per second. argv[0] is a <center> spec and the rates are argv[1] and argv[2].
+			// LT1 never applies the center, so the scale is about the authored origin: a plain scale of the UVs, which needs
+			// no texture size. Written even at zero rates, where the scale is static but not 1
+			else if (!surf.m_sEffect.empty() && stricmp(surf.m_sEffect.c_str(), "Warble") == 0)
+			{
+				double rates[2] = { 0.0, 0.0 };
+				const char *pArg = surf.m_sEffectParams.c_str();
+				for (int nArg = 0; nArg < 3; ++nArg)
+				{
+					while (*pArg == ' ' || *pArg == 9) ++pArg;
+					if (!*pArg)
+						break;
+					if (nArg > 0)
+						rates[nArg - 1] = atof(pArg);
+					while (*pArg && *pArg != ' ' && *pArg != 9) ++pArg;
+				}
+
+				char szEffect[128];
+				sprintf(szEffect, "@LT1Warble %.8f %.8f", rates[0], rates[1]);
+				sEffectName = szEffect;
+			}
 
 			// Key is texture name, shader code, and effect name in first encounter order.
 			const char SEP = (char)1;

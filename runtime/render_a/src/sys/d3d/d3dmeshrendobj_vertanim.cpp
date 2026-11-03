@@ -72,6 +72,7 @@ void CD3DVAMesh::Reset()
 void CD3DVAMesh::FreeAll()
 {
 	m_VBController.FreeAll();
+	m_LT1Warble.Free();
 	if (m_pDupMapList)	{ delete[] m_pDupMapList; m_pDupMapList = NULL; }
 	if (m_pIndexData)	{ delete[] m_pIndexData; m_pIndexData = NULL; }
 	for (uint32 i = 0; i < 4; ++i) { if (m_pVertData[i]) { delete[] m_pVertData[i];  m_pVertData[i] = NULL; } }
@@ -94,6 +95,7 @@ bool CD3DVAMesh::Load(ILTStream& File, LTB_Header& LTBHeader)
 
 	// Read in the basics...
 	uint32 iObjSize; File.Read(&iObjSize,sizeof(iObjSize));
+	uint32 iObjStart = 0; File.GetPos(&iObjStart);
 	File.Read(&m_iVertCount,sizeof(m_iVertCount));
 	File.Read(&m_iUnDupVertCount,sizeof(m_iUnDupVertCount));
 	File.Read(&m_iPolyCount,sizeof(m_iPolyCount));
@@ -126,6 +128,14 @@ bool CD3DVAMesh::Load(ILTStream& File, LTB_Header& LTBHeader)
 	File.Read(&m_iDupMapListCount,sizeof(m_iDupMapListCount)); assert(m_iDupMapListCount < 1000000 && "Invalid VA VertData");
 	LT_MEM_TRACK_ALLOC(m_pDupMapList = new DupMap[m_iDupMapListCount],LT_MEM_TYPE_RENDERER);
 	File.Read(m_pDupMapList,sizeof(DupMap) * m_iDupMapListCount);
+
+	// A mesh converted from ABC v6 carries its LT1 warble data last.
+	// One phase per undup vertex, since UpdateVA writes those and the duplicates copy them
+	if (m_LT1Warble.LoadOptional(File, iObjStart + iObjSize) &&
+		m_LT1Warble.GetPhaseCount() != m_iUnDupVertCount)
+	{
+		m_LT1Warble.Free();
+	}
 
 	// Create the VBs and stuff...
 	ReCreateObject();
@@ -227,6 +237,18 @@ void CD3DVAMesh::UpdateVA(Model* pModel, AnimTimeRef* pAnimTimeRef)
 		pPos->x = val[0]; pPos->y = val[1]; pPos->z = val[2];
 
 		pVertData += Vertex_Size;
+	}
+
+	// LT1's model warble, where LT1 applies it: to the animated position, before the node's matrix, about
+	// the animation's translate. Before the duplicates copy their sources, so each warbles as its LT1 vertex
+	if (lt1warble_On() && m_LT1Warble.Has())
+	{
+		LTVector vOrigin;
+		if (m_LT1Warble.GetVAOrigin(pAnimTimeRef->m_Prev.m_iAnim, pAnimTimeRef->m_Cur.m_iAnim, percent, vOrigin))
+		{
+			m_LT1Warble.ApplyVA(bDiscardPath ? m_pVertData[0] : (uint8*)m_VBController.getVertexData(0),
+				Vertex_Size, m_iUnDupVertCount, vOrigin);
+		}
 	}
 
 	// Copy the DupVerts...
