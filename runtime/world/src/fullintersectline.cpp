@@ -594,8 +594,11 @@ static void i_FindIntersectionsHPoly(const WorldBsp *pWorldBsp, const Node **pNo
     req.m_pIPos      = pIntersectionPosPtr;
     req.m_pQuery     = g_pCurQuery;
     req.m_pWorldBsp  = pWorldBsp;
-    
-    if (IntersectLineNode(pWorldBsp->GetRootNode(), &req)) 
+
+    // LT1IntersectPoly: LT1's own polygon walk, with its 0.1 plane tolerance, for a ray with INTERSECT_HPOLY
+    LTBOOL bHit = g_bLT1IntersectPoly ? IntersectLineNodeLT1(pWorldBsp->GetRootNode(), &req)
+                                      : IntersectLineNode(pWorldBsp->GetRootNode(), &req);
+    if (bHit)
 	{
         ASSERT(req.m_pNodeHit);
 

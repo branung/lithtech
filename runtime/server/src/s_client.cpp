@@ -70,7 +70,6 @@ uint32 g_Ticks_ClientVis;
 extern int32 g_CV_STracePackets, g_CV_DelimitPackets;
 extern int32 g_CV_MeasurePackets;
 extern int32 g_bForceRemote;
-bool sm_LT1WorldHasVis();
 void sm_LT1VisitVisibleObjects(const LTVector &vPos, void (*fn)(LTObject *pObj, void *pUser), void *pUser);
 extern int32 g_CV_ConnTroubleCount;
 extern int32 g_CV_BandwidthTargetServer;
@@ -1178,12 +1177,44 @@ struct LT1ForceUpdate // DECompat's ForceUpdate, laid out the same
 static const uint32 kLT1MaxForceUpdate = 200;	// MAX_FORCEUPDATE_OBJECTS
 static const uint32 kLT1MidGetForceUpdate = 11;	// MID_GETFORCEUPDATEOBJECTS
 
-static void LT1CollectVisible(LTObject *pObj, void *pUser)
+// LT1's ShouldSendToClients, which the walk and its attachments apply: FLAG_FORCECLIENTUPDATE,
+// or FLAG_VISIBLE and a type other than OT_NORMAL or a special effect message, and in the world.
+// Jupiter's also takes FLAG_SOLID, FLAG_RAYHIT or changed flags, so it sent solid invisible objects LT1 doesn't.
+// The null model test isn't LT1's, and stays as a guard: the client can't create a model object with no model
+static bool LT1NullModel(LTObject *pObject)
 {
-	((std::vector<LTObject*>*)pUser)->push_back(pObj);
+	return pObject->m_ObjectType == OT_MODEL && pObject->ToModel()->GetModelDB() == NULL;
 }
 
-static void LT1ClientObjects(const Client *pClient, std::vector<LTObject*> &objects)
+static bool LT1ShouldSendToClient(LTObject *pObject)
+{
+	if (!(pObject->m_Flags & FLAG_FORCECLIENTUPDATE))
+	{
+		if (!(pObject->m_Flags & FLAG_VISIBLE))
+			return false;
+		if (pObject->m_ObjectType == OT_NORMAL && pObject->sd->m_cSpecialEffectMsg.Size() == 0)
+			return false;
+	}
+	if (!(pObject->m_InternalFlags & IFLAG_INWORLD))
+		return false;
+	return !LT1NullModel(pObject);
+}
+
+struct LT1SendEntry
+{
+	LTObject	*m_pObject;
+	bool		m_bForced;		// from the force list, sent unfiltered
+};
+
+static void LT1CollectVisible(LTObject *pObj, void *pUser)
+{
+	if (!LT1ShouldSendToClient(pObj))
+		return;
+	LT1SendEntry entry = { pObj, false };
+	((std::vector<LT1SendEntry>*)pUser)->push_back(entry);
+}
+
+static void LT1ClientObjects(const Client *pClient, std::vector<LT1SendEntry> &objects)
 {
 	objects.clear();
 	sm_LT1VisitVisibleObjects(pClient->m_ViewPos, &LT1CollectVisible, &objects);
@@ -1211,27 +1242,44 @@ static void LT1ClientObjects(const Client *pClient, std::vector<LTObject*> &obje
 		pViewObj->sd->m_pObject->EngineMessageFn(kLT1MidGetForceUpdate, &force, 0.0f);
 
 	for (uint32 i = 0; i < force.m_nObjects && i < kLT1MaxForceUpdate; i++)
+	{
 		if (force.m_Objects[i])
-			objects.push_back(force.m_Objects[i]);
+		{
+			LT1SendEntry entry = { force.m_Objects[i], true };
+			objects.push_back(entry);
+		}
+	}
 }
 
 void SendAllObjectsGuaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
 {
-	if (g_bLT1ClientPVS && sm_LT1WorldHasVis())
+	if (g_bLT1ClientPVS)
 	{
 		// LT1's set in LT1's order, skipping objects already sent
-		static std::vector<LTObject*> objects;
+		// No gate on vis data: a world without it sends every filed object (s_lt1vis.cpp)
+		static std::vector<LT1SendEntry> objects;
 		LT1ClientObjects(pInfo->m_pClient, objects);
 		for (size_t i = 0; i < objects.size(); ++i)
 		{
-			LTObject *pObject = objects[i];
+			LTObject *pObject = objects[i].m_pObject;
 			if (pInfo->m_pClient->m_ObjInfos[pObject->m_ObjectID].m_ChangeFlags & CF_SENTINFO)
-				continue;
-			if (!ShouldSendToClient(pInfo->m_pClient, pObject))
 				continue;
 			if (pObject->IsMainWorldModel())
 				continue;
-			UpdateSendToClientState(pObject, pInfo);
+			// The force list goes unfiltered, as LT1's does, apart from the null model guard,
+			// and without attachments: only the walk's objects send those
+			if (objects[i].m_bForced && LT1NullModel(pObject))
+				continue;
+
+			sm_AddObjectChangeInfo(pInfo, pObject, &pInfo->m_pClient->m_ObjInfos[pObject->m_ObjectID]);
+			if (objects[i].m_bForced)
+				continue;
+			for (Attachment *pAttachment = pObject->m_Attachments; pAttachment; pAttachment = pAttachment->m_pNext)
+			{
+				LTObject *pAttachedObj = sm_FindObject(pAttachment->m_nChildID);
+				if (pAttachedObj && LT1ShouldSendToClient(pAttachedObj))
+					sm_AddObjectChangeInfo(pInfo, pAttachedObj, &pInfo->m_pClient->m_ObjInfos[pAttachedObj->m_ObjectID]);
+			}
 		}
 		return;
 	}
@@ -1399,7 +1447,7 @@ void SendAllObjectsUnguaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
 					continue;
 
 				// LT1ClientPVS: only objects this update sent
-				if (g_bLT1ClientPVS && sm_LT1WorldHasVis() &&
+				if (g_bLT1ClientPVS &&
 					!(pInfo->m_pClient->m_ObjInfos[pObject->m_ObjectID].m_ChangeFlags & CF_SENTINFO))
 					continue;
 
@@ -1439,7 +1487,7 @@ void SendAllObjectsUnguaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
 					continue;
 
 				// LT1ClientPVS: only objects this update sent
-				if (g_bLT1ClientPVS && sm_LT1WorldHasVis() &&
+				if (g_bLT1ClientPVS &&
 					!(pInfo->m_pClient->m_ObjInfos[pObject->m_ObjectID].m_ChangeFlags & CF_SENTINFO))
 					continue;
 

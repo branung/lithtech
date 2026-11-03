@@ -165,9 +165,24 @@ namespace
 // Calls fn for every object the walk reaches from vPos
 void sm_LT1VisitVisibleObjects(const LTVector &vPos, void (*fn)(LTObject *pObj, void *pUser), void *pUser)
 {
-	const WorldBsp *pBsp = LT1VisBsp();
-	if (!pBsp || !fn)
+	if (!fn)
 		return;
+
+	const WorldBsp *pBsp = LT1VisBsp();
+	if (!pBsp)
+	{
+		// No vis data anywhere (01_AMBUSH): LT1 visits every filed object. The converter writes no vis tree
+		// for such a world, so they come in the server list's order. Only the client send gets here,
+		// as a ping is gated on vis data first
+		LTLink *pHead = &g_pServerMgr->m_Objects.m_Head;
+		for (LTLink *pCur = pHead->m_pNext; pCur != pHead; pCur = pCur->m_pNext)
+		{
+			LTObject *pObj = (LTObject *)pCur->m_pData;
+			if (pObj && LT1IsLinked(pObj))
+				fn(pObj, pUser);
+		}
+		return;
+	}
 
 	const uint32 nLeaf = pBsp->PVSFindLeaf(vPos);
 	if (nLeaf == kPVSNoLeaf || nLeaf >= pBsp->m_nVisLeaves)

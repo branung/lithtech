@@ -118,14 +118,15 @@ int32	g_bLT1StairSwept = 0; // The stair step's box covers the whole move and mo
 int32	g_bLT1WorldOnce = 0; // MoveObject collides with the main world once, after the other objects. Set on both client and server
 int32	g_bLT1SoundStep = 0; // The server's tracked sounds count down by game time rather than system time. Server only
 int32	g_bLT1AutoDeactivate = 0; // An object nothing has pinged for its deactivation time stops updating. Needs LT1 vis data. Server only
-int32	g_bLT1ClientPVS = 0; // A client is only sent what LT1's visibility walk reaches from its view, plus its forced objects. Also needs LT1 vis data. Server only
+int32	g_bLT1ClientPVS = 0; // A client is only sent what LT1's visibility walk reaches from its view, filtered as LT1's, plus its forced objects unfiltered. A world without vis data sends every filed object. Server only
 int32	g_bLT1FileOrder = 0; // The visibility walk meets a node's newest filed objects first, as LT1's does. Server only
 int32	g_bLT1AnimTransition = 0; // A model with FLAG_ANIMTRANSITION holds a newly set animation for ModelTransitionMS, firing no string keys. Set on both client and server
 int32	g_bLT1NetInterp = 0; // The client eases a networked object to each update over 1.1 server periods, with no velocity. Prediction 0 still turns the easing off. Set on both client and server
-int32	g_bLT1WorldTouchPos = 0; // A mover's world touch handler sees the position it was stopped at. Set on both client and server
+int32	g_bLT1WorldTouchPos = 0; // A mover's main world touch handler sees the position it was stopped at. Set on both client and server
 int32	g_bLT1SolidResize = 0; // In LT1 a resize only collides for a FLAG_SOLID object, while Jupiter also collides touch notify and container objects. Set on both client and server
 int32	g_bLT1BoxHitNormal = 0; // A ray hitting an object's box reports the x face's plane for every face, as LT1's box test did. Shogo sets it on the server
 int32	g_bLT1IntersectLeaf = 0; // A world ray without INTERSECT_HPOLY walks the BSP's leaves with LT1's 0.1 plane tolerance, not the polygons with 0.01. Set on both client and server
+int32	g_bLT1IntersectPoly = 0; // A world ray with INTERSECT_HPOLY walks the polygons with the same 0.1 plane tolerance, not Jupiter's 0.01. Set on both client and server
 int32	g_bLT1PointCollide = 0; // A FLAG_POINTCOLLIDE mover meets the world as LT1's does, stopping 0.1 in front of the plane. Set on both client and server
 int32	g_bLT1MoverBoxGate = 0; // A collision candidate is tested against the mover's box at its destination, not the box swept along the move. Set on both client and server
 int32	g_bLT1TunnelNonsolid = 0; // A move bigger than the mover's dims takes the swept test even when the pair isn't solid, and its touch comes at the blocker's face. Set on both client and server
@@ -440,6 +441,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("LT1SolidResize", &g_bLT1SolidResize),
 	EV_LONG("LT1BoxHitNormal", &g_bLT1BoxHitNormal),
 	EV_LONG("LT1IntersectLeaf", &g_bLT1IntersectLeaf),
+	EV_LONG("LT1IntersectPoly", &g_bLT1IntersectPoly),
 	EV_LONG("LT1PointCollide", &g_bLT1PointCollide),
 	EV_LONG("LT1MoverBoxGate", &g_bLT1MoverBoxGate),
 	EV_LONG("LT1TunnelNonsolid", &g_bLT1TunnelNonsolid),

@@ -69,6 +69,7 @@ extern int32 g_bLT1BoxSlide;
 
 // Rays
 extern int32 g_bLT1IntersectLeaf;
+extern int32 g_bLT1IntersectPoly;
 extern int32 g_bLT1BoxHitNormal;
 extern int32 g_bLT1RaySolidOnly;
 

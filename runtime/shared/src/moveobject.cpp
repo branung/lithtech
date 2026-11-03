@@ -218,8 +218,11 @@ static bool CollideAgainstWorld
 				{
 					// LT1WorldTouchPos: LT1 collides into the mover's own position, so its touch handler sees where it was stopped. 
 					// Jupiter only applies the stopped position after the whole move, so the mover is placed there for the call.
-					// Afterwards it goes back, unless the handler moved it
-					const bool bLT1Pos = g_bLT1WorldTouchPos && pObj == pState->m_pObj;
+					// Afterwards it goes back, unless the handler moved it.
+					// Only for the main world: LT1 collides any other world model into a copy of the destination,
+					// so a mover touching a door is still unclipped during the touch
+					const bool bLT1Pos = g_bLT1WorldTouchPos && pObj == pState->m_pObj &&
+						pWorldBspObj->IsMainWorldModel();
 					const LTVector vSavedPos = pObj->GetPos();
 					if (bLT1Pos)
 						pObj->SetPos(P1);

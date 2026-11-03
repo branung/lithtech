@@ -146,6 +146,11 @@ static const LT1Var s_aLT1Set[] =
     { "LT1PlaneRecheck",       "1", LT1_BOTH },
     { "LT1SweepRebuild",       "1", LT1_BOTH },
     { "LT1PolyTest",           "1", LT1_BOTH },
+
+    // Shogo and Blood 2: a world ray with INTERSECT_HPOLY walks the polygons with LT1's 0.1 plane tolerance too.
+    // Blood 2: two shell casings whose last step met a face just inside the band bounced in the port and were
+    // deleted in retail. Shogo's replays are unchanged by it (both sides)
+    { "LT1IntersectPoly",      "1", LT1_BOTH },
 };
 
 
