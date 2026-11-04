@@ -232,6 +232,10 @@ enum
 //! Do we copy?
 //  #define FLIPSCREEN_COPY             (1<<1)      <- Use the device creation console variable in it's place...
 
+//! LT1's flag: the console may be drawn on this flip. Jupiter draws it at End3D, so a flip draws it
+//! only when no End3D has since the last one, as in a 2D menu or a video. Only LT1 game code passes it
+    FLIPSCREEN_CANDRAWCONSOLE =  (1<<0),
+
 //! This just does dirty rectangles
     FLIPSCREEN_DIRTY =           (1<<2),      //<-- Dirty rects support has been removed... (ok, not yet, but very soon)
 };

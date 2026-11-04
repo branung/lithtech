@@ -994,7 +994,7 @@ Launch:
 	pClient->DrawSurfaceToSurface(hScreen, hLoading, LTNULL, ((int)cxScreen - (int)cxLoading) / 2, ((int)cyScreen - (int)cyLoading) / 2);
 	pClient->EndOptimized2D();
 	pClient->End3D(END3D_CANDRAWCONSOLE);
-	pClient->FlipScreen (0);
+	pClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 
 
 	// All done...

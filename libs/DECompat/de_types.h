@@ -224,6 +224,6 @@ inline DDWORD DE_LT1SpriteFlags(DDWORD dwLT1)
 typedef HLTSOUND    HSOUNDDE;
 
 
-#define FLIPSCREEN_CANDRAWCONSOLE   0
+// FLIPSCREEN_CANDRAWCONSOLE is the SDK's own flag now (ltcodes.h), with LT1's value
 
 #endif // __DE_TYPES_H__

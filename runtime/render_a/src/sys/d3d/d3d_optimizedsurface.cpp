@@ -289,6 +289,11 @@ static uint32 d3d_CalcNumTilesInDir(uint32 nVal)
 
 bool d3d_OptimizeSurface(HLTBUFFER hBuffer, PValue transparentColor )
 {
+	// The renderer's copy of OptimizeSurfaces only refreshes once a frame. The shared LT1 set turns it on after
+	// the renderer is up, and Shogo's splash is drawn before the first frame, so it found 0, got no tiles and
+	// drew at 640x480 in the corner. So it's read again before refusing. A game that never sets it reads 0 as before
+	if (!g_CV_OptimizeSurfaces && g_CV_OptimizeSurfaces.m_hParam && g_pStruct)
+		g_CV_OptimizeSurfaces.SetFloat(g_pStruct->GetParameterValueFloat(g_CV_OptimizeSurfaces.m_hParam));
 	if (!hBuffer || !g_CV_OptimizeSurfaces) 
 		return false;
 

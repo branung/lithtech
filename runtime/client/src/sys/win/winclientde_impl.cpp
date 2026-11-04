@@ -81,6 +81,10 @@ static LTRESULT cis_WarpSurfaceToSurfaceSolidColor(HSURFACE hDest, HSURFACE hSrc
 	LTWarpPt *pCoords, int nCoords, HLTCOLOR hTransColor, HLTCOLOR hFillColor);
 
 static LTRESULT cis_End3D(uint flags);
+static LTRESULT cis_Start3D();
+
+// Whether an End3D drew the console since the last flip, for FLIPSCREEN_CANDRAWCONSOLE
+static bool s_bConsoleDrawn = false;
 
 
 typedef LTRESULT (*DrawPixelsFn)(bool bSameSurface, uint8 *pSrcData, uint8 *pDestData, 
@@ -1905,7 +1909,13 @@ static LTRESULT cis_FlipScreen(uint32 flags)
 		cis_End3D(END3D_CANDRAWCONSOLE);
 	}
 
-	g_pClientMgr->ShowDrawSurface(flags);	
+	// FLIPSCREEN_CANDRAWCONSOLE: LT1 drew the console at the flip. Jupiter draws it at End3D, which a 2D frame
+	// never reaches, as in Blood 2's menu or a video. So it's drawn here when no End3D drew it, and never twice
+	if ((flags & FLIPSCREEN_CANDRAWCONSOLE) && !s_bConsoleDrawn && cis_Start3D() == LT_OK)
+		cis_End3D(END3D_CANDRAWCONSOLE);
+	s_bConsoleDrawn = false;
+
+	g_pClientMgr->ShowDrawSurface(flags & ~FLIPSCREEN_CANDRAWCONSOLE);
 	return LT_OK;
 }
 
@@ -2178,6 +2188,7 @@ static LTRESULT cis_End3D(uint flags)
 #ifndef _FINAL
 	if ((flags & END3D_CANDRAWCONSOLE) != 0) {
 		CountAdder cTicks_Console(&g_Ticks_Render_Console);
+		s_bConsoleDrawn = true;
 		if (dsi_IsConsoleUp()) {
 			con_Draw(); }
 		else if(g_nConsoleLines > 0) {

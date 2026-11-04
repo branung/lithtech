@@ -225,7 +225,7 @@ LTBOOL CMainMenu::DoMultiplayer(LTBOOL bMinimize)
 		m_pClientDE->DrawSurfaceToSurface (hScreen, hLoading, LTNULL, ((int)cxScreen - (int)cxLoading) / 2, ((int)cyScreen - (int)cyLoading) / 2);
 		m_pClientDE->EndOptimized2D();
 		m_pClientDE->End3D(END3D_CANDRAWCONSOLE);
-		m_pClientDE->FlipScreen (0);
+		m_pClientDE->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 
 		m_pClientDE->DeleteSurface (hLoading);
 		

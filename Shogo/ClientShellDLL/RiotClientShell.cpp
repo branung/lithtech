@@ -801,7 +801,7 @@ void CRiotClientShell::ShowSplash()
 	g_pLTClient->ScaleSurfaceToSurface (hScreen, hSplash, &rcDst, &rcSrc);
 	g_pLTClient->EndOptimized2D();
 	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
-	g_pLTClient->FlipScreen(0);
+	g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 	AddToClearScreenCount();
 
 	g_pLTClient->DeleteSurface (hSplash);
@@ -1132,6 +1132,15 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 		}
 	}
 
+	// The shared LT1 set runs before the splash, as Blood 2's does. The splash only scales with OptimizeSurfaces on,
+	// which the set turns on, so after it the art stayed at 640x480 in the corner. Still before the server creates its objects
+	{
+		DECompat_ApplyLT1ClientDefaults(g_pLTClient);
+
+		// Shogo's own engine vars, both shells' in one table (Shared/ShogoLT1Vars.h)
+		DECompat_ApplyLT1ClientVars(g_pLTClient, SHOGO_LT1_VARS);
+	}
+
 	// show the splash screen
 
 	ShowSplash();
@@ -1156,14 +1165,6 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 	g_pLTClient->SetCameraFOV(m_hCamera, m_fCurrentFovX, y);
 
 	
-	{
-		// The shared LT1 engine defaults before the server creates its objects.
-		DECompat_ApplyLT1ClientDefaults(g_pLTClient);
-
-		// Shogo's own engine vars, both shells' in one table (Shared/ShogoLT1Vars.h)
-		DECompat_ApplyLT1ClientVars(g_pLTClient, SHOGO_LT1_VARS);
-	}
-
 
 	// Attempt to find the movies path, in the launcher's data folder too
 
@@ -1869,7 +1870,7 @@ void CRiotClientShell::Update()
 			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateMoviesState();
 			// LT1's End3D() presented the frame, Jupiter's needs FlipScreen
-			g_pLTClient->FlipScreen(0);
+			g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 			return;
 		}
 		break;
@@ -1878,7 +1879,7 @@ void CRiotClientShell::Update()
 		{
 			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateCreditsState();
-			g_pLTClient->FlipScreen(0);
+			g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 			return;
 		}
 		break;
@@ -1887,7 +1888,7 @@ void CRiotClientShell::Update()
 		{
 			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateIntroState();
-			g_pLTClient->FlipScreen(0);
+			g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 			return;
 		}
 		break;
@@ -1897,7 +1898,7 @@ void CRiotClientShell::Update()
 			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateMenuMovement();
 			UpdateMenuState();
-			g_pLTClient->FlipScreen(0);
+			g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 			return;
 		}
 		break;
@@ -1906,7 +1907,7 @@ void CRiotClientShell::Update()
 		{
 			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateBumperState();
-			g_pLTClient->FlipScreen(0);
+			g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 			return;
 		}
 		break;
@@ -1915,7 +1916,7 @@ void CRiotClientShell::Update()
 		{
 			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateLoadingLevelState();
-			g_pLTClient->FlipScreen(0);
+			g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 			return;
 		}
 		break;
@@ -1924,7 +1925,7 @@ void CRiotClientShell::Update()
 		{
 			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdatePausedState();
-			g_pLTClient->FlipScreen(0);
+			g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 			return;
 		}
 		break;
@@ -1933,7 +1934,7 @@ void CRiotClientShell::Update()
 		{
 			g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER, LTNULL);
 			UpdateDemoMultiplayerState();
-			g_pLTClient->FlipScreen(0);
+			g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 			return;
 		}
 		break;
@@ -2112,7 +2113,7 @@ void CRiotClientShell::PostUpdate()
 		UpdateGameOver();
 	}
 
-	g_pLTClient->FlipScreen(0);
+	g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 
 	// Check to see if we should start the world...(do after flip)...
 
@@ -7537,7 +7538,7 @@ LTBOOL CRiotClientShell::DoLoadWorld(const char* pWorldFile, const char* pCurWor
 	g_pLTClient->EndOptimized2D();
 
 	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
-	g_pLTClient->FlipScreen(0);
+	g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 
 	
 	// Check for special case of not being connected to a server or going to 
@@ -8657,7 +8658,7 @@ void CRiotClientShell::DoRenderLoop (LTBOOL bDrawInterface)
 		g_pLTClient->EndOptimized2D();
 	}
 	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
-	g_pLTClient->FlipScreen(0);
+	g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -9539,7 +9540,7 @@ void CRiotClientShell::HandleMPChangeLevel()
 	g_pLTClient->EndOptimized2D();
 
 	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
-	g_pLTClient->FlipScreen(0);
+	g_pLTClient->FlipScreen(FLIPSCREEN_CANDRAWCONSOLE);
 
 	m_nGameState = GS_MPLOADINGLEVEL;
 }
