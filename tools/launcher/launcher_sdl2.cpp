@@ -24,15 +24,16 @@
 #include <unistd.h>
 #endif
 
-// The game this build launches, set per launcher by CMake
+// The game this build launches, set per launcher by CMake.
+// Without one it's the combined launcher, LTCallisto, which lists every game in its Games folder
 #ifndef LTLAUNCH_PROFILE
-#define LTLAUNCH_PROFILE LithLauncherProfile
+#define LTLAUNCH_COMBINED 1
 #endif
 
 namespace {
 
 // The launcher's name and version
-const char *kLauncherName    = "LithLauncher";
+const char *kLauncherName    = "LTCallisto";
 const char *kLauncherVersion = "0.01";
 
 // Launcher color palette (0xRRGGBB)
@@ -48,7 +49,14 @@ const Uint32 kGrayTxt = 0x6D6D6D;
 const Uint32 kCaption = 0x0078D7;
 const Uint32 kCapText = 0xFFFFFF;
 
-const int kWinW = 640, kWinH = 470;
+// The combined launcher's game list, to the left of the one game's window
+#ifdef LTLAUNCH_COMBINED
+const int kSideW = 210;
+#else
+const int kSideW = 0;
+#endif
+const int kMainW = 640;
+const int kWinW = kSideW + kMainW, kWinH = 470;
 
 struct Rect
 {
@@ -62,13 +70,17 @@ bool In(const Rect &r, int x, int y)
     return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
 }
 
-const Rect kPlayButton(406, 12, 222, 26);
-const Rect kQuitButton(406, 330, 222, 26);
-const Rect kDisplayButton(406, 52, 222, 26);
-const Rect kCustomizeButton(406, 86, 222, 26);
-const Rect kAddOnBox(12, 338, 380, 18);
-const Rect kDataDirBox(12, 12, 300, 22);
-const Rect kBrowseButton(318, 12, 74, 22);
+const Rect kPlayButton(kSideW + 406, 12, 222, 26);
+const Rect kQuitButton(kSideW + 406, 330, 222, 26);
+const Rect kDisplayButton(kSideW + 406, 52, 222, 26);
+const Rect kCustomizeButton(kSideW + 406, 86, 222, 26);
+const Rect kAddOnBox(kSideW + 12, 338, 380, 18);
+const Rect kDataDirBox(kSideW + 12, 12, 300, 22);
+const Rect kBrowseButton(kSideW + 318, 12, 74, 22);
+
+// The game list's heading, and its buttons spaced like Display... and Customize...
+const Rect kGamesHeading(12, 12, kSideW - 24, 26);
+const int  kGameButtonY = 52, kGameButtonStep = 34;
 
 const int kCaptionH = 22;
 const int kCloseSize = 18;
@@ -76,13 +88,13 @@ const int kDlgButtonW = 80, kDlgButtonH = 24;
 const int kDlgButtonGap = 8; // Gap between OK and Cancel and between Cancel and the frame's edge
 const int kDlgBottomMargin = 10; // Margin below OK and Cancel
 
-// A dialog centred over the window, with its caption bar, close box, OK and Cancel
+// A dialog centred over the game's side of the window, with its caption bar, close box, OK and Cancel
 struct Dialog
 {
     Rect frame, caption, close, ok, cancel;
 
     Dialog(int w, int h)
-        : frame((kWinW - w) / 2, (kWinH - h) / 2, w, h),
+        : frame(kSideW + (kMainW - w) / 2, (kWinH - h) / 2, w, h),
           caption(frame.x + 1, frame.y + 1, w - 2, kCaptionH),
           close(caption.x + caption.w - kCloseSize - 3, caption.y + 2, kCloseSize, kCloseSize),
           ok(frame.x + w - 2 * (kDlgButtonW + kDlgButtonGap), frame.y + h - kDlgButtonH - kDlgBottomMargin,
@@ -471,6 +483,22 @@ bool Spawn(const std::vector<std::string> &args, const std::string &sCwd,
 
 struct App
 {
+    // Every game this launcher lists, the shown one copied into game and spec
+    std::vector<ltlaunch::GameProfile> games;
+    std::vector<Rect> gameButtons;
+    int iGame = -1;
+    std::string sSelectedPath; // The combined launcher's own launcher.ini, naming the selected game
+
+    // A game's choices while another is shown, so a session's custom archives survive switching
+    struct GameState
+    {
+        bool bSeen = false;
+        std::vector<std::string> chosenRez;
+        bool bAlwaysRez = false, bAddOn = false;
+        std::string sDataDir;
+    };
+    std::vector<GameState> states;
+
     ltlaunch::GameProfile game;
     ltlaunch::LaunchSpec spec;
     std::string sStatus;
@@ -504,6 +532,56 @@ struct App
     bool bHasAddOn = false, bAddOn = false;
 
     bool UseAddOn() const { return bHasAddOn && bAddOn; }
+
+    // Shows a game. Each keeps its own settings in launcher.ini in its folder, which for a single
+    // game's launcher is the launcher's own folder
+    void SelectGame(int i)
+    {
+        if (i < 0 || i >= (int)games.size() || i == iGame) return;
+        if (iGame >= 0)
+        {
+            GameState &old = states[(size_t)iGame];
+            old.bSeen = true;
+            old.chosenRez = chosenRez;
+            old.bAlwaysRez = bAlwaysRez;
+            old.bAddOn = bAddOn;
+            old.sDataDir = spec.m_sDataDir;
+        }
+
+        iGame = i;
+        game = games[(size_t)i];
+        spec = game.m_Spec;
+        bHasAddOn = ltlaunch::HasAddOn(game);
+        sSettingsPath = ltlaunch::JoinPath(spec.m_sGameDir, "launcher.ini");
+
+        const GameState &st = states[(size_t)i];
+        if (st.bSeen)
+        {
+            chosenRez = st.chosenRez;
+            bAlwaysRez = st.bAlwaysRez;
+            bAddOn = st.bAddOn;
+            spec.m_sDataDir = st.sDataDir;
+        }
+        else
+        {
+            chosenRez.clear();
+            bAlwaysRez = bAddOn = false;
+            LoadSettings();
+        }
+
+        bSplashTried = false;
+        sStatus.clear();
+        if (!sSelectedPath.empty()) ltlaunch::SaveSelectedGame(sSelectedPath, game.m_sKey);
+    }
+
+    // An archive the addon loads, named from its own folder.
+    // Its folder is usually inside the game's, but the combined launcher's is beside it
+    std::string FromAddOn(const std::string &sPath) const
+    {
+        if (ltlaunch::IsAbsolutePath(sPath)) return sPath;
+        if (ltlaunch::IsAbsolutePath(game.m_AddOn.m_sDir)) return ltlaunch::JoinPath(spec.m_sGameDir, sPath);
+        return ltlaunch::JoinPath("..", sPath);
+    }
 
     // Every archive this launch can't start without
     std::vector<std::string> Required() const
@@ -582,12 +660,11 @@ struct App
             return;
         }
 
-        // The addon runs from its own folder, one below the game folder
+        // The addon runs from its own folder
         std::string sCwd = spec.m_sGameDir;
         if (UseAddOn())
         {
-            for (std::string &sRez : launch.m_Rez)
-                if (!ltlaunch::IsAbsolutePath(sRez)) sRez = ltlaunch::JoinPath("..", sRez);
+            for (std::string &sRez : launch.m_Rez) sRez = FromAddOn(sRez);
             sCwd = ltlaunch::AddOnDir(game);
             SeedAddOnConfig();
         }
@@ -598,7 +675,7 @@ struct App
         if (UseAddOn() && ltlaunch::FileExists(DisplayCfgPath()))
         {
             args.push_back("-display");
-            args.push_back(ltlaunch::JoinPath("..", "display.cfg"));
+            args.push_back(FromAddOn("display.cfg"));
         }
 
         std::string sError;
@@ -632,15 +709,28 @@ struct App
     {
         for (const Rect *pButton : ButtonsFor(eOpenDialog))
             if (In(*pButton, x, y) && (pButton != &kAddOnBox || bHasAddOn)) return pButton;
+        if (eOpenDialog == DialogId::None)
+            for (const Rect &r : gameButtons)
+                if (In(r, x, y)) return &r;
         return 0;
+    }
+
+    // The game a list button shows, or -1 when it isn't one
+    int GameButtonIndex(const Rect *p) const
+    {
+        for (size_t i = 0; i < gameButtons.size(); ++i)
+            if (p == &gameButtons[i]) return (int)i;
+        return -1;
     }
 
     static bool IsOkButton(const Rect *p) { return p == &kDisplayDlg.ok || p == &kCustomizeDlg.ok; }
 
     void Press(const Rect *p)
     {
+        // The game list
+        if (GameButtonIndex(p) >= 0) SelectGame(GameButtonIndex(p));
         // Main window
-        if (p == &kPlayButton) DoPlay();
+        else if (p == &kPlayButton) DoPlay();
         else if (p == &kDisplayButton) OpenDisplay();
         else if (p == &kCustomizeButton) OpenCustomize();
         else if (p == &kQuitButton) bQuit = true;
@@ -869,7 +959,9 @@ struct App
              FitLeft(ltlaunch::DataDir(spec), kDataDirBox.w - 8), kText, kDataDirBox.w - 8);
         Button(kBrowseButton, "Browse...", Down(kBrowseButton));
 
-        const Rect panel(12, 40, 380, 290);
+        if (kSideW > 0) DrawGameList();
+
+        const Rect panel(kSideW + 12, 40, 380, 290);
         Fill(panel, kWindow);
         Frame(panel, kBorder);
 
@@ -889,21 +981,48 @@ struct App
         else
             DrawSplash(panel);
 
-        Button(kPlayButton, UseAddOn() ? game.m_AddOn.m_sButton : "Launch", Down(kPlayButton));
+        // An addon without a label of its own launches under the plain one
+        const bool bAddOnLabel = UseAddOn() && !game.m_AddOn.m_sButton.empty();
+        Button(kPlayButton, bAddOnLabel ? game.m_AddOn.m_sButton : "Launch", Down(kPlayButton));
         Button(kDisplayButton, "Display...", Down(kDisplayButton));
         Button(kCustomizeButton, "Customize...", Down(kCustomizeButton));
         Button(kQuitButton, "Quit", Down(kQuitButton));
         if (bHasAddOn) CheckBox(kAddOnBox, game.m_AddOn.m_sLabel, bAddOn, Down(kAddOnBox));
 
         // A refused or failed launch
-        Text(12, 366, sStatus, kAlert, kWinW - 24);
+        Text(kSideW + 12, 366, sStatus, kAlert, kMainW - 24);
 
         // The footer
         const std::string sLine = std::string(kLauncherName) + " v" + kLauncherVersion;
-        Text((kWinW - TextW(sLine)) / 2, 440, sLine, kText);
+        Text(kSideW + (kMainW - TextW(sLine)) / 2, 440, sLine, kText);
 
         if (eOpenDialog == DialogId::Display) DrawDisplayDialog();
         else if (eOpenDialog == DialogId::Customize) DrawCustomizeDialog();
+    }
+
+    // The combined launcher's games, the shown one drawn as held down, then a rule between the list and the game
+    void DrawGameList()
+    {
+        const std::string sHead = "Games";
+        const int hx = kGamesHeading.x + (kGamesHeading.w - TextW(sHead)) / 2;
+        const int hy = kGamesHeading.y + (kGamesHeading.h - g_nLineH) / 2;
+        Text(hx, hy, sHead, kText);
+        Fill(Rect(hx, hy + g_nLineH, TextW(sHead), 1), kText);
+
+        for (size_t i = 0; i < gameButtons.size(); ++i)
+        {
+            const Rect &r = gameButtons[i];
+            if ((int)i == iGame && !Down(r))
+            {
+                Fill(r, kButtonDown);
+                Frame(r, kBorderDown);
+                TextC(r, games[i].m_sName, kText);
+            }
+            else
+                Button(r, games[i].m_sName, Down(r));
+        }
+
+        Fill(Rect(kSideW - 1, 12, 1, kWinH - 24), kBorder);
     }
 
     void LoadSplash()
@@ -1050,6 +1169,12 @@ int LauncherMain()
     // A click that activates the window still reaches the buttons
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 
+#if defined(_WIN32) && defined(LTLAUNCH_COMBINED)
+    // The window and taskbar take the exe's own icon, resource 101 in ltcallisto.rc
+    SDL_SetHint(SDL_HINT_WINDOWS_INTRESOURCE_ICON, "101");
+    SDL_SetHint(SDL_HINT_WINDOWS_INTRESOURCE_ICON_SMALL, "101");
+#endif
+
     if (SDL_Init(SDL_INIT_VIDEO) != 0) return 1;
 
     // Lithtech.exe and the game directory are found from where the launcher runs
@@ -1058,15 +1183,27 @@ int LauncherMain()
     if (pBasePath) SDL_free(pBasePath);
 
     App app;
-    app.game = ltlaunch::LTLAUNCH_PROFILE(sExeDir);
-    app.spec = app.game.m_Spec;
-    app.bHasAddOn = ltlaunch::HasAddOn(app.game);
-    app.sSettingsPath = ltlaunch::JoinPath(sExeDir, "launcher.ini");
-    app.LoadSettings();
+    int iStart = 0;
+#ifdef LTLAUNCH_COMBINED
+    app.games = ltlaunch::CombinedProfiles(sExeDir);
+    app.sSelectedPath = ltlaunch::JoinPath(sExeDir, "launcher.ini");
+    const std::string sSelected = ltlaunch::LoadSelectedGame(app.sSelectedPath);
+    for (size_t i = 0; i < app.games.size(); ++i)
+        if (app.games[i].m_sKey == sSelected) iStart = (int)i;
+    const std::string sCaption = kLauncherName;
+#else
+    app.games.push_back(ltlaunch::LTLAUNCH_PROFILE(sExeDir));
+    const std::string sCaption = app.games[0].m_sCaption;
+#endif
+    app.states.resize(app.games.size());
+    if (kSideW > 0)
+        for (size_t i = 0; i < app.games.size(); ++i)
+            app.gameButtons.push_back(Rect(12, kGameButtonY + (int)i * kGameButtonStep, kSideW - 24, 26));
+    app.SelectGame(iStart);
 
     app.sizes = DesktopSizes();
 
-    SDL_Window *pWnd = SDL_CreateWindow(app.game.m_sCaption.c_str(),
+    SDL_Window *pWnd = SDL_CreateWindow(sCaption.c_str(),
                                         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                         kWinW, kWinH, SDL_WINDOW_SHOWN);
     if (!pWnd) { SDL_Quit(); return 1; }
@@ -1076,7 +1213,7 @@ int LauncherMain()
     g_pFont = MakeFontAtlas();
     if (!g_pFont)
     {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, app.game.m_sCaption.c_str(),
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, sCaption.c_str(),
                                  "Could not load the Tahoma font.", pWnd);
         SDL_DestroyRenderer(g_pRen);
         SDL_DestroyWindow(pWnd);

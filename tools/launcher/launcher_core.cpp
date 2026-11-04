@@ -9,6 +9,7 @@
 namespace ltlaunch {
 
 const char *kCustomFolder = "Custom";
+const char *kGamesFolder = "Games";
 
 std::string JoinPath(const std::string &dir, const std::string &leaf)
 {
@@ -32,6 +33,7 @@ GameProfile ShogoProfile(const std::string &sExeDir)
 {
     GameProfile game;
     game.m_sCaption = game.m_sTitle = "Shogo: Mobile Armor Division";
+    game.m_sName = game.m_sKey = "Shogo";
     game.m_sSplashRez = "SHOGO.REZ";
     game.m_sSplashPath = "INTERFACE\\SPLASH.PCX";
     game.m_Spec.m_sEngineDir = game.m_Spec.m_sGameDir = sExeDir;
@@ -39,18 +41,34 @@ GameProfile ShogoProfile(const std::string &sExeDir)
     return game;
 }
 
-GameProfile LithLauncherProfile(const std::string &sExeDir)
+std::vector<GameProfile> CombinedProfiles(const std::string &sExeDir)
 {
-    GameProfile game = ShogoProfile(sExeDir);
-    game.m_sCaption = "LithLauncher";
-    game.m_Spec.m_sGameDir = JoinPath(sExeDir, "Shogo");
-    return game;
+    const std::vector<GameProfile> all = { ShogoProfile(sExeDir), Blood2Profile(sExeDir), NOLF2Profile(sExeDir) };
+    const std::string sGames = JoinPath(sExeDir, kGamesFolder);
+    std::vector<GameProfile> out;
+    for (GameProfile game : all)
+    {
+        game.m_Spec.m_sGameDir = JoinPath(sGames, game.m_sKey);
+
+        // The build puts an addon's modules beside the games, not inside its game's folder
+        if (!game.m_AddOn.m_sDir.empty()) game.m_AddOn.m_sDir = JoinPath(sGames, game.m_AddOn.m_sDir);
+
+        if (DirExists(game.m_Spec.m_sGameDir)) out.push_back(game);
+    }
+    if (out.empty())
+    {
+        out.push_back(all[0]);
+        out[0].m_Spec.m_sGameDir = JoinPath(sGames, out[0].m_sKey);
+    }
+    return out;
 }
 
 GameProfile Blood2Profile(const std::string &sExeDir)
 {
     GameProfile game;
     game.m_sCaption = game.m_sTitle = "Blood II: The Chosen";
+    game.m_sName = "Blood 2";
+    game.m_sKey = "Blood2";
     game.m_sSplashRez = "BLOOD2.REZ";
     game.m_sSplashPath = "INTERFACE\\MAINMENUS\\SPLASH.PCX";
     game.m_Spec.m_sEngineDir = game.m_Spec.m_sGameDir = sExeDir;
@@ -59,7 +77,7 @@ GameProfile Blood2Profile(const std::string &sExeDir)
 
     // The retail launcher adds BLOOD2NM2.REZ too, which no install here has
     game.m_AddOn.m_sLabel = "The Nightmare Levels";
-    game.m_AddOn.m_sButton = "Launch Nightmares";
+    //game.m_AddOn.m_sButton = "Launch Nightmares";
     game.m_AddOn.m_sDir = "Blood2NM";
     game.m_AddOn.m_sSplashRez = "BLOOD2NM.REZ";
     game.m_AddOn.m_sSplashPath = "SCREENS_AO\\TITLE.PCX";
@@ -71,7 +89,8 @@ GameProfile Blood2Profile(const std::string &sExeDir)
 GameProfile NOLF2Profile(const std::string &sExeDir)
 {
     GameProfile game;
-    game.m_sCaption = game.m_sTitle = "No One Lives Forever 2";
+    game.m_sCaption = game.m_sTitle = game.m_sName = "No One Lives Forever 2";
+    game.m_sKey = "NOLF2";
     game.m_sSplashRez = "game.rez";
     game.m_sSplashPath = "INTERFACE\\MENU\\ART\\SPLASH.PCX";
     game.m_Spec.m_sEngineDir = game.m_Spec.m_sGameDir = sExeDir;
@@ -107,6 +126,7 @@ std::string FirstMissing(const std::string &sDir, const std::vector<std::string>
 
 std::string AddOnDir(const GameProfile &game)
 {
+    if (IsAbsolutePath(game.m_AddOn.m_sDir)) return game.m_AddOn.m_sDir;
     return JoinPath(game.m_Spec.m_sGameDir, game.m_AddOn.m_sDir);
 }
 
@@ -347,13 +367,30 @@ bool LoadSettings(const std::string &sPath, LauncherSettings &settings)
 bool SaveSettings(const std::string &sPath, const LauncherSettings &settings)
 {
     std::ostringstream os;
-    os << "# Written by LithLauncher. Safe to delete\n";
+    os << "# Written by LTCallisto. Safe to delete\n";
     os << "addon=" << (settings.m_bAddOn ? 1 : 0) << "\n";
     if (!settings.m_sDataDir.empty()) os << "datadir=" << settings.m_sDataDir << "\n";
     os << "alwaysrez=" << (settings.m_bAlwaysRez ? 1 : 0) << "\n";
     if (settings.m_bAlwaysRez)
         for (const std::string &sRez : settings.m_AlwaysRez) os << "rez=" << sRez << "\n";
     return WriteTextFile(sPath, os.str());
+}
+
+std::string LoadSelectedGame(const std::string &sPath)
+{
+    std::istringstream in(ReadTextFile(sPath));
+    std::string line;
+    while (std::getline(in, line))
+    {
+        if (!line.empty() && line[line.size() - 1] == '\r') line.erase(line.size() - 1);
+        if (line.compare(0, 5, "game=") == 0) return line.substr(5);
+    }
+    return std::string();
+}
+
+bool SaveSelectedGame(const std::string &sPath, const std::string &sKey)
+{
+    return WriteTextFile(sPath, "# Written by LTCallisto. Safe to delete\ngame=" + sKey + "\n");
 }
 
 std::vector<std::string> BuildCommandLine(const LaunchSpec &spec)

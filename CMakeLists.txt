@@ -232,21 +232,22 @@ if(BUILD_BLOOD2)
     endif(BUILD_BLOOD2_ADDON)
 endif(BUILD_BLOOD2)
 
+# Each game's modules go in a folder of their own under OUT's Games folder, where LTCallisto finds them
 if(WIN32)
     function(lt_game_output subdir)
         foreach(target ${ARGN})
             if(TARGET ${target})
                 set_target_properties(${target} PROPERTIES
-                    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/OUT/$<CONFIG>/${subdir}")
+                    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/OUT/$<CONFIG>/Games/${subdir}")
             endif()
         endforeach()
     endfunction()
 else()
-    # The .so modules stay in their build dirs and are copied into OUT/<subdir>,
+    # The .so modules stay in their build dirs and are copied into OUT/Games/<subdir>,
     # where the engine opens them from its working directory. One target per folder,
     # since add_custom_command(TARGET) can't name a target from another directory
     function(lt_game_output subdir)
-        set(dest "${CMAKE_BINARY_DIR}/OUT/${subdir}")
+        set(dest "${CMAKE_BINARY_DIR}/OUT/Games/${subdir}")
         set(cmds "")
         set(deps "")
         foreach(target ${ARGN})
@@ -261,7 +262,7 @@ else()
             add_custom_target(${name} ALL
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${dest}"
                 ${cmds}
-                COMMENT "Copying game modules into OUT/${subdir}")
+                COMMENT "Copying game modules into OUT/Games/${subdir}")
             add_dependencies(${name} ${deps})
         endif()
     endfunction()
@@ -281,7 +282,7 @@ if(BUILD_TOOLS)
 endif(BUILD_TOOLS)
 
 if(BUILD_LAUNCHER)
-    add_subdirectory(tools/launcher)		# LithLauncher
+    add_subdirectory(tools/launcher)		# LTCallisto
 endif(BUILD_LAUNCHER)
 
 if(NOT WIN32)

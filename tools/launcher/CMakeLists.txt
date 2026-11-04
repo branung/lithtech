@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(LithLauncher CXX)
+project(LTCallisto CXX)
 
 find_package(SDL2 QUIET)
 if(NOT SDL2_FOUND)
@@ -9,7 +9,7 @@ endif()
 
 set(LT_LAUNCHER_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 
-# lt_launcher_target(<target> [<profile>]): a launcher for <profile>'s game (LithLauncherProfile by default)
+# lt_launcher_target(<target> [<profile>]): a launcher for <profile>'s game, or without one the combined launcher listing every game
 function(lt_launcher_target target)
 	add_executable(${target}
 		${LT_LAUNCHER_DIR}/launcher_core.cpp
@@ -42,10 +42,14 @@ function(lt_add_launcher target name dir)
 		PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tools/launcher")
 endfunction()
 
-lt_launcher_target(LithLauncher)
+lt_launcher_target(LTCallisto)
+
+if(WIN32)
+	target_sources(LTCallisto PRIVATE ${LT_LAUNCHER_DIR}/ltcallisto.rc) # Its icon
+endif()
 
 if(WIN32 AND TARGET SDL2::SDL2)
-	add_custom_command(TARGET LithLauncher POST_BUILD
+	add_custom_command(TARGET LTCallisto POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
-			$<TARGET_FILE:SDL2::SDL2> $<TARGET_FILE_DIR:LithLauncher>)
+			$<TARGET_FILE:SDL2::SDL2> $<TARGET_FILE_DIR:LTCallisto>)
 endif()

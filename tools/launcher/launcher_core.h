@@ -23,7 +23,7 @@ struct AddOn
 {
     std::string m_sLabel; // The checkbox
     std::string m_sButton; // The Launch button while it's ticked
-    std::string m_sDir; // The modules' folder (empty for a game without one)
+    std::string m_sDir; // The modules' folder, inside the game folder or a full path (empty for a game without one)
     std::string m_sSplashRez; // The archive holding its banner
     std::string m_sSplashPath;
     std::vector<std::string> m_Rez; // Loaded after the game's own
@@ -35,6 +35,8 @@ struct GameProfile
 {
     std::string m_sCaption; // The window's caption
     std::string m_sTitle;
+    std::string m_sName; // Its button in the combined launcher's game list
+    std::string m_sKey; // Its folder beside the combined launcher, and its name in that launcher's launcher.ini
     std::string m_sSplashRez; // The archive holding the banner
     std::string m_sSplashPath; // The banner's path inside it
     LaunchSpec m_Spec;
@@ -84,8 +86,12 @@ bool GetConfigValue(const std::string &sCfg, const std::string &sName, std::stri
 
 std::string SetConfigValues(const std::string &sCfg, const std::vector<ConfigValue> &values);
 
-// LithLauncher: Lithtech.exe beside it and the game in its Shogo folder
-GameProfile LithLauncherProfile(const std::string &sExeDir);
+// The folder beside LTCallisto holding a folder for each game
+extern const char *kGamesFolder;
+
+// LTCallisto: Lithtech.exe beside it and each game in a folder of its own in kGamesFolder, as the build lays them out.
+// Only the games whose folders are there, and Shogo when none are
+std::vector<GameProfile> CombinedProfiles(const std::string &sExeDir);
 
 // The per-game launchers: Lithtech.exe and the game both in the launcher's own folder
 GameProfile ShogoProfile(const std::string &sExeDir);
@@ -130,6 +136,10 @@ bool LoadSettings(const std::string &sPath, LauncherSettings &settings);
 
 // False when the file can't be written
 bool SaveSettings(const std::string &sPath, const LauncherSettings &settings);
+
+// The combined launcher's selected game, by its m_sKey, kept in its own launcher.ini (each game's settings are in its folder)
+std::string LoadSelectedGame(const std::string &sPath);
+bool SaveSelectedGame(const std::string &sPath, const std::string &sKey);
 
 // The engine's argument list. The caller sets the working directory to m_sGameDir
 // The engine opens m_EngineRez itself from there, so another data folder passes them too, and itself as GameDataDir

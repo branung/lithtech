@@ -1,0 +1,2 @@
+// LTCallisto's icon, which SDL also gives its window (SDL_HINT_WINDOWS_INTRESOURCE_ICON in launcher_sdl2.cpp)
+101 ICON "ltcallisto.ico"
