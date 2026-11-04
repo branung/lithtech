@@ -1039,6 +1039,16 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 	}
 
 
+	// The shared LT1 set runs first, as Blood 2's does: before the multiplayer wizard, which needs LT1Net to list
+	// retail servers, and before the splash, which only scales with OptimizeSurfaces on.
+	// Still before the server creates its objects
+	{
+		DECompat_ApplyLT1ClientDefaults(g_pLTClient);
+
+		// Shogo's own engine vars, both shells' in one table (Shared/ShogoLT1Vars.h)
+		DECompat_ApplyLT1ClientVars(g_pLTClient, SHOGO_LT1_VARS);
+	}
+
 	// Check for console vars that say we should do networking setup stuff...
 
 	BOOL bDoNetStuff = LTFALSE;
@@ -1130,15 +1140,6 @@ uint32 CRiotClientShell::OnEngineInitialized(struct RMode *pMode, LTGUID *pAppGu
 			g_pLTClient->ShutdownWithMessage("Shogo Error: Couldn't set render mode.\nShutting down Shogo...\n");
 			return LT_OK;
 		}
-	}
-
-	// The shared LT1 set runs before the splash, as Blood 2's does. The splash only scales with OptimizeSurfaces on,
-	// which the set turns on, so after it the art stayed at 640x480 in the corner. Still before the server creates its objects
-	{
-		DECompat_ApplyLT1ClientDefaults(g_pLTClient);
-
-		// Shogo's own engine vars, both shells' in one table (Shared/ShogoLT1Vars.h)
-		DECompat_ApplyLT1ClientVars(g_pLTClient, SHOGO_LT1_VARS);
 	}
 
 	// show the splash screen
@@ -2688,6 +2689,16 @@ void CRiotClientShell::UpdateDemoMultiplayerState()
 //
 // ----------------------------------------------------------------------- //
 
+// Is this client joined to a retail LithTech 1.0 server? The engine's LT1 driver sets LT1NetConnected while it
+// carries this client. A retail OBJECT.LTO reads MID_PLAYER_UPDATE as the 1998 shell wrote it and knows neither
+// CLIENTUPDATE_COMMANDS nor CLIENTUPDATE_NOPOSITION, so it would read the command words as the position.
+// There the commands travel as LT1 sent them, in the engine's own update packet
+static LTBOOL IsLT1NetServer()
+{
+	HCONSOLEVAR hVar = g_pLTClient ? g_pLTClient->GetConsoleVar("LT1NetConnected") : LTNULL;
+	return hVar && g_pLTClient->GetVarValueFloat(hVar) != 0.0f;
+}
+
 void CRiotClientShell::UpdatePlayerInfo()
 {
 	if (!g_pLTClient || !m_hCamera) return;
@@ -2843,8 +2854,10 @@ void CRiotClientShell::UpdatePlayerInfo()
 			CAutoMessage cMsg;
 			cMsg.Writeuint8(MID_PLAYER_UPDATE);
 
-			// Command state goes out with every update
-			m_nPlayerInfoChangeFlags |= CLIENTUPDATE_COMMANDS;
+			// Command state goes out with every update, but not to a retail server, which takes it in the engine's update packet
+			LTBOOL bLT1Net = IsLT1NetServer();
+			if (!bLT1Net)
+				m_nPlayerInfoChangeFlags |= CLIENTUPDATE_COMMANDS;
 
 			// Write rotation info.			
 			cMsg.Writeuint16(m_nPlayerInfoChangeFlags);
@@ -2860,6 +2873,7 @@ void CRiotClientShell::UpdatePlayerInfo()
 			if ( m_nPlayerInfoChangeFlags & CLIENTUPDATE_EXTERNALCAMERA )
 				cMsg.WriteLTVector(vCameraPos);
 
+			if (!bLT1Net)
 			{
 				uint64 nCommands[2] = { 0, 0 };
 				for (int nCmd = 0; nCmd < PLAYER_COMMAND_BITS; ++nCmd)
@@ -2906,6 +2920,9 @@ void CRiotClientShell::SendCommandSync()
 {
 	if (!g_pLTClient || !m_MoveMgr || !m_bHandledStartup) return;
 	if (!g_CV_LT1CommandSync.GetFloat(1.0f)) return;
+	// A retail server gets each change in the engine's update packet, which the LT1 driver sends the frame
+	// the change happens, the timing this message exists to recover
+	if (IsLT1NetServer()) return;
 
 	uint64 nCommands[2] = { 0, 0 };
 	for (int nCmd = 0; nCmd < PLAYER_COMMAND_BITS; ++nCmd)

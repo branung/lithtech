@@ -246,11 +246,15 @@ public:
 				NetMgrSession(CBaseDriver *pDriver)
 				{
 					m_pDriver = pDriver;
+					m_bLT1 = false;
 				}
 
 	virtual		~NetMgrSession() {}
 
 	CBaseDriver	*m_pDriver;
+	// A retail LithTech 1.0 server, found by the LT1 query CUDPDriver sends under LT1Net.
+	// StartShell joins it through CLT1Driver
+	bool		m_bLT1;
 };
 
 

@@ -56,6 +56,8 @@ set(libsources
 	../world/src/light_table.cpp
 	../shared/src/lightmap_planes.cpp
 	../kernel/net/src/localdriver.cpp
+	../kernel/net/src/lt1driver.cpp
+	../kernel/net/src/lt1wire.cpp
 	../shared/src/ltmessage.cpp
 	src/ltmessage_server.cpp
 	../../sdk/inc/ltmodule.cpp

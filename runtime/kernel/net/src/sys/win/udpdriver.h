@@ -50,6 +50,7 @@ public:
         memset(m_QueryTimes, 0, sizeof(m_QueryTimes));
         m_Ping = 0.0f;
 		m_nQueriesRemaining = 0;
+		m_bLT1 = false;
     }
 
     CUDPQuery(const CUDPQuery &other) : m_pName(LTNULL) 
@@ -95,6 +96,7 @@ public:
 	uint8 m_nGameType;	// what type of game?
     float m_QueryTime;    // When we sent our query.
     float m_Ping;
+	bool m_bLT1;		// Answered LithTech 1.0's query, not ours (UpdateQuery)
 };
 
 class CUDPConn : public CBaseConn 
@@ -536,6 +538,7 @@ public:
     virtual LTRESULT StartQuery(const char *pInfo);
     virtual LTRESULT UpdateQuery();
     virtual LTRESULT GetQueryResults(NetSession* &pListHead);
+    void UpdateQueryLT1(CPacket_Read &cPacket, sockaddr_in &cSender);
     virtual LTRESULT EndQuery();
 
     virtual LTRESULT GetSessionList(NetSession* &pListHead, const char *pInfo);

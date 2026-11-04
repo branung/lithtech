@@ -1862,6 +1862,15 @@ void CBloodClientShell::SendPlayerUpdateMessage(DBOOL bSendAll)
 		byUpdateFlags = PLAYERUPDATE_ALL;
 	}
 
+	// Retail's form under LT1ServerCommands: the engine carries this frame's commands to the server in its own packet,
+	// as LT1's update packet did, so the words below are redundant. A retail server's OBJECT.LTO knows only the 1998
+	// form, a byte of flags and no command block, so under the var this message is exactly that, port to port included
+	static HCONSOLEVAR s_hServerCommands = DNULL;
+	if (!s_hServerCommands) s_hServerCommands = pClientDE->GetConsoleVar("LT1ServerCommands");
+	const DBOOL bRetailForm = s_hServerCommands && pClientDE->GetVarValueFloat(s_hServerCommands) != 0.0f;
+	if (bRetailForm)
+		byUpdateFlags &= 0xff;
+
 	// A change in the held commands is a reason to send on its own, as the server finds the presses from them.
 	// Otherwise a player standing still and pressing Use sends nothing
 	DDWORD nCurCommandBits[4] = { 0, 0, 0, 0 };
@@ -1871,7 +1880,7 @@ void CBloodClientShell::SendPlayerUpdateMessage(DBOOL bSendAll)
 			nCurCommandBits[nCmdBit >> 5] |= ((DDWORD)1) << (nCmdBit & 31);
 	}
 
-	for (int nCmdWord = 0; nCmdWord < 4; ++nCmdWord)
+	for (int nCmdWord = 0; nCmdWord < 4 && !bRetailForm; ++nCmdWord)
 	{
 		if (nCurCommandBits[nCmdWord] != m_nLastSentCommandBits[nCmdWord])
 		{
@@ -1883,15 +1892,19 @@ void CBloodClientShell::SendPlayerUpdateMessage(DBOOL bSendAll)
 	// Send the stuff.
 	if (byUpdateFlags)
 	{
-		// Every update carries the held commands
-		byUpdateFlags |= PLAYERUPDATE_COMMANDS;
+		// Every update carries the held commands, but for retail's form
+		if (!bRetailForm)
+			byUpdateFlags |= PLAYERUPDATE_COMMANDS;
 
 		for (int nCmdWord = 0; nCmdWord < 4; ++nCmdWord)
 			m_nLastSentCommandBits[nCmdWord] = nCurCommandBits[nCmdWord];
 
 		HMESSAGEWRITE hMsg = pClientDE->StartMessage(CMSG_PLAYERUPDATE);
 
-		pClientDE->WriteToMessageWord(hMsg, byUpdateFlags);				// Tell what we are updating
+		if (bRetailForm)
+			pClientDE->WriteToMessageByte(hMsg, (DBYTE)byUpdateFlags);		// Tell what we are updating
+		else
+			pClientDE->WriteToMessageWord(hMsg, byUpdateFlags);
 
 		if (byUpdateFlags & PLAYERUPDATE_FLAGS)
 			pClientDE->WriteToMessageByte(hMsg, cdata.byFlags);			// Flags

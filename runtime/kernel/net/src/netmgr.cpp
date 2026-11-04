@@ -7,6 +7,7 @@
 #include "s_client.h"
 
 #include "localdriver.h"
+#include "lt1driver.h"
 #include "sysudpdriver.h"
 
 #include <algorithm>
@@ -846,6 +847,12 @@ CBaseDriver* CNetMgr::AddDriver(const char *pInfo)
 	else if (strcmp(pInfo, "internet") == 0)
 	{
 		LT_MEM_TRACK_ALLOC(pDriver = new CUDPDriver,LT_MEM_TYPE_NETWORKING);
+	}
+	// LithTech 1.0's wire, for joining a retail server (lt1driver.h).
+	// Never in InitDrivers' list, as only STARTGAME_CLIENTTCP under LT1Net asks for it
+	else if (strcmp(pInfo, "lt1") == 0)
+	{
+		LT_MEM_TRACK_ALLOC(pDriver = new CLT1Driver,LT_MEM_TYPE_NETWORKING);
 	}
 
 	if (pDriver)

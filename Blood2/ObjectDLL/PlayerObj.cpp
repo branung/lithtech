@@ -2566,7 +2566,13 @@ void CPlayerObj::OnMessage(DBYTE messageID, HMESSAGEREAD hMsg)
 
 			m_eLastContainerCode = m_eContainerCode;
 
-			D_WORD byUpdateFlags	= pServerDE->ReadFromMessageWord(hMsg);
+			// Retail's form under LT1ServerCommands: a byte of flags and no command block, which is what the client
+			// writes then and what a retail client always writes. The var is this server's own, set from the table
+			static HCONVAR s_hServerCommands = DNULL;
+			if (!s_hServerCommands) s_hServerCommands = pServerDE->GetGameConVar("LT1ServerCommands");
+			const DBOOL bRetailForm = s_hServerCommands && pServerDE->GetVarValueFloat(s_hServerCommands) != 0.0f;
+			D_WORD byUpdateFlags	= bRetailForm ? (D_WORD)pServerDE->ReadFromMessageByte(hMsg)
+			                                      : pServerDE->ReadFromMessageWord(hMsg);
 			if (byUpdateFlags & PLAYERUPDATE_FLAGS)
 				m_byFlags	= pServerDE->ReadFromMessageByte(hMsg);
 

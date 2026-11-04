@@ -289,6 +289,11 @@ static const LT1Var s_aLT1Set[] =
 
     // LT1 picks the path that prevents tunneling by geometry, Jupiter by a flag no 1998 game sets (both sides)
     { "LT1TunnelPath",         "1", LT1_BOTH },
+
+    // Shogo and Blood 2: the multiplayer wizard also sends LT1's query, so retail servers show up in its list,
+    // and joining one goes through CLT1Driver. While it's on, a join straight to an address always speaks LT1's protocol,
+    // so connecting to another copy of this port by address needs LT1Net 0
+    { "LT1Net",                "1", LT1_CLIENT },
 };
 
 

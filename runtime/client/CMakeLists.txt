@@ -106,6 +106,8 @@ set(exec_src
 	../shared/src/lightmap_planes.cpp
 	src/linesystem.cpp
 	../kernel/net/src/localdriver.cpp
+	../kernel/net/src/lt1driver.cpp
+	../kernel/net/src/lt1wire.cpp
 	src/ltbenchmark_impl.cpp
 	../../sdk/inc/lterror.cpp
 	src/ltinfo_impl.cpp

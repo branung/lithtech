@@ -833,8 +833,10 @@ private:
     void ApplyVolume()
     {
         if (!ilt_sound) return;
+        // Not scaled by the sound volume, as LT1's music and sound volumes are separate.
+        // Blood 2 sets both to 35, and the product of the two is near silent
         ilt_sound->SetSoundClassMultiplier(kMusicVolumeClass,
-                                           (float)m_nVolume / (float)kMusicFullVolume);
+                                           (float)m_nVolume / (float)kMusicFullVolume, false);
         // Applies the new multiplier to what's already playing
         ilt_sound->UpdateVolumeSettings();
     }

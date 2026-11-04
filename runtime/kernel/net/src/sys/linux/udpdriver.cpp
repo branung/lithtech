@@ -2060,6 +2060,13 @@ static int FindAddrInList(sockaddr_in *pTest, CMoArray<CUDPQuery> &sessions)
 }
 
 
+// LT1Net: the query also goes out as LithTech 1.0's, so a session list shows retail servers.
+// Its packet is full id 0, TCPSUB_QUERY, the app GUID and a ping id, and the answer full id 0, TCPSUB_RESPONSE,
+// the session name and the ping id back. Jupiter's packets begin with UNCONNECTED_DATA_TOKEN, whose first byte is never 0
+extern int32 g_LT1Net;
+#define LT1_TCPSUB_QUERY		1
+#define LT1_TCPSUB_RESPONSE		2
+
 LTRESULT CUDPDriver::StartQuery(const char *pInfo)
 {
 	ConParse parse;
@@ -2188,6 +2195,17 @@ LTRESULT CUDPDriver::UpdateQuery()
 			cQuery.Writeuint8(nQueryNum);
 			
 			SendTo(m_QuerySocket, CPacket_Read(cQuery), &m_Queries[i].m_Addr);
+
+			if (g_LT1Net)
+			{
+				uint8 aLT1Query[19];
+				aLT1Query[0] = 0;
+				aLT1Query[1] = LT1_TCPSUB_QUERY;
+				memcpy(&aLT1Query[2], &m_pNetMgr->m_guidApp, 16);
+				aLT1Query[18] = nQueryNum;
+				sendto(m_QuerySocket, (const char*)aLT1Query, sizeof(aLT1Query), 0,
+					(const sockaddr*)&m_Queries[i].m_Addr, sizeof(m_Queries[i].m_Addr));
+			}
 		}
 
 		m_LastQuerySendTime = time_GetTime();
@@ -2205,6 +2223,12 @@ LTRESULT CUDPDriver::UpdateQuery()
 			{
 				dsi_ConsolePrint("UDP: Zero-length UDP packet discarded in UpdateQuery");
 			}
+			continue;
+		}
+
+		if (g_LT1Net && cIncomingPacket.Size() >= 16 && cIncomingPacket.Peekuint8() == 0)
+		{
+			UpdateQueryLT1(cIncomingPacket, senderAddr);
 			continue;
 		}
 
@@ -2281,6 +2305,55 @@ LTRESULT CUDPDriver::UpdateQuery()
 }
 
 
+// A LithTech 1.0 server's answer to the LT1 query UpdateQuery sends.
+// It carries no password or game type, and the session name is the game's own string
+void CUDPDriver::UpdateQueryLT1(CPacket_Read &cPacket, sockaddr_in &cSender)
+{
+	cPacket.Readuint8();
+	if (cPacket.EOP() || cPacket.Readuint8() != LT1_TCPSUB_RESPONSE)
+		return;
+
+	char sName[MAX_NETSESSIONNAME_LEN];
+	uint32 nNameLen = 0;
+	while (!cPacket.EOP())
+	{
+		char c = (char)cPacket.Readuint8();
+		if (c == 0)
+			break;
+		if (nNameLen < sizeof(sName) - 1)
+			sName[nNameLen++] = c;
+	}
+	sName[nNameLen] = 0;
+	uint32 nQueryNum = cPacket.EOP() ? BROADCAST_QUERYNUM : cPacket.Readuint8();
+
+	int iQuery = FindAddrInList(&cSender, m_Queries);
+	if (iQuery == -1)
+	{
+		CUDPQuery newQuery;
+		memset((void*)&newQuery, 0, sizeof(newQuery));
+		newQuery.m_Addr = cSender;
+		if (m_Queries.Append(newQuery))
+			iQuery = (int)m_Queries.LastI();
+	}
+	if (iQuery == -1)
+		return;
+
+	CUDPQuery *pQuery = &m_Queries[iQuery];
+	if (pQuery->m_pName)
+		delete pQuery->m_pName;
+	LT_MEM_TRACK_ALLOC(pQuery->m_pName = new char[nNameLen + 1],LT_MEM_TYPE_NETWORKING);
+	strcpy(pQuery->m_pName, sName);
+
+	if (nQueryNum < MAX_UDP_QUERY_TIMES && pQuery->m_QueryTimes[nQueryNum] != 0.0f)
+		pQuery->m_Ping = time_GetTime() - pQuery->m_QueryTimes[nQueryNum];
+
+	pQuery->m_bPassword = false;
+	pQuery->m_nGameType = 0;
+	pQuery->m_bLT1 = true;
+	pQuery->m_nQueriesRemaining = 0;
+}
+
+
 LTRESULT CUDPDriver::GetQueryResults(NetSession* &pListHead)
 {
 	uint32 i;
@@ -2316,6 +2389,7 @@ LTRESULT CUDPDriver::GetQueryResults(NetSession* &pListHead)
 
 				pSession->m_bHasPassword = pQuery->m_bPassword;
 				pSession->m_nGameType = pQuery->m_nGameType;
+				pSession->m_bLT1 = pQuery->m_bLT1;
 
 				pSession->m_pNext = pListHead;
 				pListHead = pSession;

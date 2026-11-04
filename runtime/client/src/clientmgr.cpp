@@ -54,6 +54,7 @@
 #include <sys/types.h>
 #endif
 #include "ltmessage_client.h"
+#include "lt1driver.h"
 #include "stringmgr.h"
 #include "debuggeometry.h"
 #include "setupobject.h"
@@ -505,6 +506,24 @@ void CClientMgr::OnExitWorld(CClientShell *pShell)
 }
 
 
+// The LT1 driver's view of this client's input (lt1driver.h): the commands held this frame, as the ids
+// LT1's update packet lists, and the update rate LT1's client sends in it, clamped to 2..60 as retail's is
+static uint32 LT1ClientUpdate(uint8 *pCommands, uint32 nMax, uint8 *pRate)
+{
+    uint32 nOut = 0;
+    if (g_pClientMgr)
+    {
+        for (uint32 nCmd = 0; nCmd < MAX_CLIENT_COMMANDS && nOut < nMax; nCmd++)
+        {
+            if (g_pClientMgr->IsCommandOn(nCmd))
+                pCommands[nOut++] = (uint8)nCmd;
+        }
+    }
+    extern int32 g_CV_UpdateRate;
+    *pRate = (uint8)LTCLAMP(g_CV_UpdateRate, 2, 60);
+    return nOut;
+}
+
 LTRESULT CClientMgr::StartShell(StartGameRequest *pRequest)
 {
     CClientShell *pShell;
@@ -516,6 +535,22 @@ LTRESULT CClientMgr::StartShell(StartGameRequest *pRequest)
 
     // Kill the old server connection if there is one.
     EndShell();
+
+    // LT1NetConnected (console variable): 1 while this client is joined to an LT1 server through CLT1Driver,
+    // so a game shell can write LT1's forms of its own messages. Every start clears it, and the
+    // STARTGAME_CLIENTTCP branch sets it
+    c_CommandHandler("LT1NetConnected 0");
+
+    // A session the LT1 query found is a retail LT1 server, which Jupiter's JoinSession can't speak to.
+    // It's joined as a console connect to its address would be, through CLT1Driver
+    extern int32 g_LT1Net;
+    if (g_LT1Net && pRequest->m_Type == STARTGAME_CLIENT && !(pRequest->m_flags & SG_LOBBY)
+        && pRequest->m_pNetSession && ((NetMgrSession*)pRequest->m_pNetSession)->m_bLT1)
+    {
+        LTSNPrintF(pRequest->m_TCPAddress, sizeof(pRequest->m_TCPAddress), "%s:%u",
+            pRequest->m_pNetSession->m_HostIP, (unsigned)pRequest->m_pNetSession->m_HostPort);
+        pRequest->m_Type = STARTGAME_CLIENTTCP;
+    }
 
     LT_MEM_TRACK_ALLOC(pShell = new CClientShell, LT_MEM_TYPE_MISC);
 
@@ -575,8 +610,15 @@ LTRESULT CClientMgr::StartShell(StartGameRequest *pRequest)
 
         case STARTGAME_CLIENTTCP:
         {
-            // Use the first net driver..
-            pDriver = m_NetMgr.GetDriver("internet");
+            // Use the first net driver, or under LT1Net LithTech 1.0's, made on first use so no service list shows it
+            if (g_LT1Net)
+            {
+                pDriver = m_NetMgr.GetDriver("lt1");
+                if (!pDriver)
+                    pDriver = m_NetMgr.AddDriver("lt1");
+            }
+            else
+                pDriver = m_NetMgr.GetDriver("internet");
             if (!pDriver)
             {
                 RETURN_ERROR(1, StartGame, LT_NOTINITIALIZED);
@@ -586,6 +628,11 @@ LTRESULT CClientMgr::StartShell(StartGameRequest *pRequest)
             dResult = pDriver->ConnectTCP(pRequest->m_TCPAddress);
             if (dResult != LT_OK)
                 return dResult;
+            if (g_LT1Net)
+            {
+                g_pfnLT1ClientUpdate = &LT1ClientUpdate;
+                c_CommandHandler("LT1NetConnected 1");
+            }
 
             // Setup the shell.
             dResult = pShell->StartupClient(pDriver);
