@@ -243,6 +243,7 @@ int32	g_CV_ShowFrameRate = LTFALSE;
 int32	g_nConsoleLines = 6;
 LTBOOL  g_bConsoleEnable = LTTRUE;
 char	g_SSFile[_MAX_PATH + 1] = "Screenshot";
+const char *g_CV_ScreenshotFormat = LTNULL; // The format F12 saves screenshots in: "bmp", or PNG by default
 
 int32	g_bDoExtraObjectStuff = LTFALSE;
 
@@ -350,6 +351,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("DemoKey", &g_DemoKey),
 	EV_LONG("DemoExecFrame", &g_DemoExecFrame),
 	EV_STRING("DemoExec", &g_DemoExec),
+	EV_STRING("ScreenshotFormat", &g_CV_ScreenshotFormat),
 	EV_LONG("DemoTraceRadius", &g_DemoTraceRadius),
 	EV_STRING("DemoShotFrames", &g_DemoShotFrames),
 	EV_LONG("LT1ServerStepFloor", &g_bLT1ServerStepFloor),

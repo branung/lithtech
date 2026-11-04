@@ -980,7 +980,7 @@ static void ConsoleToggleKey()
 }
 #endif // !_FINAL
 
-// Writes the next unused Screenshots/shot#.bmp and returns true if it did.
+// Writes the next unused Screenshots/shot#.png, or .bmp under ScreenshotFormat bmp. The renderer picks the format from the extension
 static void client_TakeScreenShot()
 {
 	RenderStruct *pStruct = r_GetRenderStruct();
@@ -995,17 +995,28 @@ static void client_TakeScreenShot()
 	mkdir(pszDir, 0755);
 #endif
 
+	extern const char *g_CV_ScreenshotFormat;
+	const char *pszExt = (g_CV_ScreenshotFormat && stricmp(g_CV_ScreenshotFormat, "bmp") == 0) ? "bmp" : "png";
+
+	// A number either format has used is taken, so switching formats keeps one sequence
 	char szFile[_MAX_PATH + 1];
 	for (uint32 i = 0; i < 10000; i++)
 	{
-		LTSNPrintF(szFile, sizeof(szFile), "%s/shot%04d.bmp", pszDir, i);
-
-		FILE *fp = fopen(szFile, "rb");
-		if (fp)
+		bool bTaken = false;
+		for (const char *pszTry : { "bmp", "png" })
 		{
-			fclose(fp);
-			continue;
+			LTSNPrintF(szFile, sizeof(szFile), "%s/shot%04d.%s", pszDir, i, pszTry);
+			FILE *fp = fopen(szFile, "rb");
+			if (fp)
+			{
+				fclose(fp);
+				bTaken = true;
+			}
 		}
+		if (bTaken)
+			continue;
+
+		LTSNPrintF(szFile, sizeof(szFile), "%s/shot%04d.%s", pszDir, i, pszExt);
 
 		pStruct->MakeScreenShot(szFile);
 		dsi_ConsolePrint("Screenshot: %s", szFile);

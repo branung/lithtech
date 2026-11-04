@@ -14,6 +14,9 @@
 #include "d3d_draw.h"
 #include "rendererconsolevars.h"
 
+#include <vector>
+#include "zlib.h"
+
 
 // ---------------------------------------------------------------- //
 // Globals.
@@ -336,23 +339,24 @@ bool d3d_GetScreenFormat(PFormat* pFormat)
 	return d3d_D3DFormatToPFormat(pMode->Format,pFormat);
 }
 
-void d3d_MakeScreenShotBMP(const char *pFilename, uint32 nWidth, uint32 nHeight)
+// The back buffer as 0xAARRGGBB pixels, top row first. The buffer is released on every path
+static bool d3d_ReadBackBuffer(CMoArray<uint32> &outputBuf, uint32 nWidth, uint32 nHeight, const char *pszWho)
 {
-#ifdef _WINDOWS
-	LPDIRECT3DSURFACE9 pBackBuffer = nullptr; D3DSURFACE_DESC SurfDesc;
-	if (FAILED(PD3DDEVICE->GetBackBuffer(0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer)))	{ return; }
-	pBackBuffer->GetDesc(&SurfDesc);
-
-	CMoArray<uint32> outputBuf;
-	uint32 imageSize = nWidth * nHeight;
-	if (!outputBuf.SetSize(imageSize)) return;
+	LPDIRECT3DSURFACE9 pBackBuffer = nullptr;
+	if (FAILED(PD3DDEVICE->GetBackBuffer(0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer)))	{ return false; }
+	if (!outputBuf.SetSize(nWidth * nHeight))
+	{
+		pBackBuffer->Release();
+		return false;
+	}
 
 	// Lock the back buffer.
 	D3DLOCKED_RECT LockRect; HRESULT hResult;
 	if (FAILED(hResult = pBackBuffer->LockRect(&LockRect, nullptr, 0)))
 	{
-		dsi_ConsolePrint("MakeScreenShotBMP: g_pOffscreen->Lock returned %d.", hResult);
-		return;
+		dsi_ConsolePrint("%s: g_pOffscreen->Lock returned %d.", pszWho, hResult);
+		pBackBuffer->Release();
+		return false;
 	}
 
 	// Do the color conversion.
@@ -367,11 +371,22 @@ void d3d_MakeScreenShotBMP(const char *pFilename, uint32 nWidth, uint32 nHeight)
 	request.m_Height	= nHeight;
 	LTRESULT dResult	= g_FormatMgr.ConvertPixels(&request);
 
-	if (FAILED(pBackBuffer->UnlockRect()))
+	const bool bUnlocked = SUCCEEDED(pBackBuffer->UnlockRect());
+	pBackBuffer->Release();
+	if (!bUnlocked)
 	{
-		dsi_ConsolePrint("MakeScreenShotBMP: FormatMgr::ConvertPixels returned %d.", dResult);
-		return;
+		dsi_ConsolePrint("%s: FormatMgr::ConvertPixels returned %d.", pszWho, dResult);
+		return false;
 	}
+	return true;
+}
+
+void d3d_MakeScreenShotBMP(const char *pFilename, uint32 nWidth, uint32 nHeight)
+{
+#ifdef _WINDOWS
+	CMoArray<uint32> outputBuf;
+	if (!d3d_ReadBackBuffer(outputBuf, nWidth, nHeight, "MakeScreenShotBMP")) return;
+	uint32 imageSize = nWidth * nHeight;
 
 	// Save the bitmap.
 	FILE* fp = fopen(pFilename, "wb");
@@ -411,14 +426,88 @@ void d3d_MakeScreenShotBMP(const char *pFilename, uint32 nWidth, uint32 nHeight)
 
 	fclose(fp);
 
-	if (pBackBuffer)
-	{
-		pBackBuffer->Release();
-		pBackBuffer = nullptr;
-	}
-
 	dsi_ConsolePrint("ScreenShot: Created %s successfully.", pFilename);
 #endif
+}
+
+static void d3d_PutBE32(uint8 *p, uint32 n)
+{
+	p[0] = (uint8)(n >> 24); p[1] = (uint8)(n >> 16); p[2] = (uint8)(n >> 8); p[3] = (uint8)n;
+}
+
+// One PNG chunk: its length, type, data, and the CRC of the type and data
+static void d3d_WritePNGChunk(FILE *fp, const char *pszType, const uint8 *pData, uint32 nLen)
+{
+	uint8 b[4];
+	d3d_PutBE32(b, nLen);
+	fwrite(b, 4, 1, fp);
+	fwrite(pszType, 4, 1, fp);
+	if (nLen) fwrite(pData, nLen, 1, fp);
+	uLong crc = crc32(0L, (const Bytef *)pszType, 4);
+	if (nLen) crc = crc32(crc, pData, nLen);
+	d3d_PutBE32(b, (uint32)crc);
+	fwrite(b, 4, 1, fp);
+}
+
+// An 8-bit RGB PNG, each row with the Sub filter, which shrinks a rendered frame for one subtraction a byte
+void d3d_MakeScreenShotPNG(const char *pFilename, uint32 nWidth, uint32 nHeight)
+{
+	CMoArray<uint32> outputBuf;
+	if (!d3d_ReadBackBuffer(outputBuf, nWidth, nHeight, "MakeScreenShotPNG")) return;
+
+	const uint32 nRow = nWidth * 3 + 1;
+	std::vector<uint8> raw((size_t)nRow * nHeight);
+	for (uint32 y = 0; y < nHeight; ++y)
+	{
+		uint8 *pRow = &raw[(size_t)y * nRow];
+		pRow[0] = 1; // Sub
+		uint8 prev[3] = { 0, 0, 0 };
+		const uint32 *pIn = &outputBuf[y * nWidth];
+		for (uint32 x = 0; x < nWidth; ++x)
+		{
+			const uint8 rgb[3] = { (uint8)(pIn[x] >> 16), (uint8)(pIn[x] >> 8), (uint8)pIn[x] };
+			for (int c = 0; c < 3; ++c)
+			{
+				pRow[1 + x * 3 + c] = (uint8)(rgb[c] - prev[c]);
+				prev[c] = rgb[c];
+			}
+		}
+	}
+
+	uLongf nPacked = compressBound((uLong)raw.size());
+	std::vector<uint8> packed(nPacked);
+	if (compress2(&packed[0], &nPacked, &raw[0], (uLong)raw.size(), 6) != Z_OK)
+	{
+		dsi_ConsolePrint("MakeScreenShotPNG: compressing %s failed.", pFilename);
+		return;
+	}
+
+	FILE* fp = fopen(pFilename, "wb");
+	if (!fp)
+	{
+		dsi_ConsolePrint("MakeScreenShotPNG: fopen(%s) failed.", pFilename);
+		return;
+	}
+
+	static const uint8 kSignature[8] = { 137, 'P', 'N', 'G', 13, 10, 26, 10 };
+	fwrite(kSignature, sizeof(kSignature), 1, fp);
+
+	uint8 ihdr[13];
+	d3d_PutBE32(ihdr, nWidth);
+	d3d_PutBE32(ihdr + 4, nHeight);
+	ihdr[8] = 8;  // bits per channel
+	ihdr[9] = 2;  // RGB
+	ihdr[10] = ihdr[11] = ihdr[12] = 0; // deflate, adaptive filtering, not interlaced
+	d3d_WritePNGChunk(fp, "IHDR", ihdr, sizeof(ihdr));
+	d3d_WritePNGChunk(fp, "IDAT", &packed[0], (uint32)nPacked);
+	d3d_WritePNGChunk(fp, "IEND", nullptr, 0);
+
+	if (fclose(fp) != 0)
+	{
+		dsi_ConsolePrint("MakeScreenShotPNG: writing %s failed.", pFilename);
+		return;
+	}
+	dsi_ConsolePrint("ScreenShot: Created %s successfully.", pFilename);
 }
 
 void d3d_MakeScreenShotTGA(const char *pFilename, uint32 nWidth, uint32 nHeight)
@@ -556,7 +645,12 @@ void d3d_MakeScreenShot(const char *pFilename)
 	D3DSURFACE_DESC SurfDesc;
 	pBackBuffer->GetDesc(&SurfDesc);
 
-	d3d_MakeScreenShotBMP(pFilename, SurfDesc.Width, SurfDesc.Height);
+	// PNG for a .png name, the BMP the engine always wrote for anything else
+	const size_t nLen = strlen(pFilename);
+	if (nLen >= 4 && stricmp(pFilename + nLen - 4, ".png") == 0)
+		d3d_MakeScreenShotPNG(pFilename, SurfDesc.Width, SurfDesc.Height);
+	else
+		d3d_MakeScreenShotBMP(pFilename, SurfDesc.Width, SurfDesc.Height);
 
 	pBackBuffer->Release();
 }

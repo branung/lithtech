@@ -121,6 +121,15 @@ endif()
 set_property(TARGET ${PROJECT_NAME}
 	PROPERTY COMPILE_DEFINITIONS_DEBUG D3D_DEBUG_INFO)
 
+# zlib for the PNG screenshots (d3d_surface.cpp)
+if(TARGET LIB_ZLib)
+	target_include_directories(${PROJECT_NAME} PRIVATE ../../../../../libs/zlib)
+	target_link_libraries(${PROJECT_NAME} LIB_ZLib)
+elseif(ZLIB_FOUND)
+	target_include_directories(${PROJECT_NAME} PRIVATE ${ZLIB_INCLUDE_DIRS})
+	target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES})
+endif()
+
 if(WIN32)
 	add_definitions(-DUSE_ID3DXEFFECT)
 	include_directories("${DXSDK_DIR}/Include")
