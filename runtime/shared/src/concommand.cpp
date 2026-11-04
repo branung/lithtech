@@ -387,11 +387,17 @@ void cc_TermState(ConsoleState *pState)
 	int i;
 
 
-	// Clear the console variable strings.
+	// Clear only the strings this state owns. The client and server share one engine var table,
+	// so a server shutting down on a load wiped the client's own strings, GameDataDir among them
 	for(i=0; i < pState->m_nEngineVars; i++)
 	{
-		if(pState->m_pEngineVars[i].pValueAddressString)
-			*pState->m_pEngineVars[i].pValueAddressString = LTNULL;
+		const char **ppString = pState->m_pEngineVars[i].pValueAddressString;
+		if(!ppString || !*ppString || !pState->m_VarHash)
+			continue;
+
+		pVar = cc_FindConsoleVar(pState, pState->m_pEngineVars[i].pVarName);
+		if(pVar && pVar->pStringVal == *ppString)
+			*ppString = LTNULL;
 	}
 
 	// Remove the extra commands.
