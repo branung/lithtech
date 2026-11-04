@@ -398,4 +398,58 @@ if(WIN32)
             SUBFOLDER_TARGETS NOLF2_ClientFXDLL
             LAUNCHER NOLF2)
     endif()
+
+    # A fresh LTCallisto-win64_v<year>.<month><day>.<time>.zip in OUT on every build, of OUT/<config>'s
+    # engine, launcher and game modules (tools/launcher/package_zip.cmake).
+    # The stamp is the build's own, shown in the launcher's footer too (tools/launcher/stamp.cmake)
+    if(TARGET LTCallisto)
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(zip_arch win64)
+        else()
+            set(zip_arch win32)
+        endif()
+
+        set(zip_top "$<TARGET_FILE:LTCallisto>")
+        set(zip_deps LTCallisto)
+        foreach(t EXE_Lithtech DLL_Server DLL_SndDrvDX8 DLL_LTMsg ServerDir ltserver)
+            if(TARGET ${t})
+                string(APPEND zip_top "|$<TARGET_FILE:${t}>")
+                list(APPEND zip_deps ${t})
+            endif()
+        endforeach()
+        if(TARGET SDL2::SDL2)
+            string(APPEND zip_top "|$<TARGET_FILE:SDL2::SDL2>")
+        endif()
+
+        # Built first, so the zip holds this build's modules
+        foreach(t SHOGO_ClientShellDLL SHOGO_ClientRes SHOGO_ObjectDLL SHOGO_ServerRes
+                  BLOOD2_ClientShellDLL BLOOD2_ClientRes BLOOD2_ObjectDLL
+                  BLOOD2NM_ClientShellDLL BLOOD2NM_ClientRes BLOOD2NM_ObjectDLL
+                  NOLF2_ClientShellDLL NOLF2_ClientRes NOLF2_ServerRes NOLF2_ObjectDLL NOLF2_ClientFXDLL)
+            if(TARGET ${t})
+                list(APPEND zip_deps ${t})
+            endif()
+        endforeach()
+
+        # The same default configs the per-game packages get
+        set(zip_cfgs "")
+        foreach(f autoexec.cfg defkeybd.cfg DetailHi.cfg DetailMd.cfg DetailLo.cfg)
+            string(APPEND zip_cfgs "${CMAKE_SOURCE_DIR}/Shogo/Config/${f}*Games/Shogo|")
+        endforeach()
+        string(APPEND zip_cfgs "${CMAKE_SOURCE_DIR}/Blood2/Config/autoexec.cfg*Games/Blood2|"
+                               "${CMAKE_SOURCE_DIR}/Blood2/Config/autoexec.cfg*Games/Blood2NM")
+
+        add_custom_target(LTCallisto_Zip ALL
+            COMMAND ${CMAKE_COMMAND}
+                "-DOUT_DIR=${CMAKE_BINARY_DIR}/OUT/$<CONFIG>"
+                "-DZIP_DIR=${CMAKE_BINARY_DIR}/OUT"
+                "-DARCH=${zip_arch}"
+                "-DTOP_FILES=${zip_top}"
+                "-DCONFIG_FILES=${zip_cfgs}"
+                "-DEMPTY_DIRS=Games/Shogo/Custom|Games/Blood2/Custom"
+                "-DSTAMP_FILE=${LT_LAUNCHER_STAMP_TXT}"
+                -P "${CMAKE_SOURCE_DIR}/tools/launcher/package_zip.cmake"
+            VERBATIM)
+        add_dependencies(LTCallisto_Zip ${zip_deps})
+    endif()
 endif(WIN32)

@@ -30,11 +30,13 @@
 #define LTLAUNCH_COMBINED 1
 #endif
 
+// This build's stamp, <year>.<month><day>.<time>, written on every build by stamp.cmake
+extern const char *g_szLauncherBuild;
+
 namespace {
 
-// The launcher's name and version
-const char *kLauncherName    = "LTCallisto";
-const char *kLauncherVersion = "0.01";
+// The launcher's name, shown with its build stamp
+const char *kLauncherName = "LTCallisto";
 
 // Launcher color palette (0xRRGGBB)
 const Uint32 kFace   = 0xF0F0F0;
@@ -993,8 +995,8 @@ struct App
         Text(kSideW + 12, 366, sStatus, kAlert, kMainW - 24);
 
         // The footer
-        const std::string sLine = std::string(kLauncherName) + " v" + kLauncherVersion;
-        Text(kSideW + (kMainW - TextW(sLine)) / 2, 440, sLine, kText);
+        const std::string sLine = std::string(kLauncherName) + " v" + g_szLauncherBuild;
+        Text((kWinW - TextW(sLine)) / 2, 440, sLine, kText);
 
         if (eOpenDialog == DialogId::Display) DrawDisplayDialog();
         else if (eOpenDialog == DialogId::Customize) DrawCustomizeDialog();
