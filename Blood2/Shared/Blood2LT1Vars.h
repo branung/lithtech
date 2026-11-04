@@ -12,6 +12,10 @@ static const LT1Var g_aBlood2LT1Vars[] =
     // Blood 2's near clip for player view models is 0.01
     { "reallyclose_near",      "0.01", LT1_CLIENT },
 
+    // No console lines over the screen. The shell clears them only when the var exists, which retail's autoexec.cfg
+    // made sure of and a Jupiter config without the line doesn't
+    { "NumConsoleLines",       "0",    LT1_CLIENT },
+
     // Point sample the 2D. The HUD is pixel art keyed on magenta, and a scaled bilinear blit blends the
     // keyed texels' magenta into every edge. A 1:1 blit looks the same either way
     { "2DBilinear",            "0",    LT1_CLIENT },
