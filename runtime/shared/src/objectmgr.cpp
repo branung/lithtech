@@ -1201,6 +1201,11 @@ DDMatrix*	ModelInstance::GetRenderingTransforms()
 // ------------------------------------------------------------------------
 void ModelInstance::ResetCachedTransformNodeStates()
 {
+	// A model object with no model loaded has no nodes or cache
+	// EnableTransformCache resets the states once a model is attached
+	if (!GetModelDB() || !m_CachedTransformInfo)
+		return;
+
 	uint32 nNumNodes = NumNodes();
 
 	// reset every node to ignore/not-on-path
