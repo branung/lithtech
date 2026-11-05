@@ -30,6 +30,14 @@ class CMovement : public Aggregate
 			dl_InitList(&m_PathList);
 
 			m_nNumPoints = 0;
+
+			m_rRot.m_Quat[0] = m_rRot.m_Quat[1] = m_rRot.m_Quat[2] = m_rRot.m_Quat[3] = 0.0f;
+			VEC_INIT(m_vRight);
+			VEC_INIT(m_vUp);
+			VEC_INIT(m_vForward);
+			VEC_INIT(m_vPos);
+			VEC_INIT(m_vLastPos);
+			m_nWidthPoints = 0;
 		}
 
 		virtual ~CMovement()

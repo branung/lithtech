@@ -5659,6 +5659,14 @@ void AI_Mgr::MC_FacePos(DVector vPos)
 		return;
 	}
 
+	// A turn before the movement aggregate has updated leaves the AI as it is, as retail does.
+	// Jupiter turns the zero up vector into a reflection, which stood AIs upside down and mirrored every later turn
+	if (VEC_MAGSQR(m_MoveObj.GetUpVector()) <= 0.0f)
+	{
+		Metacmd++;
+		return;
+	}
+
 	VEC_NORM(vDir);
 
 	DFLOAT fAmount = (DFLOAT) atan2(vDir.x, vDir.z);

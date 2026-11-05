@@ -2070,7 +2070,9 @@ static bool StairStep_Segment
 		}
 		else
 		{
-			const float fLimit = 0.0f;
+			// LT1's stair pass only considers a polygon with n.y > 0.3.
+			// At 0.0 a wall tilted by a rounding error counts, and its push can shove an object off a ledge
+			const float fLimit = g_bLT1StairStep ? 0.3f : 0.0f;
 			const float fAllowUpLimit = 0.7071f;//(45 degree angle)
 
 			// Is it something they could step onto?
