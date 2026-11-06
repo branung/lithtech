@@ -3791,6 +3791,7 @@ void CUDPDriver::StopThread_Listen()
 	if( m_Socket != INVALID_SOCKET )
 	{
 #ifdef __LINUX
+		shutdown ( m_Socket, SHUT_RDWR );
 		close ( m_Socket );
 #else
 		closesocket ( m_Socket );
@@ -3901,13 +3902,17 @@ uint32 CUDPDriver::Thread_Listen()
 			// Go to sleep if there's nothing waiting on the line
 			else if (nRecvStatus == EWOULDBLOCK)
 			{
+				int nSocket = m_Socket;
+				if (nSocket < 0 || nSocket >= FD_SETSIZE)
+					break;
+
 				// Reset the read state
 				fd_set aReadSet;
 				FD_ZERO(&aReadSet);
-				FD_SET(m_Socket, &aReadSet);
+				FD_SET(nSocket, &aReadSet);
 
 				// Wait...
-				int status = select(m_Socket + 1, &aReadSet, NULL, NULL, &cTimeout);
+				int status = select(nSocket + 1, &aReadSet, NULL, NULL, &cTimeout);
 				// Did we time out?
 				if (status == 0)
 				{

@@ -13,7 +13,8 @@
 #define subkeyfilename   "Blowfish.dat"
 
 
-#define UWORD_32bits  unsigned long
+#include <stdint.h>
+#define UWORD_32bits  uint32_t
 #define UWORD_16bits  unsigned short
 #define UBYTE_08bits  unsigned char
 
@@ -62,9 +63,9 @@ union aword {
 
 
 short opensubkeyfile(void);
-unsigned long F(unsigned long x);
-void Blowfish_encipher(unsigned long *xl, unsigned long *xr);
-void Blowfish_decipher(unsigned long *xl, unsigned long *xr);
+UWORD_32bits F(UWORD_32bits x);
+void Blowfish_encipher(UWORD_32bits *xl, UWORD_32bits *xr);
+void Blowfish_decipher(UWORD_32bits *xl, UWORD_32bits *xr);
 short InitializeBlowfish(unsigned char key[], short keybytes);
 
 

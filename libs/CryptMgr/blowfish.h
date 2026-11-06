@@ -1,7 +1,8 @@
 #if !defined(_BLOWFISH_H_)
 #define _BLOWFISH_H_
 
-#define UWORD_32bits  unsigned long
+#include <stdint.h>
+#define UWORD_32bits  uint32_t
 #define UWORD_16bits  unsigned short
 #define UBYTE_08bits  unsigned char
 
