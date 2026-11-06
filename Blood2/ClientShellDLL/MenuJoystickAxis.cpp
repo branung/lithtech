@@ -298,6 +298,8 @@ BOOL CMenuJoystickAxisBase::SetDeviceName(CClientDE *pClientDE)
 		{
 			if (stricmp(pObj->m_DeviceName, m_sDeviceName) == 0) bDeviceNameFound = TRUE;
 		}
+		// Retail's loop never advanced, so any listed joystick other than the configured one hung the menus
+		pObj = pObj->m_pNext;
 	}
 
 	// if the name did not exist use the first joystick name that we can find
