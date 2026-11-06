@@ -21,7 +21,7 @@
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 #ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
-#pragma code_page(1252)
+#pragma code_page(65001)
 #endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
@@ -1528,7 +1528,7 @@ BEGIN
     IDS_THEVOICE_124        "%%s Shat Upon %%s"
     IDS_THEVOICE_125        "%%s Cavity Searched %%s"
     IDS_THEVOICE_126        "%%s Gave %%s The Lickety Split"
-    IDS_THEVOICE_127        "%%s Whipped %%s’s Cream"
+    IDS_THEVOICE_127        "%%s Whipped %%sâ€™s Cream"
 END
 
 STRINGTABLE DISCARDABLE 
@@ -1561,10 +1561,10 @@ BEGIN
     IDS_THEVOICE_149        "%%s roasted %%s like a loin"
     IDS_THEVOICE_150        "%%s disemboweled %%s"
     IDS_THEVOICE_151        "%%s crushed %%s like a grape"
-    IDS_THEVOICE_152        "%%s molested %%s’s corpse"
+    IDS_THEVOICE_152        "%%s molested %%sâ€™s corpse"
     IDS_THEVOICE_153        "%%s impaled %%s with a middle digit"
     IDS_THEVOICE_154        "%%s mutilated %%s"
-    IDS_THEVOICE_155        "%%s OJ’d %%s"
+    IDS_THEVOICE_155        "%%s OJâ€™d %%s"
     IDS_THEVOICE_156        "%%s interned %%s like a Slick Willy"
     IDS_THEVOICE_157        "%%s penetrated %%s violently"
     IDS_THEVOICE_158        "%%s shanked %%s like an inmate"
@@ -1579,7 +1579,7 @@ BEGIN
     IDS_THEVOICE_163        "%%s toasted %%s like a marshmallow"
     IDS_THEVOICE_164        "%%s made %%s roadkill"
     IDS_THEVOICE_165        "%%s pimped %%s"
-    IDS_THEVOICE_166        "%%s gargled %%s’s remains"
+    IDS_THEVOICE_166        "%%s gargled %%sâ€™s remains"
     IDS_THEVOICE_167        "%%s gagged %%s with pleasure"
     IDS_THEVOICE_168        "%%s shredded %%s like a White House document"
     IDS_THEVOICE_169        "%%s busted down %%s and called him Debbie"
@@ -1599,7 +1599,7 @@ BEGIN
     IDS_THEVOICE_179        "%%s collected %%s like a bad debt"
     IDS_THEVOICE_180        "%%s Said Bye-Bye Now to %%s"
     IDS_THEVOICE_181        "%%s gave %%s anal leakage like a fat free chip"
-    IDS_THEVOICE_182        "%%s exploited %%s’s lack of prowess"
+    IDS_THEVOICE_182        "%%s exploited %%sâ€™s lack of prowess"
     IDS_THEVOICE_183        "%%s sliced %%s"
     IDS_THEVOICE_184        "%%s diced %%s"
     IDS_THEVOICE_185        "%%s pummeled %%s like a side of beef"
@@ -1623,9 +1623,9 @@ BEGIN
     IDS_THEVOICE_199        "%%s herniated %%s without the cough"
     IDS_THEVOICE_200        "%%s circumcised %%s with an unclean tool"
     IDS_THEVOICE_201        "%%s decaffeinated %%s like a bad cup of coffee"
-    IDS_THEVOICE_202        "%%s jacked %%s’s beanstalk"
-    IDS_THEVOICE_203        "%%s pissed in %%s’s grave"
-    IDS_THEVOICE_204        "%%s FUBAR’d %%s"
+    IDS_THEVOICE_202        "%%s jacked %%sâ€™s beanstalk"
+    IDS_THEVOICE_203        "%%s pissed in %%sâ€™s grave"
+    IDS_THEVOICE_204        "%%s FUBARâ€™d %%s"
     IDS_THEVOICE_205        "%%s gave %%s proper payback"
     IDS_THEVOICE_206        "%%s ventilated %%s"
     IDS_THEVOICE_207        "%%s mangled %%s"
@@ -1640,7 +1640,7 @@ BEGIN
     IDS_THEVOICE_212        "%%s Cancelled %%s like a stamp"
     IDS_THEVOICE_213        "%%s ripped %%s like a scrotum"
     IDS_THEVOICE_214        "%%s decorated with %%s's Giblets"
-    IDS_THEVOICE_215        "%%s baked %%s’s cookies."
+    IDS_THEVOICE_215        "%%s baked %%sâ€™s cookies."
     IDS_THEVOICE_216        "%%s showed %%s the anger"
     IDS_THEVOICE_217        "%%s showed %%s the love"
     IDS_THEVOICE_218        "%%s showed %%s the tears"
@@ -1664,7 +1664,7 @@ BEGIN
     IDS_THEVOICE_232        "%%s showed %%s the horror"
     IDS_THEVOICE_233        "%%s reamed %%s with his weapon"
     IDS_THEVOICE_234        "%%s reamed %%s with her weapon"
-    IDS_THEVOICE_235        "%%s stapled %%s’s innards to the floor"
+    IDS_THEVOICE_235        "%%s stapled %%sâ€™s innards to the floor"
     IDS_THEVOICE_236        "%%s Humped %%s like a dog in heat"
     IDS_THEVOICE_237        "%%s Nailed %%s With An Improper Tool"
     IDS_THEVOICE_238        "%%s Gave %%s Scrotal Separation!"
@@ -1687,8 +1687,8 @@ BEGIN
     IDS_THEVOICE_251        "%%s Disemboweled %%s"
     IDS_THEVOICE_252        "%%s Nippled %%s"
     IDS_THEVOICE_253        "%%s Ripped %%s A New Sphincter!"
-    IDS_THEVOICE_254        "%%s Gave %%s Some Crème De Banane!"
-    IDS_THEVOICE_255        "%%s Danced On %%s’s Broken Corpse"
+    IDS_THEVOICE_254        "%%s Gave %%s Some CrÃ¨me De Banane!"
+    IDS_THEVOICE_255        "%%s Danced On %%sâ€™s Broken Corpse"
 END
 
 STRINGTABLE DISCARDABLE 
@@ -1715,7 +1715,7 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_THEVOICE_272        "%%s Made Certain That %%s Was Properly Penetrated!"
     IDS_THEVOICE_273        "%%s Showed %%s The Agony Of Defeat"
-    IDS_THEVOICE_274        "%%s Roasted %%s’s Agates!"
+    IDS_THEVOICE_274        "%%s Roasted %%sâ€™s Agates!"
     IDS_THEVOICE_275        "%%s Slipped %%s Some Bile!"
     IDS_THEVOICE_276        "%%s Defiled %%s"
     IDS_THEVOICE_277        "%%s Fisted %%s"

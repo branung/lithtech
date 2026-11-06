@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import re
 from sys import argv
 from os.path import exists
 
@@ -8,9 +9,34 @@ text = []
 defs = []
 
 
+def rcEncoding(data):
+    """The encoding an .rc declares, read as rc.exe reads it: its #pragma code_page(N), else cp1252."""
+    m = re.search(br'#pragma\s+code_page\(\s*(\d+)\s*\)', data)
+    if not m:
+        return 'cp1252'
+    page = int(m.group(1))
+    return 'utf-8' if page == 65001 else 'cp%d' % page
+
+
+def cBytes(txt):
+    """The string as cp1252 bytes, which is what LoadStringA gives the games on Windows.
+    They draw a byte per glyph, so a UTF-8 ellipsis would draw as three glyphs.
+    Non-ASCII bytes become octal escapes, which stop at three digits where a hex escape
+    would swallow a following hex digit, so the generated file stays ASCII."""
+    out = []
+    for ch in txt:
+        if ord(ch) < 0x80:
+            out.append(ch)
+        else:
+            out.append(u'\\%03o' % ch.encode('cp1252', 'replace')[0])
+    return u''.join(out)
+
+
 def parseRC(rcFile):
     ret_incl = []
-    with open(rcFile, 'r', encoding='utf-8') as f:
+    with open(rcFile, 'rb') as fb:
+        data = fb.read()
+    with open(rcFile, 'r', encoding=rcEncoding(data), errors='replace') as f:
         cur_lst = None
         str_id = None
         txt = None
@@ -20,16 +46,23 @@ def parseRC(rcFile):
                 ret_incl.append(n[1].replace(u'\\', u'/'))
             if u'stringtable' in ln.lower():
                 cur_lst = str_table
-            if u'end' == ln.lower():
+            # Stripped, as the line still carries its newline (and a CR from a Windows file)
+            if u'end' == ln.strip().lower():
                 cur_lst = None
-            if ln.startswith(u' ') and cur_lst is not None:
-                n = ln.strip(u'\n').split(u'"')
+            # Entries are indented with tabs in some .rc files (Shogo's ServerRes).
+            # Comment and blank lines in a table are skipped rather than taken for an id
+            if ln[:1] in (u' ', u'\t') and cur_lst is not None:
+                if not ln.strip() or ln.strip().startswith(u'//'):
+                    continue
+                n = ln.strip(u'\r\n').split(u'"')
                 if str_id is None:
                     str_id = n[0].strip()
                 if len(n) == 1:
                     continue
                 txt = u'"'.join(n[1:-1])
-                cur_lst.append((str_id, txt))
+                # An .rc string writes a quote as "", which in a C++ literal joins two literals and drops the quote
+                txt = txt.replace(u'""', u'\\"')
+                cur_lst.append((str_id, cBytes(txt)))
                 str_id = None
                 txt = None
     return ret_incl
